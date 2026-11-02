@@ -51,16 +51,21 @@ jobs:
       WEB_DIR: ${{ vars.WEB_DIR }}
       BASE_URL: ${{ vars.BASE_URL }}
     steps:
-      # Ohne gespeicherte Zugangsdaten: das Token liegt dann nicht in .git/config. Als aufgerufener
-      # Workflow: der TalkSlot-Code in der angegebenen Version (TALKSLOT_TOKEN nur nötig, solange das
-      # TalkSlot-Repo privat ist)
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          repository: ${{ inputs.repository || github.repository }}
-          ref: ${{ inputs.ref }}
-          token: ${{ secrets.TALKSLOT_TOKEN || github.token }}
-          fetch-depth: 0 # Tags für die Versionsanzeige
-          persist-credentials: false
+      # Code per git statt actions/checkout: keine fremden Actions nötig. Als aufgerufener Workflow
+      # der TalkSlot-Code in der angegebenen Version (TALKSLOT_TOKEN nur für ein privates Repo). Das Token steht nur im
+      # Header dieser Befehle, nicht in .git/config.
+      - name: Code holen
+        env:
+          REPO: ${{ inputs.repository || github.repository }}
+          REF: ${{ inputs.ref || github.sha }}
+          TOKEN: ${{ secrets.TALKSLOT_TOKEN || github.token }}
+        run: |
+          git init -q . && git remote add origin "https://github.com/$REPO.git"
+          AUTH="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$TOKEN" | base64 -w0)"
+          git -c http.extraheader="$AUTH" fetch -q --tags origin "+refs/heads/*:refs/remotes/origin/*" # Verlauf und Tags für die Versionsnummer
+          git -c http.extraheader="$AUTH" fetch -q origin "$REF" # Commit, Tag oder Branch
+          git checkout -q --detach "FETCH_HEAD^{commit}"
+          git log -1 --format='Stand: %h %s'
 
       - name: Lint & Unit-Tests
         run: |

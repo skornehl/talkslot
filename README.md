@@ -239,6 +239,7 @@ otherwise the legal pages fall back to English.
 - Spam protection: honeypot, minimum fill-in time, rate limits on bookings, codes and change links.
 - Headers: CSP without `unsafe-inline`, `X-Frame-Options: DENY`, `nosniff`, `Referrer-Policy: no-referrer`,
   HSTS, Permissions-Policy, `Cache-Control: no-store`.
+- CI and deployment use no third-party GitHub Actions (code is fetched with plain `git`, the token only in a request header).
 - No error details in production; the app logs itself with values, quotes and e-mail addresses stripped,
   rotating at 5 MB.
 
