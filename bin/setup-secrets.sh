@@ -38,6 +38,12 @@ gh variable set ALLOW_INSTALL --body 1
 echo "   INSTALL_KEY für install.php (bitte notieren): $KEY"
 echo "   Nach der Installation: gh variable delete ALLOW_INSTALL (Installer wird dann nicht mehr ausgeliefert)"
 
+echo "== Datenschutzerklärung"
+HD=$(ask x 'Hoster für die Datenschutzerklärung (deutsch), z. B. "Beispiel GmbH, Weg 1, 12345 Stadt, als Auftragsverarbeiter nach Art. 28 DSGVO. Die Server stehen in Deutschland."')
+[ -n "$HD" ] && gh variable set HOSTING_DE --body "$HD"
+HE=$(ask x 'Web host for the privacy policy (English)')
+[ -n "$HE" ] && gh variable set HOSTING_EN --body "$HE"
+
 echo "== E-Mail"
 FROM=$(ask x 'Absenderadresse (Enter = später)')
 [ -n "$FROM" ] && gh variable set MAIL_FROM --body "$FROM"

@@ -1431,6 +1431,14 @@ final class AdminController
             $hints[] = 'Impressum bzw. Datenschutzerklärung (' . $list($noPlaceholder) . ') enthalten den Platzhalter [[VERANTWORTLICHE]] nicht – '
                 . 'Ihre Angaben aus dem Profil erscheinen dort nicht automatisch.';
         }
+        $hosting = array_values(array_filter(
+            array_column(Db::all("SELECT DISTINCT lang FROM pages WHERE page_key = 'privacy' AND content LIKE '%[[HOSTER]]%' ORDER BY lang"), 'lang'),
+            static fn ($l) => !\App\Hosting::configured((string) $l)
+        ));
+        if ($hosting) {
+            $hints[] = 'Für die Datenschutzerklärung (' . implode(', ', array_map('strtoupper', $hosting)) . ') fehlen die Angaben zum Hoster '
+                . '(Konfiguration „hosting“, beim Deployment die Variablen HOSTING_DE bzw. HOSTING_EN) – bis dahin steht dort ein Platzhalter.';
+        }
         return $hints;
     }
 

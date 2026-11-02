@@ -33,6 +33,12 @@ return [
     // Datenbank ausgefallen ist). Gleiche Fehler höchstens einmal pro Stunde.
     'alert_email' => '',
 
+    // Hoster für die Datenschutzerklärung (ersetzt dort [[HOSTER]]), je Sprache der Vorlagen
+    'hosting' => [
+        'de' => '', // z. B. 'Beispiel Hosting GmbH, Musterweg 1, 12345 Musterstadt, als Auftragsverarbeiter nach Art. 28 DSGVO. Die Server stehen in Deutschland.'
+        'en' => '', // e.g. 'Example Hosting GmbH, Musterweg 1, 12345 Musterstadt, Germany, as processor under Art. 28 GDPR. The servers are located in Germany.'
+    ],
+
     'mail' => [
         'transport' => 'mail',      // mail (PHP mail/sendmail) | smtp (PHPMailer) | none
         'from_address' => '',       // Absender, z. B. termine@example.org (Domain mit SPF/DKIM)

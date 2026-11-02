@@ -446,6 +446,7 @@ P4=$(curl -s "$B/$S4")
 check "Rundenseite nennt die Lehrkraft" 'echo "$P4" | grep -q "Gesprächstermine bei Herr Zwei"'
 curl -s -o /dev/null --data-urlencode "csrf=$(echo "$P4" | csrf)" -d "slot_id=$(echo "$P4" | grep -o 'value="[0-9]*" required' | head -1 | grep -o '[0-9]*')&name=Kind+Zwei&email=eltern-zwei@example.org&privacy=1" "$B/$S4"
 PRIV=$(curl -s "$B/datenschutz?r=$S4")
+check "Ohne Hoster in der Konfiguration: sichtbarer Platzhalter, Hinweis im Admin" 'echo "$PRIV" | grep -qF "[HOSTER MIT ANSCHRIFT]" && ! echo "$PRIV" | grep -qF "[[HOSTER]]" && curl -s -b "$J" "$B/admin/texts" | grep -q "fehlen die Angaben zum Hoster"'
 check "Datenschutzhinweise nennen den Admin als Verantwortlichen (auch bei Runde von Lehrkraft 2)" 'echo "$PRIV" | grep -q "Teststraße 1" && ! echo "$PRIV" | grep -q "Schulweg 2" && ! echo "$PRIV" | grep -q "Auftragsverarbeiterin"'
 check "Datenschutzhinweise ohne Runde und Impressum: ebenfalls die Angaben des Admins" 'curl -s "$B/datenschutz" | grep -q "Teststraße 1" && curl -s "$B/impressum" | grep -q "Teststraße 1" && ! curl -s "$B/impressum" | grep -q "VORNAME NACHNAME"'
 check "Lehrkraft-Profil ohne Angaben für Impressum/Datenschutz" '! curl -s -c "$J2" -b "$J2" "$B/admin/profile" | grep -q "name=\"controller_contact\"" && curl -s -b "$J" "$B/admin/profile" | grep -q "name=\"controller_contact\""'

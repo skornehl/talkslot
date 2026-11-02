@@ -1,6 +1,9 @@
 # Optionales Deployment per FTPS auf Shared Hosting (bin/build.sh, bin/deploy.sh), bei jedem Push auf
 # main. Läuft nur, wenn die Variable FTP_HOST gesetzt ist – in Forks ohne Einrichtung also nicht.
-# Einrichtung: README, Abschnitt „Deployment mit GitHub Actions“ (bin/setup-secrets.sh).
+# Einrichtung: README, Abschnitt „Deployment with GitHub Actions“ (bin/setup-secrets.sh).
+#
+# Auch als wiederverwendbarer Workflow nutzbar: Ein eigenes Repo mit nur Konfiguration (Variablen,
+# Secrets) ruft ihn mit einer festen TalkSlot-Version auf, siehe README „Deploying from your own repository“.
 #
 # Atomar: Jede Version wird vollständig in ein eigenes Verzeichnis hochgeladen und erst dann per
 # Zeigerdatei aktiv geschaltet; danach wird die Seite geprüft und bei Fehlern sofort auf die vorherige
@@ -18,6 +21,16 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  workflow_call:
+    inputs:
+      ref:
+        description: TalkSlot-Version (Tag oder Commit), die deployt wird
+        type: string
+        required: true
+      repository:
+        description: Repository mit dem TalkSlot-Code
+        type: string
+        default: skornehl/talkslot
 
 concurrency:
   group: deploy # gemeinsam mit „Version umschalten“: nie zwei Umschaltungen gleichzeitig
@@ -38,11 +51,21 @@ jobs:
       WEB_DIR: ${{ vars.WEB_DIR }}
       BASE_URL: ${{ vars.BASE_URL }}
     steps:
-      # Ohne gespeicherte Zugangsdaten: das Token liegt dann nicht in .git/config
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0 # Tags für die Versionsanzeige
-          persist-credentials: false
+      # Code per git statt actions/checkout: keine fremden Actions nötig. Als aufgerufener Workflow
+      # der TalkSlot-Code in der angegebenen Version (TALKSLOT_TOKEN nur für ein privates Repo). Das Token steht nur im
+      # Header dieser Befehle, nicht in .git/config.
+      - name: Code holen
+        env:
+          REPO: ${{ inputs.repository || github.repository }}
+          REF: ${{ inputs.ref || github.sha }}
+          TOKEN: ${{ secrets.TALKSLOT_TOKEN || github.token }}
+        run: |
+          git init -q . && git remote add origin "https://github.com/$REPO.git"
+          AUTH="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$TOKEN" | base64 -w0)"
+          git -c http.extraheader="$AUTH" fetch -q --tags origin "+refs/heads/*:refs/remotes/origin/*" # Verlauf und Tags für die Versionsnummer
+          git -c http.extraheader="$AUTH" fetch -q origin "$REF" # Commit, Tag oder Branch
+          git checkout -q --detach "FETCH_HEAD^{commit}"
+          git log -1 --format='Stand: %h %s'
 
       - name: Lint & Unit-Tests
         run: |

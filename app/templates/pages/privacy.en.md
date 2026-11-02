@@ -55,7 +55,7 @@ By ticking the required box in the booking form you only confirm that you have r
 
 Only the teacher of the booking round in which you booked and the controller (section 1), who administers the platform, have access to the content of your details; other teachers on the platform cannot see them. If the controller assigns a booking round to another teacher (e.g. as a substitute), that teacher can see the existing bookings. They are not passed on to third parties for other purposes. Technically involved are:
 
-- **Hosting:** [WEB HOST WITH ADDRESS], as processor under Art. 28 GDPR. The servers are located in [COUNTRY].
+- **Hosting:** [[HOSTER]]
 - **E-mail:** via the web host's mail server (see above).
 - **Translation of the teacher's texts:** the title and description of a booking round written by the teacher can be translated for display in several languages. Automatic translation takes place only in the teacher's browser on their own device, using the "Translator API" programming interface of Chrome or Edge with a locally stored translation model (not the browser's "translate page" feature). The texts are not sent to any translation service. On first use, the browser downloads the language model from its vendor (Google or Microsoft); no texts are transmitted in the process. **No data of parents** is translated, only these texts of the teacher.
 - **Summaries to the teacher:** the teacher may receive an e-mail with the appointment list (time and name, without e-mail addresses) on the evening before a meeting day and after the booking deadline.

@@ -116,8 +116,8 @@ App: <http://localhost:8080>, admin: <http://localhost:8080/admin>. Mails end up
    `POST /cron` with header `X-Cron-Token: <HMAC-SHA256 of "cron" with your secret>`; the included
    workflow `.github/workflows/cron.yml` does exactly that.
 5. **Legal texts:** log in as admin, fill in *Mein Profil → Angaben für Impressum und Datenschutz*, then
-   check *Texte*: replace the remaining `[PLACEHOLDERS]` (web host, server log retention, supervisory
-   authority). The templates cover Art. 13 GDPR but do not replace legal advice.
+   check *Texte*: replace the remaining `[PLACEHOLDERS]` (server log retention, supervisory authority).
+   The web host comes from `hosting` in `config.php`. The templates cover Art. 13 GDPR but do not replace legal advice.
 
 ### Go-live checklist
 
@@ -157,7 +157,7 @@ bin/setup-secrets.sh    # asks for host, directories, FTP and DB credentials; ge
 
 This sets the variables `BASE_URL`, `FTP_HOST`, `WEB_DIR`, `APP_DIR`, `DB_HOST` and the secrets
 `FTP_USERNAME`, `FTP_PASSWORD`, `DB_USER`, `DB_PASS`, `DB_NAME`, `APP_SECRET`, `INSTALL_KEY`. Optional
-variables: `ALERT_EMAIL`, `MAIL_FROM`, `MAIL_FROM_NAME`, `MAIL_REPLY_TO`, `MAIL_TRANSPORT=smtp` with
+variables: `APP_NAME`, `HOSTING_DE`, `HOSTING_EN` (web host for the privacy policy), `ALERT_EMAIL`, `MAIL_FROM`, `MAIL_FROM_NAME`, `MAIL_REPLY_TO`, `MAIL_TRANSPORT=smtp` with
 `SMTP_HOST`, `SMTP_PORT`, `SMTP_ENCRYPTION` and the secrets `SMTP_USER`, `SMTP_PASS`, `DB_PREFIX`.
 Without `FTP_HOST` the deploy, cron and switch workflows do nothing.
 
@@ -175,6 +175,33 @@ gh workflow run "Version umschalten" -f target=list      # show available versio
 The database is not rolled back. That is why migrations (`app/src/Migrations.php`) must only **add**
 columns with defaults and tables, so an older version keeps working with a newer schema.
 
+### Deploying from your own repository
+
+You do not need a fork. A small private repository with nothing but configuration can deploy a pinned
+TalkSlot version with the reusable workflows; updating means changing the version in one place:
+
+```yaml
+# .github/workflows/deploy.yml in your repository
+name: Deploy
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  deploy:
+    uses: skornehl/talkslot/.github/workflows/deploy.yml@v1.0.0
+    with:
+      ref: v1.0.0   # same version as above
+    secrets: inherit
+```
+
+Variables and secrets are the same as above and live in your repository (or its `production`
+environment). The rollback workflow works the same way (`switch.yml`, inputs `target` and `ref`).
+Set the variables `APP_NAME` (name shown to parents) and `HOSTING_DE`/`HOSTING_EN` (web host for the
+privacy policy, replaces `[[HOSTER]]`) there as well.
+
 **Releases:** *Actions → Release* tags the next version based on Conventional Commits
 (`feat` → minor, `!` → major, otherwise patch). The footer shows the running version.
 
@@ -188,6 +215,7 @@ All options are documented in [`config/config.sample.php`](config/config.sample.
 | `languages` | `de, en, pl, ru, uk, tr` | parent-facing languages |
 | `timezone` | `Europe/Berlin` | |
 | `alert_email` | – | recipient of error alerts (else the admin's address) |
+| `hosting` | – | web host per language, replaces `[[HOSTER]]` in the privacy policy |
 | `access_link_hours` | `48` | validity of invitation/reset links |
 | `summary_evening_hour` | `18` | time of the evening summary |
 | `rate_limits` | see file | generous, since many parents share an IP (mobile CGNAT, school Wi-Fi) |
@@ -211,6 +239,7 @@ otherwise the legal pages fall back to English.
 - Spam protection: honeypot, minimum fill-in time, rate limits on bookings, codes and change links.
 - Headers: CSP without `unsafe-inline`, `X-Frame-Options: DENY`, `nosniff`, `Referrer-Policy: no-referrer`,
   HSTS, Permissions-Policy, `Cache-Control: no-store`.
+- CI and deployment use no third-party GitHub Actions (code is fetched with plain `git`, the token only in a request header).
 - No error details in production; the app logs itself with values, quotes and e-mail addresses stripped,
   rotating at 5 MB.
 

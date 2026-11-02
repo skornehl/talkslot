@@ -16,6 +16,19 @@ on:
         description: 'previous, list oder Versionsname'
         required: true
         default: previous
+  # Aufruf aus einem eigenen Repo mit nur Konfiguration (siehe deploy.yml)
+  workflow_call:
+    inputs:
+      target:
+        type: string
+        default: previous
+      ref:
+        description: TalkSlot-Version für bin/deploy.sh
+        type: string
+        required: true
+      repository:
+        type: string
+        default: skornehl/talkslot
 
 concurrency:
   group: deploy # gemeinsam mit „Deploy“: nie zwei Umschaltungen gleichzeitig
@@ -35,9 +48,19 @@ jobs:
       WEB_DIR: ${{ vars.WEB_DIR }}
       BASE_URL: ${{ vars.BASE_URL }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
+      # Code per git statt actions/checkout: keine fremden Actions nötig. Das Token steht nur im
+      # Header dieser Befehle, nicht in .git/config.
+      - name: Code holen
+        env:
+          REPO: ${{ inputs.repository || github.repository }}
+          REF: ${{ inputs.ref || github.sha }}
+          TOKEN: ${{ secrets.TALKSLOT_TOKEN || github.token }}
+        run: |
+          git init -q . && git remote add origin "https://github.com/$REPO.git"
+          AUTH="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$TOKEN" | base64 -w0)"
+          git -c http.extraheader="$AUTH" fetch -q --depth=1 origin "$REF" # Commit, Tag oder Branch
+          git checkout -q --detach "FETCH_HEAD^{commit}"
+          git log -1 --format='Stand: %h %s'
 
       - name: Umschalten
         env:

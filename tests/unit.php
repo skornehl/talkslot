@@ -408,12 +408,28 @@ App\Alert::notify('unwichtig', 'Warnung', ['x']);
 App\Alert::notify('wichtig', 'Datenbank weg', ['x'], true);
 check('Fehlermails: Tageslimit erreicht → wichtige Meldungen (DB weg, fatal) kommen trotzdem', count($sent) === 1 && $sent[0][1] === '[TalkSlot] Datenbank weg');
 @unlink(App\Alert::$stateFile);
+App\Alert::$stateFile = tempnam(sys_get_temp_dir(), 'alert');
+App\Config::load(['app_name' => "Schule am\nSee", 'alert_email' => 'b@example.org'] + $cfg);
+$sent = [];
+App\Alert::notify('name', 'Test', ['x']);
+check('Fehlermails: Betreff und Text mit dem konfigurierten Namen (ohne Zeilenumbruch)', ($sent[0][1] ?? '') === '[Schule am See] Test'
+    && str_contains($sent[0][2] ?? '', 'Schule am See hat einen Fehler gemeldet.'));
+@unlink(App\Alert::$stateFile);
 $log = tempnam(sys_get_temp_dir(), 'log'); $oldLog = ini_get('error_log'); ini_set('error_log', $log);
 file_put_contents($log, str_repeat('x', App\ErrorPage::LOG_MAX_BYTES + 1));
 App\ErrorPage::writeLog('neu');
 check('Fehlerlog wird ab ' . (App\ErrorPage::LOG_MAX_BYTES >> 20) . ' MB rotiert', is_file($log . '.1') && filesize($log) < 1000 && str_contains((string) file_get_contents($log), 'neu'));
 ini_set('error_log', (string) $oldLog); @unlink($log); @unlink($log . '.1');
 check('Passwort: höchstens 72 Byte (bcrypt)', App\Auth::passwordPolicy(str_repeat('ä', 37)) !== null && App\Auth::passwordPolicy(str_repeat('a', 72)) === null);
+App\Config::load($cfg);
+
+echo "Hoster in der Datenschutzerklärung\n";
+App\Config::load(['hosting' => ['de' => 'Beispiel Hosting GmbH, Weg 1']] + $cfg);
+check('[[HOSTER]] aus der Konfiguration, je Sprache des Seitentexts', App\Hosting::fill("- **Hosting:** [[HOSTER]]\n", 'de') === "- **Hosting:** Beispiel Hosting GmbH, Weg 1\n");
+check('ohne Angabe: sichtbarer Platzhalter in der Sprache des Texts (sonst Englisch)', str_starts_with(App\Hosting::fill('[[HOSTER]]', 'en'), '[WEB HOST WITH ADDRESS]')
+    && str_starts_with(App\Hosting::fill('[[HOSTER]]', 'pl'), '[WEB HOST WITH ADDRESS]') && !App\Hosting::configured('en'));
+check('Vorlagen enthalten [[HOSTER]]', str_contains((string) file_get_contents(dirname(__DIR__) . '/app/templates/pages/privacy.de.md'), '[[HOSTER]]')
+    && str_contains((string) file_get_contents(dirname(__DIR__) . '/app/templates/pages/privacy.en.md'), '[[HOSTER]]'));
 App\Config::load($cfg);
 
 echo "Skripte für das Deployment\n";
@@ -431,6 +447,13 @@ $built = (static fn ($f) => require $f)($cfgFile);
 check('build-config: Werte übernommen (DB-Name = Benutzer, Präfix), debug aus, Datei nur für den Besitzer lesbar', $rc === 0
     && $built['base_url'] === 'https://t.example' && $built['alert_email'] === 'betrieb@example.org' && $built['db']['prefix'] === 'x_'
     && $built['db']['name'] === 'u' && $built['debug'] === false && (fileperms($cfgFile) & 0777) === 0600);
+@unlink($cfgFile);
+check('build-config: ohne APP_NAME/HOSTING Standardname, Hoster leer', $built['app_name'] === 'TalkSlot' && $built['mail']['from_name'] === 'TalkSlot'
+    && $built['hosting'] === ['de' => '', 'en' => '']);
+[$rc] = $run(['bin/build-config.php', $cfgFile], ['APP_NAME' => 'Terminplanung', 'HOSTING_DE' => 'Hoster GmbH, Weg 1', 'HOSTING_EN' => 'Host Ltd'] + $envOk);
+$built = (static fn ($f) => require $f)($cfgFile);
+check('build-config: APP_NAME (auch Absendername) und HOSTING_DE/EN übernommen', $rc === 0 && $built['app_name'] === 'Terminplanung'
+    && $built['mail']['from_name'] === 'Terminplanung' && $built['hosting'] === ['de' => 'Hoster GmbH, Weg 1', 'en' => 'Host Ltd']);
 @unlink($cfgFile);
 [$rc, , $err] = $run(['bin/build-config.php', $cfgFile], ['SMTP_ENCRYPTION' => 'starttls'] + $envOk);
 check('build-config: unbekannte SMTP-Verschlüsselung → Abbruch (nie versehentlich Klartext)', $rc === 1 && str_contains($err, 'SMTP_ENCRYPTION'));

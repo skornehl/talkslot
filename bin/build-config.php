@@ -68,9 +68,11 @@ $config['db'] = [
     'prefix' => $prefix,
 ];
 $config['alert_email'] = $env('ALERT_EMAIL');
+$config['app_name'] = $env('APP_NAME', (string) $config['app_name']);
+$config['hosting'] = ['de' => $env('HOSTING_DE'), 'en' => $env('HOSTING_EN')];
 $config['mail']['transport'] = $env('MAIL_TRANSPORT', 'mail');
 $config['mail']['from_address'] = $env('MAIL_FROM');
-$config['mail']['from_name'] = $env('MAIL_FROM_NAME', 'TalkSlot');
+$config['mail']['from_name'] = $env('MAIL_FROM_NAME', (string) $config['app_name']);
 $config['mail']['reply_to'] = $env('MAIL_REPLY_TO');
 $config['mail']['smtp'] = [
     'host' => $env('SMTP_HOST'),
