@@ -1,6 +1,9 @@
 # Optionales Deployment per FTPS auf Shared Hosting (bin/build.sh, bin/deploy.sh), bei jedem Push auf
 # main. Läuft nur, wenn die Variable FTP_HOST gesetzt ist – in Forks ohne Einrichtung also nicht.
-# Einrichtung: README, Abschnitt „Deployment mit GitHub Actions“ (bin/setup-secrets.sh).
+# Einrichtung: README, Abschnitt „Deployment with GitHub Actions“ (bin/setup-secrets.sh).
+#
+# Auch als wiederverwendbarer Workflow nutzbar: Ein eigenes Repo mit nur Konfiguration (Variablen,
+# Secrets) ruft ihn mit einer festen TalkSlot-Version auf, siehe README „Deploying from your own repository“.
 #
 # Atomar: Jede Version wird vollständig in ein eigenes Verzeichnis hochgeladen und erst dann per
 # Zeigerdatei aktiv geschaltet; danach wird die Seite geprüft und bei Fehlern sofort auf die vorherige
@@ -18,6 +21,16 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  workflow_call:
+    inputs:
+      ref:
+        description: TalkSlot-Version (Tag oder Commit), die deployt wird
+        type: string
+        required: true
+      repository:
+        description: Repository mit dem TalkSlot-Code
+        type: string
+        default: skornehl/talkslot
 
 concurrency:
   group: deploy # gemeinsam mit „Version umschalten“: nie zwei Umschaltungen gleichzeitig
@@ -38,9 +51,14 @@ jobs:
       WEB_DIR: ${{ vars.WEB_DIR }}
       BASE_URL: ${{ vars.BASE_URL }}
     steps:
-      # Ohne gespeicherte Zugangsdaten: das Token liegt dann nicht in .git/config
+      # Ohne gespeicherte Zugangsdaten: das Token liegt dann nicht in .git/config. Als aufgerufener
+      # Workflow: der TalkSlot-Code in der angegebenen Version (TALKSLOT_TOKEN nur nötig, solange das
+      # TalkSlot-Repo privat ist)
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          repository: ${{ inputs.repository || github.repository }}
+          ref: ${{ inputs.ref }}
+          token: ${{ secrets.TALKSLOT_TOKEN || github.token }}
           fetch-depth: 0 # Tags für die Versionsanzeige
           persist-credentials: false
 

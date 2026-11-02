@@ -4,7 +4,7 @@
   <div class="alert alert-warning" role="status"><p><?= e($h) ?> Die Vorlage steht in <code>app/templates/pages/privacy.de.md</code> bzw. <code>privacy.en.md</code>.</p></div>
 <?php endforeach; ?>
 <section class="card">
-  <p>Diese Texte gelten für die gesamte Plattform. In Impressum und Datenschutzerklärung wird die Stelle <code>[[VERANTWORTLICHE]]</code> automatisch durch Ihre Angaben aus <a href="<?= e(url('/admin/profile')) ?>">„Mein Profil“</a> ersetzt (als Admin sind Sie für alle Terminrunden verantwortlich).</p>
+  <p>Diese Texte gelten für die gesamte Plattform. In Impressum und Datenschutzerklärung wird die Stelle <code>[[VERANTWORTLICHE]]</code> automatisch durch Ihre Angaben aus <a href="<?= e(url('/admin/profile')) ?>">„Mein Profil“</a> ersetzt (als Admin sind Sie für alle Terminrunden verantwortlich). <code>[[HOSTER]]</code> in der Datenschutzerklärung wird durch die Angaben zum Hoster aus der Konfiguration ersetzt.</p>
   <ul class="link-list">
     <?php foreach ($languages as $l): ?>
       <li><a href="<?= e(url('/admin/page/imprint/' . $l)) ?>">Impressum (<?= e(strtoupper($l)) ?>)</a></li>

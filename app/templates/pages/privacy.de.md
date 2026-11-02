@@ -55,7 +55,7 @@ Mit dem Pflicht-Häkchen im Buchungsformular bestätigen Sie nur, dass Sie diese
 
 Inhaltlich haben nur die Lehrkraft der Terminrunde, in der Sie gebucht haben, und die verantwortliche Stelle (Abschnitt 1), die die Plattform verwaltet, Zugriff auf Ihre Angaben; andere Lehrkräfte auf der Plattform sehen sie nicht. Ordnet die verantwortliche Stelle eine Terminrunde einer anderen Lehrkraft zu (z. B. bei Vertretung), sieht diese die bestehenden Buchungen. Eine Weitergabe an Dritte zu anderen Zwecken findet nicht statt. Technisch beteiligt sind:
 
-- **Hosting:** [HOSTER MIT ANSCHRIFT], als Auftragsverarbeiter nach Art. 28 DSGVO. Die Server stehen in [LAND].
+- **Hosting:** [[HOSTER]]
 - **E-Mail-Versand:** über den Mailserver des Hosters (siehe oben).
 - **Übersetzung der Texte der Lehrkraft:** Titel und Beschreibung einer Terminrunde, die die Lehrkraft verfasst, können zur Anzeige in mehreren Sprachen übersetzt werden. Die automatische Übersetzung erfolgt ausschließlich im Browser der Lehrkraft auf deren eigenem Gerät, über die Programmierschnittstelle „Translator API“ von Chrome bzw. Edge mit einem lokal gespeicherten Übersetzungsmodell (nicht über die Browserfunktion „Seite übersetzen“). Die Texte werden dabei an keinen Übersetzungsdienst übermittelt. Beim ersten Gebrauch lädt der Browser das Sprachmodell vom Hersteller (Google bzw. Microsoft) herunter; dabei werden keine Texte übertragen. Übersetzt werden **keine Daten von Eltern**, sondern ausschließlich diese Texte der Lehrkraft.
 - **Zusammenfassungen an die Lehrkraft:** Die Lehrkraft kann am Vorabend eines Termintags und nach Buchungsschluss eine E-Mail mit der Terminliste (Uhrzeit und Name, ohne E-Mail-Adressen) erhalten.

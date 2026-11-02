@@ -99,11 +99,14 @@ final class Migrations
     public const CURRENT_PAGE_HASHES = [
         'imprint.de' => '036e210b629357dfbf768868e3a5f249c888d3052f301170703b196336058f43',
         'imprint.en' => 'f15521ceaa18e97c98190e448cc95eb6130c4cf571164b09819bb40dd7af22c8',
-        'privacy.de' => 'ad6f6857bd256028a0bb977342079a12de3896553f38b6988bc90513dd38b3db',
-        'privacy.en' => '144970362b39b145e5d4253ce311bfa38fa4c85a23ed090d14cb9f40340d28df',
+        'privacy.de' => '0cda1f6b2ca1ad90d1135a27b0087542862a700e0fbcefce7d448895f07a702a',
+        'privacy.en' => '7ab09658494d5af363ab22f52a13140952a72e83656280c26ba54e029b2a0d51',
     ];
 
     private const OLD_PAGE_HASHES = [
+        // Datenschutz mit Hoster-Platzhalter in eckigen Klammern (vor [[HOSTER]])
+        'ad6f6857bd256028a0bb977342079a12de3896553f38b6988bc90513dd38b3db',
+        '144970362b39b145e5d4253ce311bfa38fa4c85a23ed090d14cb9f40340d28df',
         // Datenschutz mit fest eingetragenem Hoster
         'de6d0d5db54705cdfaebeb229b708e0bb408f52963664220cfcbda4e8e0d2022',
         '709ca1125fecd1230d4dc8d4fdfd92b52a195d1bfdc0d5a705b7cdd536e29120',

@@ -99,7 +99,7 @@ final class Alert
                 return false;
             }
             $body = self::body($lines, $suppressed);
-            $subject = '[TalkSlot] ' . $subject;
+            $subject = '[' . self::appName() . '] ' . $subject;
             $ok = self::$transport !== null
                 ? (bool) (self::$transport)($to, $subject, $body)
                 : Mailer::send($to, $subject, $body);
@@ -184,7 +184,7 @@ final class Alert
     {
         $version = Version::info();
         $head = [
-            'TalkSlot hat einen Fehler gemeldet.',
+            self::appName() . ' hat einen Fehler gemeldet.',
             '',
             'Zeit: ' . date('d.m.Y H:i:s'),
             'Seite: ' . (string) Config::get('base_url', ''),
@@ -227,5 +227,12 @@ final class Alert
     private static function relative(string $file): string
     {
         return ltrim(str_replace(APP_ROOT, '', $file), '/');
+    }
+
+    /** Name aus der Konfiguration (ohne Zeilenumbrüche, er steht im Betreff). */
+    private static function appName(): string
+    {
+        $name = trim((string) preg_replace('/[\r\n]+/', ' ', (string) Config::get('app_name', 'TalkSlot')));
+        return $name !== '' ? $name : 'TalkSlot';
     }
 }

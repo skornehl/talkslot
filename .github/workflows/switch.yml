@@ -16,6 +16,19 @@ on:
         description: 'previous, list oder Versionsname'
         required: true
         default: previous
+  # Aufruf aus einem eigenen Repo mit nur Konfiguration (siehe deploy.yml)
+  workflow_call:
+    inputs:
+      target:
+        type: string
+        default: previous
+      ref:
+        description: TalkSlot-Version für bin/deploy.sh
+        type: string
+        required: true
+      repository:
+        type: string
+        default: skornehl/talkslot
 
 concurrency:
   group: deploy # gemeinsam mit „Deploy“: nie zwei Umschaltungen gleichzeitig
@@ -37,6 +50,9 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          repository: ${{ inputs.repository || github.repository }}
+          ref: ${{ inputs.ref }}
+          token: ${{ secrets.TALKSLOT_TOKEN || github.token }}
           persist-credentials: false
 
       - name: Umschalten

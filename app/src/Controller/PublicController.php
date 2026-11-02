@@ -8,6 +8,7 @@ use App\BookingService;
 use App\Csrf;
 use App\Config;
 use App\Db;
+use App\Hosting;
 use App\Http;
 use App\I18n;
 use App\Markdown;
@@ -80,13 +81,17 @@ final class PublicController
     {
         // Ohne eigene Fassung: Englisch (verständlicher als Deutsch für die meisten), dann Standardsprache
         $content = null;
+        $contentLang = I18n::lang();
         foreach (array_unique([I18n::lang(), 'en', I18n::defaultLanguage()]) as $l) {
-            $content ??= Db::value('SELECT content FROM pages WHERE page_key = ? AND lang = ?', [$key, $l]);
+            if ($content === null && ($content = Db::value('SELECT content FROM pages WHERE page_key = ? AND lang = ?', [$key, $l])) !== null) {
+                $contentLang = $l;
+            }
         }
         $slug = is_string($_GET['r'] ?? null) ? (string) $_GET['r'] : '';
         if ($content !== null) {
             // Verantwortlich für alle Runden (und im Impressum genannt) ist der Admin
             $content = Operator::fill((string) $content, t('privacy.controller.generic'));
+            $content = Hosting::fill($content, $contentLang); // Hoster aus der Konfiguration
         }
         View::render('public/page', [
             'title' => t('footer.' . $key),
