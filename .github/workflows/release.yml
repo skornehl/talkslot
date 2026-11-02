@@ -1,0 +1,27 @@
+# Release von Hand: Actions → Release → Run workflow (auf main). Die Versionsnummer ergibt sich aus den
+# Conventional Commits seit dem letzten Tag (bin/next-version.php: feat → minor, ! → major, sonst patch).
+name: Release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Release anlegen
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          V="$(php bin/next-version.php)"
+          if git rev-parse -q --verify "refs/tags/$V" > /dev/null; then echo "::notice::$V existiert schon"; exit 0; fi
+          gh release create "$V" --target "$GITHUB_SHA" --title "$V" --generate-notes

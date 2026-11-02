@@ -1,0 +1,41 @@
+# TalkSlot – Apache-Konfiguration (Document-Root)
+
+Options -Indexes -MultiViews
+DirectoryIndex index.php
+AddDefaultCharset UTF-8
+ServerSignature Off
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # HTTPS erzwingen (lokale Entwicklung auf localhost ausgenommen)
+  RewriteCond %{HTTPS} !=on
+  RewriteCond %{HTTP:X-Forwarded-Proto} !=https
+  RewriteCond %{HTTP_HOST} !^(localhost|127\.0\.0\.1)(:\d+)?$
+  RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+
+  # Versteckte Dateien sperren (außer .well-known für Zertifikate)
+  RewriteRule (^|/)\.(?!well-known/) - [F,L]
+
+  # Alles, was keine vorhandene Datei ist, an den Front-Controller
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteRule ^ index.php [L,QSA]
+</IfModule>
+
+# Interne Dateien nie ausliefern
+<FilesMatch "^(app_root\.php|error_log|.*\.(md|sql|lock|log|sample|dist|json|yml|yaml|bak|old|orig|swp|tmp|env|ini|sh|zip|tar|gz)|.*~)$">
+  Require all denied
+</FilesMatch>
+
+<IfModule mod_headers.c>
+  Header set X-Content-Type-Options "nosniff"
+  Header set X-Frame-Options "DENY"
+  Header set Referrer-Policy "no-referrer"
+  Header set Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+  Header set Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'; object-src 'none'"
+  Header set Strict-Transport-Security "max-age=31536000" env=HTTPS
+  Header unset X-Powered-By
+  <FilesMatch "\.(css|js)$">
+    Header set Cache-Control "public, max-age=604800"
+  </FilesMatch>
+</IfModule>

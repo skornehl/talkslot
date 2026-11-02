@@ -1,0 +1,9 @@
+/config/config.php
+/app/var/*
+!/app/var/.htaccess
+!/app/var/.gitkeep
+/public/app_root.php
+/app/version.php
+/dev/data/
+.DS_Store
+/build/

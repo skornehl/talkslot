@@ -1,0 +1,52 @@
+# Schalter für die aktive Version auf dem Server (Rollback ohne neues Deployment).
+# Actions → „Version umschalten“ → Run workflow:
+#   previous   eine Version zurück (Standard)
+#   <Name>     genau diese Version, z. B. 20261102-153012-v1.9.0 (Namen: Lauf mit „list“)
+#   list       nur anzeigen, was auf dem Server liegt
+# Nach dem Umschalten wird die Seite geprüft; klappt das nicht, bleibt die bisherige Version aktiv.
+# Der nächste Push auf main deployt wieder den neuesten Stand. Die Datenbank wird nicht zurückgesetzt:
+# Eine ältere Version läuft mit dem neueren Schema, solange Migrationen nur Spalten/Tabellen mit
+# Standardwerten hinzufügen (Regel, siehe README „Deployment“).
+name: Version umschalten
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'previous, list oder Versionsname'
+        required: true
+        default: previous
+
+concurrency:
+  group: deploy # gemeinsam mit „Deploy“: nie zwei Umschaltungen gleichzeitig
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  switch:
+    runs-on: ubuntu-latest
+    if: vars.FTP_HOST != ''
+    environment: production # FTP-Zugang liegt in der Umgebung (nur main)
+    env:
+      FTP_URL: ftp://${{ vars.FTP_HOST }}
+      APP_DIR: ${{ vars.APP_DIR || 'talkslot-app' }}
+      WEB_DIR: ${{ vars.WEB_DIR }}
+      BASE_URL: ${{ vars.BASE_URL }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Umschalten
+        env:
+          FTP_USER: ${{ secrets.FTP_USERNAME }}
+          FTP_PASS: ${{ secrets.FTP_PASSWORD }}
+          TARGET: ${{ inputs.target }}
+        run: |
+          sudo apt-get install -y -qq lftp > /dev/null
+          export LFTP_PASSWORD="$(printf '%s' "$FTP_PASS" | tr -d '\r\n')"
+          TARGET="$(printf '%s' "$TARGET" | tr -d ' \r\n')"
+          if [ "$TARGET" != list ]; then bin/deploy.sh switch "$TARGET"; fi
+          { echo '```'; bin/deploy.sh list; echo '```'; } | tee -a "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,29 @@
+# Lint und Unit-Tests auf allen unterstützten PHP-Versionen (ohne Datenbank).
+# End-to-End-Tests (tests/smoke.sh, tests/deploy.sh) laufen lokal mit der Docker-Umgebung, siehe README.
+name: Tests
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php: ['8.3', '8.4', '8.5']
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Lint & Unit-Tests (PHP ${{ matrix.php }})
+        run: |
+          cp dev/config.dev.php config/config.php
+          docker run --rm -v "$PWD:/app" -w /app "php:${{ matrix.php }}-cli" sh -c '
+            set -e
+            find . -name "*.php" -not -path "./app/vendor/*" -print0 | xargs -0 -n1 php -l > /dev/null
+            php tests/unit.php'

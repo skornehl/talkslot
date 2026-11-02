@@ -1,0 +1,165 @@
+# Optionales Deployment per FTPS auf Shared Hosting (bin/build.sh, bin/deploy.sh), bei jedem Push auf
+# main. Läuft nur, wenn die Variable FTP_HOST gesetzt ist – in Forks ohne Einrichtung also nicht.
+# Einrichtung: README, Abschnitt „Deployment mit GitHub Actions“ (bin/setup-secrets.sh).
+#
+# Atomar: Jede Version wird vollständig in ein eigenes Verzeichnis hochgeladen und erst dann per
+# Zeigerdatei aktiv geschaltet; danach wird die Seite geprüft und bei Fehlern sofort auf die vorherige
+# Version zurückgeschaltet. Rollback von Hand: Workflow „Version umschalten“ (switch.yml).
+#
+# Server-Layout (APP_DIR und WEB_DIR relativ zum FTP-Stammverzeichnis):
+#   <APP_DIR>/current            Name der aktiven Version
+#   <APP_DIR>/releases/<Name>/   app/, bin/, config/config.php einer Version
+#   <APP_DIR>/app/var/           Sessions, Logs (für alle Versionen gemeinsam)
+#   <WEB_DIR>/                   index.php, .htaccess, app_root.php (Document-Root)
+#   <WEB_DIR>/v/<Name>/          CSS, JS, Bilder einer Version
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy # gemeinsam mit „Version umschalten“: nie zwei Umschaltungen gleichzeitig
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    if: vars.FTP_HOST != ''
+    runs-on: ubuntu-latest
+    # Secrets am besten in der Umgebung „production“, nur für main freigegeben (Settings → Environments)
+    environment: production
+    env:
+      FTP_URL: ftp://${{ vars.FTP_HOST }}
+      APP_DIR: ${{ vars.APP_DIR || 'talkslot-app' }}
+      WEB_DIR: ${{ vars.WEB_DIR }}
+      BASE_URL: ${{ vars.BASE_URL }}
+    steps:
+      # Ohne gespeicherte Zugangsdaten: das Token liegt dann nicht in .git/config
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # Tags für die Versionsanzeige
+          persist-credentials: false
+
+      - name: Lint & Unit-Tests
+        run: |
+          cp dev/config.dev.php config/config.php
+          docker run --rm -v "$PWD:/app" -w /app php:8.5-cli sh -c '
+            set -e
+            find . -name "*.php" -not -path "./app/vendor/*" -print0 | xargs -0 -n1 php -l > /dev/null
+            php tests/unit.php'
+          rm config/config.php
+
+      - name: Version bestimmen
+        id: version
+        run: |
+          V="$(git describe --tags --always)"
+          # Verzeichnisname auf dem Server: sortierbar und je Lauf eindeutig
+          NAME="$(date -u +%Y%m%d-%H%M%S)-$(printf '%s' "$V" | tr -c 'A-Za-z0-9._-' '-')"
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+          echo "name=$NAME" >> "$GITHUB_OUTPUT"
+          echo "Version: $V, Verzeichnis: $NAME"
+
+      - name: Build
+        env:
+          APP_SECRET: ${{ secrets.APP_SECRET }}
+          INSTALL_KEY: ${{ secrets.INSTALL_KEY }}
+          ALLOW_INSTALL: ${{ vars.ALLOW_INSTALL }}
+          DB_HOST: ${{ vars.DB_HOST }}
+          DB_PREFIX: ${{ vars.DB_PREFIX || 'tp_' }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASS: ${{ secrets.DB_PASS }}
+          ALERT_EMAIL: ${{ vars.ALERT_EMAIL }}
+          MAIL_TRANSPORT: ${{ vars.MAIL_TRANSPORT }}
+          MAIL_FROM: ${{ vars.MAIL_FROM }}
+          MAIL_FROM_NAME: ${{ vars.MAIL_FROM_NAME }}
+          MAIL_REPLY_TO: ${{ vars.MAIL_REPLY_TO }}
+          SMTP_HOST: ${{ vars.SMTP_HOST }}
+          SMTP_PORT: ${{ vars.SMTP_PORT }}
+          SMTP_ENCRYPTION: ${{ vars.SMTP_ENCRYPTION }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          VERSION: ${{ steps.version.outputs.version }}
+          RELEASE: ${{ steps.version.outputs.name }}
+          COMMIT: ${{ github.sha }}
+        run: bin/build.sh
+
+      # Wurde inzwischen ein neuerer Commit auf main gepusht, deployt dessen Lauf (wartet in der
+      # concurrency-Gruppe) ohnehin alles; dieser Lauf lädt dann nichts hoch.
+      - name: Noch aktuell?
+        id: current
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          HEAD="$(gh api "repos/$GITHUB_REPOSITORY/commits/main" -q .sha)"
+          if [ -n "$HEAD" ] && [ "$HEAD" != "$GITHUB_SHA" ]; then
+            echo "superseded=1" >> "$GITHUB_OUTPUT"
+            echo "::notice::main ist inzwischen bei ${HEAD:0:7} – der Lauf dafür deployt."
+          fi
+
+      - name: lftp installieren
+        if: github.ref == 'refs/heads/main' && steps.current.outputs.superseded != '1'
+        run: sudo apt-get install -y -qq lftp > /dev/null
+
+      # Upload per FTPS in ein neues Verzeichnis; die laufende Version bleibt unberührt. Am Ende wird
+      # geprüft, ob alle Dateien angekommen sind. Live geht nur main.
+      - name: Hochladen (noch nicht aktiv)
+        id: upload
+        if: github.ref == 'refs/heads/main' && steps.current.outputs.superseded != '1'
+        env:
+          FTP_USER: ${{ secrets.FTP_USERNAME }}
+          FTP_PASS: ${{ secrets.FTP_PASSWORD }}
+          NAME: ${{ steps.version.outputs.name }}
+        run: |
+          export LFTP_PASSWORD="$(printf '%s' "$FTP_PASS" | tr -d '\r\n')"
+          bin/deploy.sh upload "$NAME"
+
+      - name: Halben Upload entfernen
+        if: failure() && steps.upload.outcome == 'failure'
+        env:
+          FTP_USER: ${{ secrets.FTP_USERNAME }}
+          FTP_PASS: ${{ secrets.FTP_PASSWORD }}
+          NAME: ${{ steps.version.outputs.name }}
+        run: |
+          export LFTP_PASSWORD="$(printf '%s' "$FTP_PASS" | tr -d '\r\n')"
+          bin/deploy.sh discard "$NAME"
+
+      - name: Noch aktuell nach dem Upload?
+        id: current_after
+        if: github.event_name == 'push' && steps.current.outputs.superseded != '1'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          HEAD="$(gh api "repos/$GITHUB_REPOSITORY/commits/main" -q .sha)"
+          if [ -n "$HEAD" ] && [ "$HEAD" != "$GITHUB_SHA" ]; then
+            echo "superseded=1" >> "$GITHUB_OUTPUT"
+            echo "::notice::main ist inzwischen bei ${HEAD:0:7} – der Lauf dafür deployt, dieser schaltet nicht um."
+          fi
+
+      - name: Verwerfen (überholt)
+        if: steps.current_after.outputs.superseded == '1'
+        env:
+          FTP_USER: ${{ secrets.FTP_USERNAME }}
+          FTP_PASS: ${{ secrets.FTP_PASSWORD }}
+          NAME: ${{ steps.version.outputs.name }}
+        run: |
+          export LFTP_PASSWORD="$(printf '%s' "$FTP_PASS" | tr -d '\r\n')"
+          bin/deploy.sh discard "$NAME"
+
+      # Zeigerdatei austauschen, feste Dateien im Webverzeichnis aktualisieren, Seite prüfen (sonst
+      # sofort zurück), alte Versionen löschen (die letzten fünf bleiben)
+      - name: Umschalten und prüfen
+        if: github.ref == 'refs/heads/main' && steps.current.outputs.superseded != '1' && steps.current_after.outputs.superseded != '1'
+        env:
+          FTP_USER: ${{ secrets.FTP_USERNAME }}
+          FTP_PASS: ${{ secrets.FTP_PASSWORD }}
+          NAME: ${{ steps.version.outputs.name }}
+        run: |
+          export LFTP_PASSWORD="$(printf '%s' "$FTP_PASS" | tr -d '\r\n')"
+          bin/deploy.sh activate "$NAME"
+          echo "Aktiv: \`$NAME\`" >> "$GITHUB_STEP_SUMMARY"

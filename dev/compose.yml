@@ -1,0 +1,22 @@
+# Nur für die lokale Entwicklung: docker compose -f dev/compose.yml up -d
+name: talkslot-dev
+services:
+  db:
+    image: mariadb:11.8
+    environment:
+      MARIADB_DATABASE: talkslot
+      MARIADB_USER: app
+      MARIADB_PASSWORD: app-dev-only
+      MARIADB_RANDOM_ROOT_PASSWORD: "1"
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 2s
+      retries: 30
+  mail:
+    image: axllent/mailpit:v1.27
+  app:
+    build: .
+    ports: ["127.0.0.1:8080:80"]
+    volumes: ["..:/srv/app"]
+    depends_on:
+      db: { condition: service_healthy }
