@@ -253,6 +253,13 @@ check "entry by teacher" 'curl -s -b "$J" "$B/admin/round/$RID" | grep -q "selbs
 FREE=$(curl -s -b "$J" "$B/admin/round/$RID" | grep -o '/admin/slot/[0-9]*/block' | head -1 | grep -o '[0-9]\+')
 curl -s -o /dev/null -b "$J" -d "csrf=$T" "$B/admin/slot/$FREE/block"
 check "slot blocked → publicly invisible" '! curl -s "$B/$SLUG" | grep -q "id=\"slot-$FREE\""'
+# Crafted request: an existing booking must not be moved onto a blocked slot either
+# (booking a blocked slot directly is covered under "Rules the server enforces itself")
+MOVE_PAGE=$(curl -s "$B/$SLUG")
+LOC=$(curl -s -o /dev/null -w '%{redirect_url}' --data-urlencode "csrf=$(echo "$MOVE_PAGE" | csrf)" -d "slot_id=$(echo "$MOVE_PAGE" | grep -o 'value="[0-9]*" required' | head -1 | grep -o '[0-9]*')&name=Verschieben+Gesperrt&privacy=1&lang=de" "$B/$SLUG")
+MOVE_TOKEN=$(echo "$LOC" | grep -o '/b/[A-Za-z0-9_-]\{43\}' | cut -c4-)
+X=$(curl -s -w '\n%{http_code}' --data-urlencode "csrf=$(curl -s "$B/b/$MOVE_TOKEN" | csrf)" -d "action=move&slot_id=$FREE" "$B/b/$MOVE_TOKEN")
+check "blocked slot: moving a booking there rejected" '[ ${#MOVE_TOKEN} = 43 ] && [ "$(echo "$X" | tail -1)" = 200 ] && echo "$X" | grep -q "Dieser Termin ist nicht mehr verfügbar"'
 curl -s -o /dev/null -b "$J" -d "csrf=$T&day_date=$TOMORROW&start_time=14:05&end_time=16:00&slot_minutes=15" "$B/admin/day/$DID/edit"
 check "schedule shortened → booked slots as conflict" 'curl -s -b "$J" "$B/admin/round/$RID" | grep -q "Konflikt(e)"'
 check "print view" 'curl -s -b "$J" "$B/admin/round/$RID/print" | grep -q "Neu Name"'
@@ -883,6 +890,20 @@ T=$(curl -s -b "$J" "$B/admin" | csrf)
 curl -s -o /dev/null -b "$J" -d "csrf=$T" "$B/admin/logout"
 code=$(curl -s -o /dev/null -w '%{http_code}' -b "$J" "$B/admin/round/$RID")
 check "Logout" '[ "$code" = 303 ]'
+# Login limit per username (credential stuffing from many addresses): after 3 attempts from 3 different
+# IPs, further attempts for the same name are refused before the password is checked (no failed_logins
+# increment), even with the right password from a fresh IP.
+LU=$(ALERTS 'require "/srv/app/app/bootstrap.php";
+  App\Config::load(["rate_limits" => ["login" => [100, 3600], "login_user" => [3, 3600]]] + (require "/srv/app/config/config.php"));
+  $failed = static fn () => (int) App\Db::value("SELECT failed_logins FROM users WHERE username = ?", ["sabrina"]);
+  $before = $failed();
+  foreach ([1, 2, 3, 4, 5] as $i) { $_SERVER["REMOTE_ADDR"] = "198.51.100.$i"; App\Auth::attempt("sabrina", "falsch-$i"); }
+  $_SERVER["REMOTE_ADDR"] = "198.51.100.9";
+  $right = App\Auth::attempt("sabrina", "Sehr-Sicheres-Dev-Pw1");
+  echo ($failed() - $before) . "|" . ($right === true ? "in" : "refused");
+  App\Db::run("DELETE FROM rate_limits WHERE bucket IN (?, ?)", ["login", "login_user"]);
+  App\Db::run("UPDATE users SET failed_logins = ? WHERE username = ?", [$before, "sabrina"]);')
+check "login: limit per username across IP addresses ($LU)" '[ "$LU" = "3|refused" ]'
 AL=$(ALERTS 'echo json_decode(file_get_contents("http://mail:8025/api/v1/search?query=to:betrieb@example.org"), true)["messages_count"] ?? "?";')
 check "no error report (exception, warning) during the whole test run" '[ "$AL" = 0 ]'
 rm -f "$J"
