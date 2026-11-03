@@ -85,6 +85,7 @@ jobs:
           # Directory name on the server: sortable and unique per run
           NAME="$(date -u +%Y%m%d-%H%M%S)-$(printf '%s' "$V" | tr -c 'A-Za-z0-9._-' '-')"
           echo "version=$V" >> "$GITHUB_OUTPUT"
+          echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT" # TalkSlot commit, also when called from another repo
           echo "name=$NAME" >> "$GITHUB_OUTPUT"
           echo "Version: $V, directory: $NAME"
 
@@ -116,7 +117,7 @@ jobs:
           SMTP_PASS: ${{ secrets.SMTP_PASS }}
           VERSION: ${{ steps.version.outputs.version }}
           RELEASE: ${{ steps.version.outputs.name }}
-          COMMIT: ${{ github.sha }}
+          COMMIT: ${{ steps.version.outputs.commit }}
         run: bin/build.sh
 
       # If a newer commit has been pushed to main in the meantime, its run (waiting in the
