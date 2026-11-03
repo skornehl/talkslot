@@ -1,0 +1,24 @@
+{
+    "name": "skornehl/talkslot",
+    "description": "Parent-teacher conference booking for schools",
+    "type": "project",
+    "license": "AGPL-3.0-only",
+    "homepage": "https://skornehl.github.io/talkslot/",
+    "require": {
+        "php": ">=8.3",
+        "phpmailer/phpmailer": "7.1.1"
+    },
+    "config": {
+        "platform": {
+            "php": "8.3.0"
+        },
+        "lock": true
+    },
+    "extra": {
+        "comment": [
+            "TalkSlot does not use Composer at runtime. This file and composer.lock only list the bundled",
+            "libraries so that Dependabot can report updates and security advisories. The code itself lives",
+            "in app/vendor/ and is updated with bin/update-vendor.sh; tests/unit.php checks that both match."
+        ]
+    }
+}

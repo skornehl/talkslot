@@ -1,0 +1,12 @@
+# Dependabot watches the bundled libraries through composer.lock (TalkSlot does not run Composer).
+# After it raises a version, run bin/update-vendor.sh on the pull request branch and commit app/vendor/;
+# the unit tests fail until both match.
+version: 2
+updates:
+  - package-ecosystem: composer
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: fix
+      include: scope
