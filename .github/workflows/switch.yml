@@ -23,12 +23,13 @@ on:
         type: string
         default: previous
       ref:
-        description: TalkSlot version for bin/deploy.sh
+        description: Optional, normally empty. Defaults to the version in the caller's `uses:` line
         type: string
-        required: true
+        default: ''
       repository:
+        description: Optional, normally empty. Defaults to the repository of this workflow
         type: string
-        default: skornehl/talkslot
+        default: ''
 
 concurrency:
   group: deploy # shared with "Deploy": never two switches at the same time
@@ -52,8 +53,9 @@ jobs:
       # the header of these commands, not in .git/config.
       - name: Fetch code
         env:
-          REPO: ${{ inputs.repository || github.repository }}
-          REF: ${{ inputs.ref || github.sha }}
+          # As a called workflow: the TalkSlot version named in the caller's `uses: …@<version>`
+          REPO: ${{ inputs.repository || job.workflow_repository || github.repository }}
+          REF: ${{ inputs.ref || job.workflow_sha || github.sha }}
           TOKEN: ${{ secrets.TALKSLOT_TOKEN || github.token }}
         run: |
           git init -q . && git remote add origin "https://github.com/$REPO.git"
