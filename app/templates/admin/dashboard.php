@@ -3,7 +3,7 @@
   <div class="alert alert-warning" role="status"><p><?= e($h) ?> <a href="<?= e(url('/admin/texts')) ?>">Zu den Texten</a></p></div>
 <?php endforeach; ?>
 <?php if ($operatorMissing && !App\Auth::isAdmin()): ?>
-  <div class="alert alert-warning" role="status"><p>Der Admin hat noch keine Angaben für Impressum und Datenschutz hinterlegt. Bis dahin sind keine Terminrunden öffentlich erreichbar.</p></div>
+  <div class="alert alert-warning" role="status"><p>Es sind noch keine Angaben für Impressum und Datenschutz hinterlegt (Aufgabe der Admins). Bis dahin sind keine Terminrunden öffentlich erreichbar.</p></div>
 <?php endif; ?>
 <?php if ($profileHints): ?>
   <div class="alert alert-warning" role="status">

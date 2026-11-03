@@ -33,7 +33,7 @@ Stand möchten.
 
 ## Ein erster Rundgang
 
-1. **Melden Sie sich** als `sabrina` an. Sie ist der Admin. Öffnen Sie *Mein Profil* und sehen Sie sich
+1. **Melden Sie sich** als `sabrina` an. Sie ist Admin. Öffnen Sie *Texte* und sehen Sie sich
    *Angaben für Impressum und Datenschutz* an: Ohne diese Angaben ist keine Terminrunde öffentlich
    (`dev/demo.sh` hat sie bereits ausgefüllt).
 2. **Öffnen Sie eine Terminrunde** auf dem Dashboard (*Alle Runden*). Sie sehen den Link für Eltern, den

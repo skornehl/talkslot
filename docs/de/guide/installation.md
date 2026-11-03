@@ -87,7 +87,7 @@ Aufräumen außerdem bei Seitenaufrufen, höchstens alle 15 Minuten.
 
 ## 5. Rechtliche Angaben ausfüllen
 
-Melden Sie sich als Admin an und öffnen Sie *Mein Profil*. Füllen Sie *Angaben für Impressum und
+Melden Sie sich als Admin an und öffnen Sie *Texte*. Füllen Sie *Angaben für Impressum und
 Datenschutz* aus (Name der Schule oder Person, Anschrift, E-Mail). Bis dahin ist **keine Terminrunde
 öffentlich**. Prüfen Sie danach *Texte*: Impressum und Datenschutzerklärung sind Vorlagen mit einigen
 Platzhaltern in eckigen Klammern wie `[ZUSTÄNDIGE LANDESDATENSCHUTZBEHÖRDE MIT ADRESSE]` (Speicherdauer der Server-Logs bei Ihrem Hoster, Aufsichtsbehörde), die Sie ersetzen

@@ -10,7 +10,7 @@ namespace App;
  */
 final class Migrations
 {
-    public const LATEST = 12;
+    public const LATEST = 13;
 
     /** Version => SQL statements */
     private const STEPS = [
@@ -69,7 +69,7 @@ final class Migrations
         ],
         // 8: translation in the browser instead of DeepL (privacy texts are replaced by the template sync in run())
         8 => [],
-        // 9: exactly one admin (the oldest active admin account stays, others become teachers);
+        // 9 (historical, before multiple admins): exactly one admin (the oldest active admin account stays, others become teachers);
         //    they are the controller for all rounds, legal notice/privacy policy name them (refreshPages)
         9 => [
             "UPDATE users SET role = 'teacher' WHERE role = 'admin' AND id <> (
@@ -91,6 +91,12 @@ final class Migrations
         // 12: sessions end on password change/reset (counter per account, remembered in the session)
         12 => [
             'ALTER TABLE users ADD COLUMN IF NOT EXISTS session_epoch INT UNSIGNED NOT NULL DEFAULT 0 AFTER failed_logins',
+        ],
+        // 13: several admins – the details for legal notice/privacy policy belong to the platform and move
+        // from the admin's profile into the settings (the column stays, see Operator::save())
+        13 => [
+            "INSERT IGNORE INTO settings (name, value) SELECT 'controller_contact', controller_contact FROM users
+               WHERE role = 'admin' AND is_active = 1 AND COALESCE(controller_contact, '') <> '' ORDER BY id LIMIT 1",
         ],
     ];
 

@@ -16,10 +16,12 @@ curl -s -o /dev/null -c "$J" -b "$J" -d "csrf=$T&username=$USER" --data-urlencod
 T=$(curl -s -b "$J" "$B/admin" | csrf)
 [ -n "$T" ] || { echo "login failed" >&2; exit 1; }
 
-# Admin profile: details for imprint and privacy policy (required before rounds go public)
+# Admin profile, and the school's details for imprint and privacy policy (required before rounds go public)
 curl -s -o /dev/null -b "$J" --data-urlencode "csrf=$T" --data-urlencode "display_name=Frau Sabrina Berger" \
-  --data-urlencode $'controller_contact=Gesamtschule am See\nSabrina Berger\nSeeweg 12\n12345 Seestadt\nE-Mail: sekretariat@example.org' \
   -d "email=lehrer@example.org&summary_evening=1&summary_deadline=1" "$B/admin/profile"
+curl -s -o /dev/null -b "$J" --data-urlencode "csrf=$T" \
+  --data-urlencode $'controller_contact=Gesamtschule am See\nVertreten durch die Schulleitung\nSeeweg 12\n12345 Seestadt\nE-Mail: sekretariat@example.org' \
+  "$B/admin/texts/operator"
 
 round() { # round <title> <description> <active 0/1> <minutes> <start> <end> <day offsets…>
   local title=$1 desc=$2 active=$3 minutes=$4 start=$5 end=$6 days='' d

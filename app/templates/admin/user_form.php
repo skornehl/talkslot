@@ -22,11 +22,23 @@
   </div>
   <?php endif; ?>
   <?php if (!$isSelf): ?>
-  <p class="small">Rolle: <strong>Lehrkraft</strong> – verwaltet ihre eigenen Terminrunden. Es gibt genau ein Admin-Konto (Ihres).</p>
+  <fieldset class="field">
+    <legend>Rolle</legend>
+    <div class="check">
+      <input type="radio" id="role_teacher" name="role" value="teacher"<?= ($data['role'] ?? 'teacher') !== 'admin' ? ' checked' : '' ?>>
+      <label for="role_teacher">Lehrkraft – verwaltet ihre eigenen Terminrunden</label>
+    </div>
+    <div class="check">
+      <input type="radio" id="role_admin" name="role" value="admin"<?= ($data['role'] ?? '') === 'admin' ? ' checked' : '' ?>>
+      <label for="role_admin">Admin – sieht und bearbeitet alle Runden, legt Runden für Lehrkräfte an, verwaltet Benutzer sowie Impressum und Datenschutz</label>
+    </div>
+  </fieldset>
   <div class="check">
     <input type="checkbox" id="is_active" name="is_active" value="1"<?= !empty($data['is_active']) ? ' checked' : '' ?>>
     <label for="is_active">Konto aktiv (deaktiviert: kein Login, Runden öffentlich nicht erreichbar)</label>
   </div>
+  <?php else: ?>
+  <p class="small">Rolle: <strong><?= ($user['role'] ?? '') === 'admin' ? 'Admin' : 'Lehrkraft' ?></strong> (die eigene Rolle kann nur ein anderer Admin ändern).</p>
   <?php endif; ?>
   <?php if (!$user): ?>
     <p class="hint">Beim Speichern erhält die Person eine Einladung per E-Mail mit einem Link, über den sie ihr Passwort selbst festlegt (einmalig nutzbar, <?= (int) App\AccountLinks::validHours() ?> Stunden gültig). Danach kann sie ihre Terminrunden selbst verwalten; Sie können Runden auch für sie anlegen. Kann die Mail nicht versendet werden, wird der Link einmalig angezeigt.</p>

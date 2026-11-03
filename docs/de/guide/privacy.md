@@ -13,7 +13,7 @@ TDDDG. Diese Seite erläutert die Designentscheidungen; sie ist keine Rechtsbera
 | Name und optionale E-Mail-Adresse einer Buchung | Datenbank | ab 0:00 Uhr am Tag nach dem Termin, bei einer Absage sofort |
 | Hash des persönlichen Änderungslinks | Datenbank | mit der Buchung |
 | Gekürzte, per HMAC gehashte IP-Adressen | Datenbank (Rate Limiting) | spätestens nach 24 Stunden |
-| Konten der Lehrkräfte | Datenbank | durch den Admin; inaktive Konten ohne Runden 15 Monate nach der letzten Anmeldung |
+| Konten der Lehrkräfte | Datenbank | durch einen Admin; inaktive Konten ohne Runden 15 Monate nach der letzten Anmeldung |
 | Zusammenfassungen per E-Mail an Lehrkräfte (Uhrzeit und Name, keine E-Mail-Adressen) | Postfach der Lehrkraft | die Datenschutzerklärung sagt höchstens 15 Monate zu |
 
 TalkSlot führt **keine** eigenen Zugriffsprotokolle. Für die Logs des Webservers ist der Hoster
@@ -47,7 +47,7 @@ Datenschutzerklärung.
 ## Vorlagen für die Rechtstexte
 
 Vorlagen für Impressum und Datenschutzerklärung auf Deutsch und Englisch werden bei der Installation in
-die Datenbank kopiert und können vom Admin unter *Texte* bearbeitet werden. Die Vorlage für die
+die Datenbank kopiert und können von Admins unter *Texte* bearbeitet werden. Die Vorlage für die
 Datenschutzerklärung deckt die nach Art. 13 DSGVO erforderlichen Informationen ab: Verantwortlicher,
 Zwecke, Rechtsgrundlagen einschließlich berechtigter Interessen, Empfänger, Drittländer, Speicherdauer,
 Betroffenenrechte einschließlich des Widerspruchsrechts, Beschwerderecht bei einer Aufsichtsbehörde, ob
@@ -55,16 +55,16 @@ die Bereitstellung der Daten erforderlich ist, sowie automatisierte Entscheidung
 
 Vor dem Start:
 
-1. **Verantwortlicher:** Füllen Sie *Mein Profil → Angaben für Impressum und Datenschutz* aus. Diese
+1. **Verantwortlicher:** Füllen Sie *Texte → Angaben für Impressum und Datenschutz* aus. Diese
    Angaben ersetzen `[[VERANTWORTLICHE]]`; ohne sie ist keine Runde öffentlich.
 2. **Hoster:** Setzen Sie `hosting` in der Konfiguration (bzw. `HOSTING_DE`/`HOSTING_EN` beim Deployment).
    Der Wert ersetzt `[[HOSTER]]`. Ist er nicht gesetzt, zeigt die Seite einen sichtbaren Platzhalter, und
-   der Admin erhält einen Hinweis.
+   Admins erhalten einen Hinweis.
 3. **Verbleibende Platzhalter** in eckigen Klammern: Speicherdauer der Webserver-Logs (fragen Sie Ihren
    Hoster) und die zuständige Datenschutz-Aufsichtsbehörde.
 4. **Auftragsverarbeitungsvertrag** (AVV) mit Ihrem Hoster.
-5. Wenn Lehrkräfte die Plattform nutzen: Der Admin ist für alle Runden verantwortlich, die Lehrkräfte
-   handeln in seinem Auftrag und nach seinen Weisungen.
+5. Wenn Lehrkräfte die Plattform nutzen: Der Betreiber (meist die Schule) ist für alle Runden
+   verantwortlich, die Lehrkräfte handeln in seinem Auftrag und nach seinen Weisungen.
 
 Lassen Sie die Texte von jemandem prüfen, der Ihre Situation kennt; die Vorlagen ersetzen keine
 Rechtsberatung.

@@ -71,6 +71,7 @@ final class AdminController
         ['POST', '#^/users/(\d+)/reset-password$#', 'userResetPassword'],
         ['POST', '#^/users/(\d+)/delete$#', 'userDelete'],
         ['GET', '#^/texts$#', 'texts'],
+        ['POST', '#^/texts/operator$#', 'operatorSave'],
         ['GET', '#^/page/(imprint|privacy)/([a-z]{2})$#', 'pageForm'],
         ['POST', '#^/page/(imprint|privacy)/([a-z]{2})$#', 'pageSave'],
     ];
@@ -180,7 +181,7 @@ final class AdminController
 
     private function dashboard(): void
     {
-        $all = Auth::isAdmin(); // the admin sees all rounds, teachers only their own
+        $all = Auth::isAdmin(); // admins see all rounds, teachers only their own
         $rounds = Db::all(
             'SELECT r.*, u.display_name AS owner_name, u.is_active AS owner_active,
                     (SELECT MIN(d.day_date) FROM round_days d WHERE d.round_id = r.id) AS first_day,
@@ -197,7 +198,7 @@ final class AdminController
             'showOwner' => $all,
             'profileHints' => $this->profileHints(),
             'operatorMissing' => !Operator::ready(),
-            'legalHints' => Auth::isAdmin() ? self::legalHints() : [],
+            'legalHints' => Auth::isAdmin() ? array_merge(self::operatorHints(), self::legalHints()) : [],
         ]);
     }
 
@@ -1006,15 +1007,15 @@ final class AdminController
 
     /**
      * Why a round of this teacher may not be activated (yet), or null.
-     * Required: the teacher's display name (parents see it) and the admin's details for
-     * legal notice and privacy policy (the admin is the controller for all rounds).
+     * Required: the teacher's display name (parents see it) and the operator's details for
+     * legal notice and privacy policy (the operator is the controller for all rounds).
      */
     private function publishBlocker(array $owner): ?string
     {
         if (!Operator::ready()) {
             return Auth::isAdmin()
-                ? 'Bevor Runden aktiviert werden können, tragen Sie bitte unter „Mein Profil“ die Angaben für Impressum und Datenschutz ein (als Admin sind Sie für alle Runden datenschutzrechtlich verantwortlich).'
-                : 'Runden können erst aktiviert werden, wenn der Admin die Angaben für Impressum und Datenschutz hinterlegt hat.';
+                ? 'Bevor Runden aktiviert werden können, tragen Sie bitte unter „Texte“ die Angaben für Impressum und Datenschutz ein (die Schule bzw. der Betreiber ist für alle Runden datenschutzrechtlich verantwortlich).'
+                : 'Runden können erst aktiviert werden, wenn ein Admin die Angaben für Impressum und Datenschutz hinterlegt hat.';
         }
         if (!$owner['is_active']) {
             return 'Das Konto dieser Lehrkraft ist deaktiviert – die Runde wäre öffentlich nicht erreichbar. Bitte die Runde einer aktiven Lehrkraft zuordnen oder das Konto wieder aktivieren.';
@@ -1049,11 +1050,6 @@ final class AdminController
         if (trim((string) $u['display_name']) === '') {
             $hints[] = 'Anzeigename fehlt – er wird Eltern auf der Buchungsseite angezeigt.';
         }
-        if (Auth::isAdmin() && !Operator::ready()) {
-            $hints[] = 'Angaben für Impressum und Datenschutz fehlen – ohne sie ist keine Runde öffentlich erreichbar.';
-        } elseif (Auth::isAdmin() && !str_contains(Operator::contact(), '@')) {
-            $hints[] = 'In den Angaben für Impressum und Datenschutz fehlt eine E-Mail-Adresse (für das Impressum vorgeschrieben).';
-        }
         if ((string) $u['email'] === '' && ($u['summary_evening'] || $u['summary_deadline'])) {
             $hints[] = 'Keine E-Mail-Adresse hinterlegt – Zusammenfassungen können nicht versendet werden.';
         }
@@ -1075,7 +1071,6 @@ final class AdminController
         $data = [
             'display_name' => mb_substr(Http::post('display_name'), 0, 200),
             'email' => Http::post('email'),
-            'controller_contact' => mb_substr(str_replace("\r\n", "\n", Http::post('controller_contact')), 0, 2000),
             'summary_evening' => Http::post('summary_evening') === '1' ? 1 : 0,
             'summary_deadline' => Http::post('summary_deadline') === '1' ? 1 : 0,
         ];
@@ -1103,17 +1098,13 @@ final class AdminController
                 'Hallo ' . (Auth::user()['display_name'] ?: Auth::user()['username']) . ',', '',
                 'für Ihr Konto bei ' . app_name() . ' (' . abs_url('/admin', ['lang' => null]) . ') wurde die E-Mail-Adresse geändert'
                     . ($data['email'] !== '' ? ' auf ' . $data['email'] : ' (keine Adresse mehr hinterlegt)') . '.',
-                'Waren Sie das nicht, wenden Sie sich bitte umgehend an den Admin.',
+                'Waren Sie das nicht, wenden Sie sich bitte umgehend an einen Admin.',
             ]));
         }
         Db::run(
             'UPDATE users SET display_name = ?, email = ?, summary_evening = ?, summary_deadline = ? WHERE id = ?',
             [$data['display_name'], $data['email'] !== '' ? $data['email'] : null, $data['summary_evening'], $data['summary_deadline'], Auth::id()]
         );
-        if (Auth::isAdmin()) {
-            Db::run('UPDATE users SET controller_contact = ? WHERE id = ?', [$data['controller_contact'] !== '' ? $data['controller_contact'] : null, Auth::id()]);
-            Operator::forget();
-        }
         $this->flash('success', 'Profil gespeichert.');
         Http::redirect('/admin/profile');
     }
@@ -1185,7 +1176,8 @@ final class AdminController
         $data = [
             'display_name' => mb_substr(Http::post('display_name'), 0, 200),
             'email' => mb_strtolower(Http::post('email')),
-            'role' => $user ? $user['role'] : 'teacher', // exactly one admin: roles cannot be changed
+            // Admins can make others admins and take the role away again, but not change their own
+            'role' => $isSelf ? $user['role'] : (Http::post('role') === 'admin' ? 'admin' : 'teacher'),
             'is_active' => $user ? (Http::post('is_active') === '1' ? 1 : 0) : 1,
         ];
         // New accounts: username = email address. Freely changeable when editing.
@@ -1208,7 +1200,9 @@ final class AdminController
         } elseif (Db::value('SELECT id FROM users WHERE username = ? AND id <> ?', [$data['username'], $id ?? 0]) !== null) {
             $errors[] = 'Für diese E-Mail-Adresse bzw. diesen Benutzernamen gibt es bereits ein Konto.';
         }
-        if ($user && $user['role'] === 'admin' && ($data['role'] !== 'admin' || !$data['is_active']) && $this->activeAdminCount() <= 1) {
+        // At least one active admin must remain (counting the others; this account only if it stays an active admin)
+        $otherActiveAdmins = $this->activeAdminCount() - ($user && $user['role'] === 'admin' && $user['is_active'] ? 1 : 0);
+        if ($user && $user['role'] === 'admin' && ($data['role'] !== 'admin' || !$data['is_active']) && $otherActiveAdmins < 1) {
             $errors[] = 'Es muss mindestens ein aktives Admin-Konto geben.';
         }
         if ($errors) {
@@ -1424,12 +1418,12 @@ final class AdminController
         );
         if ($old) {
             $hints[] = 'Die Datenschutzerklärung (' . $list($old) . ') beschreibt noch das alte Modell (Lehrkräfte verantwortlich, Betreiberin als Auftragsverarbeiterin). '
-                . 'Verantwortlich sind jetzt Sie als Admin – bitte Abschnitt 1, 6 und 9 an die Vorlage anpassen.';
+                . 'Verantwortlich ist jetzt der Betreiber (die Angaben für Impressum und Datenschutz) – bitte Abschnitt 1, 6 und 9 an die Vorlage anpassen.';
         }
         $noPlaceholder = Db::all("SELECT lang FROM pages WHERE page_key IN ('imprint', 'privacy') AND content NOT LIKE '%[[VERANTWORTLICHE]]%' GROUP BY lang ORDER BY lang");
         if ($noPlaceholder) {
             $hints[] = 'Impressum bzw. Datenschutzerklärung (' . $list($noPlaceholder) . ') enthalten den Platzhalter [[VERANTWORTLICHE]] nicht – '
-                . 'Ihre Angaben aus dem Profil erscheinen dort nicht automatisch.';
+                . 'die Angaben für Impressum und Datenschutz erscheinen dort nicht automatisch.';
         }
         $hosting = array_values(array_filter(
             array_column(Db::all("SELECT DISTINCT lang FROM pages WHERE page_key = 'privacy' AND content LIKE '%[[HOSTER]]%' ORDER BY lang"), 'lang'),
@@ -1442,9 +1436,35 @@ final class AdminController
         return $hints;
     }
 
+    /** What is missing in the operator's details (shown to admins on the dashboard and the texts page). */
+    private static function operatorHints(): array
+    {
+        if (!Operator::ready()) {
+            return ['Die Angaben für Impressum und Datenschutz fehlen – ohne sie ist keine Runde öffentlich erreichbar.'];
+        }
+        if (!str_contains(Operator::contact(), '@')) {
+            return ['In den Angaben für Impressum und Datenschutz fehlt eine E-Mail-Adresse (für das Impressum vorgeschrieben).'];
+        }
+        return [];
+    }
+
+    private function operatorSave(): void
+    {
+        $contact = Http::post('controller_contact');
+        if (mb_strlen($contact) > 2000) {
+            $this->flash('error', 'Die Angaben sind zu lang (höchstens 2000 Zeichen).');
+            Http::redirect('/admin/texts');
+        }
+        Operator::save($contact);
+        $this->flash('success', 'Angaben für Impressum und Datenschutz gespeichert.');
+        Http::redirect('/admin/texts');
+    }
+
     private function texts(): void
     {
         $this->render('admin/texts', [
+            'operatorContact' => Operator::contact(),
+            'operatorHints' => self::operatorHints(),
             'legalHints' => self::legalHints(),
             'title' => 'Impressum & Datenschutz',
             'languages' => I18n::languages(),
