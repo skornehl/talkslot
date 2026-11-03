@@ -7,7 +7,7 @@ namespace App;
  * Operator of the platform (usually the school), represented by the admin accounts.
  *
  * Under data protection law the operator is the controller for all rounds. Its details
- * ("Angaben für Impressum und Datenschutz", maintained by any admin under "Impressum & Datenschutz")
+ * ("Angaben für Impressum und Datenschutz", maintained by any admin under "Texte")
  * replace the placeholder [[VERANTWORTLICHE]] in the legal notice and privacy policy.
  * Without these details no rounds are publicly reachable.
  */

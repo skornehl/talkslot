@@ -66,6 +66,8 @@ check "profile saved" '! curl -s -b "$J" "$B/admin" | grep -q "Bitte ergänzen S
 curl -s -o /dev/null -b "$J" --data-urlencode "csrf=$T" \
   --data-urlencode $'controller_contact=Sabrina Test\r\nTeststraße 1\n12345 Teststadt\nE-Mail: sabrina@example.org' "$B/admin/texts/operator"
 check "details for legal notice/privacy policy saved on their own page, no notice left" 'curl -s -b "$J" "$B/admin/texts" | grep -q "Teststraße 1" && ! curl -s -b "$J" "$B/admin" | grep -q "Angaben für Impressum und Datenschutz fehlen"'
+LONG=$(curl -s -L -b "$J" --data-urlencode "csrf=$T" --data-urlencode "controller_contact=$(printf 'x%.0s' $(seq 2001))" "$B/admin/texts/operator")
+check "details longer than 2000 characters rejected, stored details unchanged" 'echo "$LONG" | grep -q "Die Angaben sind zu lang" && curl -s -b "$J" "$B/admin/texts" | grep -q "Teststraße 1"'
 
 TOMORROW=$(date -d '+3 day' +%F)
 loc=$(curl -s -o /dev/null -w '%{redirect_url}' -b "$J" --data-urlencode "csrf=$T" --data-urlencode "title=Elternsprechtag Größe Übung" \
