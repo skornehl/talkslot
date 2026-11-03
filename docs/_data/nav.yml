@@ -1,34 +1,23 @@
-- section: Introduction
+# Sidebar of the documentation. `path` is relative to the language root:
+# English pages live under /guide/, German pages under /de/guide/.
+- section: { en: Introduction, de: Einführung }
   pages:
-    - title: Overview
-      url: /guide/
-    - title: Getting started
-      url: /guide/getting-started/
-- section: Running TalkSlot
+    - { path: /guide/, en: Overview, de: Überblick }
+    - { path: /guide/getting-started/, en: Getting started, de: Schnellstart }
+- section: { en: Running TalkSlot, de: TalkSlot betreiben }
   pages:
-    - title: Installation
-      url: /guide/installation/
-    - title: Configuration
-      url: /guide/configuration/
-    - title: Deployment with GitHub Actions
-      url: /guide/deployment/
-    - title: Operations
-      url: /guide/operations/
-- section: Using TalkSlot
+    - { path: /guide/installation/, en: Installation, de: Installation }
+    - { path: /guide/configuration/, en: Configuration, de: Konfiguration }
+    - { path: /guide/deployment/, en: Deployment with GitHub Actions, de: Deployment mit GitHub Actions }
+    - { path: /guide/operations/, en: Operations, de: Betrieb }
+- section: { en: Using TalkSlot, de: TalkSlot nutzen }
   pages:
-    - title: Admin guide
-      url: /guide/admin/
-    - title: Teacher guide
-      url: /guide/teachers/
-    - title: For parents
-      url: /guide/parents/
-- section: Background
+    - { path: /guide/admin/, en: Admin guide, de: Anleitung für Admins }
+    - { path: /guide/teachers/, en: Teacher guide, de: Anleitung für Lehrkräfte }
+    - { path: /guide/parents/, en: For parents, de: Für Eltern }
+- section: { en: Background, de: Hintergrund }
   pages:
-    - title: Privacy and legal
-      url: /guide/privacy/
-    - title: Security
-      url: /guide/security/
-    - title: Development
-      url: /guide/development/
-    - title: FAQ
-      url: /guide/faq/
+    - { path: /guide/privacy/, en: Privacy and legal, de: Datenschutz und Recht }
+    - { path: /guide/security/, en: Security, de: Sicherheit }
+    - { path: /guide/development/, en: Development, de: Entwicklung }
+    - { path: /guide/faq/, en: FAQ, de: FAQ }

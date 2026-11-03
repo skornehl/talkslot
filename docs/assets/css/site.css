@@ -54,6 +54,11 @@ pre code { background: none; padding: 0; font-size: .86rem; }
 .topbar nav { display: flex; gap: 1.2rem; }
 .topbar nav a { color: var(--muted); text-decoration: none; font-weight: 550; }
 .topbar nav a:hover, .topbar nav a[aria-current] { color: var(--text); }
+.topbar nav { align-items: center; }
+.lang-switch { display: inline-flex; align-items: center; gap: .35rem; padding: .2rem .65rem; border: 1px solid var(--border); border-radius: 999px; font-size: .92em; }
+.lang-switch svg { width: 1.05em; height: 1.05em; fill: none; stroke: currentColor; stroke-width: 1.6; }
+.lang-switch:hover { border-color: var(--muted); }
+.lang-short { display: none; }
 
 /* Landing page */
 .hero { padding: 72px 0 40px; }
@@ -142,7 +147,14 @@ section.band.alt { background: var(--surface); border-block: 1px solid var(--bor
 }
 @media (max-width: 520px) {
   body { font-size: 16px; }
-  .topbar nav { gap: 1rem; }
+  .topbar nav { gap: .9rem; }
   .topbar nav .nav-optional { display: none; }
+  .brand { font-size: 1.05rem; }
+  .lang-switch { padding: .2rem .55rem; }
+  .lang-long { display: none; }
+  .lang-short { display: inline; }
   .duo { grid-template-columns: 1fr; }
+}
+@media (max-width: 400px) {
+  .topbar nav .nav-github { display: none; }
 }

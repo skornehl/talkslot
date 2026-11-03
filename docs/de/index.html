@@ -1,0 +1,148 @@
+---
+layout: default
+description: TalkSlot ist ein freies, datenschutzfreundliches Buchungstool für Elternsprechtage. Eltern buchen ohne Konto, Lehrkräfte verwalten ihre Terminrunden, und es läuft auf günstigem Webspace.
+---
+<section class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <p class="eyebrow">Freie Software · AGPL v3</p>
+      <h1>Elternsprechtag, in einer Minute gebucht.</h1>
+      <p class="sub">Lehrkräfte veröffentlichen ihre Termine, Eltern wählen einen aus. Kein Konto, keine App, keine Cookies. Gemacht für Schulen, denen Datenschutz wichtig ist, und einfach genug für ganz normalen Webspace.</p>
+      <div class="cta">
+        <a class="btn primary" href="{{ '/de/guide/getting-started/' | relative_url }}">Loslegen</a>
+        <a class="btn ghost" href="{{ '/de/guide/' | relative_url }}">Zur Dokumentation</a>
+      </div>
+      <ul class="facts">
+        <li>Kein Konto für Eltern</li>
+        <li>Keine Cookies auf öffentlichen Seiten</li>
+        <li>6 Sprachen für Eltern</li>
+        <li>PHP + MariaDB, ohne Framework</li>
+      </ul>
+    </div>
+    <div class="hero-shots">
+      <img class="shot desktop" src="{{ '/assets/img/parent-round.webp' | relative_url }}" alt="Buchungsseite einer Terminrunde: freie Termine nach Tagen gruppiert, darunter das Buchungsformular" width="1920" height="2100" loading="eager">
+      <img class="shot phone" src="{{ '/assets/img/parent-round-mobile-dark.webp' | relative_url }}" alt="Dieselbe Buchungsseite auf dem Smartphone im dunklen Modus, auf Englisch" width="1170" height="2532">
+    </div>
+  </div>
+</section>
+
+<section class="band alt">
+  <div class="wrap">
+    <h2>Ein Werkzeug, vier zufriedene Gruppen</h2>
+    <p class="intro">TalkSlot ersetzt Papierlisten, E-Mail-Pingpong und Tabellen. Alle bekommen genau das, was sie brauchen, und nicht mehr.</p>
+    <div class="cards">
+      <div class="card">
+        <div class="icon" aria-hidden="true">{% include icon-parents.svg %}</div>
+        <h3>Eltern</h3>
+        <ul>
+          <li>Link öffnen oder kurzen Rundencode eingeben</li>
+          <li>Freien Termin wählen, Namen eintragen: fertig</li>
+          <li>Verschieben oder absagen über den persönlichen Link</li>
+          <li>Bestätigung per E-Mail mit Kalenderdatei (optional)</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="icon" aria-hidden="true">{% include icon-teachers.svg %}</div>
+        <h3>Lehrkräfte</h3>
+        <ul>
+          <li>Terminrunden mit mehreren Tagen, Pausen und Live-Vorschau</li>
+          <li>Sehen, wer wann gebucht hat, Buchungen verschieben oder ergänzen</li>
+          <li>Fertiger Einladungstext, Drucklisten</li>
+          <li>Zusammenfassung per E-Mail am Vorabend</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="icon" aria-hidden="true">{% include icon-schools.svg %}</div>
+        <h3>Schulen</h3>
+        <ul>
+          <li>Ein Admin lädt die Lehrkräfte ein</li>
+          <li>Vorlagen für Impressum und Datenschutzerklärung (DSGVO)</li>
+          <li>Buchungen werden am Tag nach dem Gespräch gelöscht</li>
+          <li>Kein Tracking, keine externen Dienste</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="icon" aria-hidden="true">{% include icon-operators.svg %}</div>
+        <h3>Betreiber</h3>
+        <ul>
+          <li>Läuft auf Shared Hosting mit PHP 8.3+</li>
+          <li>Deployment ohne Ausfallzeit per GitHub Actions</li>
+          <li>Rollback mit einem Klick, automatische Migrationen</li>
+          <li>Fehlermeldungen per E-Mail, ohne personenbezogene Daten</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="band">
+  <div class="wrap">
+    <div class="feature">
+      <div class="text">
+        <h3>Buchen ohne Hürden</h3>
+        <p>Eltern sehen nur freie Termine. Sie geben einen Namen ein (und eine E-Mail-Adresse, wenn sie eine Bestätigung möchten) und erhalten einen persönlichen Link, mit dem sie den Termin später verschieben oder absagen können.</p>
+        <ul>
+          <li>Lesbarer Link pro Terminrunde oder ein 8-stelliger Rundencode für Einladungen auf Papier</li>
+          <li>Auf Wunsch der Lehrkraft eine Buchung pro Person und Runde oder pro Tag</li>
+          <li>Optionaler Schutz „Nur mit Rundencode“ gegen Fremde</li>
+          <li>Kalenderdatei, die sich aktualisiert, wenn der Termin verschoben wird</li>
+        </ul>
+      </div>
+      <img class="shot" src="{{ '/assets/img/booking-confirmed.webp' | relative_url }}" alt="Bestätigungsseite nach der Buchung mit dem persönlichen Link zum Ändern oder Absagen des Termins" width="1920" height="1230" loading="lazy">
+    </div>
+    <div class="feature reverse">
+      <div class="text">
+        <h3>Alles für die Lehrkraft auf einer Seite</h3>
+        <p>Jede Terminrunde zeigt Link, Rundencode und Einladungstext, darunter jeden Tag mit seinen Pausen und allen Buchungen. Termine lassen sich sperren, Buchungen bearbeiten, verschieben oder von Hand eintragen.</p>
+        <ul>
+          <li>Geänderte Zeiten löschen nie eine Buchung; Konflikte werden markiert</li>
+          <li>Druckansicht pro Runde oder Tag, auch als PDF</li>
+          <li>Titel und Beschreibungen werden im Browser der Lehrkraft übersetzt, ohne Text irgendwohin zu senden</li>
+        </ul>
+      </div>
+      <img class="shot" src="{{ '/assets/img/admin-round-top.webp' | relative_url }}" alt="Verwaltungsseite einer Terminrunde mit Link, Rundencode, Aktionen und den Buchungen des ersten Tages" width="1920" height="1650" loading="lazy">
+    </div>
+    <div class="feature">
+      <div class="text">
+        <h3>Hell und dunkel, auf jedem Gerät</h3>
+        <p>TalkSlot folgt der Einstellung des Geräts und lässt sich in der Fußzeile umschalten. Die Seiten sind barrierearm, per Tastatur bedienbar und funktionieren gut auf kleinen Bildschirmen.</p>
+      </div>
+      <div class="duo">
+        <img class="shot" src="{{ '/assets/img/admin-dashboard.webp' | relative_url }}" alt="Übersicht aller Terminrunden im Verwaltungsbereich, heller Modus" width="1920" height="1200" loading="lazy">
+        <img class="shot" src="{{ '/assets/img/admin-dashboard-dark.webp' | relative_url }}" alt="Übersicht aller Terminrunden im Verwaltungsbereich, dunkler Modus" width="1920" height="1200" loading="lazy">
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="band alt">
+  <div class="wrap">
+    <h2>Datenschutz ist Standard, keine Option</h2>
+    <p class="intro">TalkSlot wurde für deutsche Schulen gebaut und hält sich deshalb eng an DSGVO und TDDDG. Dieselben Entscheidungen schützen Eltern überall.</p>
+    <div class="cards">
+      <div class="card"><h3>Datensparsamkeit</h3><p>Ein frei wählbarer Name und eine optionale E-Mail-Adresse. Mehr speichert TalkSlot über Eltern nicht.</p></div>
+      <div class="card"><h3>Keine Cookies, kein Banner</h3><p>Öffentliche Seiten setzen keine Cookies und laden nichts von Dritten. Sprachwahl und CSRF-Schutz funktionieren ohne.</p></div>
+      <div class="card"><h3>Automatische Löschung</h3><p>Buchungen werden ab Mitternacht nach dem Termin gelöscht, Daten zur Missbrauchsbegrenzung nach 24 Stunden, abgeschlossene Runden einen Tag nach ihrem letzten Termin.</p></div>
+      <div class="card"><h3>Fertige Rechtstexte</h3><p>Vorlagen für Impressum und Datenschutzerklärung auf Deutsch und Englisch, automatisch mit den Angaben der Schule befüllt.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="band">
+  <div class="wrap quick">
+    <div>
+      <h2>In zwei Minuten ausprobieren</h2>
+      <p class="intro">Das Repository enthält eine Docker-Umgebung mit Datenbank und Mail-Fänger sowie Demodaten.</p>
+      <a class="btn primary" href="{{ '/de/guide/getting-started/' | relative_url }}">Zum Schnellstart</a>
+    </div>
+    <div>
+<pre><code>git clone https://github.com/skornehl/talkslot.git
+cd talkslot
+cp dev/config.dev.php config/config.php
+docker compose -f dev/compose.yml up -d --build
+dev/reset.sh &amp;&amp; dev/demo.sh
+# http://localhost:8080/admin öffnen
+# Benutzer sabrina, Passwort Sehr-Sicheres-Dev-Pw1</code></pre>
+    </div>
+  </div>
+</section>

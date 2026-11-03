@@ -70,3 +70,7 @@ cd docs && jekyll serve --baseurl /talkslot
 ```
 
 Screenshots come from the local instance with demo data (`dev/reset.sh && dev/demo.sh`).
+
+The site is bilingual. English pages live in `docs/guide/`, German ones in `docs/de/guide/` under the same
+file names; the sidebar is in `docs/_data/nav.yml` and the interface strings in `docs/_data/i18n.yml`.
+When you change a page, please update the other language too.

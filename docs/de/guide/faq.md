@@ -1,0 +1,59 @@
+---
+title: FAQ
+---
+
+## Können Eltern ohne E-Mail-Adresse buchen?
+
+Ja. Die E-Mail-Adresse ist optional. Ohne sie erhalten Eltern ihren persönlichen Änderungslink nur auf
+der Bestätigungsseite und sollten ihn als Lesezeichen speichern.
+
+## Kann ich TalkSlot auch für etwas anderes als Elternsprechtage nutzen?
+
+Die Begriffe sind auf Schulen zugeschnitten („Lehrkraft“, „Eltern“), aber es passt überall, wo eine Person
+Zeitfenster anbietet und andere eines davon buchen: Sprechstunden, Anmeldegespräche an Schulen,
+Praktikumsgespräche.
+
+## Braucht es einen Cronjob?
+
+Empfohlen ist er, damit Buchungen rechtzeitig gelöscht und Zusammenfassungen verschickt werden. Ohne
+Shell-Zugang nutzen Sie den Web-Cron (der mitgelieferte GitHub-Workflow ruft ihn stündlich auf). Als
+Rückfallebene läuft das Aufräumen außerdem bei Seitenaufrufen, höchstens alle 15 Minuten.
+
+## Warum ist der Adminbereich nur auf Deutsch?
+
+TalkSlot ist an einer deutschen Schule entstanden. Elternseiten und E-Mails sind in sechs Sprachen
+übersetzt, weil Eltern ganz unterschiedlicher Herkunft sind. Eine Übersetzung des Adminbereichs ist als Beitrag
+willkommen.
+
+## Wie füge ich eine Sprache für Eltern hinzu?
+
+Kopieren Sie `app/lang/en.php`, übersetzen Sie die Datei, legen Sie eine Flagge unter
+`public/assets/flags/` ab und tragen Sie den Code in `languages` ein.
+Siehe [Konfiguration]({{ '/de/guide/configuration/' | relative_url }}#languages).
+
+## Funktioniert es mit MySQL, PostgreSQL oder SQLite?
+
+Nein. TalkSlot braucht MariaDB 10.6 oder neuer; die Migrationen verwenden MariaDB-Syntax.
+
+## Funktioniert es mit nginx?
+
+Die mitgelieferten Regeln sind für Apache (`public/.htaccess`). Mit nginx brauchen Sie gleichwertige
+Regeln: Alle Anfragen, die keine existierenden Dateien sind, an `index.php` leiten, versteckte Dateien
+und `app_root.php` sperren und die Sicherheits-Header senden.
+
+## Warum so viele Tests für eine so kleine Anwendung?
+
+Weil sie personenbezogene Daten von Familien verarbeitet und dort läuft, wo man nicht einfach debuggen
+kann: auf Shared Hosting, oft von Ehrenamtlichen betreut. Jeder Fehler, den ein Test findet, ist einer,
+den eine Schule nicht am Abend des Elternsprechtags findet.
+
+## Gibt es eine gehostete Version?
+
+Nein. TalkSlot ist dafür gedacht, von der Schule oder ihrem IT-Dienstleister betrieben zu werden, damit
+die Daten unter deren Kontrolle bleiben.
+
+## Was bedeutet die Lizenz für mich?
+
+TalkSlot steht unter der [GNU AGPL v3](https://github.com/skornehl/talkslot/blob/main/LICENSE). Sie
+dürfen es frei nutzen, ändern und hosten. Wenn Sie eine **veränderte** Version für andere betreiben,
+müssen Sie ihnen den Quellcode Ihrer Änderungen anbieten.

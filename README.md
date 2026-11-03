@@ -5,7 +5,7 @@
 Teachers publish time slots, parents book one, without an account, an app or cookies. Built for German
 schools (GDPR/DSGVO, TDDDG) and multilingual families.
 
-**📖 Documentation and screenshots: <https://skornehl.github.io/talkslot/>**
+**📖 Documentation and screenshots: <https://skornehl.github.io/talkslot/>** (English and [German](https://skornehl.github.io/talkslot/de/))
 
 - **For parents:** open a link or enter a short round code, pick a free slot, done. Change or cancel via a
   personal link; optional confirmation mail with a calendar file. Parent pages in German, English,

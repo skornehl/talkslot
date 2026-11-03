@@ -2,6 +2,7 @@
 layout: default
 title: Page not found
 permalink: /404.html
+single_language: true
 ---
 <section class="hero">
   <div class="wrap" style="max-width: 640px; text-align: center">
@@ -11,6 +12,14 @@ permalink: /404.html
     <div class="cta" style="justify-content: center">
       <a class="btn primary" href="{{ '/' | relative_url }}">Home</a>
       <a class="btn ghost" href="{{ '/guide/' | relative_url }}">Documentation</a>
+    </div>
+    <div lang="de" style="margin-top: 3rem; padding-top: 2rem; border-top: 1px solid var(--border)">
+      <h2>Dieser Termin ist nicht verfügbar.</h2>
+      <p class="sub" style="margin-inline: auto">Die gesuchte Seite gibt es nicht oder sie ist umgezogen.</p>
+      <div class="cta" style="justify-content: center">
+        <a class="btn primary" href="{{ '/de/' | relative_url }}">Startseite</a>
+        <a class="btn ghost" href="{{ '/de/guide/' | relative_url }}">Dokumentation</a>
+      </div>
     </div>
   </div>
 </section>

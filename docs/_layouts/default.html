@@ -1,5 +1,15 @@
+{%- assign lang = page.lang | default: 'en' -%}
+{%- assign t = site.data.i18n[lang] -%}
+{%- if lang == 'de' -%}
+  {%- assign url_en = page.url | remove_first: '/de' -%}
+  {%- assign url_de = page.url -%}
+{%- else -%}
+  {%- assign url_en = page.url -%}
+  {%- assign url_de = page.url | prepend: '/de' -%}
+{%- endif -%}
+{%- if lang == 'de' %}{% assign alt_url = url_en %}{% else %}{% assign alt_url = url_de %}{% endif -%}
 <!doctype html>
-<html lang="en">
+<html lang="{{ lang }}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -9,18 +19,27 @@
 <meta property="og:title" content="{{ page.title | default: site.title | escape }}">
 <meta property="og:description" content="{{ page.description | default: site.description | escape }}">
 <meta property="og:image" content="{{ '/assets/img/parent-round.webp' | absolute_url }}">
+<meta property="og:locale" content="{% if lang == 'de' %}de_DE{% else %}en_US{% endif %}">
+{%- unless page.single_language %}
+<link rel="alternate" hreflang="en" href="{{ url_en | absolute_url }}">
+<link rel="alternate" hreflang="de" href="{{ url_de | absolute_url }}">
+<link rel="alternate" hreflang="x-default" href="{{ url_en | absolute_url }}">
+{%- endunless %}
 <link rel="icon" href="{{ '/assets/img/logo.svg' | relative_url }}" type="image/svg+xml">
 <link rel="stylesheet" href="{{ '/assets/css/site.css' | relative_url }}">
 </head>
 <body class="{{ page.body_class }}">
-<a class="skip" href="#main">Skip to content</a>
+<a class="skip" href="#main">{{ t.skip }}</a>
 <header class="topbar">
   <div class="wrap topbar-inner">
-    <a class="brand" href="{{ '/' | relative_url }}"><img src="{{ '/assets/img/logo.svg' | relative_url }}" alt="" width="30" height="30"> TalkSlot</a>
-    <nav aria-label="Main">
-      <a href="{{ '/guide/' | relative_url }}"{% if page.url contains '/guide/' %} aria-current="page"{% endif %}>Docs</a>
-      <a class="nav-optional" href="{{ '/guide/getting-started/' | relative_url }}">Get started</a>
-      <a href="https://github.com/{{ site.repository }}">GitHub</a>
+    <a class="brand" href="{{ t.root | append: '/' | relative_url }}"><img src="{{ '/assets/img/logo.svg' | relative_url }}" alt="" width="30" height="30"> TalkSlot</a>
+    <nav aria-label="{{ t.main_nav }}">
+      <a href="{{ t.root | append: '/guide/' | relative_url }}"{% if page.url contains '/guide/' %} aria-current="page"{% endif %}>{{ t.docs }}</a>
+      <a class="nav-optional" href="{{ t.root | append: '/guide/getting-started/' | relative_url }}">{{ t.get_started }}</a>
+      <a class="nav-github" href="https://github.com/{{ site.repository }}">GitHub</a>
+      {%- unless page.single_language %}
+      <a class="lang-switch" href="{{ alt_url | relative_url }}" hreflang="{{ t.switch_lang }}" lang="{{ t.switch_lang }}" title="{{ t.switch_title }}"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z"/></svg><span class="lang-long">{{ t.switch_label }}</span><span class="lang-short" aria-hidden="true">{{ t.switch_short }}</span></a>
+      {%- endunless %}
     </nav>
   </div>
 </header>
@@ -29,8 +48,8 @@
 </main>
 <footer class="footer">
   <div class="wrap footer-inner">
-    <p><strong>TalkSlot</strong> is free software under the <a href="https://github.com/{{ site.repository }}/blob/main/LICENSE">GNU AGPL v3</a>.</p>
-    <p><a href="https://github.com/{{ site.repository }}">Source code</a> · <a href="https://github.com/{{ site.repository }}/releases">Releases</a> · <a href="https://github.com/{{ site.repository }}/issues">Issues</a></p>
+    <p>{{ t.footer_license }} <a href="https://github.com/{{ site.repository }}/blob/main/LICENSE">GNU AGPL v3</a>.</p>
+    <p><a href="https://github.com/{{ site.repository }}">{{ t.source }}</a> · <a href="https://github.com/{{ site.repository }}/releases">{{ t.releases }}</a> · <a href="https://github.com/{{ site.repository }}/issues">{{ t.issues }}</a></p>
   </div>
 </footer>
 </body>
