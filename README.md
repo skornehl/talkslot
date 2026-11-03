@@ -266,6 +266,7 @@ otherwise the legal pages fall back to English.
 ```bash
 php tests/unit.php      # unit tests, no database needed (also run in CI on PHP 8.3–8.5)
 tests/smoke.sh          # ~300 end-to-end checks against the local Docker setup
+node tests/browser.mjs  # the JavaScript in headless Chrome (after dev/reset.sh && dev/demo.sh)
 tests/deploy.sh         # atomic deployment via lftp file:// under load (needs lftp and the local DB)
 ```
 
@@ -288,7 +289,7 @@ bin/              cron.php, install.php, build.sh, deploy.sh, setup-secrets.sh, 
 config/           config.sample.php → config.php (not in Git)
 public/           document root: index.php, install.php, .htaccess, assets/
 dev/              local Docker environment (PHP 8.5, MariaDB 11.8, Mailpit)
-tests/            unit.php, smoke.sh, deploy.sh
+tests/            unit.php, smoke.sh, browser.mjs, deploy.sh
 ```
 
 ## Contributing
