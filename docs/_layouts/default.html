@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>{% if page.title %}{{ page.title }} · {% endif %}{{ site.title }}</title>
+<meta name="description" content="{{ page.description | default: site.description | escape }}">
+<meta property="og:title" content="{{ page.title | default: site.title | escape }}">
+<meta property="og:description" content="{{ page.description | default: site.description | escape }}">
+<meta property="og:image" content="{{ '/assets/img/parent-round.webp' | absolute_url }}">
+<link rel="icon" href="{{ '/assets/img/logo.svg' | relative_url }}" type="image/svg+xml">
+<link rel="stylesheet" href="{{ '/assets/css/site.css' | relative_url }}">
+</head>
+<body class="{{ page.body_class }}">
+<a class="skip" href="#main">Skip to content</a>
+<header class="topbar">
+  <div class="wrap topbar-inner">
+    <a class="brand" href="{{ '/' | relative_url }}"><img src="{{ '/assets/img/logo.svg' | relative_url }}" alt="" width="30" height="30"> TalkSlot</a>
+    <nav aria-label="Main">
+      <a href="{{ '/guide/' | relative_url }}"{% if page.url contains '/guide/' %} aria-current="page"{% endif %}>Docs</a>
+      <a class="nav-optional" href="{{ '/guide/getting-started/' | relative_url }}">Get started</a>
+      <a href="https://github.com/{{ site.repository }}">GitHub</a>
+    </nav>
+  </div>
+</header>
+<main id="main">
+{{ content }}
+</main>
+<footer class="footer">
+  <div class="wrap footer-inner">
+    <p><strong>TalkSlot</strong> is free software under the <a href="https://github.com/{{ site.repository }}/blob/main/LICENSE">GNU AGPL v3</a>.</p>
+    <p><a href="https://github.com/{{ site.repository }}">Source code</a> · <a href="https://github.com/{{ site.repository }}/releases">Releases</a> · <a href="https://github.com/{{ site.repository }}/issues">Issues</a></p>
+  </div>
+</footer>
+</body>
+</html>

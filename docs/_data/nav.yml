@@ -1,0 +1,34 @@
+- section: Introduction
+  pages:
+    - title: Overview
+      url: /guide/
+    - title: Getting started
+      url: /guide/getting-started/
+- section: Running TalkSlot
+  pages:
+    - title: Installation
+      url: /guide/installation/
+    - title: Configuration
+      url: /guide/configuration/
+    - title: Deployment with GitHub Actions
+      url: /guide/deployment/
+    - title: Operations
+      url: /guide/operations/
+- section: Using TalkSlot
+  pages:
+    - title: Admin guide
+      url: /guide/admin/
+    - title: Teacher guide
+      url: /guide/teachers/
+    - title: For parents
+      url: /guide/parents/
+- section: Background
+  pages:
+    - title: Privacy and legal
+      url: /guide/privacy/
+    - title: Security
+      url: /guide/security/
+    - title: Development
+      url: /guide/development/
+    - title: FAQ
+      url: /guide/faq/

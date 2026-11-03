@@ -1,0 +1,101 @@
+---
+title: Installation
+description: Put TalkSlot on a web server by hand. For automatic deployments see the next chapters.
+---
+
+## Requirements
+
+- **PHP 8.3 or newer** (tested with 8.3, 8.4 and 8.5) with `pdo_mysql`, `mbstring` and `iconv`;
+  `openssl` for SMTP with TLS
+- **MariaDB 10.6 or newer.** Migrations use MariaDB syntax; MySQL is not supported.
+- **Apache** with `mod_rewrite`, ideally `mod_headers`. The rules are in `public/.htaccess`; other web
+  servers need equivalent rules (front controller, deny hidden and internal files, security headers).
+- **HTTPS** with a valid certificate. TalkSlot redirects plain HTTP.
+- A **sender address** whose domain has SPF and DKIM, otherwise mails end up in spam.
+
+## 1. Upload the files
+
+Only `public/` may be reachable from the web. `app/`, `bin/` and `config/` must live outside the
+document root.
+
+**If you can choose the document root** (recommended): upload the whole project, for example to
+`/var/www/talkslot`, and point the document root of your (sub)domain to `/var/www/talkslot/public`.
+
+**If you cannot** (typical shared hosting with a fixed web directory): upload the *contents* of
+`public/` into the web directory and everything else into a sibling directory, for example
+`talkslot-app/`. Then create `app_root.php` in the web directory so `index.php` finds the code:
+
+```php
+<?php
+return dirname(__DIR__) . '/talkslot-app';
+```
+
+`app/var/` must be writable by PHP: sessions, the install lock file, the error log and the alert
+counter are stored there.
+
+## 2. Configure
+
+Copy `config/config.sample.php` to `config/config.php` and fill in at least:
+
+| Key | Value |
+|---|---|
+| `base_url` | address of the site without trailing slash, e.g. `https://termine.example.org` |
+| `secret` | random, at least 32 characters: `php -r 'echo bin2hex(random_bytes(32));'` |
+| `install_key` | random, at least 16 characters, only needed for the web installer |
+| `db` | host, name, user, password; `prefix` if the database is shared |
+| `mail` | `from_address` and the transport (`mail` or `smtp`) |
+| `hosting` | your web host for the privacy policy, see [Privacy]({{ '/guide/privacy/' | relative_url }}) |
+
+All options are explained in [Configuration]({{ '/guide/configuration/' | relative_url }}). Keep
+`config.php` readable only for the PHP user (`chmod 600` or `640`).
+
+## 3. Install
+
+Open `https://your-site/install.php`, enter the install key and create the admin account (username,
+password with at least 12 characters, e-mail address). The installer creates the tables, copies the
+imprint and privacy templates into the database, locks itself and tries to delete itself. Delete
+`public/install.php` yourself if it is still there.
+
+With shell access you can install from the command line instead:
+
+```bash
+php bin/install.php <username> [email]   # asks for the password
+```
+
+## 4. Set up the cron job
+
+TalkSlot deletes past bookings, deactivates and deletes finished rounds and sends teacher summaries in
+a cron job. Run it hourly:
+
+```cron
+5 * * * * php /path/to/talkslot/bin/cron.php
+```
+
+Without shell access use the **web cron**: `POST /cron` with the header `X-Cron-Token`. The token is the
+hex-encoded HMAC-SHA256 of the word `cron` with your `secret`:
+
+```bash
+TOKEN=$(printf cron | openssl dgst -sha256 -hmac "$SECRET" | sed 's/.*= //')
+curl -fsS -X POST -H "X-Cron-Token: $TOKEN" https://your-site/cron
+```
+
+The included GitHub workflow `cron.yml` does exactly this every hour. As a fallback, clean-up also runs on
+page views at most every 15 minutes.
+
+## 5. Fill in the legal details
+
+Log in as admin and open *Mein Profil*. Fill in *Angaben für Impressum und Datenschutz* (name of the
+school or person, address, e-mail). Until then **no round is public**. Then check *Texte*: the
+imprint and privacy policy are templates with a few `[PLACEHOLDERS]` (server log retention at your web
+host, supervisory authority) that you must replace. See [Privacy and legal]({{ '/guide/privacy/' | relative_url }}).
+
+## Go-live checklist
+
+- [ ] HTTPS active, `http://` redirects to `https://`
+- [ ] `install.php` returns 404; `config/config.php` is not readable by others
+- [ ] `debug` is `false`, `alert_email` is set
+- [ ] Cron job or web cron runs (`bin/cron.php -v` prints the counts)
+- [ ] Test booking with e-mail address: the mail arrives and is not marked as spam
+- [ ] Admin details, imprint and privacy policy complete in all languages you offer
+- [ ] Data processing agreement (DPA, *AVV*) with your web host
+- [ ] Teacher invitation tested; a test round booked, moved and cancelled on a phone, then deleted
