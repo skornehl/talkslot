@@ -107,9 +107,9 @@ await cdp.send('Page.enable');
 await cdp.send('Runtime.enable');
 await cdp.send('Emulation.setFocusEmulationEnabled', { enabled: true }); // headless: page counts as focused (clipboard)
 
-/** Evaluates an expression in the page (as a user gesture, so clicks count as user activation). */
-async function js(expression) {
-  const r = await cdp.send('Runtime.evaluate', { expression, awaitPromise: true, returnByValue: true, userGesture: true });
+/** Evaluates an expression in the page; with gesture: true it counts as a user click (user activation). */
+async function js(expression, { gesture = false } = {}) {
+  const r = await cdp.send('Runtime.evaluate', { expression, awaitPromise: true, returnByValue: true, userGesture: gesture });
   if (r.exceptionDetails) throw new Error(`${r.exceptionDetails.exception?.description || r.exceptionDetails.text}\n    in: ${expression.slice(0, 200)}`);
   return r.result.value;
 }
@@ -149,13 +149,22 @@ try {
 
   await cdp.send('Browser.grantPermissions', { origin: BASE, permissions: ['clipboardReadWrite', 'clipboardSanitizedWrite'] });
   const copyLink = await js(`document.querySelector('[data-copy]').getAttribute('data-copy')`);
-  await js(`document.querySelector('[data-copy]').click()`);
+  await js(`document.querySelector('[data-copy]').click()`, { gesture: true });
   const copied = await until(`document.querySelector('[data-copy]').textContent === 'Kopiert ✓'`);
   const clip = await js(`navigator.clipboard.readText().catch(e => 'ERR ' + e.message)`);
   check('"Link kopieren" copies and confirms', copied && clip === copyLink && cdp.dialogs.length === 0,
     `confirmed=${copied} clipboard=${clip} dialogs=${JSON.stringify(cdp.dialogs)}`);
+  const noClipboard = await cdp.send('Page.addScriptToEvaluateOnNewDocument', { source: `Object.defineProperty(navigator, 'clipboard', { value: undefined });` });
+  await goto('/admin');
+  cdp.dialogs = [];
+  await js(`document.querySelector('[data-copy]').click()`, { gesture: true });
+  check('without clipboard access the link is offered in a dialog to copy', cdp.dialogs.length === 1 && cdp.dialogs[0].type === 'prompt'
+    && cdp.dialogs[0].message === 'Link kopieren:', JSON.stringify(cdp.dialogs));
+  await cdp.send('Page.removeScriptToEvaluateOnNewDocument', { identifier: noClipboard.identifier });
+  await goto('/admin');
+  const mathRound = await js(`[...document.querySelectorAll('a[href^="/admin/round/"]')].find(a => a.textContent.trim() === 'Sprechstunde Mathematik')?.getAttribute('href')`);
   const demoRound = await js(`[...document.querySelectorAll('a[href^="/admin/round/"]')].find(a => a.textContent.trim() === 'Elternsprechtag Klasse 7b')?.getAttribute('href')`);
-  check('demo data present (dev/demo.sh)', /^\/admin\/round\/\d+$/.test(demoRound || ''), String(demoRound));
+  check('demo data present (dev/demo.sh)', /^\/admin\/round\/\d+$/.test(demoRound || '') && /^\/admin\/round\/\d+$/.test(mathRound || ''), `${demoRound} ${mathRound}`);
 
   section('Admin: new round form (times, dates, breaks, preview)');
   await goto('/admin/round/new');
@@ -251,6 +260,85 @@ try {
     && await js(`document.querySelector('[name="t_title[tr]"]').value`) === '');
   check('without the API the panel stays hidden and the notice remains', await js(`document.querySelector('form[data-browser-translate]').hidden && !document.querySelector('[data-bt-hint]').hidden`));
   await cdp.send('Page.removeScriptToEvaluateOnNewDocument', { identifier: noApi.identifier });
+
+  section('Admin: translation in the browser – language packs, re-translating, errors');
+  // Stand-in with language packs: "downloadable" languages are only loaded after a click (like Chrome,
+  // which refuses the download without user activation) and report download progress.
+  const translator = (avail, prefix) => cdp.send('Page.addScriptToEvaluateOnNewDocument', { source: `
+    Object.defineProperty(navigator, 'userAgentData', { value: { brands: [{ brand: 'Chromium', version: '140' }] } });
+    (() => {
+      const avail = ${JSON.stringify(avail)};
+      self.Translator = {
+        availability: async (o) => avail[o.targetLanguage] || 'unavailable',
+        create: async (o) => {
+          if (avail[o.targetLanguage] === 'downloadable') {
+            if (!navigator.userActivation.isActive) throw new DOMException('needs a click', 'NotAllowedError');
+            const m = new EventTarget();
+            if (o.monitor) o.monitor(m);
+            for (const loaded of [0.5, 1]) { const e = new Event('downloadprogress'); e.loaded = loaded; m.dispatchEvent(e); await new Promise((r) => setTimeout(r, 200)); }
+          }
+          return { translate: async (t) => '[' + ${JSON.stringify(prefix)} + o.targetLanguage + '] ' + t, destroy() {} };
+        },
+      };
+    })();` }).then((r) => r.identifier);
+  const btn = (name) => `document.querySelector('[data-bt-${name}]')`;
+  const field = (lang) => js(`document.querySelector('[name="t_title[${lang}]"]').value`);
+  const idle = () => until(`!${btn('next')}.disabled && !document.querySelector('[data-bt-status]').textContent.includes('Übersetze im Browser')`, 10000);
+
+  let t = await translator({ en: 'available', pl: 'downloadable', ru: 'downloadable' }, '');
+  await goto(mathRound);
+  check('ready language translated at once, then one button per language pack', await until(`!${btn('next')}.hidden`, 10000)
+    && await js(`${btn('next')}.textContent`) === 'Nächste Sprache laden: PL (noch 2)' && await js(`${btn('pending')}.hidden`)
+    && (await status()).startsWith('Übersetzt und gespeichert: EN.') && await field('en') === '[en] Sprechstunde Mathematik', await status());
+  await js(`${btn('next')}.click()`); // without a user click: the browser refuses the download
+  await idle();
+  check('without a real click the download is refused and the button stays', await js(`${btn('next')}.textContent`) === 'Nächste Sprache laden: PL (noch 2)' && await field('pl') === '');
+  await js(`${btn('next')}.click()`, { gesture: true });
+  check('download progress is shown', await until(`document.querySelector('[data-bt-status]').textContent.startsWith('Lade Sprachpaket PL … ')`), await status());
+  await idle();
+  check('after the download: translated, button offers the next language', await field('pl') === '[pl] Sprechstunde Mathematik'
+    && await js(`${btn('next')}.textContent`) === 'Nächste Sprache laden: RU' && (await status()).startsWith('Übersetzt und gespeichert: EN, PL.'), await status());
+  await js(`${btn('next')}.click()`, { gesture: true });
+  check('last language pack: done, unavailable languages listed', await until(`document.querySelector('[data-bt-status]').textContent.startsWith('Fertig: EN, PL, RU ')`, 10000)
+    && (await status()).includes('Nicht im Browser übersetzbar: UK, TR') && await js(`${btn('next')}.hidden`), await status());
+  await cdp.send('Page.removeScriptToEvaluateOnNewDocument', { identifier: t });
+
+  t = await translator({ en: 'available', pl: 'available', ru: 'available', uk: 'available', tr: 'available' }, 'neu:');
+  await goto(mathRound);
+  await idle();
+  const label = await js(`${btn('all')}.textContent`);
+  await js(`${btn('all')}.click()`, { gesture: true });
+  await sleep(300);
+  check('"Alle neu übersetzen" asks for a second click first', await js(`${btn('all')}.textContent`) === await js(`${btn('all')}.getAttribute('data-bt-confirm')`)
+    && await field('pl') === '[pl] Sprechstunde Mathematik');
+  await js(`${btn('all')}.click()`, { gesture: true });
+  const doneLangs = async () => ((await status()).match(/^Fertig: ([A-Z, ]+) im Browser/)?.[1] || '').split(', ').sort().join(',');
+  check('second click re-translates all languages, overwriting earlier ones', await until(`document.querySelector('[data-bt-status]').textContent.startsWith('Fertig:')`, 10000)
+    && await doneLangs() === 'EN,PL,RU,TR,UK'
+    && await field('pl') === '[neu:pl] Sprechstunde Mathematik' && await js(`${btn('all')}.textContent`) === label, await status());
+
+  await goto(mathRound);
+  await idle();
+  await js(`document.querySelector('form[data-browser-translate]').setAttribute('data-hash', 'veraltet')`); // title changed in the meantime
+  await js(`${btn('all')}.click()`, { gesture: true });
+  await js(`${btn('all')}.click()`, { gesture: true });
+  check('title changed meanwhile (409): asks to reload, nothing overwritten', await until(`document.querySelector('[data-bt-status]').textContent.includes('Bitte die Seite neu laden')`, 10000)
+    && (await status()).startsWith('Titel oder Beschreibung wurden inzwischen geändert'), await status());
+  await goto(mathRound);
+  await idle();
+  await js(`document.querySelector('form[data-browser-translate]').setAttribute('action', '/admin/gibt-es-nicht')`);
+  await js(`${btn('all')}.click()`, { gesture: true });
+  await js(`${btn('all')}.click()`, { gesture: true });
+  check('saving fails: error message, buttons usable again', await until(`document.querySelector('[data-bt-status]').textContent.startsWith('Die Übersetzungen konnten nicht gespeichert werden')`, 10000)
+    && await js(`!${btn('all')}.disabled`), await status());
+  await cdp.send('Page.removeScriptToEvaluateOnNewDocument', { identifier: t });
+  await goto(mathRound);
+  check('server keeps the last saved translations', await field('pl') === '[neu:pl] Sprechstunde Mathematik');
+
+  section('Admin: forms after "Back"');
+  await js(`(f => f.setAttribute('data-sent', '1'))(document.querySelector('form[data-once]'))`);
+  await js(`window.dispatchEvent(new PageTransitionEvent('pageshow', { persisted: true }))`);
+  check('a form sent before can be submitted again after returning from the browser cache', await js(`!document.querySelector('form[data-once]').hasAttribute('data-sent')`));
 
   section('Admin: print button');
   const printStub = await cdp.send('Page.addScriptToEvaluateOnNewDocument', { source: `window.print = () => { window.__printed = true; };` });

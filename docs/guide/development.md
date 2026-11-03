@@ -42,7 +42,8 @@ alert mail may have been sent.
 
 The browser test drives headless Chrome (Node 22+, no dependencies) through the JavaScript: time fields and
 the slot preview (compared with the slots the server creates), date and break fields, double-submit and
-delete confirmations, copying links, the in-browser translation (with a simulated Translator API), "remember
+delete confirmations, copying links, the in-browser translation (with a simulated Translator API, including language-pack downloads,
+re-translating and error cases), "remember
 my appointment" including rejected foreign links, error focus and the light/dark switch.
 
 CI runs the unit tests on every push, and the smoke and browser tests against the Docker environment.

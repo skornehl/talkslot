@@ -43,7 +43,7 @@ Nach einem vollständigen Durchlauf darf keine Fehler-E-Mail verschickt worden s
 Der Browser-Test steuert Headless-Chrome (Node 22+, ohne Abhängigkeiten) durch das JavaScript: Zeitfelder und
 Terminvorschau (abgeglichen mit den Terminen, die der Server erzeugt), Datums- und Pausenfelder, Schutz vor
 doppeltem Absenden und Löschbestätigungen, Link kopieren, die Übersetzung im Browser (mit nachgebildeter
-Translator-API), „Termin auf diesem Gerät merken“ einschließlich abgewiesener fremder Links, Fehlerfokus und
+Translator-API, einschließlich Sprachpaket-Downloads, Neuübersetzung und Fehlerfällen), „Termin auf diesem Gerät merken“ einschließlich abgewiesener fremder Links, Fehlerfokus und
 den Hell/Dunkel-Schalter.
 
 Die CI führt bei jedem Push die Unit-Tests aus sowie Smoke- und Browser-Tests gegen die Docker-Umgebung.
