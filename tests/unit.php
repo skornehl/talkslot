@@ -558,5 +558,16 @@ check('build-version: file with version, commit, timestamp', $rc === 0 && $info[
 [$rc, $out] = $run(['bin/next-version.php']);
 check('next-version: prints a version (' . trim($out) . ')', $rc === 0 && preg_match('/^v\d+\.\d+\.\d+$/', trim($out)));
 
+echo "Operator details\n";
+// Without a database: the cached details are set directly (contact() only reads the settings once)
+$contact = new ReflectionProperty(App\Operator::class, 'contact');
+$contact->setValue(null, "Gesamtschule am See\nVertreten durch die Schulleitung\nE-Mail: info@example.org");
+check('name = first line of the details', App\Operator::name() === 'Gesamtschule am See' && App\Operator::ready());
+check('details replace the placeholder', App\Operator::fill("Verantwortlich:\n[[VERANTWORTLICHE]]", '?') === "Verantwortlich:\nGesamtschule am See\nVertreten durch die Schulleitung\nE-Mail: info@example.org");
+$contact->setValue(null, '');
+check('without details: no name, not ready, placeholder gets the fallback',
+    App\Operator::name() === '' && !App\Operator::ready() && App\Operator::fill('[[VERANTWORTLICHE]]', '(fehlt)') === '(fehlt)');
+$contact->setValue(null, null);
+
 echo $fail === 0 ? "ALL UNIT TESTS PASSED\n" : "$fail FAILED\n";
 exit($fail === 0 ? 0 : 1);
