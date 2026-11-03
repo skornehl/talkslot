@@ -106,9 +106,7 @@ permissions:
   contents: read
 jobs:
   deploy:
-    uses: skornehl/talkslot/.github/workflows/deploy.yml@v1.1.0
-    with:
-      ref: v1.1.0   # dieselbe Version wie oben
+    uses: skornehl/talkslot/.github/workflows/deploy.yml@v1.2.0
     secrets: inherit
 ```
 
@@ -127,13 +125,26 @@ permissions:
   contents: read
 jobs:
   switch:
-    uses: skornehl/talkslot/.github/workflows/switch.yml@v1.1.0
+    uses: skornehl/talkslot/.github/workflows/switch.yml@v1.2.0
     with:
       target: ${{ inputs.target }}
-      ref: v1.1.0
     secrets: inherit
 ```
 {% endraw %}
+
+
+Die Workflows holen den TalkSlot-Code genau der Version aus der `uses:`-Zeile. Für ein Update ändern Sie
+diese Version in beiden Dateien. Diese Pull Requests kann Dependabot für Sie öffnen, mit
+`.github/dependabot.yml`:
+
+```yaml
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+```
 
 Variablen und Secrets liegen in Ihrem Repository (oder in dessen Environment `production`). Für den
 stündlichen Cronjob kopieren Sie

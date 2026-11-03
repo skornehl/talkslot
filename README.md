@@ -194,14 +194,14 @@ permissions:
   contents: read
 jobs:
   deploy:
-    uses: skornehl/talkslot/.github/workflows/deploy.yml@v1.0.0
-    with:
-      ref: v1.0.0   # same version as above
+    uses: skornehl/talkslot/.github/workflows/deploy.yml@v1.2.0
     secrets: inherit
 ```
 
 Variables and secrets are the same as above and live in your repository (or its `production`
-environment). The rollback workflow works the same way (`switch.yml`, inputs `target` and `ref`).
+environment). The rollback workflow works the same way (`switch.yml`, input `target`). The workflows fetch the
+TalkSlot code of exactly the version in the `uses:` line, so updating means changing that version;
+Dependabot (`package-ecosystem: github-actions`) can open these pull requests for you.
 Set the variables `APP_NAME` (name shown to parents) and `HOSTING_DE`/`HOSTING_EN` (web host for the
 privacy policy, replaces `[[HOSTER]]`) there as well.
 
