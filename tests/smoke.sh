@@ -508,10 +508,19 @@ check "no duplicate sending" 'echo "$OUT2" | grep -qE "summaries_evening +0"'
 SUM=$($DC exec -T app php -r 'echo file_get_contents("http://mail:8025/api/v1/search?query=to:zwei@example.org%20subject:Morgen");')
 check "daily overview to teacher 2 with calendar file, without parent email" 'echo "$SUM" | grep -q "\"Attachments\":1" && ! echo "$SUM" | grep -q "eltern-zwei@"'
 
+# A parent's booking with teacher 2, to try moving it after the account is deactivated
+P4B=$(curl -s "$B/$S4")
+L4=$(curl -s -o /dev/null -w '%{redirect_url}' --data-urlencode "csrf=$(echo "$P4B" | csrf)" -d "slot_id=$(echo "$P4B" | grep -o 'value="[0-9]*" required' | head -1 | grep -o '[0-9]*')&name=Kind+Verschieben&privacy=1" "$B/$S4")
+L4=${L4%%\?*}
+M4C=$(curl -s "$L4" | csrf)
+
 # Deactivating
 curl -s -o /dev/null -b "$J" -d "csrf=$T&username=zwei@example.org&display_name=Herr+Zwei&email=zwei@example.org&role=teacher" "$B/admin/users/$(curl -s -b "$J" "$B/admin/users" | grep -o '/admin/users/[0-9]*/edit' | tail -1 | grep -o '[0-9]\+')/edit"
 check "deactivated account: session ended" '[ "$(curl -s -o /dev/null -w "%{http_code}" -c "$J2" -b "$J2" "$B/admin")" = 303 ]'
 check "deactivated account: rounds publicly 404" '[ "$(curl -s -o /dev/null -w "%{http_code}" "$B/$S4")" = 404 ]'
+X=$(curl -s -w "\n%{http_code}" --data-urlencode "csrf=$M4C" -d "action=move&slot_id=$(echo "$P4" | grep -o 'value="[0-9]*" required' | head -1 | grep -o '[0-9]*')" "$L4")
+check "deactivated account: parents can no longer move, only cancel" '[[ "$L4" == */b/* ]] && [ "$(echo "$X" | tail -1)" = 200 ] && echo "$X" | grep -qF "Dieser Termin ist nicht mehr verfügbar" && echo "$X" | grep -qF "value=\"cancel\""'
+curl -s -o /dev/null --data-urlencode "csrf=$M4C" -d "action=cancel&confirm=1" "$L4"
 E4=$(curl -s -b "$J" "$B/admin/round/$R4/edit")
 check "deactivated teacher stays preselected in the form (marked)" 'echo "$E4" | grep -q "<option value=\"$U2\" selected>Herr Zwei (deaktiviert)</option>" && curl -s -b "$J" "$B/admin" | grep -q "Herr Zwei <span class=\"badge\">deaktiviert</span>"'
 curl -s -o /dev/null -b "$J" --data-urlencode "csrf=$TA" --data-urlencode "user_id=$U2" -d "title=Titel+korrigiert&is_active=1&booking_deadline_hours=0&cancel_deadline_hours=0" "$B/admin/round/$R4/edit"
@@ -716,8 +725,11 @@ SP=$(curl -s -b "$J" "$B/admin/round/$R6" | grep -o 'data-copy="[^"]*"' | head -
 P=$(curl -s "$B/$SP")
 R=$(curl -s --data-urlencode "csrf=$(echo "$P" | csrf)" -d "name=&privacy=1" "$B/$SP")
 check "booking without slot and name → both notices" 'echo "$R" | has "Bitte wählen Sie einen Termin" && echo "$R" | has "Bitte geben Sie einen Namen an"'
-G=$(curl -s "$B/$S3")
-check "code prompt with expired form → notice" 'curl -s -d "csrf=alt&step=unlock&code=$RC3" "$B/$S3" | has "Das Formular ist abgelaufen"'
+DBQ "UPDATE tp_rounds SET code_required = 1 WHERE id = $R3" # protection was reset by the migration test above
+S3C=$(curl -s -b "$J" "$B/admin/round/$R3" | grep -o 'data-copy="[^"]*"' | head -1 | sed 's#.*/##;s/"$//')  # current link
+G=$(curl -s "$B/$S3C")
+check "protected round shows the code prompt" 'echo "$G" | has "name=\"step\" value=\"unlock\""'
+check "code prompt with expired form → notice" 'curl -s -d "csrf=alt&step=unlock&code=$RC3" "$B/$S3C" | has "Das Formular ist abgelaufen"'
 # Rate limits: raise the counters for this client directly. The key is the one the server already uses
 # for our bookings (with Docker the client is the bridge gateway, not 127.0.0.1); IPv4/IPv6 localhost as fallback.
 KC=$(DBQ "SELECT key_hash FROM tp_rate_limits WHERE bucket = 'booking' ORDER BY hits DESC LIMIT 1")
@@ -725,10 +737,15 @@ K4=$(php -r 'echo hash_hmac("sha256", "ip|127.0.0.0", str_repeat("d", 64));'); K
 LIMIT() { local k; for k in $KC $K4 $K6; do DBQ "INSERT INTO tp_rate_limits (bucket, key_hash, window_start, hits) VALUES ('$1', '$k', UNIX_TIMESTAMP(), 100000) ON DUPLICATE KEY UPDATE hits = 100000, window_start = UNIX_TIMESTAMP()"; done; }
 LIMIT attempt
 check "too many booking attempts → 429" '[ "$(curl -s -o /dev/null -w "%{http_code}" --data-urlencode "csrf=$(echo "$P" | csrf)" -d "slot_id=1&name=Max&privacy=1" "$B/$SP")" = 429 ]'
+DBQ "DELETE FROM tp_rate_limits WHERE bucket = 'attempt'" # each limit on its own, so the right one answers
 LIMIT code
-check "blocked: also malformed codes on the round page → 429" '[ "$(curl -s -o /dev/null -w "%{http_code}" --data-urlencode "csrf=$(echo "$G" | csrf)" -d "step=unlock&code=123" "$B/$S3")" = 429 ]'
+X=$(curl -s -w "\n%{http_code}" --data-urlencode "csrf=$(echo "$G" | csrf)" -d "step=unlock&code=123" "$B/$S3C")
+check "blocked: also malformed codes on the round page → 429 with code notice" '[ "$(echo "$X" | tail -1)" = 429 ] && echo "$X" | has "Zu viele Fehlversuche aus Ihrem Netzwerk"'
+DBQ "DELETE FROM tp_rate_limits WHERE bucket = 'code'"; DBQ "UPDATE tp_rounds SET code_required = 0 WHERE id = $R3"
 LIMIT manage
 check "too many manage link requests → 429" '[ "$(curl -s -o /dev/null -w "%{http_code}" "$B/b/$(head -c 43 /dev/zero | tr "\0" A)")" = 429 ]'
+X=$(curl -s -w "\n%{http_code}" -d "csrf=x&action=cancel" "$B/b/$(head -c 43 /dev/zero | tr "\0" A)")
+check "too many manage link submissions (POST) → 429" '[ "$(echo "$X" | tail -1)" = 429 ] && echo "$X" | has "Zu viele Anfragen"'
 LIMIT login
 JX=$(mktemp); TX=$(curl -s -c "$JX" -b "$JX" "$B/admin/login" | csrf)
 check "too many login attempts: the correct password is rejected too (without hint about the account)" '[ "$(curl -s -o /dev/null -w "%{http_code}" -c "$JX" -b "$JX" -d "csrf=$TX&username=$USER" --data-urlencode "password=$PASS" "$B/admin/login")" = 401 ] && curl -s -c "$JX" -b "$JX" -d "csrf=$TX&username=$USER" --data-urlencode "password=$PASS" "$B/admin/login" | grep -q "Anmeldung fehlgeschlagen. Bitte prüfen Sie Ihre Eingaben"'

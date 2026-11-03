@@ -299,6 +299,30 @@ check('sending via mail(): sender, Reply-To, attachment, umlauts', $rc === 0 && 
     && str_contains($mail, 'Hallo =C3=84'));
 check('sending via mail(): no header injection via the subject', $mail !== '' && !preg_match('/^Bcc:/mi', $mail));
 
+[$rc, , $err] = $run(['-d', 'sendmail_path=/bin/false', '-r', '
+    require "app/bootstrap.php";
+    App\Alert::$stateFile = tempnam(sys_get_temp_dir(), "alert");
+    App\Config::load(["alert_email" => "b@example.org", "mail" => ["transport" => "mail", "from_address" => "absender@example.org", "from_name" => "", "reply_to" => ""]] + (require "config/config.php"));
+    App\Alert::$transport = static function ($to, $s, $b) { fwrite(STDERR, "ALERT:$to|$s|$b\n"); return true; };
+    exit(App\Mailer::send("eltern@example.org", "Termin", "Hallo") ? 0 : 1);']);
+check('mail() fails: reported as failed, admin alerted without the recipient', $rc === 1
+    && str_contains($err, 'ALERT:b@example.org|[TalkSlot] Mailversand fehlgeschlagen') && !str_contains($err, 'eltern@example.org'));
+
+echo "Configuration checks at startup\n";
+$tmpRoot = sys_get_temp_dir() . '/talkslot-boot-' . bin2hex(random_bytes(4));
+mkdir("$tmpRoot/config", 0700, true);
+exec('cp -r ' . escapeshellarg(dirname(__DIR__) . '/app') . ' ' . escapeshellarg("$tmpRoot/app") . ' && rm -rf ' . escapeshellarg("$tmpRoot/app/var"));
+[$rc, $out] = $run(["$tmpRoot/app/bootstrap.php"]);
+check('without config/config.php: clear message, exit 1', $rc === 1 && str_contains($out, 'Configuration missing: create config/config.php'));
+$cfgShort = (static function (): array { return require dirname(__DIR__) . '/config/config.php'; })();
+file_put_contents("$tmpRoot/config/config.php", '<?php return ' . var_export(['secret' => str_repeat('k', 31)] + $cfgShort, true) . ';');
+[$rc, $out] = $run(["$tmpRoot/app/bootstrap.php"]);
+check('secret shorter than 32 characters: refuses to start', $rc === 1 && str_contains($out, '"secret" is missing or shorter than 32 characters'));
+file_put_contents("$tmpRoot/config/config.php", '<?php return ' . var_export(['secret' => str_repeat('k', 32)] + $cfgShort, true) . ';');
+[$rc, $out] = $run(["$tmpRoot/app/bootstrap.php"]);
+check('secret with 32 characters: starts', $rc === 0 && $out === '');
+exec('rm -rf ' . escapeshellarg($tmpRoot));
+
 echo "Error handling (bootstrap)\n";
 [$rc, $out] = $run(['-r', 'require "app/bootstrap.php"; $c = require "config/config.php"; $c["db"]["host"] = "127.0.0.1"; $c["db"]["port"] = 1;
     App\Config::load(["alert_email" => "", "debug" => false] + $c); ob_start();
