@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace App;
 
-/** Schlüssel/Wert-Einstellungen in der Tabelle settings. */
+/** Key/value settings in the settings table. */
 final class Settings
 {
     public static function get(string $name, ?string $default = null): ?string

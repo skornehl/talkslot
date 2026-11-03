@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Setzt die lokale Dev-Datenbank zurück und installiert neu (Admin: sabrina / Sehr-Sicheres-Dev-Pw1).
+# Resets the local dev database and reinstalls (admin: sabrina / Sehr-Sicheres-Dev-Pw1).
 cd "$(dirname "$0")"
 docker compose exec -T db mariadb -uapp -papp-dev-only talkslot -e \
   "SET FOREIGN_KEY_CHECKS=0; DROP TABLE IF EXISTS round_translations, tp_round_translations, sent_summaries, bookings, slots, day_breaks, round_days, rounds, pages, rate_limits, settings, users, admin_users, tp_sent_summaries, tp_bookings, tp_slots, tp_day_breaks, tp_round_days, tp_rounds, tp_pages, tp_rate_limits, tp_settings, tp_users, tp_admin_users;"

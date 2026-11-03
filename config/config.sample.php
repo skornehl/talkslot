@@ -1,19 +1,19 @@
 <?php
 /**
- * Konfiguration – als config/config.php kopieren und ausfüllen.
- * Diese Datei liegt außerhalb des Webroots und darf NIE ins Git-Repository.
- * (Beim Deployment per GitHub Actions wird sie aus den Repository-Secrets erzeugt.)
+ * Configuration – copy to config/config.php and fill in.
+ * This file lives outside the web root and must NEVER be committed to the Git repository.
+ * (When deploying via GitHub Actions it is generated from the repository secrets.)
  */
 return [
     'app_name' => 'TalkSlot',
-    'base_url' => 'https://termine.example.org', // ohne abschließenden Schrägstrich
+    'base_url' => 'https://termine.example.org', // without trailing slash
     'force_https' => true,
-    'debug' => false,          // im Livebetrieb immer false (keine internen Fehlerdetails)
+    'debug' => false,          // always false in production (no internal error details)
     'timezone' => 'Europe/Berlin',
 
-    // Zufälliger geheimer Schlüssel, mind. 32 Zeichen, z. B.: php -r 'echo bin2hex(random_bytes(32));'
+    // Random secret key, at least 32 characters, e.g.: php -r 'echo bin2hex(random_bytes(32));'
     'secret' => '',
-    // Einmal-Schlüssel für install.php (mind. 16 Zeichen)
+    // One-time key for install.php (at least 16 characters)
     'install_key' => '',
 
     'db' => [
@@ -22,26 +22,26 @@ return [
         'name' => '',
         'user' => '',
         'pass' => '',
-        'prefix' => 'tp_',  // Präfix aller Tabellen, falls die Datenbank geteilt wird ('' = keins)
+        'prefix' => 'tp_',  // prefix for all tables, in case the database is shared ('' = none)
     ],
 
-    'languages' => ['de', 'en', 'pl', 'ru', 'uk', 'tr'],   // Reihenfolge = Anzeige; neue Sprache: app/lang/<code>.php anlegen
+    'languages' => ['de', 'en', 'pl', 'ru', 'uk', 'tr'],   // order = display order; new language: create app/lang/<code>.php
     'default_language' => 'de',
 
-    // Fehlermeldungen (Exceptions, Datenbank nicht erreichbar, Mailversand gescheitert …) per Mail
-    // an diese Adresse; leer = an die E-Mail-Adresse des Admin-Kontos (dann nicht, wenn die
-    // Datenbank ausgefallen ist). Gleiche Fehler höchstens einmal pro Stunde.
+    // Error reports (exceptions, database unreachable, mail delivery failed …) are mailed to this
+    // address; empty = to the email address of the admin account (not possible while the database
+    // is down). The same error is reported at most once per hour.
     'alert_email' => '',
 
-    // Hoster für die Datenschutzerklärung (ersetzt dort [[HOSTER]]), je Sprache der Vorlagen
+    // Hosting provider for the privacy policy (replaces [[HOSTER]] there), per template language
     'hosting' => [
-        'de' => '', // z. B. 'Beispiel Hosting GmbH, Musterweg 1, 12345 Musterstadt, als Auftragsverarbeiter nach Art. 28 DSGVO. Die Server stehen in Deutschland.'
+        'de' => '', // e.g. 'Beispiel Hosting GmbH, Musterweg 1, 12345 Musterstadt, als Auftragsverarbeiter nach Art. 28 DSGVO. Die Server stehen in Deutschland.'
         'en' => '', // e.g. 'Example Hosting GmbH, Musterweg 1, 12345 Musterstadt, Germany, as processor under Art. 28 GDPR. The servers are located in Germany.'
     ],
 
     'mail' => [
         'transport' => 'mail',      // mail (PHP mail/sendmail) | smtp (PHPMailer) | none
-        'from_address' => '',       // Absender, z. B. termine@example.org (Domain mit SPF/DKIM)
+        'from_address' => '',       // sender, e.g. termine@example.org (domain with SPF/DKIM)
         'from_name' => 'TalkSlot',
         'reply_to' => '',           // optional
         'smtp' => [
@@ -54,25 +54,25 @@ return [
     ],
 
 
-    'session_idle_minutes' => 30,   // Admin: Abmeldung nach Inaktivität
-    'session_absolute_hours' => 8,  // Admin: maximale Sitzungsdauer
-    'access_link_hours' => 48,      // Gültigkeit von Einladungs- und Passwort-Links
+    'session_idle_minutes' => 30,   // admin: logout after inactivity
+    'session_absolute_hours' => 8,  // admin: maximum session length
+    'access_link_hours' => 48,      // validity of invitation and password links
 
-    // Datenlöschung: zusätzlich zum Cronjob bei Seitenaufrufen (höchstens alle N Minuten)
+    // Data deletion: in addition to the cron job, on page requests (at most every N minutes)
     'cleanup_on_request' => true,
     'cleanup_interval_minutes' => 15,
 
-    // Tagesübersicht für Lehrkräfte wird ab dieser Stunde (Ortszeit) für den Folgetag verschickt
+    // Daily summary for teachers is sent for the next day from this hour on (local time)
     'summary_evening_hour' => 18,
 
-    // Rate-Limits: [max. Anzahl, Zeitfenster in Sekunden] je gekürzter IP (IPv4 /24, IPv6 /48).
-    // Großzügig, weil sich viele Eltern eine gekürzte IP teilen können (Mobilfunk, Schul-WLAN).
+    // Rate limits: [max. count, time window in seconds] per truncated IP (IPv4 /24, IPv6 /48).
+    // Generous, because many parents may share a truncated IP (mobile network, school Wi-Fi).
     'rate_limits' => [
-        'code' => [30, 900], // fehlgeschlagene Eingaben des Rundencodes auf der Startseite (je gekürzter IP)
-        'attempt' => [150, 3600],   // alle Buchungsversuche (inkl. Eingabefehler)
-        'booking' => [30, 3600],    // erfolgreiche Buchungen
-        'manage' => [300, 3600],    // Aufrufe von Änderungslinks
-        'login' => [5, 900],        // fehlgeschlagene Admin-Anmeldungen
+        'code' => [30, 900], // failed round code entries on the home page (per truncated IP)
+        'attempt' => [150, 3600],   // all booking attempts (incl. input errors)
+        'booking' => [30, 3600],    // successful bookings
+        'manage' => [300, 3600],    // requests to change links
+        'login' => [5, 900],        // failed admin logins
     ],
-    'csrf_min_age_seconds' => 2,    // Formular frühestens nach N Sekunden absendbar (Bot-Bremse)
+    'csrf_min_age_seconds' => 2,    // form can be submitted after N seconds at the earliest (bot brake)
 ];

@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace App;
 
-/** Zugriff auf die Werte aus config/config.php (Punkt-Notation, z. B. "db.host"). */
+/** Access to the values from config/config.php (dot notation, e.g. "db.host"). */
 final class Config
 {
     private static array $values = [];

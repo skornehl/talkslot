@@ -1,6 +1,6 @@
 <?php
 /**
- * Kleine globale Hilfsfunktionen für Templates.
+ * Small global helper functions for templates.
  */
 declare(strict_types=1);
 
@@ -8,21 +8,21 @@ use App\Config;
 use App\Http;
 use App\I18n;
 
-/** HTML-Escaping für jede Ausgabe in Templates. */
+/** HTML escaping for every output in templates. */
 function e(mixed $value): string
 {
     return htmlspecialchars((string) $value, ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML5, 'UTF-8');
 }
 
-/** Übersetzung, siehe app/lang/*.php */
+/** Translation, see app/lang/*.php */
 function t(string $key, array $vars = []): string
 {
     return I18n::t($key, $vars);
 }
 
 /**
- * Relative URL innerhalb der Anwendung. Hängt die Sprache an, wenn sie
- * ausdrücklich gewählt wurde (öffentliche Seiten setzen keine Cookies).
+ * Relative URL within the application. Appends the language if it
+ * was chosen explicitly (public pages do not set cookies).
  */
 function url(string $path = '/', array $query = []): string
 {
@@ -34,15 +34,15 @@ function url(string $path = '/', array $query = []): string
     return Http::basePath() . $path . $qs;
 }
 
-/** Absolute URL (für E-Mails und kopierbare Links). */
+/** Absolute URL (for emails and copyable links). */
 function abs_url(string $path = '/', array $query = []): string
 {
     return Http::origin() . url($path, $query);
 }
 
 /**
- * Dateipfad einer statischen Datei. Nach dem atomaren Deployment liegen CSS/JS/Bilder je Version
- * unter /v/<Version>/ im Webverzeichnis (passend zum Code, der sie ausliefert), lokal unter /assets/.
+ * File path of a static file. After atomic deployment, CSS/JS/images live per version
+ * under /v/<version>/ in the web root (matching the code that serves them), locally under /assets/.
  */
 function asset_file(string $path): string
 {
@@ -52,7 +52,7 @@ function asset_file(string $path): string
     return PUBLIC_ROOT . (defined('RELEASE') && RELEASE !== '' ? '/v/' . RELEASE . '/' : '/assets/') . $path;
 }
 
-/** URL zu einer statischen Datei; der Versionspfad bzw. ?v= (lokal) sorgt für frische Caches. */
+/** URL of a static file; the version path or ?v= (locally) ensures fresh caches. */
 function asset(string $path): string
 {
     if (defined('RELEASE') && RELEASE !== '') {
@@ -63,7 +63,7 @@ function asset(string $path): string
     return Http::basePath() . '/assets/' . $path . '?v=' . $v;
 }
 
-/** Datum (Y-m-d) lokalisiert, z. B. „Montag, 17.08.2026“. */
+/** Localized date (Y-m-d), e.g. "Montag, 17.08.2026". */
 function fmt_date(string $ymd): string
 {
     $d = new DateTimeImmutable($ymd);
@@ -79,19 +79,19 @@ function fmt_date(string $ymd): string
     ]);
 }
 
-/** Uhrzeit HH:MM aus einem TIME-Wert. */
+/** Time HH:MM from a TIME value. */
 function fmt_time(string $time): string
 {
     return substr($time, 0, 5);
 }
 
-/** „14:00–14:15“ */
+/** "14:00–14:15" */
 function fmt_range(string $start, string $end): string
 {
     return fmt_time($start) . '–' . fmt_time($end);
 }
 
-/** Vollständige Terminbezeichnung, z. B. für Mails und den Browser-Merker. */
+/** Full appointment label, e.g. for emails and the browser remember-me entry. */
 function fmt_slot(string $date, string $start, string $end): string
 {
     return fmt_date($date) . ', ' . fmt_range($start, $end) . t('time_suffix');
@@ -103,9 +103,9 @@ function app_name(): string
 }
 
 /**
- * Gültige E-Mail-Adresse für Eingaben: FILTER_VALIDATE_EMAIL, höchstens 254 Zeichen und ohne
- * Sonderformen (Anführungszeichen, Leer-/Steuerzeichen, spitze Klammern), die zwar formal erlaubt
- * sind, beim Versand aber scheitern oder in Ausgaben stören.
+ * Valid email address for input: FILTER_VALIDATE_EMAIL, at most 254 characters and without
+ * special forms (quotes, whitespace/control characters, angle brackets) that are formally allowed
+ * but fail on sending or disrupt output.
  */
 function is_valid_email(string $email): bool
 {

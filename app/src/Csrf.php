@@ -4,14 +4,14 @@ declare(strict_types=1);
 namespace App;
 
 /**
- * CSRF-Schutz.
+ * CSRF protection.
  *
- * Öffentliche Formulare: zustandsloses, signiertes Token (HMAC über Kontext +
- * Zeitstempel). Dadurch braucht die Elternseite weder Session noch Cookie.
- * Das Token läuft nach einigen Stunden ab und wird erst nach einer Mindestzeit
- * akzeptiert (einfache Bot-Bremse).
+ * Public forms: stateless, signed token (HMAC over context +
+ * timestamp). This way the parents' page needs neither session nor cookie.
+ * The token expires after a few hours and is only accepted after a minimum
+ * time (simple bot brake).
  *
- * Admin-Formulare: klassisches Session-Token.
+ * Admin forms: classic session token.
  */
 final class Csrf
 {

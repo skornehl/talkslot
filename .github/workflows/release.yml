@@ -1,5 +1,5 @@
-# Release von Hand: Actions → Release → Run workflow (auf main). Die Versionsnummer ergibt sich aus den
-# Conventional Commits seit dem letzten Tag (bin/next-version.php: feat → minor, ! → major, sonst patch).
+# Manual release: Actions → Release → Run workflow (on main). The version number is derived from the
+# Conventional Commits since the last tag (bin/next-version.php: feat → minor, ! → major, otherwise patch).
 name: Release
 
 on:
@@ -13,9 +13,9 @@ jobs:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
-      # Code per git statt actions/checkout: keine fremden Actions nötig. Das Token steht nur im
-      # Header dieser Befehle, nicht in .git/config.
-      - name: Code holen
+      # Code via git instead of actions/checkout: no third-party actions needed. The token is only in
+      # the header of these commands, not in .git/config.
+      - name: Fetch code
         env:
           REPO: ${{ github.repository }}
           REF: ${{ github.sha }}
@@ -23,15 +23,15 @@ jobs:
         run: |
           git init -q . && git remote add origin "https://github.com/$REPO.git"
           AUTH="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$TOKEN" | base64 -w0)"
-          git -c http.extraheader="$AUTH" fetch -q --tags origin "+refs/heads/*:refs/remotes/origin/*" # Verlauf und Tags für die Versionsnummer
-          git -c http.extraheader="$AUTH" fetch -q origin "$REF" # Commit, Tag oder Branch
+          git -c http.extraheader="$AUTH" fetch -q --tags origin "+refs/heads/*:refs/remotes/origin/*" # history and tags for the version number
+          git -c http.extraheader="$AUTH" fetch -q origin "$REF" # commit, tag or branch
           git checkout -q --detach "FETCH_HEAD^{commit}"
-          git log -1 --format='Stand: %h %s'
+          git log -1 --format='Checked out: %h %s'
 
-      - name: Release anlegen
+      - name: Create release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           V="$(php bin/next-version.php)"
-          if git rev-parse -q --verify "refs/tags/$V" > /dev/null; then echo "::notice::$V existiert schon"; exit 0; fi
+          if git rev-parse -q --verify "refs/tags/$V" > /dev/null; then echo "::notice::$V already exists"; exit 0; fi
           gh release create "$V" --target "$GITHUB_SHA" --title "$V" --generate-notes

@@ -1,5 +1,5 @@
 <?php
-/** Admin-Layout. @var string $content @var string $title @var array $flash */
+/** Admin layout. @var string $content @var string $title @var array $flash */
 use App\Auth;
 use App\Csrf;
 ?>

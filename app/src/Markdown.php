@@ -4,9 +4,9 @@ declare(strict_types=1);
 namespace App;
 
 /**
- * Sehr kleines, sicheres Markdown für Impressum/Datenschutz:
- * # Überschriften, Absätze, - Listen, > Hinweis, **fett**, *kursiv*, [Text](URL).
- * Alles wird zuerst escaped; Links nur mit http(s), mailto oder relativem Pfad.
+ * Very small, safe Markdown for legal notice/privacy policy:
+ * # headings, paragraphs, - lists, > notice, **bold**, *italic*, [text](URL).
+ * Everything is escaped first; links only with http(s), mailto or a relative path.
  */
 final class Markdown
 {
@@ -39,7 +39,7 @@ final class Markdown
                 $flush();
             } elseif (preg_match('/^(#{1,3})\s+(.*)$/', $trim, $m)) {
                 $flush();
-                $level = strlen($m[1]) + 1; // # → h2 (h1 ist der Seitentitel)
+                $level = strlen($m[1]) + 1; // # → h2 (h1 is the page title)
                 $html[] = "<h{$level}>" . self::inline($m[2]) . "</h{$level}>";
             } elseif (preg_match('/^[-*]\s+(.*)$/', $trim, $m)) {
                 if ($para || $quote) {
@@ -67,7 +67,7 @@ final class Markdown
         $s = e($s);
         $s = (string) preg_replace_callback('/\[([^\]]+)\]\(([^)\s]+)\)/', static function (array $m): string {
             $href = html_entity_decode($m[2], ENT_QUOTES | ENT_HTML5, 'UTF-8');
-            // Relativ nur mit genau einem „/“ (nicht //host oder /\host = fremde Domain)
+            // Relative only with exactly one "/" (not //host or /\host = foreign domain)
             if (!preg_match('#^(https?://|mailto:|/(?![/\\\\]))#i', $href)) {
                 return $m[0];
             }

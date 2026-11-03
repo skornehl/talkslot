@@ -24,10 +24,10 @@ use App\Translator;
 use App\View;
 
 /**
- * Verwaltungsbereich (nur Deutsch).
- * Lehrkräfte sehen und ändern ausschließlich ihre eigenen Runden; das (einzige) Admin-Konto
- * sieht und bearbeitet alle Runden samt Buchungen, verwaltet Konten und die globalen Texte.
- * Erzwungen zentral in round()/day()/slot()/booking() über mayAccess().
+ * Admin area (German only).
+ * Teachers see and change only their own rounds; the (only) admin account
+ * sees and edits all rounds including bookings, manages accounts and the global texts.
+ * Enforced centrally in round()/day()/slot()/booking() via mayAccess().
  */
 final class AdminController
 {
@@ -62,7 +62,7 @@ final class AdminController
         ['POST', '#^/password$#', 'passwordSave'],
         ['GET', '#^/password-change$#', 'passwordChangeForm'],
         ['POST', '#^/password-change$#', 'passwordChangeSave'],
-        // nur Rolle admin (siehe ADMIN_ONLY)
+        // admin role only (see ADMIN_ONLY)
         ['GET', '#^/users$#', 'users'],
         ['GET', '#^/users/new$#', 'userForm'],
         ['POST', '#^/users/new$#', 'userSave'],
@@ -75,13 +75,13 @@ final class AdminController
         ['POST', '#^/page/(imprint|privacy)/([a-z]{2})$#', 'pageSave'],
     ];
 
-    /** Pfade, die nur die Rolle admin aufrufen darf */
+    /** Paths that only the admin role may access */
     private const ADMIN_ONLY = '#^/(users|texts|page)(/|$)#';
 
     public function dispatch(string $path, string $method): void
     {
-        // Anmelden, „Passwort vergessen“ und Einladung brauchen ohne vorhandenes Cookie keine Sitzung
-        // (zustandslose CSRF-Tokens, siehe formToken()); alles andere schon
+        // Login, "forgot password" and invitation need no session without an existing cookie
+        // (stateless CSRF tokens, see formToken()); everything else does
         Auth::startSession(!($path === '/login' || $path === '/forgot' || str_starts_with($path, '/invite/')));
         header('X-Robots-Tag: noindex, nofollow');
 
@@ -89,7 +89,7 @@ final class AdminController
             $method === 'POST' ? $this->loginPost() : $this->login();
             return;
         }
-        // Einladungs-/Passwort-Link und „Passwort vergessen“ funktionieren ohne Anmeldung
+        // Invitation/password link and "forgot password" work without login
         if (preg_match('#^/invite/([A-Za-z0-9_-]{43})$#', $path, $m)) {
             $method === 'POST' ? $this->inviteSave($m[1]) : $this->inviteForm($m[1]);
             return;
@@ -99,8 +99,8 @@ final class AdminController
             return;
         }
         if (!Auth::check()) {
-            // z. B. Konto inzwischen deaktiviert oder Passwort geändert; Hinweise (etwa „Sitzung
-            // abgelaufen“) bleiben erhalten
+            // e.g. account deactivated in the meantime or password changed; notices (such as "session
+            // expired") are kept
             $flash = $_SESSION['flash'] ?? [];
             Auth::logout();
             Auth::startSession();
@@ -113,7 +113,7 @@ final class AdminController
             $this->flash('error', 'Das Formular ist abgelaufen. Bitte erneut versuchen.');
             Http::redirect('/admin');
         }
-        // Startpasswort muss vor allem anderen ersetzt werden
+        // The initial password must be replaced before anything else
         if (Auth::user()['must_change_password'] && !in_array($path, ['/password-change', '/logout'], true)) {
             Http::redirect('/admin/password-change');
         }
@@ -130,7 +130,7 @@ final class AdminController
         $this->render('admin/message', ['title' => 'Nicht gefunden', 'text' => 'Diese Seite gibt es nicht.']);
     }
 
-    // ---------------------------------------------------------------- Anmeldung
+    // ---------------------------------------------------------------- Login
 
     private function login(string $error = ''): void
     {
@@ -143,8 +143,8 @@ final class AdminController
     }
 
     /**
-     * Zustandsloses CSRF-Token für Anmelde-, „Passwort vergessen“- und Einladungsformular (ohne
-     * Mindestalter, damit Passwortmanager sofort absenden können).
+     * Stateless CSRF token for the login, "forgot password" and invitation forms (without a
+     * minimum age, so that password managers can submit immediately).
      */
     private static function formToken(string $form): string
     {
@@ -176,11 +176,11 @@ final class AdminController
         Http::redirect('/admin/login');
     }
 
-    // ---------------------------------------------------------------- Runden
+    // ---------------------------------------------------------------- Rounds
 
     private function dashboard(): void
     {
-        $all = Auth::isAdmin(); // der Admin sieht alle Runden, Lehrkräfte nur ihre eigenen
+        $all = Auth::isAdmin(); // the admin sees all rounds, teachers only their own
         $rounds = Db::all(
             'SELECT r.*, u.display_name AS owner_name, u.is_active AS owner_active,
                     (SELECT MIN(d.day_date) FROM round_days d WHERE d.round_id = r.id) AS first_day,
@@ -234,20 +234,20 @@ final class AdminController
             'cancel_deadline_hours' => Http::post('cancel_deadline_hours'),
             'delete_after_hours' => $deleteAfter,
             'random_suffix' => Http::post('random_suffix') === '1' ? 1 : 0,
-            // Schalter nur übernehmen, wenn das Formular ihn kennt (sonst bisheriger Wert, z. B. bei
-            // einem vor dem Update geöffneten Formular)
+            // Only take over the switch if the form knows it (otherwise keep the previous value, e.g. for
+            // a form opened before the update)
             'code_required' => !$round || Http::post('code_required_field') === '1'
                 ? (Http::post('code_required') === '1' ? 1 : 0)
                 : (int) $round['code_required'],
             'new_code' => Http::post('new_code') === '1' ? 1 : 0,
-            // Mehrfachbuchungen; fehlt das Feld (Formular von vor dem Update), bleibt der bisherige Wert
+            // Multiple bookings; if the field is missing (form from before the update), the previous value stays
             'booking_limit' => in_array(Http::post('booking_limit'), BookingService::LIMITS, true)
                 ? Http::post('booking_limit') : (string) ($round['booking_limit'] ?? 'round'),
-            // Lehrkraft der Runde: wählt nur der Admin, sonst wer sie anlegt bzw. bisherige Lehrkraft
+            // Teacher of the round: only the admin chooses; otherwise whoever creates it or the previous teacher
             'user_id' => Auth::isAdmin() && ctype_digit(Http::post('user_id')) ? (int) Http::post('user_id') : (int) ($round['user_id'] ?? Auth::id()),
         ];
         $owner = Db::one('SELECT * FROM users WHERE id = ?', [$data['user_id']]);
-        // Neue Zuordnung nur zu aktiven Konten; die bisherige Lehrkraft bleibt auch deaktiviert erhalten
+        // New assignment only to active accounts; the previous teacher is kept even if deactivated
         if ($owner && !$owner['is_active'] && (int) $owner['id'] !== (int) ($round['user_id'] ?? 0)) {
             $owner = null;
         }
@@ -267,15 +267,15 @@ final class AdminController
         if ($deleteAfter !== '' && (!ctype_digit($deleteAfter) || (int) $deleteAfter > 8760)) {
             $errors[] = 'Löschfrist: leer lassen (nie löschen) oder 0–8760 Stunden.';
         }
-        // Sperren fürs Veröffentlichen nur, wenn die Runde dadurch (neu) öffentlich würde: beim
-        // Aktivieren oder beim Umhängen einer aktiven Runde – nicht bei jeder Änderung an ihr
+        // Block publishing only if the round would (newly) become public as a result: when
+        // activating it or reassigning an active round – not on every change to it
         $publishing = $owner && $data['is_active'] && (!$round || !$round['is_active'] || (int) $owner['id'] !== (int) $round['user_id']);
         if (!$owner) {
             $errors[] = 'Bitte eine aktive Lehrkraft für die Runde wählen.';
         } elseif ($publishing && ($hint = $this->publishBlocker($owner)) !== null) {
             $errors[] = $hint;
         }
-        // Neue Runde: Termintage gleich mit anlegen
+        // New round: create the appointment days right away
         $dayData = null;
         if (!$round) {
             [$dayData, $dayErrors] = $this->daysInput(null);
@@ -286,8 +286,8 @@ final class AdminController
             return;
         }
 
-        // Slug: bei neuen Runden aus dem Titel, beim Bearbeiten aus dem Feld.
-        // Ein unveränderter Slug bleibt exakt erhalten, damit verschickte Links gültig bleiben.
+        // Slug: for new rounds from the title, when editing from the field.
+        // An unchanged slug is kept exactly so that links already sent remain valid.
         if ($round && !$data['random_suffix'] && ($data['slug'] === '' || $data['slug'] === $round['slug'])) {
             $slug = $round['slug'];
         } else {
@@ -315,7 +315,7 @@ final class AdminController
                   WHERE id = ? AND user_id = ?',
                 [...$values, $data['is_active'], (int) $owner['id'], $id, (int) $round['user_id']]
             );
-            // Neue Adresse = alte Einladungen sollen nicht mehr funktionieren, also auch neuer Rundencode
+            // New address = old invitations should no longer work, so a new round code as well
             $newCode = $data['new_code'] || $slug !== $round['slug'];
             if ($newCode) {
                 Db::run('UPDATE rounds SET code = ? WHERE id = ?', [RoundCode::unique(), $id]);
@@ -327,7 +327,7 @@ final class AdminController
                     . ($booked ? " Die {$booked} bestehende(n) Buchung(en) sieht ab jetzt diese Lehrkraft; Zusammenfassungen gehen an sie." : ''));
             }
         } else {
-            // Runde und Tage gemeinsam: scheitert das Anlegen der Tage, entsteht keine leere Runde
+            // Round and days together: if creating the days fails, no empty round is left behind
             $ownerId = (int) $owner['id'];
             [$id, $count] = Db::transaction(function () use ($values, $now, $dayData, $ownerId): array {
                 $id = Db::insert(
@@ -391,7 +391,7 @@ final class AdminController
         ]);
     }
 
-    /** Übersetzungen je Zielsprache für die Rundenseite (mit Status). */
+    /** Translations per target language for the round page (with status). */
     private static function translationRows(array $round): array
     {
         $hash = Translator::sourceHash($round);
@@ -412,13 +412,13 @@ final class AdminController
         return $rows;
     }
 
-    /** Kennzeichen einer gespeicherten Übersetzung, um veraltete Formulare zu erkennen ('' = keine). */
+    /** Marker of a stored translation, to detect stale forms ('' = none). */
     private static function translationFingerprint(?array $t): string
     {
         return $t ? hash('sha256', $t['title'] . "\0" . ($t['description'] ?? '') . "\0" . $t['source_hash']) : '';
     }
 
-    /** Text zum Weitergeben an die Eltern (Link und ggf. Zugangscode). */
+    /** Text to pass on to parents (link and access code if applicable). */
     private static function invitationText(array $round, array $owner): string
     {
         $lines = [
@@ -443,12 +443,12 @@ final class AdminController
         return implode("\n", $lines);
     }
 
-    // ---------------------------------------------------------------- Übersetzungen
+    // ---------------------------------------------------------------- Translations
 
     /**
-     * Nimmt die im Browser der Lehrkraft erstellten Übersetzungen entgegen (fetch aus app.js,
-     * Antwort JSON). Gespeichert wird nur, wenn sie zum aktuellen Original gehören; ohne force
-     * nur fehlende oder veraltete Sprachen.
+     * Receives the translations created in the teacher's browser (fetch from app.js,
+     * JSON response). They are only saved if they belong to the current original; without force
+     * only missing or stale languages.
      */
     private function translationsAuto(int $id): void
     {
@@ -468,7 +468,7 @@ final class AdminController
             echo json_encode(['error' => 'outdated']);
             return;
         }
-        // app.js trägt die gespeicherten Werte sofort ins Formular „Übersetzungen“ ein (kein Neuladen)
+        // app.js immediately puts the saved values into the "Übersetzungen" form (no reload)
         $existing = Translator::forRound($id);
         $rows = [];
         foreach ($saved as $lang) {
@@ -483,12 +483,12 @@ final class AdminController
     }
 
     /**
-     * Übersetzungen von Hand speichern (gelten als manuell, bis sich das Original ändert).
-     * Gespeichert wird nur, was die Lehrkraft geändert hat: Das Formular schickt alle Sprachen,
-     * eine unveränderte veraltete Übersetzung bleibt veraltet, außer sie wird ausdrücklich als
-     * weiterhin passend bestätigt (t_confirm). Wurde eine Sprache seit dem Anzeigen des
-     * Formulars anderweitig geändert (t_seen passt nicht mehr, z. B. zweites Fenster),
-     * bleibt sie unangetastet.
+     * Save translations by hand (they count as manual until the original changes).
+     * Only what the teacher changed is saved: the form sends all languages,
+     * an unchanged stale translation stays stale unless it is explicitly confirmed as
+     * still fitting (t_confirm). If a language was changed elsewhere since the form
+     * was displayed (t_seen no longer matches, e.g. a second window),
+     * it is left untouched.
      */
     private function translationsSave(int $id): void
     {
@@ -506,17 +506,17 @@ final class AdminController
             if ($lang === $round['source_lang'] || !isset($titles[$lang]) || !is_string($titles[$lang])) {
                 continue;
             }
-            // Vergleich mit dem ungekürzten Text; gekürzt wird erst beim Speichern
+            // Compare with the untruncated text; truncation only happens when saving
             $title = trim($titles[$lang]);
             $desc = trim(str_replace("\r\n", "\n", is_string($descs[$lang] ?? null) ? $descs[$lang] : ''));
             $current = $existing[$lang] ?? null;
             if (isset($seen[$lang]) && $seen[$lang] !== self::translationFingerprint($current)) {
-                $conflicts[] = $lang; // inzwischen anderweitig geändert: nichts überschreiben
+                $conflicts[] = $lang; // changed elsewhere in the meantime: don't overwrite anything
                 continue;
             }
             if ($title === '') {
-                // leer = keine Übersetzung, Eltern sehen das Original. Bewusst leer gespeichert
-                // (aktuell, von Hand), damit die Browser-Übersetzung sie nicht wieder ergänzt.
+                // empty = no translation, parents see the original. Deliberately saved as empty
+                // (current, by hand) so that the browser translation does not fill it in again.
                 if ($current && trim((string) $current['title']) !== '') {
                     Translator::save($id, $lang, '', '', $hash, true);
                     $removed++;
@@ -528,7 +528,7 @@ final class AdminController
                 || trim((string) $current['description']) !== $desc;
             $confirm = $current && ($confirmed[$lang] ?? '') === '1' && $current['source_hash'] !== $hash;
             if (!$changed && !$confirm) {
-                continue; // unverändert (auch eine veraltete Übersetzung bleibt veraltet)
+                continue; // unchanged (a stale translation also stays stale)
             }
             Translator::save($id, $lang, $title, $desc, $hash, true);
             $saved++;
@@ -573,10 +573,10 @@ final class AdminController
                  $round['booking_deadline_hours'], $round['cancel_deadline_hours'],
                  $round['delete_after_hours'], $now, $now, (int) $round['user_id'], RoundCode::unique()]
             );
-            // Übersetzungen mitnehmen. Zum Original passende bekommen denselben Zusatz wie der
-            // Titel (soweit er nicht abgeschnitten wurde) und bleiben aktuell, auch von Hand
-            // korrigierte. Veraltete werden unverändert kopiert, damit ihr Hash weiter zu
-            // ihrem Text passt; der Browser ergänzt sie danach auf der Rundenseite.
+            // Carry over translations. Those matching the original get the same suffix as the
+            // title (unless it was truncated) and stay current, including ones corrected
+            // by hand. Stale ones are copied unchanged so that their hash still matches
+            // their text; the browser fills them in afterwards on the round page.
             $suffix = mb_substr($title, mb_strlen($round['title']));
             $oldHash = Translator::sourceHash($round);
             $newHash = Translator::sourceHash(['title' => $title] + $round);
@@ -616,7 +616,7 @@ final class AdminController
         Http::redirect('/admin');
     }
 
-    // ---------------------------------------------------------------- Tage & Pausen
+    // ---------------------------------------------------------------- Days & breaks
 
     private function dayAdd(int $roundId): void
     {
@@ -641,8 +641,8 @@ final class AdminController
     }
 
     /**
-     * Liest Datum(e), Zeiten, Termindauer und Pausen aus dem Formular.
-     * @return array{0:array,1:list<string>} [dayData, Fehler]
+     * Reads date(s), times, appointment duration and breaks from the form.
+     * @return array{0:array,1:list<string>} [dayData, errors]
      */
     private function daysInput(?int $roundId): array
     {
@@ -708,7 +708,7 @@ final class AdminController
 
     private const NO_SLOTS = 'Mit diesen Zeiten und Pausen entsteht kein einziger Termin.';
 
-    /** Gemeinsame Prüfung von Zeitraum und Termindauer (Anlegen und Bearbeiten). */
+    /** Shared check of time range and appointment duration (create and edit). */
     private static function timeErrors(?string $start, ?string $end, string $minutes): array
     {
         $errors = [];
@@ -721,13 +721,13 @@ final class AdminController
         return $errors;
     }
 
-    /** Hat die Runde dieses Datum schon (optional ohne den Tag $exceptDayId)? */
+    /** Does the round already have this date (optionally excluding the day $exceptDayId)? */
     private function dateTaken(int $roundId, string $date, int $exceptDayId = 0): bool
     {
         return Db::value('SELECT id FROM round_days WHERE round_id = ? AND day_date = ? AND id <> ?', [$roundId, $date, $exceptDayId]) !== null;
     }
 
-    /** Legt die Tage samt Pausen an und erzeugt die Slots. @return int Anzahl Slots */
+    /** Creates the days including breaks and generates the slots. @return int number of slots */
     private function createDays(int $roundId, array $dayData): int
     {
         return (int) Db::transaction(function () use ($roundId, $dayData): int {
@@ -779,8 +779,8 @@ final class AdminController
             'UPDATE round_days SET day_date = ?, start_time = ?, end_time = ?, slot_minutes = ? WHERE id = ?',
             [$in['date'], $in['start'], $in['end'], $in['minutes'], $id]
         );
-        // Wie bei „Tag hinzufügen“: ein Tag ab heute hebt den Ablauf auf (sonst würde die Runde samt
-        // Buchungen nach der Löschfrist gelöscht)
+        // As with "Tag hinzufügen": a day from today on lifts the expiry (otherwise the round including
+        // its bookings would be deleted after the deletion period)
         if ($in['date'] >= Time::today()) {
             Db::run('UPDATE rounds SET expired_at = NULL WHERE id = ? AND expired_at IS NOT NULL', [$day['round_id']]);
         }
@@ -817,7 +817,7 @@ final class AdminController
     private function breakDelete(int $id): void
     {
         $break = Db::one('SELECT * FROM day_breaks WHERE id = ?', [$id]) ?? $this->notFound();
-        // Eigentum wird über den Tag geprüft
+        // Ownership is checked via the day
         $day = $this->day((int) $break['day_id']);
         Db::run('DELETE FROM day_breaks WHERE id = ?', [$id]);
         $this->afterSync((int) $day['round_id'], (int) $day['id'], 'Pause entfernt.');
@@ -846,7 +846,7 @@ final class AdminController
         return [['date' => $date, 'start' => $start, 'end' => $end, 'minutes' => (int) $minutes], $errors];
     }
 
-    // ---------------------------------------------------------------- Slots & Buchungen
+    // ---------------------------------------------------------------- Slots & bookings
 
     private function slotToggleBlock(int $id): void
     {
@@ -926,7 +926,7 @@ final class AdminController
             $this->bookingEdit($id, $errors, $old);
             return;
         }
-        // Erst umbuchen: Schlägt das fehl, bleibt der Eintrag vollständig unverändert.
+        // Rebook first: if that fails, the entry stays completely unchanged.
         $moved = false;
         if ((int) $old['move_to'] > 0 && (int) $old['move_to'] !== (int) $booking['slot_id']) {
             try {
@@ -967,7 +967,7 @@ final class AdminController
         ];
     }
 
-    // ---------------------------------------------------------------- Druckansicht
+    // ---------------------------------------------------------------- Print view
 
     private function printView(int $roundId): void
     {
@@ -1000,14 +1000,14 @@ final class AdminController
         ], null);
     }
 
-    // ---------------------------------------------------------------- Einstellungen & Texte
+    // ---------------------------------------------------------------- Settings & texts
 
-    // ---------------------------------------------------------------- Profil & Passwort
+    // ---------------------------------------------------------------- Profile & password
 
     /**
-     * Warum eine Runde dieser Lehrkraft (noch) nicht aktiviert werden darf, oder null.
-     * Nötig: Anzeigename der Lehrkraft (Eltern sehen ihn) und die Angaben des Admins für
-     * Impressum und Datenschutz (er ist für alle Runden verantwortlich).
+     * Why a round of this teacher may not be activated (yet), or null.
+     * Required: the teacher's display name (parents see it) and the admin's details for
+     * legal notice and privacy policy (the admin is the controller for all rounds).
      */
     private function publishBlocker(array $owner): ?string
     {
@@ -1028,8 +1028,8 @@ final class AdminController
     }
 
     /**
-     * Konten, denen der Admin eine Runde zuordnen kann: alle aktiven, dazu die bisherige
-     * Lehrkraft der Runde, auch wenn sie deaktiviert ist (sonst wäre sie nicht vorausgewählt).
+     * Accounts the admin can assign a round to: all active ones, plus the previous
+     * teacher of the round, even if deactivated (otherwise they would not be preselected).
      * @return list<array>
      */
     private static function ownerChoices(int $currentOwner = 0): array
@@ -1041,7 +1041,7 @@ final class AdminController
         );
     }
 
-    /** Hinweise, was im Profil noch fehlt (Datenschutzhinweise/Zusammenfassungen brauchen es). */
+    /** Notes on what is still missing in the profile (privacy notices/summaries need it). */
     private function profileHints(): array
     {
         $u = Auth::user();
@@ -1088,7 +1088,7 @@ final class AdminController
         } elseif ($data['email'] !== '' && $this->emailTaken($data['email'], Auth::id())) {
             $errors[] = 'Diese E-Mail-Adresse gehört bereits zu einem anderen Konto.';
         }
-        // An die Adresse gehen Links zum Zurücksetzen des Passworts: Ändern nur mit aktuellem Passwort
+        // Password reset links go to this address: changing it requires the current password
         $oldEmail = (string) (Auth::user()['email'] ?? '');
         $emailChanged = mb_strtolower($data['email']) !== mb_strtolower($oldEmail);
         if (!$errors && $emailChanged && !password_verify(Http::postRaw('current_password'), (string) Auth::user()['password_hash'])) {
@@ -1154,7 +1154,7 @@ final class AdminController
         return Auth::changePassword(Auth::id(), Http::postRaw('current_password'), $new);
     }
 
-    // ---------------------------------------------------------------- Benutzerverwaltung (admin)
+    // ---------------------------------------------------------------- User management (admin)
 
     private function users(): void
     {
@@ -1185,13 +1185,13 @@ final class AdminController
         $data = [
             'display_name' => mb_substr(Http::post('display_name'), 0, 200),
             'email' => mb_strtolower(Http::post('email')),
-            'role' => $user ? $user['role'] : 'teacher', // genau ein Admin: Rollen sind nicht änderbar
+            'role' => $user ? $user['role'] : 'teacher', // exactly one admin: roles cannot be changed
             'is_active' => $user ? (Http::post('is_active') === '1' ? 1 : 0) : 1,
         ];
-        // Neue Konten: Benutzername = E-Mail-Adresse. Beim Bearbeiten frei änderbar.
+        // New accounts: username = email address. Freely changeable when editing.
         $data['username'] = $user ? Http::post('username') : $data['email'];
         if ($isSelf) {
-            // eigene Aktivierung nicht änderbar (sonst Aussperren möglich)
+            // own activation cannot be changed (otherwise locking oneself out would be possible)
             $data['is_active'] = 1;
         }
         $errors = [];
@@ -1232,7 +1232,7 @@ final class AdminController
         Http::redirect('/admin/users');
     }
 
-    /** Admin: neuen Passwort-Link senden. Das bisherige Passwort wird dabei ungültig. */
+    /** Admin: send a new password link. The previous password becomes invalid. */
     private function userResetPassword(int $id): void
     {
         $user = $this->userById($id);
@@ -1250,7 +1250,7 @@ final class AdminController
         Http::redirect('/admin/users');
     }
 
-    /** Link verschicken und Ergebnis anzeigen; bei Mailfehler den Link einmalig anzeigen. */
+    /** Send the link and show the result; on mail failure show the link once. */
     private function linkFlash(array $user, string $kind): void
     {
         [$sent, $link] = AccountLinks::send($user, $kind, Auth::user());
@@ -1262,7 +1262,7 @@ final class AdminController
         }
     }
 
-    // ---------------------------------------------------------------- Einladung / Passwort vergessen (ohne Login)
+    // ---------------------------------------------------------------- Invitation / forgot password (without login)
 
     private function inviteForm(string $token, array $errors = []): void
     {
@@ -1291,11 +1291,11 @@ final class AdminController
         AccountLinks::consume((int) $user['id'], $new);
         Auth::startSession(true);
         $this->flash('success', 'Ihr Passwort ist gespeichert. Bitte melden Sie sich jetzt an.');
-        $_SESSION['login_user'] = $user['username']; // nicht in der URL (Zugriffslogs)
+        $_SESSION['login_user'] = $user['username']; // not in the URL (access logs)
         Http::redirect('/admin/login');
     }
 
-    /** Token prüfen; Fehlversuche je IP begrenzt. */
+    /** Check the token; failed attempts limited per IP. */
     private function linkUser(string $token): ?array
     {
         [$limit, $window] = RateLimiter::limits('invite', 20, 3600);
@@ -1315,10 +1315,10 @@ final class AdminController
     }
 
     /**
-     * Antwort ist immer gleich und kommt vor dem Mailversand – verrät weder über den Text noch über
-     * die Antwortzeit, ob es ein Konto zur Adresse gibt. Ein vor weniger als 15 Minuten
-     * verschickter, noch gültiger Link wird nicht ersetzt (sonst könnten Fremde offene Links
-     * laufend entwerten).
+     * The response is always the same and comes before sending the email – reveals neither through
+     * the text nor through the response time whether an account exists for the address. A still
+     * valid link sent less than 15 minutes ago is not replaced (otherwise strangers could keep
+     * invalidating open links).
      */
     private function forgotSave(): void
     {
@@ -1327,7 +1327,7 @@ final class AdminController
         $user = null;
         if (self::checkFormToken('forgot') && RateLimiter::hit('forgot', $limit, $window)) {
             $input = mb_strtolower(Http::post('email'));
-            // Benutzername vor E-Mail (eindeutig), bei mehreren Treffern das älteste Konto
+            // Username before email (unique); with multiple matches the oldest account
             $user = $input !== '' ? Db::one(
                 'SELECT * FROM users WHERE (LOWER(email) = ? OR LOWER(username) = ?) AND is_active = 1 AND email IS NOT NULL
                   ORDER BY LOWER(username) = ? DESC, id LIMIT 1',
@@ -1339,13 +1339,13 @@ final class AdminController
         }
         $this->forgotForm(true);
         if (function_exists('fastcgi_finish_request')) {
-            fastcgi_finish_request(); // Antwort ist beim Browser, der Versand dauert unsichtbar
+            fastcgi_finish_request(); // the response is with the browser, sending happens invisibly
         } else {
-            // Ohne FPM: Antwortzeit vereinheitlichen (Ausgabe kommt erst am Ende)
+            // Without FPM: equalize the response time (output only comes at the end)
             usleep((int) max(0, (1.5 - (microtime(true) - $started)) * 1e6));
         }
         if ($user) {
-            // Bisheriges Passwort bleibt gültig, bis der Link genutzt wird
+            // The previous password stays valid until the link is used
             AccountLinks::send($user, AccountLinks::RESET);
         }
     }
@@ -1376,8 +1376,8 @@ final class AdminController
     }
 
     /**
-     * Mails an Eltern aus Einträgen von Hand: höchstens 30 je Konto und Stunde, damit ein Konto
-     * nicht als Verteiler für Mails an beliebige Adressen dient. Sonst Hinweis an die Meldung.
+     * Emails to parents from manual entries: at most 30 per account and hour, so that an account
+     * cannot serve as a distributor for emails to arbitrary addresses. Otherwise a note is added to the message.
      */
     private function teacherMailAllowed(string &$msg): bool
     {
@@ -1389,7 +1389,7 @@ final class AdminController
         return false;
     }
 
-    /** E-Mail-Adresse bereits von einem anderen Konto (als E-Mail oder Benutzername) belegt? */
+    /** Email address already used by another account (as email or username)? */
     private function emailTaken(string $email, int $exceptId): bool
     {
         return Db::value('SELECT id FROM users WHERE (LOWER(email) = ? OR LOWER(username) = ?) AND id <> ?',
@@ -1401,10 +1401,10 @@ final class AdminController
         return (int) Db::value("SELECT COUNT(*) FROM users WHERE role = 'admin' AND is_active = 1");
     }
 
-    // ---------------------------------------------------------------- Globale Texte (admin)
+    // ---------------------------------------------------------------- Global texts (admin)
 
     /**
-     * Hinweise auf veraltete, von Hand bearbeitete Rechtstexte (werden nicht automatisch ersetzt).
+     * Notes on outdated, hand-edited legal texts (they are not replaced automatically).
      * @return list<string>
      */
     private static function legalHints(): array
@@ -1416,7 +1416,7 @@ final class AdminController
             $hints[] = 'Die Datenschutzerklärung (' . $list($deepl) . ') nennt noch DeepL. '
                 . 'Übersetzt wird inzwischen im Browser der Lehrkraft – bitte den Absatz „Übersetzung der Texte der Lehrkraft“ durch den aus der Vorlage ersetzen.';
         }
-        // Altes Modell: Lehrkraft verantwortlich, Betreiberin als Auftragsverarbeiterin
+        // Old model: teacher as controller, operator as processor
         $old = Db::all(
             "SELECT lang FROM pages WHERE page_key = 'privacy' AND (content LIKE '%jeweils die Lehrkraft, bei der Sie%'
                 OR content LIKE '%im Auftrag der Lehrkräfte%' OR content LIKE '%is the teacher with whom you book%'
@@ -1477,7 +1477,7 @@ final class AdminController
         Http::redirect('/admin/page/' . $key . '/' . $lang);
     }
 
-    // ---------------------------------------------------------------- Hilfen
+    // ---------------------------------------------------------------- Helpers
 
     private function render(string $template, array $vars, string $layout = 'admin/layout'): void
     {
@@ -1505,10 +1505,10 @@ final class AdminController
         }
     }
 
-    // Zugriffsschutz: Alle Datensätze werden nur geladen, wenn die Runde der angemeldeten
-    // Person gehört (der Admin darf alle). Fremde IDs verhalten sich wie nicht vorhandene (404).
+    // Access control: all records are only loaded if the round belongs to the logged-in
+    // person (the admin may access all). Foreign IDs behave like non-existent ones (404).
 
-    /** Darf der angemeldete Nutzer Runden dieser Lehrkraft sehen und bearbeiten? Admin: alle. */
+    /** May the logged-in user see and edit rounds of this teacher? Admin: all. */
     private static function mayAccess(int $ownerId): bool
     {
         return Auth::isAdmin() || $ownerId === Auth::id();
@@ -1547,7 +1547,7 @@ final class AdminController
     }
 }
 
-/** Routen-Parameter: Ziffern als int, sonst String. */
+/** Route parameters: digits as int, otherwise string. */
 function intval_or_string(string $v): int|string
 {
     return ctype_digit($v) ? (int) $v : $v;

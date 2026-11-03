@@ -6,17 +6,17 @@ namespace App;
 use DateTimeImmutable;
 
 /**
- * Buchen, Umbuchen und Stornieren.
+ * Booking, rebooking and cancelling.
  *
- * Schutz gegen Doppelbuchung in zwei Stufen:
- * 1. Transaktion mit SELECT … FOR UPDATE auf den Slot (serialisiert parallele Buchungen)
- * 2. UNIQUE(slot_id) in bookings als harte Garantie; Fehler 1062 → „bereits vergeben“
+ * Two-stage protection against double bookings:
+ * 1. Transaction with SELECT … FOR UPDATE on the slot (serializes parallel bookings)
+ * 2. UNIQUE(slot_id) in bookings as a hard guarantee; error 1062 → "already taken"
  *
- * Mehrfachbuchungen (Einstellung der Runde, booking_limit): „round“ = ein Termin pro Person in
- * der Runde, „day“ = einer pro Person und Tag, „none“ = nur der Hinweis. Dieselbe Person ist
- * derselbe Name und, wenn beide Buchungen eine haben, dieselbe E-Mail-Adresse (samePerson()).
- * Gilt für Eltern; Einträge der Lehrkraft sind nicht begrenzt. Bei aktiver Sperre wird die Runde
- * gesperrt (FOR UPDATE), damit zwei gleichzeitige Buchungen nicht beide durchkommen.
+ * Multiple bookings (round setting, booking_limit): "round" = one appointment per person in
+ * the round, "day" = one per person and day, "none" = notice only. The same person means
+ * the same name and, if both bookings have one, the same email address (samePerson()).
+ * Applies to parents; entries made by the teacher are not limited. With an active limit the round is
+ * locked (FOR UPDATE) so that two simultaneous bookings do not both get through.
  */
 final class BookingService
 {
@@ -25,10 +25,10 @@ final class BookingService
     public const DEADLINE = 'deadline';
     public const LIMIT_ROUND = 'limit_round';
     public const LIMIT_DAY = 'limit_day';
-    /** Werte von rounds.booking_limit */
+    /** Values of rounds.booking_limit */
     public const LIMITS = ['none', 'round', 'day'];
 
-    /** SQL-Grundgerüst: Buchung mit Slot, Tag und Runde. */
+    /** SQL skeleton: booking with slot, day and round. */
     private const DETAIL_SQL = 'SELECT b.*, s.start_time, s.end_time, s.is_conflict, d.day_date, d.id AS day_id,
                                        r.id AS round_id, r.title, r.description, r.source_lang, r.slug, r.is_active, r.cancel_deadline_hours,
                                        r.booking_deadline_hours, r.user_id,
@@ -44,7 +44,7 @@ final class BookingService
         return new DateTimeImmutable($row['day_date'] . ' ' . $row['start_time']);
     }
 
-    /** Freie, öffentlich buchbare Slots einer Runde (ohne $exceptSlotId). */
+    /** Free, publicly bookable slots of a round (excluding $exceptSlotId). */
     public static function freeSlots(array $round, ?int $exceptSlotId = null): array
     {
         $rows = Db::all(
@@ -61,7 +61,7 @@ final class BookingService
         return array_values(array_filter($rows, static fn (array $r) => self::slotStart($r) > $limit));
     }
 
-    /** Gruppiert Slots nach Datum: [['date' => Y-m-d, 'slots' => [...]], ...] */
+    /** Groups slots by date: [['date' => Y-m-d, 'slots' => [...]], ...] */
     public static function groupByDay(array $slots): array
     {
         $days = [];
@@ -73,8 +73,8 @@ final class BookingService
     }
 
     /**
-     * Buchung durch Eltern.
-     * @return array{0:int,1:string} [buchungs_id, token_klartext]
+     * Booking by parents.
+     * @return array{0:int,1:string} [booking_id, token_plaintext]
      * @throws BookingException
      */
     public static function book(array $round, int $slotId, string $name, ?string $email, string $lang): array
@@ -82,7 +82,7 @@ final class BookingService
         return self::create($round, $slotId, $name, $email, $lang, 'parent');
     }
 
-    /** Eintrag durch die Lehrkraft: ignoriert Sperre und Buchungsfrist. */
+    /** Entry by the teacher: ignores blocks and the booking deadline. */
     public static function adminBook(array $round, int $slotId, string $name, ?string $email, string $lang): array
     {
         return self::create($round, $slotId, $name, $email, $lang, 'admin');
@@ -116,20 +116,20 @@ final class BookingService
     }
 
     /**
-     * Verschiebt eine Buchung auf einen anderen Slot derselben Runde.
+     * Moves a booking to another slot of the same round.
      * @throws BookingException
      */
     public static function move(array $booking, int $newSlotId, bool $byAdmin): void
     {
         $round = Db::one('SELECT * FROM rounds WHERE id = ?', [$booking['round_id']]);
-        // Eltern: nur solange das Konto der Lehrkraft aktiv ist und die Angaben des Admins vorliegen
-        // (wie bei der öffentlichen Rundenseite); Absagen bleibt immer möglich
+        // Parents: only as long as the teacher's account is active and the admin's details are present
+        // (as for the public round page); cancelling always remains possible
         if (!$round || (!$byAdmin && (!Db::value('SELECT is_active FROM users WHERE id = ?', [$round['user_id']]) || !Operator::ready()))) {
             throw new BookingException(self::UNAVAILABLE);
         }
         try {
             self::retryOnDeadlock(static fn () => Db::transaction(static function () use ($booking, $newSlotId, $byAdmin, $round): void {
-                // Umbuchen ändert die Zahl der Termine nicht; nur bei „pro Tag“ zählt ein anderer Tag
+                // Rebooking does not change the number of appointments; only with "per day" does another day count
                 $limited = !$byAdmin && ($round['booking_limit'] ?? 'none') === 'day' && self::lockForLimit($round);
                 $slot = self::lockSlot($newSlotId, (int) $round['id']);
                 self::assertFree($slot, $round, $byAdmin);
@@ -175,9 +175,9 @@ final class BookingService
     }
 
     /**
-     * Dürfen Eltern diese Buchung noch absagen? Unabhängig vom Aktiv-Status der Runde,
-     * damit eine deaktivierte (z. B. volle) Runde Absagen nicht verhindert.
-     * Umbuchen ist zusätzlich nur bei aktiver Runde möglich (siehe assertFree).
+     * May parents still cancel this booking? Independent of the round's active status,
+     * so that a deactivated (e.g. full) round does not prevent cancellations.
+     * Rebooking is additionally only possible for an active round (see assertFree).
      */
     public static function canChange(array $booking): bool
     {
@@ -190,9 +190,9 @@ final class BookingService
     }
 
     /**
-     * Dieselbe Person? Gleicher Name (Groß-/Kleinschreibung und Leerzeichen egal) und, wenn beide
-     * eine E-Mail-Adresse haben, dieselbe. Fehlt sie bei einer, zählt nur der Name (sonst ließe sich
-     * die Sperre durch Weglassen der Adresse umgehen). Geschwister mit eigenem Namen sind verschieden.
+     * The same person? Same name (case and whitespace irrelevant) and, if both
+     * have an email address, the same one. If one lacks it, only the name counts (otherwise
+     * the limit could be bypassed by omitting the address). Siblings with their own name are different.
      */
     public static function samePerson(string $name1, ?string $email1, string $name2, ?string $email2): bool
     {
@@ -206,9 +206,9 @@ final class BookingService
     }
 
     /**
-     * Gleichzeitig bearbeitet die Lehrkraft einen Tag (Slots werden neu berechnet): InnoDB kann dann
-     * eine der Transaktionen als Deadlock bzw. nach Wartezeit abbrechen. Einmal wiederholen, danach
-     * wie „gerade vergeben“ behandeln statt eines Serverfehlers.
+     * The teacher edits a day at the same time (slots are recalculated): InnoDB may then
+     * abort one of the transactions as a deadlock or after a lock wait. Retry once, then
+     * treat it like "just taken" instead of a server error.
      * @template T
      * @param callable(): T $fn
      * @return T
@@ -230,7 +230,7 @@ final class BookingService
         }
     }
 
-    /** Sperrt die Runde für die Prüfung, falls sie Mehrfachbuchungen begrenzt. true = begrenzt. */
+    /** Locks the round for the check if it limits multiple bookings. true = limited. */
     private static function lockForLimit(array $round): bool
     {
         if (!in_array($round['booking_limit'] ?? 'none', ['round', 'day'], true)) {
@@ -240,7 +240,7 @@ final class BookingService
         return true;
     }
 
-    /** @throws BookingException wenn dieselbe Person in der Runde bzw. an dem Tag schon einen Termin hat */
+    /** @throws BookingException if the same person already has an appointment in the round or on that day */
     private static function assertWithinLimit(array $round, string $dayDate, string $name, ?string $email, int $exceptId = 0): void
     {
         $perDay = ($round['booking_limit'] ?? 'none') === 'day';
@@ -284,7 +284,7 @@ final class BookingService
         }
     }
 
-    /** Ein Konflikt-Slot ohne Buchung hat keinen Zweck mehr. */
+    /** A conflict slot without a booking no longer serves a purpose. */
     private static function removeOrphanedConflict(int $slotId): void
     {
         Db::run(

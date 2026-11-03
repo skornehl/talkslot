@@ -1,4 +1,4 @@
-<?php /** Formular „Tage hinzufügen“. @var array $days @var int $rid @var string $csrf @var array $addDayData @var array $addDayErrors */ ?>
+<?php /** "Add days" form. @var array $days @var int $rid @var string $csrf @var array $addDayData @var array $addDayErrors */ ?>
 <section class="card" id="add-day">
   <h2><?= $days ? 'Weitere Tage hinzufügen' : 'Termine anlegen' ?></h2>
   <?php if (!$days): ?><p>Diese Runde hat noch keine Termine. Legen Sie fest, wann die Gespräche stattfinden.</p><?php endif; ?>

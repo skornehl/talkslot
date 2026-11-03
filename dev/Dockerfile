@@ -1,4 +1,4 @@
-# Lokale Testumgebung: PHP 8.5 + Apache mit mod_rewrite/headers (wie Shared Hosting)
+# Local test environment: PHP 8.5 + Apache with mod_rewrite/headers (like shared hosting)
 FROM php:8.5-apache
 RUN docker-php-ext-install pdo_mysql \
  && a2enmod rewrite headers \

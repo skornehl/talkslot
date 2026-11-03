@@ -6,7 +6,7 @@ namespace App;
 use App\Controller\AdminController;
 use App\Controller\PublicController;
 
-/** Front-Controller: verteilt Anfragen an öffentlichen Bereich bzw. Admin. */
+/** Front controller: dispatches requests to the public area or admin. */
 final class App
 {
     public static function run(): void
@@ -21,7 +21,7 @@ final class App
                 Cleanup::maybeRun();
             }
         } catch (\Throwable $e) {
-            Alert::exception($e, 'Migration/Bereinigung'); // darf die Seite nicht blockieren
+            Alert::exception($e, 'Migration/Bereinigung'); // must not block the page
         }
 
         $path = Http::path();
@@ -35,22 +35,22 @@ final class App
             return;
         }
 
-        // switch_lang: Sprachknopf, der das Buchungsformular samt Eingaben absendet
+        // switch_lang: language button that submits the booking form including its input
         $lang = $_POST['switch_lang'] ?? $_GET['lang'] ?? $_POST['lang'] ?? null;
         I18n::init(is_string($lang) ? $lang : null);
         (new PublicController())->dispatch($path, Http::method());
     }
 
-    /** Schlüssel für den Web-Cron, abgeleitet aus dem App-Secret (kein eigenes Secret nötig). */
+    /** Key for the web cron, derived from the app secret (no separate secret needed). */
     public static function cronToken(): string
     {
         return hash_hmac('sha256', 'cron', (string) Config::get('secret', ''));
     }
 
     /**
-     * Web-Cron als Ersatz für einen Cronjob auf dem Server: POST /cron mit Header
-     * „X-Cron-Token“. Der Schlüssel steht nie in der URL (kein Eintrag in Zugriffslogs).
-     * Antwort: nur Anzahlen, keine personenbezogenen Daten.
+     * Web cron as a replacement for a cron job on the server: POST /cron with header
+     * "X-Cron-Token". The key never appears in the URL (no entry in access logs).
+     * Response: counts only, no personal data.
      */
     private static function webCron(): void
     {

@@ -4,18 +4,18 @@ declare(strict_types=1);
 namespace App;
 
 /**
- * Betreiber der Plattform = das (einzige) Admin-Konto.
+ * Operator of the platform = the (only) admin account.
  *
- * Der Admin ist datenschutzrechtlich verantwortlich für alle Terminrunden; seine Angaben
- * („Angaben für Impressum und Datenschutz“ im Profil, Spalte users.controller_contact)
- * ersetzen in Impressum und Datenschutzerklärung den Platzhalter [[VERANTWORTLICHE]].
- * Ohne diese Angaben sind keine Runden öffentlich erreichbar.
+ * Under data protection law the admin is the controller for all rounds; their details
+ * ("Angaben für Impressum und Datenschutz" in the profile, column users.controller_contact)
+ * replace the placeholder [[VERANTWORTLICHE]] in the legal notice and privacy policy.
+ * Without these details no rounds are publicly reachable.
  */
 final class Operator
 {
     public const PLACEHOLDER = '[[VERANTWORTLICHE]]';
 
-    /** SQL-Bedingung für öffentliche Abfragen: dieselbe Prüfung wie ready() (dasselbe Konto). */
+    /** SQL condition for public queries: the same check as ready() (the same account). */
     public static function readySql(): string
     {
         return self::ready() ? '1 = 1' : '1 = 0';
@@ -24,7 +24,7 @@ final class Operator
     private static ?array $admin = null;
     private static bool $loaded = false;
 
-    /** Das Admin-Konto (bei mehreren ältere Stände: das älteste aktive). */
+    /** The admin account (if there are several from older versions: the oldest active one). */
     public static function admin(): ?array
     {
         if (!self::$loaded) {
@@ -34,7 +34,7 @@ final class Operator
         return self::$admin;
     }
 
-    /** Angaben für Impressum und Datenschutz ('' = fehlen). */
+    /** Details for legal notice and privacy policy ('' = missing). */
     public static function contact(): string
     {
         $admin = self::admin();
@@ -46,7 +46,7 @@ final class Operator
         return self::contact() !== '';
     }
 
-    /** Name der verantwortlichen Stelle (erste Zeile der Angaben), z. B. für den Mail-Footer. */
+    /** Name of the controller (first line of the details), e.g. for the mail footer. */
     public static function name(): string
     {
         foreach (explode("\n", self::contact()) as $line) {
@@ -57,14 +57,14 @@ final class Operator
         return '';
     }
 
-    /** Setzt die Angaben in einen Seitentext ein (fehlen sie: Hinweis $fallback). */
+    /** Inserts the details into a page text (if missing: notice $fallback). */
     public static function fill(string $content, string $fallback): string
     {
         $contact = self::contact();
         return str_replace(self::PLACEHOLDER, $contact !== '' ? $contact : $fallback, $content);
     }
 
-    /** Nach Änderungen am Admin-Konto im selben Request neu laden. */
+    /** Reload after changes to the admin account within the same request. */
     public static function forget(): void
     {
         self::$admin = null;

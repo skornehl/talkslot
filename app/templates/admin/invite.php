@@ -1,4 +1,4 @@
-<?php /** Passwort über Einladungs-/Reset-Link festlegen. @var array $user @var string $token @var array $errors */ use App\Csrf; ?>
+<?php /** Set password via invitation/reset link. @var array $user @var string $token @var array $errors */ use App\Csrf; ?>
 <div class="narrow">
   <h1>Passwort festlegen</h1>
   <p>Hallo <?= e($user['display_name']) ?>, legen Sie hier Ihr Passwort fest. Ihr Benutzername: <strong><?= e($user['username']) ?></strong></p>

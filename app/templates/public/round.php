@@ -1,6 +1,6 @@
 <?php
 /**
- * Öffentliche Rundenseite.
+ * Public round page.
  * @var array $round @var array $days @var string $csrf @var array $errors @var array $old
  */
 ?>

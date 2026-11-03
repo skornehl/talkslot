@@ -1,29 +1,29 @@
-# Schalter für die aktive Version auf dem Server (Rollback ohne neues Deployment).
-# Actions → „Version umschalten“ → Run workflow:
-#   previous   eine Version zurück (Standard)
-#   <Name>     genau diese Version, z. B. 20261102-153012-v1.9.0 (Namen: Lauf mit „list“)
-#   list       nur anzeigen, was auf dem Server liegt
-# Nach dem Umschalten wird die Seite geprüft; klappt das nicht, bleibt die bisherige Version aktiv.
-# Der nächste Push auf main deployt wieder den neuesten Stand. Die Datenbank wird nicht zurückgesetzt:
-# Eine ältere Version läuft mit dem neueren Schema, solange Migrationen nur Spalten/Tabellen mit
-# Standardwerten hinzufügen (Regel, siehe README „Deployment“).
-name: Version umschalten
+# Switch for the active version on the server (rollback without a new deployment).
+# Actions → "Switch version" → Run workflow:
+#   previous   one version back (default)
+#   <name>     exactly this version, e.g. 20261102-153012-v1.9.0 (names: run with "list")
+#   list       only show what is on the server
+# After switching, the site is checked; if that fails, the previous version stays active.
+# The next push to main deploys the latest code again. The database is not rolled back:
+# an older version runs with the newer schema as long as migrations only add columns/tables with
+# default values (rule, see README "Deployment").
+name: Switch version
 
 on:
   workflow_dispatch:
     inputs:
       target:
-        description: 'previous, list oder Versionsname'
+        description: 'previous, list or version name'
         required: true
         default: previous
-  # Aufruf aus einem eigenen Repo mit nur Konfiguration (siehe deploy.yml)
+  # Called from a separate repo containing only configuration (see deploy.yml)
   workflow_call:
     inputs:
       target:
         type: string
         default: previous
       ref:
-        description: TalkSlot-Version für bin/deploy.sh
+        description: TalkSlot version for bin/deploy.sh
         type: string
         required: true
       repository:
@@ -31,7 +31,7 @@ on:
         default: skornehl/talkslot
 
 concurrency:
-  group: deploy # gemeinsam mit „Deploy“: nie zwei Umschaltungen gleichzeitig
+  group: deploy # shared with "Deploy": never two switches at the same time
   cancel-in-progress: false
 
 permissions:
@@ -41,16 +41,16 @@ jobs:
   switch:
     runs-on: ubuntu-latest
     if: vars.FTP_HOST != ''
-    environment: production # FTP-Zugang liegt in der Umgebung (nur main)
+    environment: production # FTP credentials live in the environment (main only)
     env:
       FTP_URL: ftp://${{ vars.FTP_HOST }}
       APP_DIR: ${{ vars.APP_DIR || 'talkslot-app' }}
       WEB_DIR: ${{ vars.WEB_DIR }}
       BASE_URL: ${{ vars.BASE_URL }}
     steps:
-      # Code per git statt actions/checkout: keine fremden Actions nötig. Das Token steht nur im
-      # Header dieser Befehle, nicht in .git/config.
-      - name: Code holen
+      # Code via git instead of actions/checkout: no third-party actions needed. The token is only in
+      # the header of these commands, not in .git/config.
+      - name: Fetch code
         env:
           REPO: ${{ inputs.repository || github.repository }}
           REF: ${{ inputs.ref || github.sha }}
@@ -58,11 +58,11 @@ jobs:
         run: |
           git init -q . && git remote add origin "https://github.com/$REPO.git"
           AUTH="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$TOKEN" | base64 -w0)"
-          git -c http.extraheader="$AUTH" fetch -q --depth=1 origin "$REF" # Commit, Tag oder Branch
+          git -c http.extraheader="$AUTH" fetch -q --depth=1 origin "$REF" # commit, tag or branch
           git checkout -q --detach "FETCH_HEAD^{commit}"
-          git log -1 --format='Stand: %h %s'
+          git log -1 --format='Checked out: %h %s'
 
-      - name: Umschalten
+      - name: Switch
         env:
           FTP_USER: ${{ secrets.FTP_USERNAME }}
           FTP_PASS: ${{ secrets.FTP_PASSWORD }}

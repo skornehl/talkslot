@@ -1,4 +1,4 @@
-/* Druckansicht der Terminliste (Browser → Drucken / „Als PDF speichern“) */
+/* Print view of the appointment list (browser → Print / "Save as PDF") */
 
 @page { size: A4 portrait; margin: 15mm 14mm; }
 

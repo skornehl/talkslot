@@ -1,5 +1,5 @@
 <?php
-/** Layout der öffentlichen Seiten. @var string $content @var string $title */
+/** Layout of the public pages. @var string $content @var string $title */
 use App\Http;
 use App\I18n;
 ?>
@@ -32,11 +32,11 @@ use App\I18n;
       <span class="version"><?= e(t('footer.version')) ?> <?= e(App\Version::label()) ?></span>
     </nav>
     <?php if (count(I18n::languages()) > 1):
-      // Sprachlinks nur für unbedenkliche Pfade (sonst z. B. /\\host → fremde Domain), ansonsten Startseite
+      // Language links only for harmless paths (otherwise e.g. /\\host → foreign domain), else home page
       $langPath = preg_match('#^/(?:[A-Za-z0-9._~-]+(?:/[A-Za-z0-9._~-]+)*)?$#', Http::path()) ? Http::path() : '/'; ?>
     <nav aria-label="<?= e(t('footer.language')) ?>" class="lang-switch">
       <?php foreach (I18n::languages() as $code):
-        // Flagge mit Sprachnamen (für Screenreader und als Tooltip in der Landessprache)
+        // Flag with language name (for screen readers and as a tooltip in that language)
         $langName = I18n::name($code);
         $flag = is_file(asset_file('flags/' . $code . '.svg'))
             ? '<img src="' . e(asset('flags/' . $code . '.svg')) . '" alt="" width="28" height="19" class="flag"><span class="visually-hidden">' . e($langName) . '</span>'

@@ -1,12 +1,12 @@
 <?php
 /**
- * Eingabe für Termintage: Datum(e), Zeitraum, Termindauer, Pausen + Live-Vorschau.
- * Genutzt beim Anlegen einer Runde und bei „Tag hinzufügen“.
+ * Input for appointment days: date(s), time range, slot length, breaks + live preview.
+ * Used when creating a round and for "Add day".
  * @var array $dayData ['dates' => list, 'start' => 'HH:MM', 'end' => ..., 'minutes' => int, 'breaks' => list<[start,end,label]>]
  */
 $dates = $dayData['dates'] ?: [''];
-// Pausenzeilen nur für eingegebene Pausen (z. B. nach einem Fehler); weitere fügt
-// „+ Pause hinzufügen“ aus der Vorlage hinzu.
+// Break rows only for breaks already entered (e.g. after an error); "+ Pause hinzufügen"
+// adds more from the template.
 $breaks = $dayData['breaks'] ?: [];
 $breakRow = static function (string $bs, string $be, string $bl): void { ?>
       <div class="inline-form break-row">

@@ -3,17 +3,17 @@ declare(strict_types=1);
 
 namespace App;
 
-/** Anfrage-/Antwort-Hilfen: Pfad, Weiterleitungen, HTTPS und Sicherheits-Header. */
+/** Request/response helpers: path, redirects, HTTPS and security headers. */
 final class Http
 {
-    /** Pfadanteil der base_url ohne abschließenden Schrägstrich ('' bei eigener Subdomain). */
+    /** Path part of base_url without trailing slash ('' for a dedicated subdomain). */
     public static function basePath(): string
     {
         $path = (string) (parse_url((string) Config::get('base_url', ''), PHP_URL_PATH) ?? '');
         return rtrim($path, '/');
     }
 
-    /** Schema + Host aus der base_url (nie aus dem Host-Header, gegen Header-Injection). */
+    /** Scheme + host from base_url (never from the Host header, against header injection). */
     public static function origin(): string
     {
         $p = parse_url((string) Config::get('base_url', ''));
@@ -50,14 +50,14 @@ final class Http
         header('Referrer-Policy: no-referrer');
         header('Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=()');
         header('Cross-Origin-Opener-Policy: same-origin');
-        // Seiten enthalten ggf. personenbezogene Daten: nicht zwischenspeichern
+        // Pages may contain personal data: do not cache
         header('Cache-Control: no-store, max-age=0');
         if (self::isHttps()) {
             header('Strict-Transport-Security: max-age=31536000');
         }
     }
 
-    /** Angefragter Pfad relativ zur Anwendung, z. B. "/admin/round/3". */
+    /** Requested path relative to the application, e.g. "/admin/round/3". */
     public static function path(): string
     {
         $uri = (string) (parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH) ?? '/');
@@ -78,20 +78,20 @@ final class Http
         return self::method() === 'POST';
     }
 
-    /** POST-Wert als getrimmter String (Arrays und ungültiges UTF-8 werden ignoriert). */
+    /** POST value as trimmed string (arrays and invalid UTF-8 are ignored). */
     public static function post(string $key, string $default = ''): string
     {
         $v = self::raw($_POST[$key] ?? null);
         return $v !== null ? trim($v) : $default;
     }
 
-    /** POST-Wert unverändert (z. B. Passwörter, Freitext mit Leerzeichen am Rand); '' bei Array/ungültigem UTF-8. */
+    /** POST value unchanged (e.g. passwords, free text with leading/trailing spaces); '' for array/invalid UTF-8. */
     public static function postRaw(string $key): string
     {
         return self::raw($_POST[$key] ?? null) ?? '';
     }
 
-    /** GET-Parameter als String; '' bei Array/ungültigem UTF-8. */
+    /** GET parameter as string; '' for array/invalid UTF-8. */
     public static function query(string $key): string
     {
         return trim(self::raw($_GET[$key] ?? null) ?? '');
@@ -102,7 +102,7 @@ final class Http
         return is_string($v) && mb_check_encoding($v, 'UTF-8') ? $v : null;
     }
 
-    /** Weiterleitung (303 See Other – nach POST immer GET). */
+    /** Redirect (303 See Other – always GET after POST). */
     public static function redirect(string $path, array $query = [], string $fragment = ''): never
     {
         header('Location: ' . url($path, $query) . ($fragment !== '' ? '#' . rawurlencode($fragment) : ''), true, 303);

@@ -1,4 +1,4 @@
-# Nur für die lokale Entwicklung: docker compose -f dev/compose.yml up -d
+# Local development only: docker compose -f dev/compose.yml up -d
 name: talkslot-dev
 services:
   db:

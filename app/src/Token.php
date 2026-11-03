@@ -4,13 +4,13 @@ declare(strict_types=1);
 namespace App;
 
 /**
- * Geheime Änderungs-/Stornierungstoken.
- * Klartext (256 Bit, base64url, 43 Zeichen) steht nur im Link; die Datenbank
- * speichert ausschließlich den SHA-256-Hash.
+ * Secret change/cancellation tokens.
+ * The plain text (256 bits, base64url, 43 characters) appears only in the link; the database
+ * stores only the SHA-256 hash.
  */
 final class Token
 {
-    /** @return array{0:string,1:string} [klartext, hash] */
+    /** @return array{0:string,1:string} [plaintext, hash] */
     public static function generate(): array
     {
         $plain = rtrim(strtr(base64_encode(random_bytes(32)), '+/', '-_'), '=');

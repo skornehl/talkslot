@@ -4,10 +4,10 @@ declare(strict_types=1);
 namespace App;
 
 /**
- * Welcher Stand läuft? Das Deployment bestimmt bei jedem Lauf auf main die nächste Version
- * (bin/next-version.php → next()), schreibt sie mit Commit und Zeitpunkt nach app/version.php
- * (bin/build-version.php) und legt nach erfolgreichem Upload das Release an.
- * Lokal ohne diese Datei: „dev“ mit dem Commit aus .git (ohne Shell-Aufruf).
+ * Which build is running? On every run on main, the deployment determines the next version
+ * (bin/next-version.php → next()), writes it with commit and timestamp to app/version.php
+ * (bin/build-version.php) and creates the release after a successful upload.
+ * Locally without this file: "dev" with the commit from .git (without a shell call).
  */
 final class Version
 {
@@ -32,8 +32,8 @@ final class Version
     }
 
     /**
-     * Anzeige, z. B. „1.2.0“, „1.2.0+3 (abc1234)“ (3 Commits nach dem Release) oder „abc1234“
-     * (noch kein Release); mit Zeitpunkt des Deployments in Ortszeit.
+     * Display, e.g. "1.2.0", "1.2.0+3 (abc1234)" (3 commits after the release) or "abc1234"
+     * (no release yet); with the deployment time in local time.
      */
     public static function label(?array $info = null): string
     {
@@ -46,7 +46,7 @@ final class Version
         } elseif ($v === 'dev' || $v === '') {
             $label = 'dev' . ($info['commit'] !== '' ? ' (' . $info['commit'] . ')' : '');
         } else {
-            $label = substr($v, 0, 40); // nur Commit (kein Tag erreichbar)
+            $label = substr($v, 0, 40); // commit only (no tag reachable)
         }
         $ts = $info['built_at'] !== '' ? strtotime($info['built_at']) : false;
         if ($ts !== false) {
@@ -56,10 +56,10 @@ final class Version
     }
 
     /**
-     * Nächste Version nach Semantic Versioning aus den Commit-Nachrichten seit dem letzten
-     * Tag (Conventional Commits): „typ!:“ oder „BREAKING CHANGE:“ → Major, „feat:“ → Minor,
-     * alles andere → Patch. Ohne bisherigen Tag: v1.0.0.
-     * @param list<string> $messages vollständige Commit-Nachrichten (Betreff und Text)
+     * Next version according to Semantic Versioning from the commit messages since the last
+     * tag (Conventional Commits): "type!:" or "BREAKING CHANGE:" → major, "feat:" → minor,
+     * everything else → patch. Without a previous tag: v1.0.0.
+     * @param list<string> $messages full commit messages (subject and body)
      */
     public static function next(string $lastTag, array $messages): string
     {

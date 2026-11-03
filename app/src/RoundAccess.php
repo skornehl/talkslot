@@ -4,13 +4,13 @@ declare(strict_types=1);
 namespace App;
 
 /**
- * Schutz einer Terminrunde mit ihrem Rundencode („Nur mit Rundencode“).
+ * Protection of a round with its round code ("Nur mit Rundencode" option).
  *
- * Ist der Schutz an, zeigt der Link nur die Code-Abfrage; Titel, Beschreibung und Termine
- * erscheinen erst nach Eingabe des Rundencodes. Wer den Code auf der Startseite eingibt,
- * ist direkt freigeschaltet. Ohne Cookie: Nach korrekter Eingabe enthält das Buchungsformular
- * ein signiertes Zugangstoken (HMAC über Runde, Code und Zeitstempel). Ein neuer Rundencode
- * macht alle offenen Token ungültig.
+ * If protection is on, the link only shows the code prompt; title, description and appointments
+ * appear only after the round code has been entered. Whoever enters the code on the start page
+ * is unlocked directly. Without a cookie: after correct input the booking form contains
+ * a signed access token (HMAC over round, code and timestamp). A new round code
+ * invalidates all outstanding tokens.
  */
 final class RoundAccess
 {
@@ -19,11 +19,11 @@ final class RoundAccess
         if (array_key_exists('code_required', $round)) {
             return !empty($round['code_required']);
         }
-        // Übergang beim Upload: neuer Code, Migration 10 noch nicht gelaufen → alte PIN-Spalte
+        // Transition during upload: new code, migration 10 not yet run → old PIN column
         return (string) ($round['access_pin'] ?? '') !== '';
     }
 
-    /** Stimmt die Eingabe (Schreibweise egal, siehe RoundCode::normalize) mit dem Rundencode überein? */
+    /** Does the input (case/format irrelevant, see RoundCode::normalize) match the round code? */
     public static function checkCode(array $round, string $input): bool
     {
         $code = RoundCode::normalize($input);

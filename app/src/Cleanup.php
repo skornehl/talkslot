@@ -4,12 +4,12 @@ declare(strict_types=1);
 namespace App;
 
 /**
- * Automatische Datenlöschung.
- * Läuft per Cronjob (bin/cron.php) und zusätzlich als Fallback bei Seitenaufrufen.
+ * Automatic data deletion.
+ * Runs via cron job (bin/cron.php) and additionally as a fallback on page requests.
  */
 final class Cleanup
 {
-    /** Fallback: höchstens alle N Minuten bei einem Seitenaufruf ausführen. */
+    /** Fallback: run at most every N minutes on a page request. */
     public static function maybeRun(): void
     {
         if (!Config::get('cleanup_on_request', true)) {
@@ -20,7 +20,7 @@ final class Cleanup
         if (time() - $last < $interval) {
             return;
         }
-        // Atomar „reservieren“, damit parallele Aufrufe nicht doppelt bereinigen
+        // Atomically "reserve" so that parallel requests do not clean up twice
         $claimed = Db::exec('UPDATE settings SET value = ? WHERE name = ? AND value = ?', [(string) time(), 'last_cleanup', (string) $last]);
         if ($claimed === 0) {
             if (Settings::get('last_cleanup') !== null) {
@@ -32,14 +32,14 @@ final class Cleanup
         Summaries::run();
     }
 
-    /** @return array<string,int> Anzahl gelöschter/geänderter Datensätze je Schritt */
+    /** @return array<string,int> number of deleted/changed records per step */
     public static function run(): array
     {
         $today = Time::today();
         $now = Time::nowSql();
         $stats = [];
 
-        // 1. Buchungen vergangener Tage löschen (ab 00:00 Uhr des Folgetags)
+        // 1. Delete bookings of past days (from 00:00 of the following day)
         $stats['bookings_deleted'] = Db::exec(
             'DELETE b FROM bookings b
                JOIN slots s ON s.id = b.slot_id
@@ -48,13 +48,13 @@ final class Cleanup
             [$today]
         );
 
-        // 2. Konflikt-Slots ohne Buchung entfernen
+        // 2. Remove conflict slots without a booking
         $stats['conflict_slots_deleted'] = Db::exec(
             'DELETE s FROM slots s LEFT JOIN bookings b ON b.slot_id = s.id
               WHERE s.is_conflict = 1 AND b.id IS NULL'
         );
 
-        // 3. Runden, deren letzter Tag vorbei ist, deaktivieren und als abgelaufen markieren
+        // 3. Deactivate rounds whose last day is over and mark them as expired
         $stats['rounds_expired'] = Db::exec(
             'UPDATE rounds r SET r.is_active = 0, r.expired_at = ?
               WHERE r.expired_at IS NULL
@@ -63,7 +63,7 @@ final class Cleanup
             [$now, $today]
         );
 
-        // 4. Abgelaufene Runden nach der eingestellten Frist löschen (NULL = nie)
+        // 4. Delete expired rounds after the configured period (NULL = never)
         $stats['rounds_deleted'] = Db::exec(
             'DELETE FROM rounds
               WHERE expired_at IS NOT NULL AND delete_after_hours IS NOT NULL
@@ -72,14 +72,14 @@ final class Cleanup
             [$now, $today]
         );
 
-        // 5. Rate-Limit-Einträge nach spätestens 24 Stunden löschen
+        // 5. Delete rate limit entries after at most 24 hours
         $stats['rate_limits_deleted'] = Db::exec('DELETE FROM rate_limits WHERE window_start < ?', [time() - 86400]);
 
-        // 6. Versandprotokoll der Zusammenfassungen (enthält keine Inhalte) nach 60 Tagen löschen
+        // 6. Delete the summary delivery log (contains no content) after 60 days
         $stats['summary_log_deleted'] = Db::exec('DELETE FROM sent_summaries WHERE sent_at < ?', [Time::now()->modify('-60 days')->format('Y-m-d H:i:s')]);
 
-        // 7. Deaktivierte Lehrkraft-Konten ohne Runden nach 15 Monaten ohne Anmeldung löschen
-        //    (Name, E-Mail, letzte Anmeldung werden dann nicht mehr gebraucht)
+        // 7. Delete deactivated teacher accounts without rounds after 15 months without login
+        //    (name, email, last login are no longer needed then)
         $stats['accounts_deleted'] = Db::exec(
             "DELETE FROM users WHERE role <> 'admin' AND is_active = 0
                 AND COALESCE(last_login_at, created_at) < ?

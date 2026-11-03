@@ -4,22 +4,22 @@ declare(strict_types=1);
 namespace App;
 
 /**
- * Einfaches Rate-Limiting mit festem Zeitfenster.
+ * Simple rate limiting with a fixed time window.
  *
- * Datenschutz: Die IP-Adresse wird gekürzt (IPv4 /24, IPv6 /48) und mit dem
- * App-Secret per HMAC gehasht. Gespeichert wird nur dieser Hash; Einträge
- * werden spätestens nach 24 Stunden vom Bereinigungslauf gelöscht.
+ * Privacy: the IP address is truncated (IPv4 /24, IPv6 /48) and hashed via HMAC
+ * with the app secret. Only this hash is stored; entries
+ * are deleted by the cleanup run after at most 24 hours.
  *
- * Statt der IP kann ein eigener Schlüssel gezählt werden ($subject, z. B. „booking:12“ oder
- * „user:sabrina“), ebenfalls nur als HMAC gespeichert.
+ * Instead of the IP, a custom key can be counted ($subject, e.g. "booking:12" or
+ * "user:sabrina"), likewise stored only as HMAC.
  */
 final class RateLimiter
 {
     public static function clientKey(): string
     {
         $bin = @inet_pton((string) ($_SERVER['REMOTE_ADDR'] ?? ''));
-        // IPv4 in IPv6-Schreibweise (::ffff:a.b.c.d) wie IPv4 behandeln, sonst teilten sich alle
-        // IPv4-Clients einen /48-Schlüssel
+        // Treat IPv4 in IPv6 notation (::ffff:a.b.c.d) like IPv4, otherwise all
+        // IPv4 clients would share one /48 key
         if ($bin !== false && strlen($bin) === 16 && str_starts_with($bin, str_repeat("\0", 10) . "\xff\xff")) {
             $bin = substr($bin, 12);
         }
@@ -33,14 +33,14 @@ final class RateLimiter
         return hash_hmac('sha256', 'ip|' . $truncated, (string) Config::get('secret', ''));
     }
 
-    /** Liefert [limit, fenster_sekunden] aus der Konfiguration. */
+    /** Returns [limit, window_seconds] from the configuration. */
     public static function limits(string $bucket, int $limit, int $window): array
     {
         $cfg = Config::get('rate_limits.' . $bucket);
         return is_array($cfg) && count($cfg) === 2 ? [(int) $cfg[0], (int) $cfg[1]] : [$limit, $window];
     }
 
-    /** Zählt einen Versuch. true = noch innerhalb des Limits. */
+    /** Counts an attempt. true = still within the limit. */
     private static function key(?string $subject): string
     {
         return $subject === null ? self::clientKey() : hash_hmac('sha256', 'subject|' . $subject, (string) Config::get('secret', ''));
@@ -68,7 +68,7 @@ final class RateLimiter
         return (int) $row['hits'];
     }
 
-    /** Nimmt einen gezählten Versuch zurück (z. B. erfolgreiche Eingabe, die vorab reserviert wurde). */
+    /** Takes back a counted attempt (e.g. successful input that was reserved in advance). */
     public static function undo(string $bucket, ?string $subject = null): void
     {
         Db::run('UPDATE rate_limits SET hits = GREATEST(hits - 1, 0) WHERE bucket = ? AND key_hash = ?', [$bucket, self::key($subject)]);

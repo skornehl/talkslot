@@ -8,19 +8,19 @@ use PDOException;
 use PDOStatement;
 
 /**
- * Dünne PDO-Hülle. Alle Abfragen laufen über Prepared Statements.
+ * Thin PDO wrapper. All queries go through prepared statements.
  *
- * Tabellen-Präfix (config db.prefix, z. B. „tp_“): Die Anwendung schreibt SQL mit den
- * einfachen Tabellennamen; prefix() setzt das Präfix vor jeden bekannten Tabellennamen.
- * So kann die App eine Datenbank mit anderen Anwendungen teilen.
+ * Table prefix (config db.prefix, e.g. "tp_"): the application writes SQL with the
+ * plain table names; prefix() puts the prefix in front of every known table name.
+ * This way the app can share a database with other applications.
  */
 final class Db
 {
-    /** Alle Tabellen der Anwendung (auch historische für Migrationen) */
+    /** All tables of the application (including historical ones for migrations) */
     public const TABLES = ['users', 'rounds', 'round_days', 'day_breaks', 'slots', 'bookings', 'pages', 'rate_limits', 'settings', 'sent_summaries', 'admin_users', 'round_translations'];
 
     private static ?PDO $pdo = null;
-    /** Verbindungsfehler dieses Requests: nicht bei jeder Abfrage erneut auf den Timeout warten. */
+    /** Connection error of this request: don't wait for the timeout again on every query. */
     private static ?PDOException $connectError = null;
     private static ?string $tableRegex = null;
 
@@ -33,15 +33,15 @@ final class Db
         return $prefix;
     }
 
-    /** Vollständiger Tabellenname inkl. Präfix */
+    /** Full table name including prefix */
     public static function table(string $name): string
     {
         return self::tablePrefix() . $name;
     }
 
     /**
-     * Ersetzt Tabellennamen im SQL durch die Namen mit Präfix. Erfasst nur ganze Wörter,
-     * also z. B. „rounds“, aber nicht „r.round_id“ oder „fk_rounds_user“.
+     * Replaces table names in the SQL with the prefixed names. Matches whole words only,
+     * i.e. "rounds", but not "r.round_id" or "fk_rounds_user".
      */
     public static function prefix(string $sql): string
     {
@@ -53,13 +53,13 @@ final class Db
         return (string) preg_replace(self::$tableRegex, $prefix . '$1', $sql);
     }
 
-    /** SQL ohne Parameter ausführen (DDL in Installer und Migrationen) */
+    /** Execute SQL without parameters (DDL in installer and migrations) */
     public static function execRaw(string $sql): void
     {
         self::pdo()->exec(self::prefix($sql));
     }
 
-    /** true, wenn in diesem Request keine Verbindung zur Datenbank zustande kam. */
+    /** true if no connection to the database could be established in this request. */
     public static function isUnavailable(): bool
     {
         return self::$connectError !== null;
@@ -84,13 +84,13 @@ final class Db
                     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
                     PDO::ATTR_EMULATE_PREPARES => false,
                     PDO::ATTR_STRINGIFY_FETCHES => false,
-                    PDO::ATTR_TIMEOUT => 5, // nicht minutenlang hängen, wenn die Datenbank ausfällt
+                    PDO::ATTR_TIMEOUT => 5, // don't hang for minutes if the database goes down
                 ]);
             } catch (PDOException $e) {
                 self::$connectError = $e;
                 throw $e;
             }
-            // Strikter SQL-Modus: keine stillen Abschneidungen
+            // Strict SQL mode: no silent truncation
             self::$pdo->exec("SET SESSION sql_mode = 'STRICT_ALL_TABLES,NO_ZERO_DATE,NO_ENGINE_SUBSTITUTION'");
         }
         return self::$pdo;
@@ -120,7 +120,7 @@ final class Db
         return $v === false ? null : $v;
     }
 
-    /** Führt eine Änderung aus und liefert die Anzahl betroffener Zeilen. */
+    /** Executes a modification and returns the number of affected rows. */
     public static function exec(string $sql, array $params = []): int
     {
         return self::run($sql, $params)->rowCount();
@@ -132,12 +132,12 @@ final class Db
         return (int) self::pdo()->lastInsertId();
     }
 
-    /** Führt $fn in einer Transaktion aus; bei Ausnahme Rollback. */
+    /** Runs $fn in a transaction; rollback on exception. */
     public static function transaction(callable $fn): mixed
     {
         $pdo = self::pdo();
         if ($pdo->inTransaction()) {
-            return $fn(); // verschachtelt: läuft in der äußeren Transaktion mit
+            return $fn(); // nested: runs as part of the outer transaction
         }
         $pdo->beginTransaction();
         try {
@@ -152,7 +152,7 @@ final class Db
         }
     }
 
-    /** Verletzung eines UNIQUE-Constraints (MariaDB-Fehler 1062)? */
+    /** Violation of a UNIQUE constraint (MariaDB error 1062)? */
     public static function isDuplicate(\Throwable $e): bool
     {
         return $e instanceof PDOException && (int) ($e->errorInfo[1] ?? 0) === 1062;

@@ -4,10 +4,10 @@ declare(strict_types=1);
 namespace App;
 
 /**
- * Mehrsprachigkeit über Sprachdateien in app/lang/<code>.php.
- * Eine neue Sprache = neue Datei + Eintrag in config "languages".
- * Die Sprache wird ohne Cookie bestimmt: ?lang=…, sonst immer die Standardsprache (Deutsch),
- * unabhängig von der Browsersprache.
+ * Multilingual support via language files in app/lang/<code>.php.
+ * A new language = new file + entry in config "languages".
+ * The language is determined without a cookie: ?lang=…, otherwise always the default language (German),
+ * regardless of the browser language.
  */
 final class I18n
 {
@@ -15,7 +15,7 @@ final class I18n
     private static bool $explicit = false;
     private static array $strings = [];
     private static array $fallback = [];
-    /** @var array<string, string> Sprachnamen je Code (der Sprachumschalter fragt alle Sprachen ab) */
+    /** @var array<string, string> Language names per code (the language switcher queries all languages) */
     private static array $names = [];
 
     /** @return list<string> */
@@ -50,7 +50,7 @@ final class I18n
         self::$fallback = $lang === self::defaultLanguage() ? [] : self::load(self::defaultLanguage());
     }
 
-    /** Führt $fn in einer anderen Sprache aus (z. B. für Mails an Eltern). */
+    /** Runs $fn in another language (e.g. for emails to parents). */
     public static function with(string $lang, callable $fn): mixed
     {
         $prev = [self::$lang, self::$strings, self::$fallback];
@@ -62,7 +62,7 @@ final class I18n
         }
     }
 
-    /** Name einer Sprache in dieser Sprache selbst (z. B. „Polski“). */
+    /** Name of a language in that language itself (e.g. "Polski"). */
     public static function name(string $code): string
     {
         return self::$names[$code] ??= (string) (self::load($code)['lang.name'] ?? strtoupper($code));
@@ -84,7 +84,7 @@ final class I18n
         if (!is_string($s)) {
             return $key;
         }
-        // In einem Durchgang ersetzen: Werte (z. B. ein Name mit „{link}“) werden nicht erneut ersetzt
+        // Replace in a single pass: values (e.g. a name containing "{link}") are not replaced again
         $map = [];
         foreach ($vars as $k => $v) {
             $map['{' . $k . '}'] = (string) $v;

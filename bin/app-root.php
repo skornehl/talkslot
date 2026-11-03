@@ -1,16 +1,16 @@
 <?php
 /**
- * Vorlage für app_root.php im Webverzeichnis des Servers (bin/build.sh trägt den Pfad zum
- * App-Verzeichnis ein, bin/deploy.sh lädt sie hoch). index.php und install.php fragen damit, wo der
- * Code der aktiven Version liegt:
+ * Template for app_root.php in the server's web directory (bin/build.sh fills in the path to the
+ * app directory, bin/deploy.sh uploads it). index.php and install.php use it to find where the
+ * code of the active version lives:
  *
- *   <App-Verzeichnis>/current             Name der aktiven Version (eine Zeile) – der „Schalter“
- *   <App-Verzeichnis>/releases/<Name>/    app/, bin/, config/ dieser Version
- *   <App-Verzeichnis>/app/var/            Sessions, Logs usw. (für alle Versionen gemeinsam)
+ *   <app dir>/current             name of the active version (one line) – the "switch"
+ *   <app dir>/releases/<name>/    app/, bin/, config/ of that version
+ *   <app dir>/app/var/            sessions, logs etc. (shared by all versions)
  *
- * Umgeschaltet wird nur durch Austausch von „current“, nachdem eine Version vollständig hochgeladen
- * ist. Fehlt der Zeiger kurz oder ist er unbrauchbar, wird ein paar Zehntelsekunden gewartet und
- * notfalls die neueste vollständige Version genommen.
+ * Switching happens only by replacing "current" after a version has been uploaded completely.
+ * If the pointer is briefly missing or unusable, we wait a few tenths of a second and fall back
+ * to the newest complete version if necessary.
  */
 declare(strict_types=1);
 
@@ -31,12 +31,12 @@ return (static function (string $base): string {
     }
     $names = array_values(array_filter(array_map('basename', glob($base . '/releases/*', GLOB_ONLYDIR) ?: []), $usable));
     if ($names !== []) {
-        rsort($names, SORT_STRING); // Namen beginnen mit Datum und Uhrzeit
+        rsort($names, SORT_STRING); // names start with date and time
         return $base . '/releases/' . $names[0];
     }
     http_response_code(503);
     header('Retry-After: 60');
     header('Content-Type: text/plain; charset=utf-8');
-    echo "Vorübergehend nicht verfügbar.\n";
+    echo "Temporarily unavailable.\n";
     exit;
-})(__DIR__ . '/../talkslot-app'); // Pfad relativ zum Webverzeichnis (bin/build.sh: APP_DIR, WEB_DIR)
+})(__DIR__ . '/../talkslot-app'); // path relative to the web directory (bin/build.sh: APP_DIR, WEB_DIR)

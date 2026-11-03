@@ -1,4 +1,4 @@
-<?php /** Passwort vergessen. @var bool $done */ use App\Csrf; ?>
+<?php /** Forgot password. @var bool $done */ use App\Csrf; ?>
 <div class="narrow">
   <h1>Passwort vergessen</h1>
   <?php if ($done): ?>

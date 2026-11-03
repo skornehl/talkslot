@@ -1,8 +1,8 @@
 <?php
 /**
- * Web-Installer: legt Tabellen und Admin-Konto an.
- * Geschützt durch den install_key aus config.php; sperrt sich nach erfolgreichem
- * Lauf selbst (Lock-Datei + vorhandenes Admin-Konto) und versucht, sich zu löschen.
+ * Web installer: creates the tables and the admin account.
+ * Protected by the install_key from config.php; locks itself after a successful
+ * run (lock file + existing admin account) and tries to delete itself.
  */
 declare(strict_types=1);
 
@@ -38,7 +38,7 @@ if (Http::isPost()) {
     if (strlen($key) < 16) {
         $errors[] = 'In config.php ist kein install_key (mind. 16 Zeichen) gesetzt.';
     } elseif (!hash_equals($key, $given)) {
-        sleep(2); // Ausprobieren bremsen
+        sleep(2); // slow down guessing
         $errors[] = 'Der Installationsschlüssel ist falsch.';
     }
     if (!$errors && ($conflicts = Installer::conflictingTables())) {
@@ -47,7 +47,7 @@ if (Http::isPost()) {
     if (!$errors) {
         $errors = Installer::validate($old['username'], Http::postRaw('password'), Http::postRaw('password2'), $old['notify_email']);
     }
-    // Zwei gleichzeitige Installationen: nur eine legt an, die andere sieht danach „installiert“
+    // Two concurrent installations: only one creates, the other then sees "installed"
     if (!$errors && ((int) App\Db::value('SELECT GET_LOCK(?, 10)', [App\Db::table('install')]) !== 1 || Installer::isInstalled())) {
         $errors[] = 'Die Installation läuft bereits oder ist abgeschlossen.';
     }

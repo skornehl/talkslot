@@ -1,4 +1,4 @@
-/* TalkSlot – schlichtes, kontrastreiches Layout (WCAG AA), nur Systemschriften */
+/* TalkSlot – plain, high-contrast layout (WCAG AA), system fonts only */
 
 :root {
   --bg: #f6f7f9;
@@ -16,13 +16,13 @@
   --danger: #a4262c;
   --danger-soft: #fdecec;
   --focus: #f0a500;
-  --on-primary: #ffffff;       /* Text auf --primary (Knopf, gewählter Termin) */
+  --on-primary: #ffffff;       /* text on --primary (button, selected slot) */
   --header-bg: var(--primary);
-  --neutral-soft: #eef0f3;     /* code, neutrale Hinweise, Präfix */
+  --neutral-soft: #eef0f3;     /* code, neutral notes, prefix */
   --input-bg: #ffffff;
   --input-border: #8b949e;
-  --field-soft: #f9fafb;       /* Link-Feld, Einladungstext */
-  --row-muted: #f4f5f7;        /* gesperrte Termine */
+  --field-soft: #f9fafb;       /* link field, invitation text */
+  --row-muted: #f4f5f7;        /* blocked slots */
   --status-off: #eceef1;
   --warning-border: #c98a00;
   --radius: 10px;
@@ -31,10 +31,10 @@
   color-scheme: light;
 }
 
-/* Dunkles Design: automatisch nach der Einstellung des Geräts, außer jemand hat im Fuß der Seite
-   „Hell“ gewählt; oder ausdrücklich „Dunkel“ (data-theme am <html>, gesetzt von theme.js).
-   Nur Bildschirm, Druck bleibt hell. Beide Blöcke enthalten dieselben Werte (Unit-Test prüft das).
-   Kontraste nach WCAG AA geprüft. */
+/* Dark theme: automatic based on the device setting, unless "Hell" (light) was chosen in the page
+   footer; or explicitly "Dunkel" (dark) (data-theme on <html>, set by theme.js).
+   Screen only, print stays light. Both blocks contain the same values (checked by a unit test).
+   Contrasts checked against WCAG AA. */
 @media screen and (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --bg: #111418;
@@ -126,7 +126,7 @@ code { font-family: var(--mono); font-size: .9em; background: var(--neutral-soft
 .skip-link:focus { left: 1rem; top: 1rem; }
 .visually-hidden { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
-/* Kopf- und Fußzeile */
+/* Header and footer */
 .site-header { background: var(--header-bg); color: #fff; }
 .site-header .wrap { padding-block: .85rem; }
 .header-inner { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem 1rem; }
@@ -152,7 +152,7 @@ code { font-family: var(--mono); font-size: .9em; background: var(--neutral-soft
 .flag.flag-inline { display: inline-block; vertical-align: middle; margin-right: .2rem; }
 .flag { display: block; width: 28px; height: 19px; object-fit: cover; border-radius: 3px; box-shadow: 0 0 0 1px rgba(0,0,0,.15); }
 
-/* Karten, Hinweise */
+/* Cards, notices */
 .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.25rem; margin: 0 0 1.25rem; }
 .card > :first-child { margin-top: 0; }
 .card > :last-child { margin-bottom: 0; }
@@ -181,7 +181,7 @@ code { font-family: var(--mono); font-size: .9em; background: var(--neutral-soft
 .page-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .5rem 1rem; }
 .page-head h1, .page-head h2 { margin-bottom: .5rem; }
 
-/* Formulare */
+/* Forms */
 .field { margin: 0 0 1rem; }
 .field label, .inline-form label { display: block; font-weight: 600; margin-bottom: .3rem; }
 .inline-form label { font-weight: 500; font-size: .92rem; }
@@ -229,7 +229,7 @@ details summary { cursor: pointer; color: var(--primary); margin: .5rem 0; }
 .privacy-summary h3 { margin: 0 0 .4rem; font-size: 1rem; }
 .privacy-summary ul { margin: 0; padding-left: 1.2rem; }
 
-/* Honeypot: für Menschen unsichtbar */
+/* Honeypot: invisible to humans */
 .hp { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
 
 /* Buttons */
@@ -249,7 +249,7 @@ details summary { cursor: pointer; color: var(--primary); margin: .5rem 0; }
 .button-large { width: 100%; font-size: 1.1rem; min-height: 3.25rem; margin-top: .5rem; }
 .button-link { background: none; border: 0; padding: 0; font: inherit; color: var(--primary); text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
 
-/* Slot-Auswahl */
+/* Slot selection */
 .day { border: 0; padding: 0; margin: 0 0 1.25rem; }
 .day legend { font-weight: 700; font-size: 1.05rem; padding: 0; margin-bottom: .5rem; }
 .slot-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr)); gap: .5rem; }
@@ -271,13 +271,13 @@ details summary { cursor: pointer; color: var(--primary); margin: .5rem 0; }
 .details dd { margin: 0; }
 .remembered-label { font-weight: 700; font-size: 1.1rem; }
 
-/* Fließtext (Impressum, Datenschutz) */
+/* Body text (imprint, privacy policy) */
 .prose h2 { font-size: 1.25rem; margin-top: 2rem; }
 .prose h3 { font-size: 1.1rem; }
 .prose blockquote { margin: 0 0 1rem; padding: .75rem 1rem; background: var(--warning-soft); border-left: 5px solid var(--warning-border); border-radius: 6px; }
 .prose ul { padding-left: 1.25rem; }
 
-/* Tabellen (Admin) */
+/* Tables (admin) */
 .table-wrap { overflow-x: auto; }
 .table { width: 100%; border-collapse: collapse; background: var(--surface); }
 .table th, .table td { text-align: left; padding: .55rem .6rem; border-bottom: 1px solid var(--border); vertical-align: top; }
@@ -306,7 +306,7 @@ details summary { cursor: pointer; color: var(--primary); margin: .5rem 0; }
   .card { border: 0; padding: 0; }
 }
 
-/* Termintage-Eingabe */
+/* Appointment day input */
 .date-input { width: auto; margin: 0 .5rem .5rem 0; display: inline-block; }
 .break-row { margin: 0 0 .25rem; }
 .break-row input[type=text].time-input { min-width: 0; width: 6.5rem; }

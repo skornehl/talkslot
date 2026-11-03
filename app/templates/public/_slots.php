@@ -1,6 +1,6 @@
 <?php
 /**
- * Slot-Auswahl als Radio-Buttons, gruppiert nach Tag.
+ * Slot selection as radio buttons, grouped by day.
  * @var list<array{date:string,slots:list<array>}> $days
  * @var string $selected
  */

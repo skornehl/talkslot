@@ -1,13 +1,13 @@
 /*
- * TalkSlot – kleines, abhängigkeitsfreies Skript.
+ * TalkSlot – small, dependency-free script.
  *
- * Browser-Merker (localStorage, Schlüssel "tp_bookings"):
- * Gespeichert wird nur, wenn Eltern beim Buchen „Meinen Termin auf diesem Gerät
- * merken“ ankreuzen: { <runden-id>: { u: <link zur terminseite>, l: <terminbezeichnung> } }.
- * Es wird nichts an den Server übertragen. Seiten funktionieren auch ohne JavaScript.
+ * Remember-me entries in the browser (localStorage, key "tp_bookings"):
+ * Only stored when parents tick "Remember my appointment on this device" (form.remember):
+ * { <round-id>: { u: <link to the booking page>, l: <appointment label> } }.
+ * Nothing is sent to the server. Pages also work without JavaScript.
  *
- * Verwaltung (Lehrkraft): Übersetzung im Browser über die Translator API; sessionStorage
- * nur als Schleifenschutz für die automatische Übersetzung und für einen Fehlerhinweis.
+ * Admin area (teacher): translation in the browser via the Translator API; sessionStorage
+ * only as loop protection for the automatic translation and for an error notice.
  */
 (function () {
   'use strict';
@@ -30,10 +30,10 @@
       } else {
         window.localStorage.removeItem(KEY);
       }
-    } catch (e) { /* Speicher nicht verfügbar – Merker entfällt */ }
+    } catch (e) { /* storage unavailable – no remember-me entry */ }
   }
 
-  // Nach der Buchung: Termin merken (nur mit ausdrücklicher Zustimmung)
+  // After booking: remember the appointment (only with explicit consent)
   var remember = document.querySelector('[data-remember-round]');
   if (remember) {
     var d1 = load();
@@ -44,19 +44,19 @@
     save(d1);
   }
 
-  // Termin geändert: vorhandenen Merker aktualisieren (nie neu anlegen)
+  // Appointment changed: update an existing remember-me entry (never create one)
   var update = document.querySelector('[data-update-round]');
   if (update) {
     var d2 = load();
     var id2 = update.getAttribute('data-update-round');
-    // nur denselben Termin (gleicher Link) aktualisieren, nie einen fremden übernehmen
+    // only update the same appointment (same link), never take over someone else's
     if (d2[id2] && String(d2[id2].u || '').split('?')[0] === String(update.getAttribute('data-remember-url')).split('?')[0]) {
       d2[id2] = { u: update.getAttribute('data-remember-url'), l: update.getAttribute('data-remember-label') };
       save(d2);
     }
   }
 
-  // Termin abgesagt: Merker entfernen
+  // Appointment cancelled: remove the remember-me entry
   var forget = document.querySelector('[data-forget-round]');
   if (forget) {
     var d3 = load();
@@ -64,7 +64,7 @@
     save(d3);
   }
 
-  // Rundenseite: statt der Terminliste den eigenen Termin zeigen
+  // Round page: show your own appointment instead of the slot list
   var round = document.querySelector('[data-round-id]');
   if (round) {
     var roundId = round.getAttribute('data-round-id');
@@ -74,7 +74,7 @@
     if (entry && entry.u && box && area && !document.getElementById('form-errors')) {
       box.querySelector('[data-remembered-label]').textContent = entry.l || '';
       var link = box.querySelector('[data-remembered-link]');
-      // Nur Links auf eigene Termine dieser Seite zulassen (/b/<token>, ggf. mit Unterverzeichnis und Sprache)
+      // Only allow links to own bookings on this site (/b/<token>, possibly with subdirectory and language)
       if (/^(\/[A-Za-z0-9_-]+)*\/b\/[A-Za-z0-9_-]{43}(\?lang=[a-z]{2})?$/.test(entry.u)) {
         link.setAttribute('href', entry.u);
       } else {
@@ -92,13 +92,13 @@
     }
   }
 
-  // Fehlerbox nach dem Absenden fokussieren (Screenreader)
+  // Focus the error box after submitting (screen readers)
   var errors = document.getElementById('form-errors');
   if (errors) {
     errors.focus();
   }
 
-  // Link kopieren (Admin)
+  // Copy link (admin)
   Array.prototype.forEach.call(document.querySelectorAll('[data-copy]'), function (btn) {
     btn.addEventListener('click', function () {
       var text = btn.getAttribute('data-copy');
@@ -115,7 +115,7 @@
     });
   });
 
-  // Sicherheitsabfrage vor Löschaktionen
+  // Confirmation prompt before delete actions
   Array.prototype.forEach.call(document.querySelectorAll('form[data-confirm]'), function (form) {
     form.addEventListener('submit', function (ev) {
       if (!window.confirm(form.getAttribute('data-confirm'))) {
@@ -124,8 +124,8 @@
     });
   });
 
-  // Doppeltes Absenden verhindern (z. B. Doppelklick, während die Übersetzung läuft).
-  // Nach „Zurück“ aus dem Browser-Cache darf wieder abgesendet werden.
+  // Prevent double submission (e.g. double click while the translation is running).
+  // After "Back" from the browser cache, submitting is allowed again.
   Array.prototype.forEach.call(document.querySelectorAll('form[data-once]'), function (form) {
     form.addEventListener('submit', function (ev) {
       if (ev.defaultPrevented) { return; }
@@ -139,18 +139,18 @@
     });
   });
 
-  // Übersetzen im Browser der Lehrkraft (Translator API in Chrome/Edge am Computer).
-  // Titel und Beschreibung werden auf dem eigenen Gerät mit einem lokalen Modell übersetzt,
-  // kein Text geht an einen Übersetzungsdienst; das Ergebnis wird je Sprache an den eigenen
-  // Server geschickt. Chrome erlaubt pro Klick nur einen Download eines Sprachpakets: Ein
-  // Klick übersetzt alle schon bereiten Sprachen und lädt höchstens eine weitere; bereite
-  // Sprachen werden auch ohne Klick übersetzt.
+  // Translation in the teacher's browser (Translator API in Chrome/Edge on desktop).
+  // Title and description are translated on the teacher's own device with a local model,
+  // no text goes to a translation service; the result is sent to the own server per
+  // language. Chrome allows only one language pack download per click: one click
+  // translates all languages that are already ready and downloads at most one more;
+  // ready languages are translated even without a click.
   Array.prototype.forEach.call(document.querySelectorAll('form[data-browser-translate]'), function (form) {
     var api = self.Translator;
     var brands = (navigator.userAgentData && navigator.userAgentData.brands) || [];
     var onDevice = brands.some(function (b) { return /^(Google Chrome|Microsoft Edge|Chromium)$/.test(b.brand); });
     if (!api || typeof api.create !== 'function' || typeof api.availability !== 'function' || !onDevice) {
-      return; // Hinweis „von Hand eintragen“ bleibt sichtbar
+      return; // the "enter manually" notice stays visible
     }
     var list = function (attr) { return (form.getAttribute(attr) || '').split(',').filter(Boolean); };
     var source = form.getAttribute('data-source');
@@ -163,7 +163,7 @@
     var btnAll = form.querySelector('[data-bt-all]');
     var btnNext = form.querySelector('[data-bt-next]');
     var hint = document.querySelector('[data-bt-hint]');
-    var state = {};     // Sprache → availability() bzw. 'done'
+    var state = {};     // language → availability() or 'done'
     var saved = [];
     var failed = [];
     var busy = false;
@@ -189,14 +189,14 @@
     function signal(ms) {
       return typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function' ? AbortSignal.timeout(ms) : undefined;
     }
-    // Zeilenweise, damit Absätze und Aufzählungen erhalten bleiben
+    // Line by line, so paragraphs and lists are preserved
     function translateText(translator, text, sig) {
       return Promise.all(text.split('\n').map(function (line) {
         return line.trim() === '' ? Promise.resolve(line) : translator.translate(line, sig ? { signal: sig } : undefined);
       })).then(function (lines) { return lines.join('\n'); });
     }
 
-    // create() wird sofort (noch im Klick) aufgerufen; Downloads brauchen diese Nutzeraktion
+    // create() is called immediately (still within the click); downloads need this user gesture
     function translateOne(lang, download) {
       var sig = signal(download ? 300000 : 60000);
       var shown = -10;
@@ -219,7 +219,7 @@
       });
     }
 
-    // Gespeicherte Übersetzung sofort im Formular „Übersetzungen“ zeigen (Felder, Status, Zähler)
+    // Show the saved translation right away in the "Übersetzungen" form (fields, status, counter)
     function applyRow(lang, row) {
       var fs = document.querySelector('fieldset[lang="' + lang + '"]');
       if (!fs) { return; }
@@ -239,7 +239,7 @@
     }
 
     function saveOne(r, force) {
-      var body = new FormData(form); // enthält das CSRF-Token
+      var body = new FormData(form); // contains the CSRF token
       body.append('hash', form.getAttribute('data-hash'));
       if (force) { body.append('force', '1'); }
       body.append('t_title[' + r.lang + ']', r.title);
@@ -269,7 +269,7 @@
       say(parts.join(' '), failed.length ? 'warning' : 'success');
     }
 
-    // Ein Durchgang: alle bereiten Sprachen + höchstens ein Download (nur mit Klick)
+    // One pass: all ready languages + at most one download (only with a click)
     function step(queue, force, clicked) {
       if (busy) { return; }
       var todo = queue.filter(function (l) { return state[l] !== 'done' && failed.indexOf(l) < 0; });
@@ -291,7 +291,7 @@
           .then(function () { state[job.lang] = 'done'; saved.push(job.lang); say('Übersetzt und gespeichert: ' + upper(saved) + ' …'); })
           .catch(function (err) {
             if (err && err.message === 'outdated') { outdated = true; return; }
-            if (err && err.name === 'NotAllowedError') { waitClick.push(job.lang); return; } // braucht einen eigenen Klick
+            if (err && err.name === 'NotAllowedError') { waitClick.push(job.lang); return; } // needs its own click
             if (err && err.message === 'save') { throw err; }
             failed.push(job.lang);
           });
@@ -308,7 +308,7 @@
           busy = false;
           lock(false);
           btnNext.hidden = false;
-          if (btnPending) { btnPending.hidden = true; } // nur noch ein Knopf zum Weitermachen
+          if (btnPending) { btnPending.hidden = true; } // only one button left to continue
           btnNext.textContent = 'Nächste Sprache laden: ' + left[0].toUpperCase() + (left.length > 1 ? ' (noch ' + left.length + ')' : '');
           btnNext.onclick = function () { step(queue, force, true); };
           say((saved.length ? 'Übersetzt und gespeichert: ' + upper(saved) + '. ' : '') +
@@ -328,7 +328,7 @@
       btnPending.addEventListener('click', function () { step(pending, false, true); });
     }
     if (btnAll) {
-      // Bestätigung auf der Seite (ein Dialog würde die Klick-Erlaubnis für Downloads verbrauchen)
+      // Confirmation on the page (a dialog would use up the click permission for downloads)
       var label = btnAll.textContent;
       btnAll.addEventListener('click', function () {
         if (Date.now() > armedUntil) {
@@ -346,8 +346,8 @@
       });
     }
 
-    // Verfügbarkeit vorab abfragen; bereite Sprachen ohne Klick übersetzen – je Stand nur einmal
-    // (verhindert Schleifen, falls das Speichern scheitert)
+    // Query availability up front; translate ready languages without a click – once per state
+    // (prevents loops if saving fails)
     Promise.all(all.map(function (lang) {
       return api.availability({ sourceLanguage: source, targetLanguage: lang })
         .catch(function () { return 'unavailable'; })
@@ -363,15 +363,15 @@
     });
   });
 
-  // Drucken
+  // Print
   Array.prototype.forEach.call(document.querySelectorAll('[data-print]'), function (btn) {
     btn.addEventListener('click', function () { window.print(); });
   });
 })();
 
 /*
- * Termintage: weitere Datums-/Pausenfelder und Live-Vorschau der entstehenden Termine
- * (gleiche Berechnung wie SlotGenerator::compute auf dem Server).
+ * Appointment days: additional date/break fields and live preview of the resulting slots
+ * (same calculation as SlotGenerator::compute on the server).
  */
 (function () {
   'use strict';
@@ -422,7 +422,7 @@
       addDate.parentNode.insertBefore(n, addDate);
       n.focus();
     });
-    // Pausen: keine leeren Zeilen vorab, „+ Pause hinzufügen“ holt eine aus der Vorlage
+    // Breaks: no empty rows up front, "+ Pause hinzufügen" adds one from the template
     var breakList = box.querySelector('[data-breaks]');
     box.querySelector('[data-add-break]').addEventListener('click', function () {
       var r = box.querySelector('[data-break-template]').content.firstElementChild.cloneNode(true);
@@ -441,9 +441,9 @@
 })();
 
 /*
- * Uhrzeitfelder im 24-Stunden-Format (HH:MM) unabhängig von der Browsersprache.
- * Ergänzt den Doppelpunkt beim Tippen („1430“ → „14:30“) und vervollständigt beim
- * Verlassen („9“ → „09:00“, „930“ → „09:30“). Der Server prüft das Format zusätzlich.
+ * Time fields in 24-hour format (HH:MM) regardless of the browser language.
+ * Inserts the colon while typing ("1430" → "14:30") and completes on blur
+ * ("9" → "09:00", "930" → "09:30"). The server validates the format as well.
  */
 (function () {
   'use strict';
@@ -458,13 +458,13 @@
   document.addEventListener('input', function (ev) {
     var el = ev.target;
     if (!el.matches || !el.matches('[data-time]') || ev.inputType === 'deleteContentBackward') { return; }
-    // Nur Ziffern und Trenner zulassen; Doppelpunkt nur ergänzen, wenn keiner getippt wurde
+    // Allow only digits and separators; insert a colon only if none was typed
     var v = el.value.replace(/[^0-9:.]/g, '');
     var d = v.replace(/\D/g, '').slice(0, 4);
-    // Ohne Trenner ab 3 Ziffern Doppelpunkt setzen; stehen hinter dem Trenner mehr als
-    // 2 Ziffern (z. B. „1:830“ nach „1830“), neu aufteilen: „18:30“
+    // Without a separator, insert a colon from 3 digits on; if more than 2 digits follow the
+    // separator (e.g. "1:830" after "1830"), split again: "18:30"
     if (/^\d{3,4}$/.test(v) || /^\d{1,2}[:.]\d{3,}$/.test(v)) { v = d.slice(0, d.length - 2) + ':' + d.slice(-2); }
-    if (v !== el.value) { el.value = v; } // unverändert lassen schont die Cursorposition
+    if (v !== el.value) { el.value = v; } // leaving it unchanged preserves the cursor position
   });
   document.addEventListener('focusout', function (ev) {
     var el = ev.target;
@@ -476,8 +476,8 @@
 })();
 
 /*
- * Datumsfelder: Die Anzeige von type=date folgt der Browsersprache (z. B. 11/19/2026).
- * Daneben steht deshalb immer das Datum in deutscher Schreibweise mit Wochentag.
+ * Date fields: the display of type=date follows the browser language (e.g. 11/19/2026).
+ * That is why the date is always shown next to it in German notation with the weekday.
  */
 (function () {
   'use strict';
@@ -501,9 +501,9 @@
 })();
 
 /*
- * Hell/Dunkel-Schalter im Fuß der Seite: Automatisch (Einstellung des Geräts), Hell, Dunkel.
- * Die Wahl liegt nur im Browser (localStorage „tp_theme“); „Automatisch“ löscht den Eintrag.
- * Ohne JavaScript bleibt der Schalter ausgeblendet und die Seite folgt dem Gerät.
+ * Light/dark toggle in the page footer: automatic (device setting), light, dark.
+ * The choice is stored only in the browser (localStorage "tp_theme"); "automatic" removes the entry.
+ * Without JavaScript the toggle stays hidden and the page follows the device.
  */
 (function () {
   'use strict';
@@ -524,7 +524,7 @@
       } else {
         window.localStorage.removeItem(KEY);
       }
-    } catch (e) { /* Speicher gesperrt: gilt nur für diese Seite */ }
+    } catch (e) { /* storage blocked: applies to this page only */ }
   }
   Array.prototype.forEach.call(document.querySelectorAll('[data-theme-switch]'), function (group) {
     var buttons = group.querySelectorAll('[data-theme-choice]');

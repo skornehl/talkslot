@@ -1,4 +1,4 @@
-<?php /** Box „bereits gebucht“ – wird per JavaScript aus dem Browser-Merker gefüllt. */ ?>
+<?php /** "Already booked" box – filled by JavaScript from the remember-me entries in the browser. */ ?>
 <section class="card remembered" id="remembered" hidden aria-live="polite">
   <h2><?= e(t('round.remembered.title')) ?></h2>
   <p><?= e(t('round.remembered.text')) ?></p>

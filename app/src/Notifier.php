@@ -4,12 +4,12 @@ declare(strict_types=1);
 namespace App;
 
 /**
- * E-Mail-Benachrichtigungen an Eltern – nur, wenn sie freiwillig eine Adresse angegeben haben.
- * Antworten gehen an die Lehrkraft (Reply-To). Zusammenfassungen für Lehrkräfte: siehe Summaries.
+ * Email notifications to parents – only if they voluntarily provided an address.
+ * Replies go to the teacher (Reply-To). Summaries for teachers: see Summaries.
  */
 final class Notifier
 {
-    /** @param array $b Buchung aus BookingService::findById/findByToken */
+    /** @param array $b booking from BookingService::findById/findByToken */
     public static function parentBooked(array $b, string $token): bool
     {
         return self::toParent($b, 'booked', $token);
@@ -32,7 +32,7 @@ final class Notifier
             return false;
         }
         return (bool) I18n::with((string) $b['lang'], static function () use ($b, $type, $token, $email): bool {
-            $b = Translator::localize($b, (int) $b['round_id'], I18n::lang()); // Titel in der Sprache der Eltern (auch in der .ics)
+            $b = Translator::localize($b, (int) $b['round_id'], I18n::lang()); // title in the parents' language (also in the .ics)
             $link = $token !== null ? abs_url('/b/' . $token, ['lang' => I18n::lang()]) : '';
             $vars = [
                 'title' => $b['title'],
@@ -49,7 +49,7 @@ final class Notifier
             }
             $attachments = [];
             if ($type !== 'cancelled') {
-                // Termin als Kalenderdatei; Titel = Name der Runde, Beschreibung = persönlicher Link
+                // Appointment as calendar file; title = name of the round, description = personal link
                 $description = $link !== '' ? t('mail.ics.description', ['link' => $link]) : '';
                 $attachments[] = [
                     'name' => 'termin.ics',

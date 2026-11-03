@@ -1,5 +1,5 @@
 <?php
-/** Übersicht einer Runde: Tage, Pausen, Slots, Buchungen. @var array $round @var array $days @var int $conflicts @var string $publicUrl */
+/** Overview of a round: days, breaks, slots, bookings. @var array $round @var array $days @var int $conflicts @var string $publicUrl */
 use App\Csrf;
 $rid = (int) $round['id'];
 $csrf = Csrf::adminField();

@@ -1,8 +1,8 @@
 <?php
 /**
- * Gibt die Version für den aktuellen Commit aus (im Deployment, Arbeitsverzeichnis = Repository):
- * Ist HEAD schon ein Release, dessen Tag, sonst die nächste Version nach App\Version::next().
- *   php bin/next-version.php   → z. B. v1.3.0
+ * Prints the version for the current commit (during deployment, working directory = repository):
+ * if HEAD is already a release, its tag; otherwise the next version according to App\Version::next().
+ *   php bin/next-version.php   → e.g. v1.3.0
  */
 declare(strict_types=1);
 
@@ -15,7 +15,7 @@ $git = static function (string $args): string {
     $out = shell_exec('git ' . $args . ' 2>/dev/null');
     return is_string($out) ? trim($out) : '';
 };
-// Erneuter Lauf auf einem bereits veröffentlichten Stand: dieselbe Version
+// Re-run on an already released commit: same version
 foreach (explode("\n", $git("tag --points-at HEAD --list 'v[0-9]*' --sort=-v:refname")) as $tag) {
     if (preg_match('/^v\d+\.\d+\.\d+$/', $tag)) {
         echo $tag, "\n";

@@ -1,4 +1,4 @@
-<?php /** Web-Installer. @var array $errors @var array $old @var bool $done */ ?>
+<?php /** Web installer. @var array $errors @var array $old @var bool $done */ ?>
 <h1>Installation</h1>
 <?php if ($done): ?>
   <div class="alert alert-success"><p>Installation abgeschlossen. Der Installer ist jetzt gesperrt<?= is_file(PUBLIC_ROOT . '/install.php') ? ' – bitte löschen Sie zusätzlich die Datei <code>install.php</code> im Webverzeichnis' : '' ?>.</p></div>

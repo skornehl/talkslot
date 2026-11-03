@@ -7,20 +7,20 @@ use DateTimeImmutable;
 use DateTimeZone;
 
 /**
- * Kalenderdateien (iCalendar, RFC 5545).
- * - forRound(): gebuchte Termine einer Runde für die Lehrkraft (Titel = Name aus dem Freitextfeld)
- * - forParent(): eigener Termin als Mail-Anhang für Eltern (Titel = Name der Runde)
- * Datensparsam: keine E-Mail-Adressen. Zeiten in UTC, daher kein VTIMEZONE-Block nötig.
+ * Calendar files (iCalendar, RFC 5545).
+ * - forRound(): booked appointments of a round for the teacher (title = name from the free-text field)
+ * - forParent(): own appointment as an email attachment for parents (title = name of the round)
+ * Data-minimal: no email addresses. Times in UTC, so no VTIMEZONE block needed.
  */
 final class IcsExport
 {
-    /** @param list<array> $bookings Zeilen mit id, name, day_date, start_time, end_time */
+    /** @param list<array> $bookings rows with id, name, day_date, start_time, end_time */
     public static function forRound(array $round, array $bookings): string
     {
         $events = [];
         foreach ($bookings as $b) {
             $events[] = [
-                // Stabile UID je Buchung und Startzeit: erneuter Import aktualisiert statt zu verdoppeln
+                // Stable UID per booking and start time: re-importing updates instead of duplicating
                 'uid' => 'booking-' . (int) $b['id'] . '-' . str_replace([':', '-'], '', $b['day_date'] . $b['start_time']),
                 'date' => $b['day_date'], 'start' => $b['start_time'], 'end' => $b['end_time'],
                 'summary' => $b['name'],
@@ -30,8 +30,8 @@ final class IcsExport
     }
 
     /**
-     * Termin der Eltern. Die UID ist je Buchung fest, SEQUENCE steigt mit jeder Änderung,
-     * damit Kalender eine Umbuchung als Aktualisierung desselben Termins erkennen.
+     * The parents' appointment. The UID is fixed per booking, SEQUENCE increases with every change,
+     * so that calendars recognize a rebooking as an update of the same appointment.
      */
     public static function forParent(array $booking, string $description = ''): string
     {
@@ -80,14 +80,14 @@ final class IcsExport
         return $d->setTimezone(new DateTimeZone('UTC'))->format('Ymd\THis\Z');
     }
 
-    /** Escaping für TEXT-Werte (RFC 5545, 3.3.11). */
+    /** Escaping for TEXT values (RFC 5545, 3.3.11). */
     private static function text(string $s): string
     {
         $s = str_replace(['\\', ';', ',', "\r\n", "\r", "\n"], ['\\\\', '\;', '\,', '\n', '\n', '\n'], $s);
         return (string) preg_replace('/[\x00-\x08\x0B-\x1F\x7F]/', '', $s);
     }
 
-    /** Zeilen über 75 Byte falten, ohne UTF-8-Zeichen zu zerschneiden (RFC 5545, 3.1). */
+    /** Fold lines longer than 75 bytes without cutting UTF-8 characters (RFC 5545, 3.1). */
     private static function fold(string $line): string
     {
         $out = '';
@@ -95,11 +95,11 @@ final class IcsExport
         while (strlen($line) > $limit) {
             $cut = $limit;
             while ($cut > 0 && (ord($line[$cut]) & 0xC0) === 0x80) {
-                $cut--; // nicht mitten in einem Mehrbyte-Zeichen trennen
+                $cut--; // don't split in the middle of a multibyte character
             }
             $out .= substr($line, 0, $cut) . "\r\n ";
             $line = substr($line, $cut);
-            $limit = 74; // Folgezeilen beginnen mit einem Leerzeichen
+            $limit = 74; // continuation lines start with a space
         }
         return $out . $line;
     }

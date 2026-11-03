@@ -5,7 +5,7 @@ namespace App;
 
 use DateTimeImmutable;
 
-/** Zeitfunktionen; alle Zeiten in der konfigurierten Zeitzone (Europe/Berlin). */
+/** Time functions; all times in the configured time zone (Europe/Berlin). */
 final class Time
 {
     public static function now(): DateTimeImmutable
@@ -29,7 +29,7 @@ final class Time
         return $d !== false && $d->format('Y-m-d') === $v;
     }
 
-    /** Akzeptiert 24-h-Angaben wie 14:30, 9:30, 9.30, 1430, 930, 9 oder 14:30:00; liefert HH:MM:00 oder null. */
+    /** Accepts 24-h values like 14:30, 9:30, 9.30, 1430, 930, 9 or 14:30:00; returns HH:MM:00 or null. */
     public static function normalizeTime(string $v): ?string
     {
         $v = trim($v);

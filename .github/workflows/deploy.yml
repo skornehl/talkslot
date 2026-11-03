@@ -1,20 +1,20 @@
-# Optionales Deployment per FTPS auf Shared Hosting (bin/build.sh, bin/deploy.sh), bei jedem Push auf
-# main. Läuft nur, wenn die Variable FTP_HOST gesetzt ist – in Forks ohne Einrichtung also nicht.
-# Einrichtung: README, Abschnitt „Deployment with GitHub Actions“ (bin/setup-secrets.sh).
+# Optional deployment via FTPS to shared hosting (bin/build.sh, bin/deploy.sh) on every push to
+# main. Runs only if the variable FTP_HOST is set – so not in forks without setup.
+# Setup: README, section "Deployment with GitHub Actions" (bin/setup-secrets.sh).
 #
-# Auch als wiederverwendbarer Workflow nutzbar: Ein eigenes Repo mit nur Konfiguration (Variablen,
-# Secrets) ruft ihn mit einer festen TalkSlot-Version auf, siehe README „Deploying from your own repository“.
+# Also usable as a reusable workflow: a separate repo containing only configuration (variables,
+# secrets) calls it with a pinned TalkSlot version, see README "Deploying from your own repository".
 #
-# Atomar: Jede Version wird vollständig in ein eigenes Verzeichnis hochgeladen und erst dann per
-# Zeigerdatei aktiv geschaltet; danach wird die Seite geprüft und bei Fehlern sofort auf die vorherige
-# Version zurückgeschaltet. Rollback von Hand: Workflow „Version umschalten“ (switch.yml).
+# Atomic: every version is uploaded completely into its own directory and only then made active via
+# the pointer file; afterwards the site is checked and on failure switched back to the previous
+# version at once. Manual rollback: workflow "Switch version" (switch.yml).
 #
-# Server-Layout (APP_DIR und WEB_DIR relativ zum FTP-Stammverzeichnis):
-#   <APP_DIR>/current            Name der aktiven Version
-#   <APP_DIR>/releases/<Name>/   app/, bin/, config/config.php einer Version
-#   <APP_DIR>/app/var/           Sessions, Logs (für alle Versionen gemeinsam)
-#   <WEB_DIR>/                   index.php, .htaccess, app_root.php (Document-Root)
-#   <WEB_DIR>/v/<Name>/          CSS, JS, Bilder einer Version
+# Server layout (APP_DIR and WEB_DIR relative to the FTP root):
+#   <APP_DIR>/current            name of the active version
+#   <APP_DIR>/releases/<name>/   app/, bin/, config/config.php of a version
+#   <APP_DIR>/app/var/           sessions, logs (shared by all versions)
+#   <WEB_DIR>/                   index.php, .htaccess, app_root.php (document root)
+#   <WEB_DIR>/v/<name>/          CSS, JS, images of a version
 name: Deploy
 
 on:
@@ -24,16 +24,16 @@ on:
   workflow_call:
     inputs:
       ref:
-        description: TalkSlot-Version (Tag oder Commit), die deployt wird
+        description: TalkSlot version (tag or commit) to deploy
         type: string
         required: true
       repository:
-        description: Repository mit dem TalkSlot-Code
+        description: Repository containing the TalkSlot code
         type: string
         default: skornehl/talkslot
 
 concurrency:
-  group: deploy # gemeinsam mit „Version umschalten“: nie zwei Umschaltungen gleichzeitig
+  group: deploy # shared with "Switch version": never two switches at the same time
   cancel-in-progress: false
 
 permissions:
@@ -43,7 +43,7 @@ jobs:
   deploy:
     if: vars.FTP_HOST != ''
     runs-on: ubuntu-latest
-    # Secrets am besten in der Umgebung „production“, nur für main freigegeben (Settings → Environments)
+    # Secrets preferably in the environment "production", restricted to main (Settings → Environments)
     environment: production
     env:
       FTP_URL: ftp://${{ vars.FTP_HOST }}
@@ -51,10 +51,10 @@ jobs:
       WEB_DIR: ${{ vars.WEB_DIR }}
       BASE_URL: ${{ vars.BASE_URL }}
     steps:
-      # Code per git statt actions/checkout: keine fremden Actions nötig. Als aufgerufener Workflow
-      # der TalkSlot-Code in der angegebenen Version (TALKSLOT_TOKEN nur für ein privates Repo). Das Token steht nur im
-      # Header dieser Befehle, nicht in .git/config.
-      - name: Code holen
+      # Code via git instead of actions/checkout: no third-party actions needed. As a called workflow,
+      # the TalkSlot code in the given version (TALKSLOT_TOKEN only for a private repo). The token is only in
+      # the header of these commands, not in .git/config.
+      - name: Fetch code
         env:
           REPO: ${{ inputs.repository || github.repository }}
           REF: ${{ inputs.ref || github.sha }}
@@ -62,12 +62,12 @@ jobs:
         run: |
           git init -q . && git remote add origin "https://github.com/$REPO.git"
           AUTH="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$TOKEN" | base64 -w0)"
-          git -c http.extraheader="$AUTH" fetch -q --tags origin "+refs/heads/*:refs/remotes/origin/*" # Verlauf und Tags für die Versionsnummer
-          git -c http.extraheader="$AUTH" fetch -q origin "$REF" # Commit, Tag oder Branch
+          git -c http.extraheader="$AUTH" fetch -q --tags origin "+refs/heads/*:refs/remotes/origin/*" # history and tags for the version number
+          git -c http.extraheader="$AUTH" fetch -q origin "$REF" # commit, tag or branch
           git checkout -q --detach "FETCH_HEAD^{commit}"
-          git log -1 --format='Stand: %h %s'
+          git log -1 --format='Checked out: %h %s'
 
-      - name: Lint & Unit-Tests
+      - name: Lint & unit tests
         run: |
           cp dev/config.dev.php config/config.php
           docker run --rm -v "$PWD:/app" -w /app php:8.5-cli sh -c '
@@ -76,15 +76,15 @@ jobs:
             php tests/unit.php'
           rm config/config.php
 
-      - name: Version bestimmen
+      - name: Determine version
         id: version
         run: |
           V="$(git describe --tags --always)"
-          # Verzeichnisname auf dem Server: sortierbar und je Lauf eindeutig
+          # Directory name on the server: sortable and unique per run
           NAME="$(date -u +%Y%m%d-%H%M%S)-$(printf '%s' "$V" | tr -c 'A-Za-z0-9._-' '-')"
           echo "version=$V" >> "$GITHUB_OUTPUT"
           echo "name=$NAME" >> "$GITHUB_OUTPUT"
-          echo "Version: $V, Verzeichnis: $NAME"
+          echo "Version: $V, directory: $NAME"
 
       - name: Build
         env:
@@ -115,9 +115,9 @@ jobs:
           COMMIT: ${{ github.sha }}
         run: bin/build.sh
 
-      # Wurde inzwischen ein neuerer Commit auf main gepusht, deployt dessen Lauf (wartet in der
-      # concurrency-Gruppe) ohnehin alles; dieser Lauf lädt dann nichts hoch.
-      - name: Noch aktuell?
+      # If a newer commit has been pushed to main in the meantime, its run (waiting in the
+      # concurrency group) deploys everything anyway; this run then uploads nothing.
+      - name: Still current?
         id: current
         if: github.event_name == 'push'
         env:
@@ -126,16 +126,16 @@ jobs:
           HEAD="$(gh api "repos/$GITHUB_REPOSITORY/commits/main" -q .sha)"
           if [ -n "$HEAD" ] && [ "$HEAD" != "$GITHUB_SHA" ]; then
             echo "superseded=1" >> "$GITHUB_OUTPUT"
-            echo "::notice::main ist inzwischen bei ${HEAD:0:7} – der Lauf dafür deployt."
+            echo "::notice::main has moved on to ${HEAD:0:7} – that run will deploy."
           fi
 
-      - name: lftp installieren
+      - name: Install lftp
         if: github.ref == 'refs/heads/main' && steps.current.outputs.superseded != '1'
         run: sudo apt-get install -y -qq lftp > /dev/null
 
-      # Upload per FTPS in ein neues Verzeichnis; die laufende Version bleibt unberührt. Am Ende wird
-      # geprüft, ob alle Dateien angekommen sind. Live geht nur main.
-      - name: Hochladen (noch nicht aktiv)
+      # Upload via FTPS into a new directory; the running version stays untouched. At the end it is
+      # verified that all files have arrived. Only main goes live.
+      - name: Upload (not active yet)
         id: upload
         if: github.ref == 'refs/heads/main' && steps.current.outputs.superseded != '1'
         env:
@@ -146,7 +146,7 @@ jobs:
           export LFTP_PASSWORD="$(printf '%s' "$FTP_PASS" | tr -d '\r\n')"
           bin/deploy.sh upload "$NAME"
 
-      - name: Halben Upload entfernen
+      - name: Remove partial upload
         if: failure() && steps.upload.outcome == 'failure'
         env:
           FTP_USER: ${{ secrets.FTP_USERNAME }}
@@ -156,7 +156,7 @@ jobs:
           export LFTP_PASSWORD="$(printf '%s' "$FTP_PASS" | tr -d '\r\n')"
           bin/deploy.sh discard "$NAME"
 
-      - name: Noch aktuell nach dem Upload?
+      - name: Still current after upload?
         id: current_after
         if: github.event_name == 'push' && steps.current.outputs.superseded != '1'
         env:
@@ -165,10 +165,10 @@ jobs:
           HEAD="$(gh api "repos/$GITHUB_REPOSITORY/commits/main" -q .sha)"
           if [ -n "$HEAD" ] && [ "$HEAD" != "$GITHUB_SHA" ]; then
             echo "superseded=1" >> "$GITHUB_OUTPUT"
-            echo "::notice::main ist inzwischen bei ${HEAD:0:7} – der Lauf dafür deployt, dieser schaltet nicht um."
+            echo "::notice::main has moved on to ${HEAD:0:7} – that run will deploy, this one does not switch."
           fi
 
-      - name: Verwerfen (überholt)
+      - name: Discard (superseded)
         if: steps.current_after.outputs.superseded == '1'
         env:
           FTP_USER: ${{ secrets.FTP_USERNAME }}
@@ -178,9 +178,9 @@ jobs:
           export LFTP_PASSWORD="$(printf '%s' "$FTP_PASS" | tr -d '\r\n')"
           bin/deploy.sh discard "$NAME"
 
-      # Zeigerdatei austauschen, feste Dateien im Webverzeichnis aktualisieren, Seite prüfen (sonst
-      # sofort zurück), alte Versionen löschen (die letzten fünf bleiben)
-      - name: Umschalten und prüfen
+      # Replace the pointer file, update the fixed files in the web directory, check the site (otherwise
+      # switch back at once), delete old versions (the last five are kept)
+      - name: Switch and check
         if: github.ref == 'refs/heads/main' && steps.current.outputs.superseded != '1' && steps.current_after.outputs.superseded != '1'
         env:
           FTP_USER: ${{ secrets.FTP_USERNAME }}
@@ -189,4 +189,4 @@ jobs:
         run: |
           export LFTP_PASSWORD="$(printf '%s' "$FTP_PASS" | tr -d '\r\n')"
           bin/deploy.sh activate "$NAME"
-          echo "Aktiv: \`$NAME\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "Active: \`$NAME\`" >> "$GITHUB_STEP_SUMMARY"
