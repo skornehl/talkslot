@@ -46,7 +46,7 @@ doppeltem Absenden und Löschbestätigungen, Link kopieren, die Übersetzung im 
 Translator-API, einschließlich Sprachpaket-Downloads, Neuübersetzung und Fehlerfällen), „Termin auf diesem Gerät merken“ einschließlich abgewiesener fremder Links, Fehlerfokus und
 den Hell/Dunkel-Schalter.
 
-Die CI führt bei jedem Push die Unit-Tests aus sowie Smoke- und Browser-Tests gegen die Docker-Umgebung.
+Die CI führt bei jedem Push die Unit-Tests aus sowie Smoke-, Browser- und Deploy-Tests gegen die Docker-Umgebung.
 
 ## Konventionen
 

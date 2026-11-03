@@ -46,7 +46,7 @@ delete confirmations, copying links, the in-browser translation (with a simulate
 re-translating and error cases), "remember
 my appointment" including rejected foreign links, error focus and the light/dark switch.
 
-CI runs the unit tests on every push, and the smoke and browser tests against the Docker environment.
+CI runs the unit tests on every push, and the smoke, browser and deployment tests against the Docker environment.
 
 ## Conventions
 
