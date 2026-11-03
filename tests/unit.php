@@ -423,6 +423,14 @@ ini_set('error_log', (string) $oldLog); @unlink($log); @unlink($log . '.1');
 check('Passwort: höchstens 72 Byte (bcrypt)', App\Auth::passwordPolicy(str_repeat('ä', 37)) !== null && App\Auth::passwordPolicy(str_repeat('a', 72)) === null);
 App\Config::load($cfg);
 
+// Jede Variable, die build-config liest, muss der Deploy-Workflow im Build-Schritt auch übergeben
+preg_match_all('/\$env\(\'([A-Z_]+)\'/', (string) file_get_contents(dirname(__DIR__) . '/bin/build-config.php'), $m);
+$workflow = (string) file_get_contents(dirname(__DIR__) . '/.github/workflows/deploy.yml');
+$passed = preg_match('/- name: Build\n(.*?)run: bin\/build\.sh/s', $workflow, $b) ? $b[1] : '';
+$jobEnv = preg_match('/\n    env:\n(.*?)\n    steps:/s', $workflow, $j) ? $j[1] : '';
+$missing = array_filter(array_unique($m[1]), static fn ($v) => !preg_match('/^\s+' . $v . ':/m', $passed . "\n" . $jobEnv));
+check('Deploy-Workflow übergibt alle Variablen von build-config' . ($missing ? ' (fehlt: ' . implode(', ', $missing) . ')' : ''), count($m[1]) > 10 && !$missing);
+
 echo "Hoster in der Datenschutzerklärung\n";
 App\Config::load(['hosting' => ['de' => 'Beispiel Hosting GmbH, Weg 1']] + $cfg);
 check('[[HOSTER]] aus der Konfiguration, je Sprache des Seitentexts', App\Hosting::fill("- **Hosting:** [[HOSTER]]\n", 'de') === "- **Hosting:** Beispiel Hosting GmbH, Weg 1\n");
