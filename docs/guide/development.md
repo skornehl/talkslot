@@ -53,6 +53,10 @@ alert mail may have been sent.
   you the new hashes.
 - **Deployment variables:** every variable read by `bin/build-config.php` must be passed in the build step
   of `.github/workflows/deploy.yml`; a unit test checks this too.
+- **Bundled libraries:** PHPMailer is committed in `app/vendor/`. `composer.json` and `composer.lock` only
+  list it so that Dependabot reports new versions and security advisories; Composer is never run. When
+  Dependabot raises the version, run `bin/update-vendor.sh` on its branch and commit `app/vendor/`; the unit
+  test fails until both match.
 
 ## Contributing
 

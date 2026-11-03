@@ -56,6 +56,10 @@ Nach einem vollständigen Durchlauf darf keine Fehler-E-Mail verschickt worden s
   Texte automatisch aktualisiert werden. Der Unit-Test nennt Ihnen die neuen Hashes.
 - **Deployment-Variablen:** Jede Variable, die `bin/build-config.php` liest, muss im Build-Schritt von
   `.github/workflows/deploy.yml` übergeben werden; auch das prüft ein Unit-Test.
+- **Mitgelieferte Bibliotheken:** PHPMailer liegt fertig in `app/vendor/`. `composer.json` und
+  `composer.lock` führen es nur auf, damit Dependabot neue Versionen und Sicherheitswarnungen meldet;
+  Composer wird nie ausgeführt. Hebt Dependabot die Version an, führen Sie auf seinem Branch
+  `bin/update-vendor.sh` aus und committen `app/vendor/`; bis beides übereinstimmt, schlägt der Unit-Test fehl.
 
 ## Mitwirken
 

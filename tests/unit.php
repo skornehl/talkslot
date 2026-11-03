@@ -431,6 +431,18 @@ $jobEnv = preg_match('/\n    env:\n(.*?)\n    steps:/s', $workflow, $j) ? $j[1] 
 $missing = array_filter(array_unique($m[1]), static fn ($v) => !preg_match('/^\s+' . $v . ':/m', $passed . "\n" . $jobEnv));
 check('deploy workflow passes all build-config variables' . ($missing ? ' (missing: ' . implode(', ', $missing) . ')' : ''), count($m[1]) > 10 && !$missing);
 
+// The bundled libraries in app/vendor/ must match composer.lock, which Dependabot keeps up to date.
+// After a Dependabot update, run bin/update-vendor.sh on the branch.
+$lock = json_decode((string) file_get_contents(dirname(__DIR__) . '/composer.lock'), true);
+$locked = [];
+foreach ($lock['packages'] ?? [] as $p) {
+    $locked[$p['name']] = ltrim($p['version'], 'v');
+}
+$bundled = trim((string) @file_get_contents(dirname(__DIR__) . '/app/vendor/phpmailer/VERSION'));
+check("app/vendor/phpmailer ($bundled) matches composer.lock (" . ($locked['phpmailer/phpmailer'] ?? '?') . '); run bin/update-vendor.sh if not',
+    $bundled !== '' && $bundled === ($locked['phpmailer/phpmailer'] ?? null) && \PHPMailer\PHPMailer\PHPMailer::VERSION === $bundled
+    && array_keys($locked) === ['phpmailer/phpmailer']);
+
 echo "Web host in the privacy policy\n";
 App\Config::load(['hosting' => ['de' => 'Beispiel Hosting GmbH, Weg 1']] + $cfg);
 check('[[HOSTER]] from the configuration, per language of the page text', App\Hosting::fill("- **Hosting:** [[HOSTER]]\n", 'de') === "- **Hosting:** Beispiel Hosting GmbH, Weg 1\n");
