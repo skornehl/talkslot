@@ -1,0 +1,39 @@
+# Interface strings of the website. Page content lives in the pages themselves.
+en:
+  root: ""
+  skip: Skip to content
+  main_nav: Main
+  docs: Docs
+  get_started: Get started
+  switch_label: Deutsch
+  switch_short: DE
+  switch_title: Diese Seite auf Deutsch
+  switch_lang: de
+  documentation: Documentation
+  pager: Previous and next page
+  previous: Previous
+  next: Next
+  edit: Edit this page on GitHub
+  footer_license: "<strong>TalkSlot</strong> is free software under the"
+  source: Source code
+  releases: Releases
+  issues: Issues
+de:
+  root: /de
+  skip: Zum Inhalt springen
+  main_nav: Hauptnavigation
+  docs: Doku
+  get_started: Schnellstart
+  switch_label: English
+  switch_short: EN
+  switch_title: This page in English
+  switch_lang: en
+  documentation: Dokumentation
+  pager: Vorherige und nächste Seite
+  previous: Zurück
+  next: Weiter
+  edit: Diese Seite auf GitHub bearbeiten
+  footer_license: "<strong>TalkSlot</strong> ist freie Software unter der"
+  source: Quellcode
+  releases: Releases
+  issues: Issues

@@ -2,18 +2,21 @@
 layout: default
 body_class: doc-page
 ---
+{%- assign lang = page.lang | default: 'en' -%}
+{%- assign t = site.data.i18n[lang] -%}
 {%- assign flat = "" | split: "" -%}
 {%- for s in site.data.nav -%}{%- for p in s.pages -%}{%- assign flat = flat | push: p -%}{%- endfor -%}{%- endfor -%}
 <div class="wrap doc-grid">
   <aside class="sidebar">
     <details class="sidebar-toggle" open>
-      <summary>Documentation</summary>
-      <nav aria-label="Documentation">
+      <summary>{{ t.documentation }}</summary>
+      <nav aria-label="{{ t.documentation }}">
         {%- for s in site.data.nav %}
-        <p class="nav-section">{{ s.section }}</p>
+        <p class="nav-section">{{ s.section[lang] }}</p>
         <ul>
           {%- for p in s.pages %}
-          <li><a href="{{ p.url | relative_url }}"{% if page.url == p.url %} aria-current="page"{% endif %}>{{ p.title }}</a></li>
+          {%- assign p_url = t.root | append: p.path %}
+          <li><a href="{{ p_url | relative_url }}"{% if page.url == p_url %} aria-current="page"{% endif %}>{{ p[lang] }}</a></li>
           {%- endfor %}
         </ul>
         {%- endfor %}
@@ -25,16 +28,17 @@ body_class: doc-page
     <h1>{{ page.title }}</h1>
     {% if page.description %}<p class="lead">{{ page.description }}</p>{% endif %}
     {{ content }}
-    <nav class="pager" aria-label="Previous and next page">
+    <nav class="pager" aria-label="{{ t.pager }}">
       {%- for p in flat -%}
-        {%- if p.url == page.url -%}
+        {%- assign p_url = t.root | append: p.path -%}
+        {%- if p_url == page.url -%}
           {%- assign prev = forloop.index0 | minus: 1 -%}
           {%- assign next = forloop.index0 | plus: 1 -%}
-          {%- if forloop.first == false %}<a class="prev" href="{{ flat[prev].url | relative_url }}"><span>Previous</span>{{ flat[prev].title }}</a>{% else %}<span></span>{% endif -%}
-          {%- if forloop.last == false %}<a class="next" href="{{ flat[next].url | relative_url }}"><span>Next</span>{{ flat[next].title }}</a>{% endif -%}
+          {%- if forloop.first == false %}<a class="prev" href="{{ t.root | append: flat[prev].path | relative_url }}"><span>{{ t.previous }}</span>{{ flat[prev][lang] }}</a>{% else %}<span></span>{% endif -%}
+          {%- if forloop.last == false %}<a class="next" href="{{ t.root | append: flat[next].path | relative_url }}"><span>{{ t.next }}</span>{{ flat[next][lang] }}</a>{% endif -%}
         {%- endif -%}
       {%- endfor -%}
     </nav>
-    <p class="edit"><a href="https://github.com/{{ site.repository }}/edit/main/docs/{{ page.path }}">Edit this page on GitHub</a></p>
+    <p class="edit"><a href="https://github.com/{{ site.repository }}/edit/main/docs/{{ page.path }}">{{ t.edit }}</a></p>
   </article>
 </div>
