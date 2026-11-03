@@ -463,6 +463,29 @@ $built = (static fn ($f) => require $f)($cfgFile);
 check('build-config: APP_NAME (also sender name) and HOSTING_DE/EN applied', $rc === 0 && $built['app_name'] === 'Terminplanung'
     && $built['mail']['from_name'] === 'Terminplanung' && $built['hosting'] === ['de' => 'Hoster GmbH, Weg 1', 'en' => 'Host Ltd']);
 @unlink($cfgFile);
+[$rc] = $run(['bin/build-config.php', $cfgFile], $envOk);
+$built = (static fn ($f) => require $f)($cfgFile);
+check('build-config: without LANGUAGES/DEFAULT_LANGUAGE all languages, default German', $rc === 0
+    && $built['languages'] === ['de', 'en', 'pl', 'ru', 'uk', 'tr'] && $built['default_language'] === 'de');
+[$rc] = $run(['bin/build-config.php', $cfgFile], ['LANGUAGES' => ' EN, de ,tr,de', 'DEFAULT_LANGUAGE' => 'En'] + $envOk);
+$built = (static fn ($f) => require $f)($cfgFile);
+check('build-config: LANGUAGES (order, case, duplicates) and DEFAULT_LANGUAGE applied', $rc === 0
+    && $built['languages'] === ['en', 'de', 'tr'] && $built['default_language'] === 'en');
+[$rc] = $run(['bin/build-config.php', $cfgFile], ['LANGUAGES' => 'en,tr'] + $envOk);
+$built = (static fn ($f) => require $f)($cfgFile);
+check('build-config: default not given and German not offered → first language', $rc === 0 && $built['default_language'] === 'en');
+@unlink($cfgFile);
+[$rc, , $err] = $run(['bin/build-config.php', $cfgFile], ['LANGUAGES' => 'de,xx'] + $envOk);
+check('build-config: unknown language → abort', $rc === 1 && str_contains($err, 'unknown language "xx"') && !is_file($cfgFile));
+[$rc, , $err] = $run(['bin/build-config.php', $cfgFile], ['LANGUAGES' => 'de,en', 'DEFAULT_LANGUAGE' => 'tr'] + $envOk);
+check('build-config: default language not offered → abort', $rc === 1 && str_contains($err, 'DEFAULT_LANGUAGE must be one of LANGUAGES') && !is_file($cfgFile));
+App\Config::load(['languages' => ['en', 'tr'], 'default_language' => 'de'] + $cfg);
+check('runtime: configured default that is not offered falls back to the first language', App\I18n::defaultLanguage() === 'en');
+App\Config::load(['languages' => ['de', 'en'], 'default_language' => 'en'] + $cfg);
+App\I18n::init(null);
+check('runtime: without a choice the configured default language is used', App\I18n::lang() === 'en' && App\I18n::defaultLanguage() === 'en');
+App\Config::load($cfg);
+App\I18n::set('de');
 [$rc, , $err] = $run(['bin/build-config.php', $cfgFile], ['SMTP_ENCRYPTION' => 'starttls'] + $envOk);
 check('build-config: unknown SMTP encryption → abort (never plain text by accident)', $rc === 1 && str_contains($err, 'SMTP_ENCRYPTION'));
 [$rc, , $err] = $run(['bin/build-config.php', $cfgFile], ['DB_PREFIX' => 'tp_;DROP'] + $envOk);

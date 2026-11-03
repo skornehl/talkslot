@@ -55,6 +55,24 @@ if (strlen($env('APP_SECRET')) < 32 || ($allowInstall && strlen($env('INSTALL_KE
 }
 
 $config = require dirname(__DIR__) . '/config/config.sample.php';
+
+// Parent-facing languages (LANGUAGES, comma-separated, order = order of the flags) and the language
+// shown when the visitor has not chosen one (DEFAULT_LANGUAGE). Each needs a file in app/lang/.
+$languages = $env('LANGUAGES') !== ''
+    ? array_values(array_unique(array_filter(array_map('trim', explode(',', strtolower($env('LANGUAGES')))))))
+    : array_values((array) $config['languages']);
+foreach ($languages as $l) {
+    if (!preg_match('/^[a-z]{2,3}$/', $l) || !is_file(dirname(__DIR__) . "/app/lang/$l.php")) {
+        fwrite(STDERR, "LANGUAGES: unknown language \"$l\" (there is no app/lang/$l.php)\n");
+        exit(1);
+    }
+}
+$sampleDefault = (string) $config['default_language'];
+$default = strtolower($env('DEFAULT_LANGUAGE', in_array($sampleDefault, $languages, true) ? $sampleDefault : (string) ($languages[0] ?? '')));
+if ($languages === [] || !in_array($default, $languages, true)) {
+    fwrite(STDERR, "DEFAULT_LANGUAGE must be one of LANGUAGES (" . implode(', ', $languages) . ")\n");
+    exit(1);
+}
 $config['base_url'] = rtrim($env('BASE_URL'), '/');
 $config['secret'] = $env('APP_SECRET');
 $config['install_key'] = $allowInstall ? $env('INSTALL_KEY') : '';
@@ -68,6 +86,8 @@ $config['db'] = [
     'prefix' => $prefix,
 ];
 $config['alert_email'] = $env('ALERT_EMAIL');
+$config['languages'] = $languages;
+$config['default_language'] = $default;
 $config['app_name'] = $env('APP_NAME', (string) $config['app_name']);
 $config['hosting'] = ['de' => $env('HOSTING_DE'), 'en' => $env('HOSTING_EN')];
 $config['mail']['transport'] = $env('MAIL_TRANSPORT', 'mail');

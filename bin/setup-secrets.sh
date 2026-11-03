@@ -44,6 +44,12 @@ HD=$(ask x 'Web host for the privacy policy (German), e.g. "Beispiel GmbH, Weg 1
 HE=$(ask x 'Web host for the privacy policy (English)')
 [ -n "$HE" ] && gh variable set HOSTING_EN --body "$HE"
 
+echo "== Languages"
+LANGS=$(ask x 'Parent-facing languages, comma-separated, order = flags (Enter = de,en,pl,ru,uk,tr)')
+[ -n "$LANGS" ] && gh variable set LANGUAGES --body "$LANGS"
+DEF=$(ask x 'Default language when the visitor has not chosen one (Enter = de)')
+[ -n "$DEF" ] && gh variable set DEFAULT_LANGUAGE --body "$DEF"
+
 echo "== Email"
 FROM=$(ask x 'Sender address (Enter = later)')
 [ -n "$FROM" ] && gh variable set MAIL_FROM --body "$FROM"

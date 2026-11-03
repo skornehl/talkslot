@@ -26,7 +26,10 @@ final class I18n
 
     public static function defaultLanguage(): string
     {
-        return (string) Config::get('default_language', self::languages()[0] ?? 'de');
+        // A default that is not among the offered languages falls back to the first one
+        $default = (string) Config::get('default_language', '');
+        $languages = self::languages();
+        return in_array($default, $languages, true) ? $default : (string) ($languages[0] ?? 'de');
     }
 
     public static function init(?string $requested): void
