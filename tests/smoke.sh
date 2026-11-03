@@ -711,9 +711,11 @@ R=$(curl -s --data-urlencode "csrf=$(echo "$P" | csrf)" -d "name=&privacy=1" "$B
 check "booking without slot and name → both notices" 'echo "$R" | has "Bitte wählen Sie einen Termin" && echo "$R" | has "Bitte geben Sie einen Namen an"'
 G=$(curl -s "$B/$S3")
 check "code prompt with expired form → notice" 'curl -s -d "csrf=alt&step=unlock&code=$RC3" "$B/$S3" | has "Das Formular ist abgelaufen"'
-# Rate limits: raise the counters for this IP directly (IPv4 and IPv6, depending on how localhost resolves)
+# Rate limits: raise the counters for this client directly. The key is the one the server already uses
+# for our bookings (with Docker the client is the bridge gateway, not 127.0.0.1); IPv4/IPv6 localhost as fallback.
+KC=$(DBQ "SELECT key_hash FROM tp_rate_limits WHERE bucket = 'booking' ORDER BY hits DESC LIMIT 1")
 K4=$(php -r 'echo hash_hmac("sha256", "ip|127.0.0.0", str_repeat("d", 64));'); K6=$(php -r 'echo hash_hmac("sha256", "ip|::", str_repeat("d", 64));')
-LIMIT() { DBQ "INSERT INTO tp_rate_limits (bucket, key_hash, window_start, hits) VALUES ('$1', '$K4', UNIX_TIMESTAMP(), 100000), ('$1', '$K6', UNIX_TIMESTAMP(), 100000) ON DUPLICATE KEY UPDATE hits = 100000, window_start = UNIX_TIMESTAMP()"; }
+LIMIT() { local k; for k in $KC $K4 $K6; do DBQ "INSERT INTO tp_rate_limits (bucket, key_hash, window_start, hits) VALUES ('$1', '$k', UNIX_TIMESTAMP(), 100000) ON DUPLICATE KEY UPDATE hits = 100000, window_start = UNIX_TIMESTAMP()"; done; }
 LIMIT attempt
 check "too many booking attempts → 429" '[ "$(curl -s -o /dev/null -w "%{http_code}" --data-urlencode "csrf=$(echo "$P" | csrf)" -d "slot_id=1&name=Max&privacy=1" "$B/$SP")" = 429 ]'
 LIMIT code
