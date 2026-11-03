@@ -149,6 +149,21 @@ check('no data in the log: names with apostrophe, single quote, values in parent
     && App\ErrorPage::sanitize("Wert 'Anna Schmidt ohne Ende") === "Wert '…"
     && App\ErrorPage::sanitize('Failed to parse time string (Anna Schmidt) at position 0') === 'Failed to parse time string (…) at position 0');
 
+echo "Booking: deadlock retry\n";
+// Parallel bookings can make MariaDB abort a transaction (1213 deadlock, 1205 lock wait timeout):
+// retried once, then reported as "just taken" instead of an error page; other errors pass through.
+$retry = (new ReflectionMethod(App\BookingService::class, 'retryOnDeadlock'))->getClosure(null);
+$pdoError = static function (int $code): PDOException { $e = new PDOException("SQLSTATE[40001]: $code"); $e->errorInfo = ['40001', $code, 'x']; return $e; };
+$calls = 0;
+$result = $retry(static function () use (&$calls, $pdoError) { if (++$calls === 1) { throw $pdoError(1213); } return 'gebucht'; });
+check('deadlock: retried once, then succeeds', $result === 'gebucht' && $calls === 2);
+$calls = 0;
+try { $retry(static function () use (&$calls, $pdoError) { $calls++; throw $pdoError(1205); }); $caught = null; } catch (Throwable $e) { $caught = $e instanceof App\BookingException ? $e->getMessage() : get_class($e); }
+check('lock wait twice: "taken" after the second attempt', $caught === App\BookingService::TAKEN && $calls === 2);
+$calls = 0;
+try { $retry(static function () use (&$calls, $pdoError) { $calls++; throw $pdoError(1146); }); $caught = null; } catch (Throwable $e) { $caught = $e instanceof PDOException ? (int) $e->errorInfo[1] : get_class($e); }
+check('other database errors are not retried and pass through', $caught === 1146 && $calls === 1);
+
 echo "Error reports by mail\n";
 $cfg = (static function (): array { return require dirname(__DIR__) . '/config/config.php'; })();
 App\Config::load(['alert_email' => 'betrieb@example.org', 'base_url' => 'https://t.example'] + $cfg);
