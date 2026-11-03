@@ -7,3 +7,5 @@
 /dev/data/
 .DS_Store
 /build/
+/docs/_site/
+/docs/.jekyll-cache/

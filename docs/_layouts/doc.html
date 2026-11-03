@@ -1,0 +1,40 @@
+---
+layout: default
+body_class: doc-page
+---
+{%- assign flat = "" | split: "" -%}
+{%- for s in site.data.nav -%}{%- for p in s.pages -%}{%- assign flat = flat | push: p -%}{%- endfor -%}{%- endfor -%}
+<div class="wrap doc-grid">
+  <aside class="sidebar">
+    <details class="sidebar-toggle" open>
+      <summary>Documentation</summary>
+      <nav aria-label="Documentation">
+        {%- for s in site.data.nav %}
+        <p class="nav-section">{{ s.section }}</p>
+        <ul>
+          {%- for p in s.pages %}
+          <li><a href="{{ p.url | relative_url }}"{% if page.url == p.url %} aria-current="page"{% endif %}>{{ p.title }}</a></li>
+          {%- endfor %}
+        </ul>
+        {%- endfor %}
+      </nav>
+    </details>
+  </aside>
+  <script>if (matchMedia('(max-width: 900px)').matches) document.querySelector('.sidebar-toggle').open = false;</script>
+  <article class="doc">
+    <h1>{{ page.title }}</h1>
+    {% if page.description %}<p class="lead">{{ page.description }}</p>{% endif %}
+    {{ content }}
+    <nav class="pager" aria-label="Previous and next page">
+      {%- for p in flat -%}
+        {%- if p.url == page.url -%}
+          {%- assign prev = forloop.index0 | minus: 1 -%}
+          {%- assign next = forloop.index0 | plus: 1 -%}
+          {%- if forloop.first == false %}<a class="prev" href="{{ flat[prev].url | relative_url }}"><span>Previous</span>{{ flat[prev].title }}</a>{% else %}<span></span>{% endif -%}
+          {%- if forloop.last == false %}<a class="next" href="{{ flat[next].url | relative_url }}"><span>Next</span>{{ flat[next].title }}</a>{% endif -%}
+        {%- endif -%}
+      {%- endfor -%}
+    </nav>
+    <p class="edit"><a href="https://github.com/{{ site.repository }}/edit/main/docs/{{ page.path }}">Edit this page on GitHub</a></p>
+  </article>
+</div>

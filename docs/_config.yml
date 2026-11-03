@@ -1,0 +1,19 @@
+title: TalkSlot
+description: Parent-teacher conference booking for schools – no accounts, no cookies, runs on shared hosting.
+url: https://skornehl.github.io
+baseurl: /talkslot
+repository: skornehl/talkslot
+permalink: pretty
+markdown: kramdown
+kramdown:
+  input: GFM
+  hard_wrap: false
+  syntax_highlighter_opts:
+    disable: true
+exclude:
+  - README.md
+defaults:
+  - scope:
+      path: guide
+    values:
+      layout: doc

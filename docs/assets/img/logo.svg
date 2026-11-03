@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="TalkSlot">
+  <rect x="4" y="8" width="56" height="50" rx="12" fill="#1f5f8b"/>
+  <rect x="4" y="8" width="56" height="14" rx="12" fill="#174a6d"/>
+  <rect x="4" y="16" width="56" height="6" fill="#174a6d"/>
+  <rect x="17" y="3" width="6" height="12" rx="3" fill="#174a6d"/>
+  <rect x="41" y="3" width="6" height="12" rx="3" fill="#174a6d"/>
+  <path d="M18 30h28a5 5 0 0 1 5 5v8a5 5 0 0 1-5 5H30l-7 6v-6h-5a5 5 0 0 1-5-5v-8a5 5 0 0 1 5-5z" fill="#ffffff"/>
+  <circle cx="24" cy="39" r="2.6" fill="#1f5f8b"/><circle cx="32" cy="39" r="2.6" fill="#1f5f8b"/><circle cx="40" cy="39" r="2.6" fill="#1f5f8b"/>
+</svg>

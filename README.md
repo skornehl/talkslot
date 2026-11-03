@@ -5,6 +5,8 @@
 Teachers publish time slots, parents book one, without an account, an app or cookies. Built for German
 schools (GDPR/DSGVO, TDDDG) and multilingual families.
 
+**📖 Documentation and screenshots: <https://skornehl.github.io/talkslot/>**
+
 - **For parents:** open a link or enter a short round code, pick a free slot, done. Change or cancel via a
   personal link; optional confirmation mail with a calendar file. Parent pages in German, English,
   Polish, Russian, Ukrainian and Turkish.
@@ -15,8 +17,8 @@ schools (GDPR/DSGVO, TDDDG) and multilingual families.
 - **For the operator:** PHP 8.3+ and MariaDB, no framework, no Composer, no Node, no external CDNs.
   Optional zero-downtime deployment via GitHub Actions and FTPS, including one-click rollback.
 
-> The admin area, mails to teachers and the code comments are in German. Parent-facing pages and mails
-> are translated (translations should be reviewed by native speakers).
+> The admin area and mails to teachers are in German. Parent-facing pages and mails are translated into
+> six languages (translations should be reviewed by native speakers).
 
 ## Contents
 
@@ -91,6 +93,7 @@ git clone https://github.com/skornehl/talkslot.git && cd talkslot
 cp dev/config.dev.php config/config.php
 docker compose -f dev/compose.yml up -d --build
 dev/reset.sh          # fresh database, admin: sabrina / Sehr-Sicheres-Dev-Pw1
+dev/demo.sh           # optional: demo rounds with bookings
 ```
 
 App: <http://localhost:8080>, admin: <http://localhost:8080/admin>. Mails end up in Mailpit

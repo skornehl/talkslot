@@ -1,0 +1,148 @@
+---
+layout: default
+description: TalkSlot is a free, privacy-friendly booking tool for parent-teacher conferences. Parents book without an account, teachers manage their rounds, and it runs on cheap shared hosting.
+---
+<section class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <p class="eyebrow">Free and open source · AGPL v3</p>
+      <h1>Parent-teacher conferences, booked in a minute.</h1>
+      <p class="sub">Teachers publish their time slots, parents pick one. No account, no app, no cookies. Built for schools that care about privacy, and simple enough to run on a basic web host.</p>
+      <div class="cta">
+        <a class="btn primary" href="{{ '/guide/getting-started/' | relative_url }}">Get started</a>
+        <a class="btn ghost" href="{{ '/guide/' | relative_url }}">Read the docs</a>
+      </div>
+      <ul class="facts">
+        <li>No account for parents</li>
+        <li>No cookies on public pages</li>
+        <li>6 languages for parents</li>
+        <li>PHP + MariaDB, no framework</li>
+      </ul>
+    </div>
+    <div class="hero-shots">
+      <img class="shot desktop" src="{{ '/assets/img/parent-round.webp' | relative_url }}" alt="Booking page of a round: free time slots grouped by day, followed by the booking form" width="1920" height="2100" loading="eager">
+      <img class="shot phone" src="{{ '/assets/img/parent-round-mobile-dark.webp' | relative_url }}" alt="The same booking page on a phone in dark mode, in English" width="1170" height="2532">
+    </div>
+  </div>
+</section>
+
+<section class="band alt">
+  <div class="wrap">
+    <h2>One tool, four happy groups</h2>
+    <p class="intro">TalkSlot replaces paper lists, e-mail ping-pong and spreadsheets. Everybody gets exactly what they need, and nothing more.</p>
+    <div class="cards">
+      <div class="card">
+        <div class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="8" cy="7" r="3"/><circle cx="17" cy="9" r="2.3"/><path d="M2.5 20v-1.5A5.5 5.5 0 0 1 8 13a5.5 5.5 0 0 1 5.5 5.5V20"/><path d="M14.5 14.6a4.2 4.2 0 0 1 7 3.2V20"/></svg></div>
+        <h3>Parents</h3>
+        <ul>
+          <li>Open a link or enter a short round code</li>
+          <li>Pick a free slot, enter a name: done</li>
+          <li>Move or cancel with a personal link</li>
+          <li>Confirmation mail with calendar file (optional)</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="13" height="10" rx="1.5"/><circle cx="6" cy="9" r="2.6"/><path d="M1.5 21v-2.5A4.5 4.5 0 0 1 6 14h1.5l4-3"/><path d="M13 7h5M13 10h3"/></svg></div>
+        <h3>Teachers</h3>
+        <ul>
+          <li>Rounds with several days, breaks and live preview</li>
+          <li>See who booked when, move or add bookings</li>
+          <li>Ready-to-send invitation text, print lists</li>
+          <li>Summary mail the evening before</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 21h18M5 21V10l7-5 7 5v11"/><path d="M10 21v-5h4v5"/><circle cx="12" cy="10.5" r="1.6"/></svg></div>
+        <h3>Schools</h3>
+        <ul>
+          <li>One admin invites the teachers</li>
+          <li>Imprint and privacy policy templates (GDPR)</li>
+          <li>Bookings are deleted the day after the meeting</li>
+          <li>No tracking, no external services</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="6" rx="1.5"/><rect x="3" y="14" width="18" height="6" rx="1.5"/><path d="M7 7h.01M7 17h.01M11 7h6M11 17h6"/></svg></div>
+        <h3>Operators</h3>
+        <ul>
+          <li>Runs on shared hosting with PHP 8.3+</li>
+          <li>Zero-downtime deployment via GitHub Actions</li>
+          <li>One-click rollback, automatic migrations</li>
+          <li>Error alerts by mail, without personal data</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="band">
+  <div class="wrap">
+    <div class="feature">
+      <div class="text">
+        <h3>Booking without friction</h3>
+        <p>Parents only see free slots. They enter a name (and an e-mail address if they want a confirmation) and get a personal link to move or cancel the appointment later.</p>
+        <ul>
+          <li>Readable link per round, or an 8-character round code for paper invitations</li>
+          <li>One booking per person per round or per day, if the teacher wants it</li>
+          <li>Optional "round code required" protection against strangers</li>
+          <li>Calendar file that updates itself when the appointment is moved</li>
+        </ul>
+      </div>
+      <img class="shot" src="{{ '/assets/img/booking-confirmed.webp' | relative_url }}" alt="Confirmation page after booking, with the personal link to change or cancel the appointment" width="1920" height="1230" loading="lazy">
+    </div>
+    <div class="feature reverse">
+      <div class="text">
+        <h3>Everything a teacher needs, on one page</h3>
+        <p>Each round shows its link, round code and invitation text, then every day with its breaks and all bookings. Slots can be blocked, bookings edited, moved or added by hand.</p>
+        <ul>
+          <li>Changing times never deletes a booking; conflicts are flagged</li>
+          <li>Print view per round or day, also as PDF</li>
+          <li>Titles and descriptions translated in the teacher's browser, without sending text anywhere</li>
+        </ul>
+      </div>
+      <img class="shot" src="{{ '/assets/img/admin-round-top.webp' | relative_url }}" alt="Admin page of a round with link, round code, actions and the booking list of the first day" width="1920" height="1650" loading="lazy">
+    </div>
+    <div class="feature">
+      <div class="text">
+        <h3>Light and dark, on every device</h3>
+        <p>TalkSlot follows the device setting and can be switched in the footer. Pages are accessible, keyboard-friendly and work well on small screens.</p>
+      </div>
+      <div class="duo">
+        <img class="shot" src="{{ '/assets/img/admin-dashboard.webp' | relative_url }}" alt="Admin overview of all rounds in light mode" width="1920" height="1200" loading="lazy">
+        <img class="shot" src="{{ '/assets/img/admin-dashboard-dark.webp' | relative_url }}" alt="Admin overview of all rounds in dark mode" width="1920" height="1200" loading="lazy">
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="band alt">
+  <div class="wrap">
+    <h2>Privacy is the default, not an option</h2>
+    <p class="intro">TalkSlot was built for German schools, so it follows the GDPR and the German TDDDG closely. The same choices protect parents everywhere.</p>
+    <div class="cards">
+      <div class="card"><h3>Data minimisation</h3><p>A free-text name and an optional e-mail address. That is all TalkSlot stores about parents.</p></div>
+      <div class="card"><h3>No cookies, no banner</h3><p>Public pages set no cookies and load nothing from third parties. Language and CSRF protection work without them.</p></div>
+      <div class="card"><h3>Automatic deletion</h3><p>Bookings are deleted from midnight after the appointment, rate-limit data after 24 hours, finished rounds a day after their last date.</p></div>
+      <div class="card"><h3>Ready-made legal texts</h3><p>Imprint and privacy policy templates in German and English, filled in automatically with the school's details.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="band">
+  <div class="wrap quick">
+    <div>
+      <h2>Try it in two minutes</h2>
+      <p class="intro">The repository contains a Docker setup with database and mail catcher, plus demo data.</p>
+      <a class="btn primary" href="{{ '/guide/getting-started/' | relative_url }}">Getting started guide</a>
+    </div>
+    <div>
+<pre><code>git clone https://github.com/skornehl/talkslot.git
+cd talkslot
+cp dev/config.dev.php config/config.php
+docker compose -f dev/compose.yml up -d --build
+dev/reset.sh &amp;&amp; dev/demo.sh
+# open http://localhost:8080/admin
+# user sabrina, password Sehr-Sicheres-Dev-Pw1</code></pre>
+    </div>
+  </div>
+</section>
