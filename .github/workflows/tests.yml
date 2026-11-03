@@ -1,6 +1,6 @@
 # Lint and unit tests on all supported PHP versions (without a database), plus the end-to-end
-# tests (tests/smoke.sh) and browser tests (tests/browser.mjs) against the Docker environment from
-# dev/. tests/deploy.sh (needs lftp) runs locally, see README.
+# tests (tests/smoke.sh), browser tests (tests/browser.mjs) and the deployment test (tests/deploy.sh)
+# against the Docker environment from dev/.
 name: Tests
 
 on:
@@ -69,6 +69,11 @@ jobs:
           dev/reset.sh && dev/demo.sh
           # Node 22+ has WebSocket built in; older versions need the flag
           node $(node -e 'process.exit(typeof WebSocket === "undefined" ? 1 : 0)' || echo --experimental-websocket) tests/browser.mjs
+
+      - name: Deployment test (inside the app container, which has PHP and the database)
+        run: |
+          docker compose -f dev/compose.yml exec -T app sh -c 'apt-get update -qq && apt-get install -y -qq lftp > /dev/null'
+          docker compose -f dev/compose.yml exec -T app tests/deploy.sh
 
       - name: Server log
         if: failure()

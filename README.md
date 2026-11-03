@@ -270,6 +270,8 @@ node tests/browser.mjs  # the JavaScript in headless Chrome (after dev/reset.sh 
 tests/deploy.sh         # atomic deployment via lftp file:// under load (needs lftp and the local DB)
 ```
 
+CI runs all four on every push: the unit tests on PHP 8.3–8.5, the others against the Docker environment.
+
 The smoke test covers login and lockout, account management, **data separation between teachers**,
 CSRF, honeypot, XSS escaping, SQL injection, **20 parallel bookings on one slot → exactly one succeeds**,
 moving, cancelling, booking limits, conflict detection, printing, clean-up and error alerts.
