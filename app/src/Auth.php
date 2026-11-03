@@ -7,7 +7,7 @@ namespace App;
  * Admin login with a secure session.
  * - Session cookie only for /admin, HttpOnly, Secure, SameSite=Strict
  * - Inactivity and absolute timeout
- * - Roles: exactly one admin (all rounds, accounts, texts; controller) and teacher (own rounds only)
+ * - Roles: admin (one or more: all rounds, accounts, texts) and teacher (own rounds only)
  * - Brute-force protection: limit on failed logins per (truncated, hashed) IP.
  *   Deliberately no account lockout: otherwise anyone could lock the teacher out permanently
  *   with a few failed attempts. The minimum length of 12 characters protects against distributed guessing.

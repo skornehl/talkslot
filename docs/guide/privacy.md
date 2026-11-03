@@ -13,7 +13,7 @@ This page explains the design decisions; it is not legal advice.
 | Name and optional e-mail address of a booking | database | from 0:00 the day after the appointment, or immediately on cancellation |
 | Hash of the personal change link | database | with the booking |
 | Shortened, HMAC-hashed IP addresses | database (rate limiting) | after 24 hours at the latest |
-| Teacher accounts | database | by the admin; inactive accounts without rounds 15 months after the last login |
+| Teacher accounts | database | by an admin; inactive accounts without rounds 15 months after the last login |
 | Summary mails to teachers (time and name, no e-mail addresses) | teacher's mailbox | the privacy policy promises at most 15 months |
 
 TalkSlot keeps **no** access logs of its own. The web server's logs are the web host's responsibility;
@@ -42,21 +42,21 @@ ask how long they are kept and state it in the privacy policy.
 ## Legal templates
 
 Imprint and privacy policy templates in German and English are copied into the database at installation
-and can be edited by the admin under *Texte*. The privacy template covers the information required by
+and can be edited by admins under *Texte*. The privacy template covers the information required by
 Art. 13 GDPR: controller, purposes, legal bases including legitimate interests, recipients, third
 countries, retention, rights of data subjects including the right to object, right to lodge a complaint,
 whether providing data is required, and automated decision-making.
 
 Before going live:
 
-1. **Controller:** fill in *Mein Profil → Angaben für Impressum und Datenschutz*. It replaces
+1. **Controller:** fill in *Texte → Angaben für Impressum und Datenschutz*. It replaces
    `[[VERANTWORTLICHE]]`; without it no round is public.
 2. **Web host:** set `hosting` in the configuration (or `HOSTING_DE`/`HOSTING_EN` when deploying). It
-   replaces `[[HOSTER]]`. Unset, the page shows a visible placeholder and the admin sees a hint.
+   replaces `[[HOSTER]]`. Unset, the page shows a visible placeholder and admins see a hint.
 3. **Remaining placeholders** in square brackets: retention of the web server logs (ask your web host) and
    the competent data protection supervisory authority.
 4. **Data processing agreement** (DPA, *AVV*) with your web host.
-5. If teachers use the platform: the admin is responsible for all rounds, the teachers act on the admin's
-   behalf and instructions.
+5. If teachers use the platform: the operator (usually the school) is responsible for all rounds, the
+   teachers act on its behalf and instructions.
 
 Have the texts reviewed by someone who knows your situation; the templates do not replace legal advice.

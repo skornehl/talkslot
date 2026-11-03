@@ -57,13 +57,15 @@ check "invalid break: message, no additional empty row" 'echo "$EB" | grep -q "P
 EB=$(curl -s -b "$J" --data-urlencode "csrf=$T" -d "title=Pausenfehler&booking_deadline_hours=0&cancel_deadline_hours=0&day_dates%5B%5D=&start_time=14:00&end_time=16:00&slot_minutes=15&break_start%5B%5D=15:00&break_end%5B%5D=15:30&break_label%5B%5D=Kaffee" "$B/admin/round/new")
 check "entered break is kept after an error" 'echo "$EB" | grep -q "value=\"Kaffee\"" && [ "$(echo "$EB" | grep -c "name=\"break_start\[\]\"")" = 2 ]'
 
-# Without contact details in the profile no round may be activated
+# Without the details for legal notice/privacy policy no round may be activated
 NP=$(curl -s -w '\n%{http_code}' -b "$J" --data-urlencode "csrf=$T" -d "title=Ohne+Profil&is_active=1&booking_deadline_hours=0&cancel_deadline_hours=0&day_dates%5B%5D=$(date -d '+3 day' +%F)&start_time=14:00&end_time=15:00&slot_minutes=30" "$B/admin/round/new")
-check "activating without imprint/privacy details rejected (nothing created)" '[ "$(echo "$NP" | tail -1)" = 200 ] && echo "$NP" | grep -q "Bevor Runden aktiviert werden können" && ! curl -s -b "$J" "$B/admin" | grep -q "Ohne Profil" && curl -s -b "$J" "$B/admin" | grep -q "Bitte ergänzen Sie"'
+check "activating without imprint/privacy details rejected (nothing created)" '[ "$(echo "$NP" | tail -1)" = 200 ] && echo "$NP" | grep -q "Bevor Runden aktiviert werden können" && ! curl -s -b "$J" "$B/admin" | grep -q "Ohne Profil" && curl -s -b "$J" "$B/admin" | grep -q "Die Angaben für Impressum und Datenschutz fehlen"'
 curl -s -o /dev/null -b "$J" --data-urlencode "csrf=$T" --data-urlencode "display_name=Frau Sabrina Test" \
-  --data-urlencode $'controller_contact=Sabrina Test\nTeststraße 1\n12345 Teststadt\nE-Mail: sabrina@example.org' \
   -d "email=lehrer@example.org&summary_evening=1&summary_deadline=1" "$B/admin/profile"
 check "profile saved" '! curl -s -b "$J" "$B/admin" | grep -q "Bitte ergänzen Sie"'
+curl -s -o /dev/null -b "$J" --data-urlencode "csrf=$T" \
+  --data-urlencode $'controller_contact=Sabrina Test\r\nTeststraße 1\n12345 Teststadt\nE-Mail: sabrina@example.org' "$B/admin/texts/operator"
+check "details for legal notice/privacy policy saved on their own page, no notice left" 'curl -s -b "$J" "$B/admin/texts" | grep -q "Teststraße 1" && ! curl -s -b "$J" "$B/admin" | grep -q "Angaben für Impressum und Datenschutz fehlen"'
 
 TOMORROW=$(date -d '+3 day' +%F)
 loc=$(curl -s -o /dev/null -w '%{redirect_url}' -b "$J" --data-urlencode "csrf=$T" --data-urlencode "title=Elternsprechtag Größe Übung" \
@@ -395,9 +397,9 @@ DBQ "DELETE FROM tp_rate_limits WHERE bucket='code'"
 echo "Multiple teachers"
 DC="docker compose -f $(dirname "$0")/../dev/compose.yml"
 T=$(curl -s -b "$J" "$B/admin/users" | csrf)
-UOUT=$(curl -s -L -b "$J" -d "csrf=$T&display_name=Herr+Zwei&email=Zwei@Example.org&role=admin" "$B/admin/users/new")
+UOUT=$(curl -s -L -b "$J" -d "csrf=$T&display_name=Herr+Zwei&email=Zwei@Example.org&role=teacher" "$B/admin/users/new")
 check "teacher created with name + email only, invitation sent" 'echo "$UOUT" | grep -q "Einladung an zwei@example.org gesendet" && echo "$UOUT" | grep -q "Einladung offen"'
-check "no second admin: new account is a teacher (even with role=admin), no role field" '[ "$($DC exec -T db mariadb -uapp -papp-dev-only talkslot -Ne "SELECT role FROM tp_users WHERE username=\"zwei@example.org\"")" = teacher ] && [ "$($DC exec -T db mariadb -uapp -papp-dev-only talkslot -Ne "SELECT COUNT(*) FROM tp_users WHERE role=\"admin\"")" = 1 ] && ! curl -s -b "$J" "$B/admin/users/new" | grep -q "name=\"role\""'
+check "new account with role teacher is a teacher; the form offers the role" '[ "$($DC exec -T db mariadb -uapp -papp-dev-only talkslot -Ne "SELECT role FROM tp_users WHERE username=\"zwei@example.org\"")" = teacher ] && curl -s -b "$J" "$B/admin/users/new" | grep -q "name=\"role\" value=\"admin\""'
 WMAIL=$($DC exec -T app php -r '$r=json_decode(file_get_contents("http://mail:8025/api/v1/search?query=to:zwei@example.org%20subject:Einladung"),true); echo json_decode(file_get_contents("http://mail:8025/api/v1/message/".$r["messages"][0]["ID"]),true)["Text"];')
 LINK=$(echo "$WMAIL" | grep -o 'http[^ ]*/admin/invite/[A-Za-z0-9_-]\{43\}' | head -1)
 check "invitation mail: link, username, no password" '[ -n "$LINK" ] && echo "$WMAIL" | grep -q "Ihr Benutzername: zwei@example.org" && ! echo "$WMAIL" | grep -qi "passwort:"'
@@ -456,7 +458,9 @@ PRIV=$(curl -s "$B/datenschutz?r=$S4")
 check "without web host in the configuration: visible placeholder, notice in the admin area" 'echo "$PRIV" | grep -qF "[HOSTER MIT ANSCHRIFT]" && ! echo "$PRIV" | grep -qF "[[HOSTER]]" && curl -s -b "$J" "$B/admin/texts" | grep -q "fehlen die Angaben zum Hoster"'
 check "privacy notice names the admin as controller (also for a round of teacher 2)" 'echo "$PRIV" | grep -q "Teststraße 1" && ! echo "$PRIV" | grep -q "Schulweg 2" && ! echo "$PRIV" | grep -q "Auftragsverarbeiterin"'
 check "privacy notice without round and imprint: also the admin's details" 'curl -s "$B/datenschutz" | grep -q "Teststraße 1" && curl -s "$B/impressum" | grep -q "Teststraße 1" && ! curl -s "$B/impressum" | grep -q "VORNAME NACHNAME"'
-check "teacher profile without imprint/privacy details" '! curl -s -c "$J2" -b "$J2" "$B/admin/profile" | grep -q "name=\"controller_contact\"" && curl -s -b "$J" "$B/admin/profile" | grep -q "name=\"controller_contact\""'
+check "details only on the admins' texts page, not in any profile" '! curl -s -c "$J2" -b "$J2" "$B/admin/profile" | grep -q "name=\"controller_contact\"" && ! curl -s -b "$J" "$B/admin/profile" | grep -q "name=\"controller_contact\"" && curl -s -b "$J" "$B/admin/texts" | grep -q "name=\"controller_contact\"" && [ "$(curl -s -o /dev/null -w "%{http_code}" -c "$J2" -b "$J2" "$B/admin/texts")" = 404 ]'
+CC2=$(curl -s -c "$J2" -b "$J2" "$B/admin" | csrf)
+check "a teacher cannot change the details" '[ "$(curl -s -o /dev/null -w "%{http_code}" -c "$J2" -b "$J2" --data-urlencode "csrf=$CC2" -d "controller_contact=Uebernahme" "$B/admin/texts/operator")" = 404 ] && ! curl -s "$B/impressum" | grep -q Uebernahme'
 check "admin sees all rounds (with teacher) and the round of teacher 2" 'D=$(curl -s -b "$J" "$B/admin"); echo "$D" | grep -q "Alle Terminrunden" && echo "$D" | grep -q "Sprechstunde Zwei" && echo "$D" | grep -q "<td>Herr Zwei</td>" && [ "$(curl -s -o /dev/null -w "%{http_code}" -b "$J" "$B/admin/round/$R4")" = 200 ]'
 TA=$(curl -s -b "$J" "$B/admin" | csrf)
 U2=$(curl -s -b "$J" "$B/admin/round/new" | grep -o '<option value="[0-9]*">Herr Zwei' | grep -o '[0-9]\+')
@@ -482,17 +486,17 @@ check "admin deletes a booking in a teacher's round" '! curl -s -b "$J" "$B/admi
 TT=$(curl -s -c "$J2" -b "$J2" "$B/admin" | csrf)
 curl -s -o /dev/null -c "$J2" -b "$J2" --data-urlencode "csrf=$TT" -d "user_id=1&title=Uebernahmeversuch&is_active=1&booking_deadline_hours=0&cancel_deadline_hours=0" "$B/admin/round/$R4/edit"
 check "teacher cannot change the teacher of a round" 'curl -s -c "$J2" -b "$J2" "$B/admin" | grep -q "Uebernahmeversuch" && [ "$($DC exec -T db mariadb -uapp -papp-dev-only talkslot -Ne "SELECT user_id FROM tp_rounds WHERE id=$R4")" = "$U2" ]'
-# Without the admin's details: no round is public, the teacher sees the reason
-ADMINCC=$($DC exec -T db mariadb -uapp -papp-dev-only talkslot -Ne "SELECT HEX(controller_contact) FROM tp_users WHERE role='admin'")
-$DC exec -T db mariadb -uapp -papp-dev-only talkslot -e "UPDATE tp_users SET controller_contact = NULL WHERE role='admin'"
-check "without the admin's details: rounds offline, notice for the teacher" '[ "$(curl -s -o /dev/null -w "%{http_code}" "$B/$S4")" = 404 ] && curl -s -c "$J2" -b "$J2" "$B/admin" | grep -q "Der Admin hat noch keine Angaben" && curl -s "$B/datenschutz" | grep -q "werden gerade ergänzt"'
+# Without the details for legal notice/privacy policy: no round is public, the teacher sees the reason
+ADMINCC=$($DC exec -T db mariadb -uapp -papp-dev-only talkslot -Ne "SELECT HEX(value) FROM tp_settings WHERE name='controller_contact'")
+$DC exec -T db mariadb -uapp -papp-dev-only talkslot -e "UPDATE tp_settings SET value = '' WHERE name='controller_contact'"
+check "without the admin's details: rounds offline, notice for the teacher" '[ "$(curl -s -o /dev/null -w "%{http_code}" "$B/$S4")" = 404 ] && curl -s -c "$J2" -b "$J2" "$B/admin" | grep -q "Es sind noch keine Angaben für Impressum und Datenschutz hinterlegt" && curl -s "$B/datenschutz" | grep -q "werden gerade ergänzt"'
 TT=$(curl -s -c "$J2" -b "$J2" "$B/admin" | csrf)
 curl -s -o /dev/null -c "$J2" -b "$J2" -d "csrf=$TT" "$B/admin/round/$R4/toggle"   # deactivating an active round works
 TG=$(curl -s -L -c "$J2" -b "$J2" -d "csrf=$TT" "$B/admin/round/$R4/toggle")
-check "without the admin's details: teacher cannot activate (matching message)" 'echo "$TG" | grep -q "erst aktiviert werden, wenn der Admin" && [ "$($DC exec -T db mariadb -uapp -papp-dev-only talkslot -Ne "SELECT is_active FROM tp_rounds WHERE id=$R4")" = 0 ]'
+check "without the admin's details: teacher cannot activate (matching message)" 'echo "$TG" | grep -q "erst aktiviert werden, wenn ein Admin" && [ "$($DC exec -T db mariadb -uapp -papp-dev-only talkslot -Ne "SELECT is_active FROM tp_rounds WHERE id=$R4")" = 0 ]'
 TG=$(curl -s -L -b "$J" -d "csrf=$TA" "$B/admin/round/$R4/toggle")
-check "without the admin's details: the admin cannot activate either (matching message)" 'echo "$TG" | grep -q "tragen Sie bitte unter „Mein Profil“ die Angaben für Impressum und Datenschutz ein" && [ "$($DC exec -T db mariadb -uapp -papp-dev-only talkslot -Ne "SELECT is_active FROM tp_rounds WHERE id=$R4")" = 0 ]'
-$DC exec -T db mariadb -uapp -papp-dev-only talkslot -e "UPDATE tp_users SET controller_contact = UNHEX('$ADMINCC') WHERE role='admin'"
+check "without the admin's details: the admin cannot activate either (matching message)" 'echo "$TG" | grep -q "tragen Sie bitte unter „Texte“ die Angaben für Impressum und Datenschutz ein" && [ "$($DC exec -T db mariadb -uapp -papp-dev-only talkslot -Ne "SELECT is_active FROM tp_rounds WHERE id=$R4")" = 0 ]'
+$DC exec -T db mariadb -uapp -papp-dev-only talkslot -e "UPDATE tp_settings SET value = UNHEX('$ADMINCC') WHERE name='controller_contact'"
 curl -s -o /dev/null -b "$J" -d "csrf=$TA" "$B/admin/round/$R4/toggle"
 check "details back: round can be activated and reached again" '[ "$(curl -s -o /dev/null -w "%{http_code}" "$B/$S4")" = 200 ]'
 MAILP=$($DC exec -T app php -r 'echo file_get_contents("http://mail:8025/api/v1/search?query=to:eltern-zwei@example.org");')
@@ -537,14 +541,22 @@ check "admin notice: privacy policy in the old model" 'curl -s -b "$J" "$B/admin
 DBQ "UPDATE tp_pages SET content = REPLACE(content, '\n\nVerantwortlich ist jeweils die Lehrkraft, bei der Sie buchen.', '') WHERE page_key='privacy' AND lang='de'"
 DBQ "INSERT INTO tp_users (username, password_hash, role, display_name, email, is_active, created_at) VALUES ('alt-admin-inaktiv', 'x', 'admin', 'Alt', 'a@example.org', 0, NOW()), ('alt-admin-aktiv', 'x', 'admin', 'Neu', 'b@example.org', 1, NOW()); UPDATE tp_users SET controller_contact = 'Alte Lehrkraft-Adresse' WHERE username = 'zwei@example.org'; UPDATE tp_settings SET value = '8' WHERE name = 'schema_version'"
 curl -s -o /dev/null "$B/"
-check "migration 9 (and following): only the oldest active admin account stays admin, old teacher contact details deleted" '[ "$(DBQ "SELECT GROUP_CONCAT(username) FROM tp_users WHERE role=\"admin\"")" = sabrina ] && [ "$(DBQ "SELECT COUNT(*) FROM tp_users WHERE role<>\"admin\" AND controller_contact IS NOT NULL")" = 0 ] && [ "$(DBQ "SELECT value FROM tp_settings WHERE name=\"schema_version\"")" = 12 ] && curl -s "$B/datenschutz" | grep -q "Teststraße 1"'
+check "migration 9 (and following): only the oldest active admin account stays admin, old teacher contact details deleted" '[ "$(DBQ "SELECT GROUP_CONCAT(username) FROM tp_users WHERE role=\"admin\"")" = sabrina ] && [ "$(DBQ "SELECT COUNT(*) FROM tp_users WHERE role<>\"admin\" AND controller_contact IS NOT NULL")" = 0 ] && [ "$(DBQ "SELECT value FROM tp_settings WHERE name=\"schema_version\"")" = 13 ] && curl -s "$B/datenschutz" | grep -q "Teststraße 1"'
 DBQ "ALTER TABLE tp_rounds ADD COLUMN access_pin VARCHAR(12) NULL; UPDATE tp_rounds SET code_required = 0; UPDATE tp_rounds SET access_pin = '123456' WHERE id = $RID; UPDATE tp_rounds SET access_pin = '' WHERE id = $R2; UPDATE tp_settings SET value = '9' WHERE name = 'schema_version'"
 curl -s -o /dev/null "$B/"
-check "migration 10: only rounds with an old PIN become 'round code only' (empty/NULL stay open)" '[ "$(DBQ "SELECT code_required FROM tp_rounds WHERE id=$RID")" = 1 ] && [ "$(DBQ "SELECT SUM(code_required) FROM tp_rounds")" = 1 ] && [ "$(DBQ "SELECT value FROM tp_settings WHERE name=\"schema_version\"")" = 12 ]'
+check "migration 10: only rounds with an old PIN become 'round code only' (empty/NULL stay open)" '[ "$(DBQ "SELECT code_required FROM tp_rounds WHERE id=$RID")" = 1 ] && [ "$(DBQ "SELECT SUM(code_required) FROM tp_rounds")" = 1 ] && [ "$(DBQ "SELECT value FROM tp_settings WHERE name=\"schema_version\"")" = 13 ]'
 
 DBQ "ALTER TABLE tp_rounds DROP COLUMN booking_limit; UPDATE tp_settings SET value = '10' WHERE name = 'schema_version'"
 curl -s -o /dev/null "$B/"
-check "migration 11: existing rounds without limit (as before), new column present" '[ "$(DBQ "SELECT COUNT(*) FROM tp_rounds WHERE booking_limit <> \"none\"")" = 0 ] && [ "$(DBQ "SELECT COUNT(*) FROM tp_rounds")" -gt 0 ] && [ "$(DBQ "SELECT value FROM tp_settings WHERE name=\"schema_version\"")" = 12 ]'
+check "migration 11: existing rounds without limit (as before), new column present" '[ "$(DBQ "SELECT COUNT(*) FROM tp_rounds WHERE booking_limit <> \"none\"")" = 0 ] && [ "$(DBQ "SELECT COUNT(*) FROM tp_rounds")" -gt 0 ] && [ "$(DBQ "SELECT value FROM tp_settings WHERE name=\"schema_version\"")" = 13 ]'
+
+# Migration 13: the details move from the admin's profile into the settings (before that they are read from the profile)
+DBQ "DELETE FROM tp_settings WHERE name = 'controller_contact'; UPDATE tp_users SET controller_contact = 'Alte Schule\nAlter Weg 1\nalt@example.org' WHERE username = 'sabrina'; UPDATE tp_settings SET value = '12' WHERE name = 'schema_version'"
+curl -s -o /dev/null "$B/"
+check "migration 13: details taken over from the admin's profile" '[ "$(DBQ "SELECT SUBSTRING_INDEX(value, CHAR(10), 1) FROM tp_settings WHERE name=\"controller_contact\"")" = "Alte Schule" ] && curl -s "$B/impressum" | grep -q "Alter Weg 1" && [ "$(DBQ "SELECT value FROM tp_settings WHERE name=\"schema_version\"")" = 13 ]'
+T=$(curl -s -b "$J" "$B/admin" | csrf)
+curl -s -o /dev/null -b "$J" --data-urlencode "csrf=$T" --data-urlencode $'controller_contact=Sabrina Test\nTeststraße 1\n12345 Teststadt\nE-Mail: sabrina@example.org' "$B/admin/texts/operator"
+check "saving the details also updates the admin's profile (read by older versions after a rollback)" '[ "$(DBQ "SELECT SUBSTRING_INDEX(controller_contact, CHAR(10), 1) FROM tp_users WHERE username=\"sabrina\"")" = "Sabrina Test" ] && curl -s "$B/impressum" | grep -q "Teststraße 1"'
 
 echo "Web cron"
 CTOK=$(printf 'cron' | openssl dgst -sha256 -hmac "$(printf 'd%.0s' {1..64})" | sed 's/.*= //')
@@ -660,14 +672,14 @@ check "delete day with bookings after confirmation" 'curl -s -L -b "$J" -d "csrf
 curl -s -o /dev/null -b "$J" -d "csrf=$T" "$B/admin/round/$RA/toggle"
 
 # Profile: notices and errors
-ACC0=$(DBQ "SELECT CONCAT(HEX(display_name), ':', HEX(controller_contact), ':', HEX(email)) FROM tp_users WHERE role='admin'")
-DBQ "UPDATE tp_users SET display_name = '', controller_contact = 'Nur Name', email = '' WHERE role='admin'"
+ACC0=$(DBQ "SELECT CONCAT(HEX(display_name), ':', (SELECT HEX(value) FROM tp_settings WHERE name='controller_contact'), ':', HEX(email)) FROM tp_users WHERE role='admin'")
+DBQ "UPDATE tp_users SET display_name = '', email = '' WHERE role='admin'; UPDATE tp_settings SET value = 'Nur Name' WHERE name='controller_contact'"
 R=$(curl -s -b "$J" "$B/admin")
 check "profile notices on the overview: display name, email in the imprint, email for summaries missing" 'echo "$R" | has "Anzeigename fehlt" && echo "$R" | has "fehlt eine E-Mail-Adresse (für das Impressum" && echo "$R" | has "Zusammenfassungen können nicht versendet werden"'
 loc=$(curl -s -o /dev/null -w '%{redirect_url}' -b "$J" --data-urlencode "csrf=$T" -d "title=Ohne+Anzeigename&booking_deadline_hours=0&cancel_deadline_hours=0&day_dates%5B%5D=$(date -d '+13 day' +%F)&start_time=10:00&end_time=10:30&slot_minutes=30" "$B/admin/round/new")
 RN=$(echo "$loc" | grep -o '[0-9]*$')
 check "own round cannot be activated without display name" 'curl -s -L -b "$J" -d "csrf=$T" "$B/admin/round/$RN/toggle" | has "tragen Sie bitte unter „Mein Profil“ Ihren Anzeigenamen ein"'
-DBQ "UPDATE tp_users SET display_name = UNHEX('${ACC0%%:*}'), controller_contact = UNHEX('$(echo "$ACC0" | cut -d: -f2)'), email = UNHEX('${ACC0##*:}') WHERE role='admin'"
+DBQ "UPDATE tp_users SET display_name = UNHEX('${ACC0%%:*}'), email = UNHEX('${ACC0##*:}') WHERE role='admin'; UPDATE tp_settings SET value = UNHEX('$(echo "$ACC0" | cut -d: -f2)') WHERE name='controller_contact'"
 R=$(curl -s -b "$J" --data-urlencode "csrf=$T" -d "display_name=&email=kaputt" "$B/admin/profile")
 check "profile: missing display name and invalid email rejected" 'echo "$R" | has "Bitte einen Anzeigenamen angeben" && echo "$R" | has "Die E-Mail-Adresse ist ungültig"'
 check "delete round" 'curl -s -L -b "$J" -d "csrf=$T" "$B/admin/round/$RN/delete" | has "Runde mit allen Tagen und Buchungen gelöscht" && [ -z "$(DBQ "SELECT id FROM tp_rounds WHERE id=$RN")" ]'
@@ -835,10 +847,10 @@ check "manage link with done[]=1 → 200 without warning" '[ "$(curl -s -o /dev/
 FS=($(DBQ "SELECT s.id FROM tp_slots s JOIN tp_round_days d ON d.id=s.day_id LEFT JOIN tp_bookings b ON b.slot_id=s.id WHERE d.round_id=$SQ AND b.id IS NULL ORDER BY s.id LIMIT 2"))
 for i in $(seq 1 10); do curl -s -o /dev/null --data-urlencode "csrf=$MPC" -d "action=move&slot_id=${FS[$((i % 2))]}" "$MVU"; done
 check "moving: at most 10 per booking and hour (against mail floods)" '[ "$(curl -s -o /dev/null -w "%{http_code}" --data-urlencode "csrf=$MPC" -d "action=move&slot_id=${FS[1]}" "$MVU")" = 429 ]'
-ADMINCC2=$(DBQ "SELECT HEX(controller_contact) FROM tp_users WHERE role='admin'")
-DBQ "UPDATE tp_users SET controller_contact = NULL WHERE role='admin'"
-check "without the admin's details: manage page without moving, cancelling still possible" 'M=$(curl -s "$MVU"); ! echo "$M" | grep -q "value=\"move\"" && echo "$M" | grep -q "value=\"cancel\""'
-DBQ "UPDATE tp_users SET controller_contact = UNHEX('$ADMINCC2') WHERE role='admin'"
+ADMINCC2=$(DBQ "SELECT HEX(value) FROM tp_settings WHERE name='controller_contact'")
+DBQ "UPDATE tp_settings SET value = '' WHERE name='controller_contact'"
+check "without the details: manage page without moving, cancelling still possible" 'M=$(curl -s "$MVU"); ! echo "$M" | grep -q "value=\"move\"" && echo "$M" | grep -q "value=\"cancel\""'
+DBQ "UPDATE tp_settings SET value = UNHEX('$ADMINCC2') WHERE name='controller_contact'"
 # protected round from "More parent flows" (the earlier one was opened by migration 10)
 G3=$(curl -s "$B/$SE"); U3=$(curl -s --data-urlencode "csrf=$(echo "$G3" | csrf)" --data-urlencode "code=$CE" -d "step=unlock" "$B/$SE")
 ACC3=$(echo "$U3" | grep -o 'name="access" value="[^"]*"' | head -1 | sed 's/.*value="//;s/"$//')
@@ -894,6 +906,46 @@ DBQ "UPDATE tp_users SET last_login_at = NOW() - INTERVAL 2 YEAR WHERE username 
 $DC exec -T app php /srv/app/bin/cron.php >/dev/null
 check "cleanup: round with a future day stays despite expired deadline" '[ -n "$(DBQ "SELECT id FROM tp_rounds WHERE id=$SQ")" ]'
 check "cleanup: long inactive accounts without rounds deleted, with rounds kept" '[ -z "$(DBQ "SELECT id FROM tp_users WHERE username=\"alt-inaktiv@example.org\"")" ] && [ -n "$(DBQ "SELECT id FROM tp_users WHERE username=\"zwei@example.org\"")" ]'
+
+echo "Several admins"
+T=$(curl -s -b "$J" "$B/admin/users" | csrf)
+curl -s -o /dev/null -b "$J" -d "csrf=$T&display_name=Frau+Zweitadmin&email=zweitadmin@example.org&role=admin" "$B/admin/users/new"
+curl -s -o /dev/null -b "$J" -d "csrf=$T&display_name=Frau+Fuenf&email=fuenf@example.org&role=teacher" "$B/admin/users/new"
+UT=$(DBQ "SELECT id FROM tp_users WHERE username='fuenf@example.org'")
+UZ=$(DBQ "SELECT id FROM tp_users WHERE username='zweitadmin@example.org'")
+check "an admin can invite another admin" '[ -n "$UZ" ] && [ "$(DBQ "SELECT role FROM tp_users WHERE id=$UZ")" = admin ]'
+VLINK=$($DC exec -T app php -r '$r=json_decode(file_get_contents("http://mail:8025/api/v1/search?query=to:zweitadmin@example.org"),true); echo json_decode(file_get_contents("http://mail:8025/api/v1/message/".$r["messages"][0]["ID"]),true)["Text"];' | grep -o 'http[^ ]*/admin/invite/[A-Za-z0-9_-]\{43\}' | head -1)
+JV=$(mktemp)
+TV=$(curl -s -c "$JV" -b "$JV" "$VLINK" | csrf); sleep 2
+curl -s -o /dev/null -c "$JV" -b "$JV" --data-urlencode "csrf=$TV" -d "new_password=Zweitadmin-Passwort-123&new_password2=Zweitadmin-Passwort-123" "$VLINK"
+TV=$(curl -s -c "$JV" -b "$JV" "$B/admin/login" | csrf)
+curl -s -o /dev/null -c "$JV" -b "$JV" -d "csrf=$TV&username=zweitadmin@example.org&password=Zweitadmin-Passwort-123" "$B/admin/login"
+DV=$(curl -s -c "$JV" -b "$JV" "$B/admin")
+check "second admin sees the rounds of everybody" 'echo "$DV" | grep -q "Alle Terminrunden" && echo "$DV" | grep -q "<td>Frau Sabrina Test</td>" && [ "$(curl -s -o /dev/null -w "%{http_code}" -c "$JV" -b "$JV" "$B/admin/round/$RID")" = 200 ] && [ "$(curl -s -o /dev/null -w "%{http_code}" -c "$JV" -b "$JV" "$B/admin/round/$RID/edit")" = 200 ]'
+TV=$(echo "$DV" | csrf)
+loc=$(curl -s -o /dev/null -w '%{redirect_url}' -c "$JV" -b "$JV" --data-urlencode "csrf=$TV" -d "title=Von+Zweitadmin&user_id=$UT&booking_deadline_hours=0&cancel_deadline_hours=0&day_dates%5B%5D=$(date -d '+20 day' +%F)&start_time=14:00&end_time=15:00&slot_minutes=15" "$B/admin/round/new")
+RV=$(echo "$loc" | grep -o '[0-9]*$')
+check "second admin creates a round for a teacher" '[ -n "$RV" ] && [ "$(DBQ "SELECT user_id FROM tp_rounds WHERE id=$RV")" = "$UT" ]'
+curl -s -o /dev/null -c "$JV" -b "$JV" -d "csrf=$TV" "$B/admin/round/$RV/toggle"
+check "second admin activates it" '[ "$(DBQ "SELECT is_active FROM tp_rounds WHERE id=$RV")" = 1 ]'
+check "the first admin sees it too" 'curl -s -b "$J" "$B/admin/round/$RV" | grep -q "Von Zweitadmin"'
+curl -s -o /dev/null -c "$JV" -b "$JV" --data-urlencode "csrf=$TV" --data-urlencode $'controller_contact=Gemeinsame Schule\nSchulplatz 4\n12345 Teststadt\nE-Mail: schule@example.org' "$B/admin/texts/operator"
+check "second admin maintains the details for all" 'curl -s "$B/impressum" | grep -q "Schulplatz 4" && curl -s -b "$J" "$B/admin/texts" | grep -q "Schulplatz 4"'
+curl -s -o /dev/null -c "$JV" -b "$JV" -d "csrf=$TV&username=zweitadmin@example.org&display_name=Frau+Zweitadmin&email=zweitadmin@example.org&role=teacher&is_active=1" "$B/admin/users/$UZ/edit"
+check "own role cannot be changed (no locking oneself out)" '[ "$(DBQ "SELECT role FROM tp_users WHERE id=$UZ")" = admin ] && ! curl -s -c "$JV" -b "$JV" "$B/admin/users/$UZ/edit" | grep -q "name=\"role\""'
+T=$(curl -s -b "$J" "$B/admin/users" | csrf)
+curl -s -o /dev/null -b "$J" -d "csrf=$T&username=zweitadmin@example.org&display_name=Frau+Zweitadmin&email=zweitadmin@example.org&role=teacher&is_active=1" "$B/admin/users/$UZ/edit"
+check "another admin can take the role away" '[ "$(DBQ "SELECT role FROM tp_users WHERE id=$UZ")" = teacher ] && [ "$(curl -s -o /dev/null -w "%{http_code}" -c "$JV" -b "$JV" "$B/admin/users")" = 404 ] && curl -s -c "$JV" -b "$JV" "$B/admin" | grep -q "Meine Terminrunden" && [ "$(curl -s -o /dev/null -w "%{http_code}" -c "$JV" -b "$JV" "$B/admin/round/$RID")" = 404 ]'
+DBQ "UPDATE tp_users SET role = 'admin', is_active = 0 WHERE id = $UZ"
+T=$(curl -s -b "$J" "$B/admin/users" | csrf)
+curl -s -o /dev/null -b "$J" -d "csrf=$T&username=zweitadmin@example.org&display_name=Frau+Zweitadmin&email=zweitadmin@example.org&role=teacher" "$B/admin/users/$UZ/edit"
+check "a deactivated admin can be demoted (one active admin remains)" '[ "$(DBQ "SELECT role FROM tp_users WHERE id=$UZ")" = teacher ]'
+curl -s -o /dev/null -c "$JV" -b "$JV" -d "csrf=$TV" "$B/admin/logout"; rm -f "$JV"
+curl -s -o /dev/null -b "$J" -d "csrf=$T&confirm=1" "$B/admin/round/$RV/delete"
+curl -s -o /dev/null -b "$J" -d "csrf=$T&confirm=1" "$B/admin/users/$UZ/delete"
+curl -s -o /dev/null -b "$J" -d "csrf=$T&confirm=1" "$B/admin/users/$UT/delete"
+curl -s -o /dev/null -b "$J" --data-urlencode "csrf=$T" --data-urlencode $'controller_contact=Sabrina Test\nTeststraße 1\n12345 Teststadt\nE-Mail: sabrina@example.org' "$B/admin/texts/operator"
+check "cleaned up: one admin again, original details" '[ "$(DBQ "SELECT COUNT(*) FROM tp_users WHERE role=\"admin\"")" = 1 ] && curl -s "$B/impressum" | grep -q "Teststraße 1"'
 
 echo "Cleanup"
 docker compose -f "$(dirname "$0")/../dev/compose.yml" exec -T db mariadb -uapp -papp-dev-only talkslot -e \

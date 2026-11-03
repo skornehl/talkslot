@@ -3,7 +3,7 @@
   <h1>Benutzer</h1>
   <a class="button button-primary" href="<?= e(url('/admin/users/new')) ?>">+ Neuer Benutzer</a>
 </div>
-<p class="muted small">Neue Konten erhalten eine Einladung per E-Mail und legen ihr Passwort selbst fest. Lehrkräfte sehen und verwalten nur ihre eigenen Terminrunden. Als Admin sehen und bearbeiten Sie alle Runden samt Buchungen und können Runden für Lehrkräfte anlegen. Es gibt genau ein Admin-Konto.</p>
+<p class="muted small">Neue Konten erhalten eine Einladung per E-Mail und legen ihr Passwort selbst fest. Lehrkräfte sehen und verwalten nur ihre eigenen Terminrunden. Admins sehen und bearbeiten alle Runden samt Buchungen, können Runden für Lehrkräfte anlegen und verwalten Benutzer sowie Impressum und Datenschutz. Es kann mehrere Admins geben.</p>
 <div class="table-wrap">
 <table class="table">
   <thead><tr><th scope="col">Name</th><th scope="col">Benutzername</th><th scope="col">Rolle</th><th scope="col">Runden</th><th scope="col">Letzter Login</th><th scope="col">Status</th><th scope="col"><span class="visually-hidden">Aktionen</span></th></tr></thead>

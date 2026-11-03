@@ -1,30 +1,34 @@
 ---
 title: Anleitung für Admins
-description: Das Admin-Konto richtet die Plattform ein, lädt Lehrkräfte ein und ist für die Rechtstexte verantwortlich.
+description: Admin-Konten richten die Plattform ein, laden Lehrkräfte ein, sehen alle Runden und pflegen die Rechtstexte.
 ---
 
-Es gibt genau **ein Admin-Konto**. Es wird bei der Installation angelegt. Der Admin ist für alle
-Terminrunden Verantwortlicher im Sinne der DSGVO; die Lehrkräfte nutzen die Plattform in seinem Auftrag.
-Die Bezeichnungen unten sind die des Admin-Bereichs.
+Das erste **Admin-Konto** wird bei der Installation angelegt; es kann weitere Konten zu Admins machen.
+Admins sehen und bearbeiten alle Runden, legen Runden für Lehrkräfte an, verwalten die Konten und pflegen
+die Rechtstexte. Verantwortlicher im Sinne der DSGVO ist für alle Terminrunden der Betreiber der Plattform
+(meist die Schule); die Lehrkräfte nutzen die Plattform in seinem Auftrag. Die Bezeichnungen unten sind die
+des Admin-Bereichs.
 
 ![Admin-Übersicht über alle Runden]({{ '/assets/img/admin-dashboard.webp' | relative_url }})
 
 ## Erste Schritte
 
-1. **Profil** (*Mein Profil*): Tragen Sie den Anzeigenamen (wird den Eltern bei Ihren eigenen Runden
-   angezeigt), Ihre E-Mail-Adresse und vor allem die *Angaben für Impressum und Datenschutz* ein: Name der
-   Schule bzw. Person, vollständige Anschrift und E-Mail-Adresse. Dieser Text ersetzt
-   `[[VERANTWORTLICHE]]` in beiden Rechtstexten. Ohne diese Angaben ist **keine Runde öffentlich erreichbar**.
-2. **Rechtstexte** (*Texte*): Prüfen Sie Impressum und Datenschutzerklärung für jede Sprache und ersetzen
+1. **Profil** (*Mein Profil*): Tragen Sie Ihren Anzeigenamen (wird den Eltern bei Ihren eigenen Runden
+   angezeigt) und Ihre E-Mail-Adresse ein.
+2. **Angaben für Impressum und Datenschutz** (*Texte*): Name der Schule, Vertretung, vollständige Anschrift
+   und E-Mail-Adresse. Dieser Text ersetzt `[[VERANTWORTLICHE]]` in beiden Rechtstexten und gilt für alle
+   Admins gemeinsam. Ohne diese Angaben ist **keine Runde öffentlich erreichbar**.
+3. **Rechtstexte** (*Texte*): Prüfen Sie Impressum und Datenschutzerklärung für jede Sprache und ersetzen
    Sie die verbleibenden Platzhalter in eckigen Klammern. Details unter [Datenschutz und Recht]({{ '/de/guide/privacy/' | relative_url }}).
-3. **E-Mail-Versand prüfen:** *Texte → E-Mail-Versand* zeigt Versandweg und Absender. Machen Sie eine
+4. **E-Mail-Versand prüfen:** *Texte → E-Mail-Versand* zeigt Versandweg und Absender. Machen Sie eine
    Testbuchung mit Ihrer eigenen E-Mail-Adresse und prüfen Sie, ob die Bestätigung ankommt (und nicht als
    Spam markiert wird).
-4. **Lehrkräfte einladen** (*Benutzer*).
+5. **Lehrkräfte einladen** und bei Bedarf weitere Admins (*Benutzer*).
 
-## Konten für Lehrkräfte
+## Konten
 
-Unter *Benutzer* → *+ Neuer Benutzer* geben Sie **Name und E-Mail-Adresse** ein. Die Lehrkraft erhält
+Unter *Benutzer* → *+ Neuer Benutzer* geben Sie **Name und E-Mail-Adresse** ein und wählen die **Rolle**:
+*Lehrkraft* (verwaltet ihre eigenen Runden) oder *Admin*. Die Person erhält
 eine **Einladungs-E-Mail** mit einem Link, über den sie ein eigenes Passwort festlegt (einmal verwendbar,
 standardmäßig 48 Stunden gültig). Passwörter werden nie per E-Mail verschickt. Der Benutzername ist die
 E-Mail-Adresse. Kann die E-Mail nicht versendet werden, wird der Link einmalig angezeigt, damit Sie ihn
@@ -37,14 +41,16 @@ Ein bestehendes Konto können Sie:
 - mit einer neuen **Einladung** oder einem **Link zum Zurücksetzen des Passworts** versehen (*Einladung
   erneut senden* / *Link zum Zurücksetzen senden*). Das alte Passwort gilt dann nicht mehr, und alle
   Sitzungen des Kontos werden beendet;
+- in der **Rolle** ändern, also eine Lehrkraft zum Admin machen oder umgekehrt;
 - **löschen**, einschließlich aller Runden und Buchungen.
 
-Neue Konten sind immer Lehrkräfte; einen zweiten Admin gibt es nicht.
+Die eigene Rolle kann niemand ändern, das eigene Konto niemand deaktivieren oder löschen, und mindestens
+ein aktiver Admin bleibt immer bestehen.
 
 ## Runden aller Lehrkräfte
 
-Der Admin sieht und bearbeitet unter *Alle Runden* die Runden aller Lehrkräfte mit ihren Buchungen. Er kann eine Runde
-für eine Lehrkraft anlegen oder eine Runde einer anderen Lehrkraft zuordnen (Feld *Lehrkraft* im
+Admins sehen und bearbeiten unter *Alle Runden* die Runden aller Lehrkräfte mit ihren Buchungen. Sie
+können eine Runde für eine Lehrkraft anlegen oder eine Runde einer anderen Lehrkraft zuordnen (Feld *Lehrkraft* im
 Rundenformular). Die Runde erscheint dann bei dieser Lehrkraft, die Eltern sehen ihren Namen, und die
 Zusammenfassungen gehen an sie. Lehrkräfte sehen immer nur ihre eigenen Runden; das wird zentral
 durchgesetzt und ist durch Tests abgesichert.
@@ -59,7 +65,7 @@ Platzhalter werden automatisch gefüllt:
 
 | Platzhalter | Wird ersetzt durch |
 |---|---|
-| `[[VERANTWORTLICHE]]` | die Angaben des Admins für Impressum und Datenschutz |
+| `[[VERANTWORTLICHE]]` | die *Angaben für Impressum und Datenschutz* (oben unter *Texte*) |
 | `[[HOSTER]]` | den Hoster aus der Konfiguration (`hosting`) |
 
 Für Sprachen ohne eigene Fassung wird die englische verwendet. Hinweise im Dashboard und unter *Texte*

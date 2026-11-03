@@ -22,7 +22,7 @@ briefly. Fresh installations get the newest schema directly from `app/schema.sql
 
 Migrations only add columns (with defaults) and tables, so a rollback to an older version keeps working.
 Imprint and privacy texts that were never edited are replaced by newer templates automatically; edited
-texts stay untouched and the admin sees a hint under *Texte* when something needs attention.
+texts stay untouched and admins see a hint under *Texte* when something needs attention.
 
 ## Error alerts
 
@@ -30,8 +30,8 @@ Unhandled exceptions, fatal PHP errors, PHP warnings, failed migrations or clean
 database and failed mail delivery are caught. Visitors only see a neutral error page (503 with
 `Retry-After` if the database is down). The operator gets a mail:
 
-- **Recipient:** `alert_email`, otherwise the admin's address. Set `alert_email`: while the database is
-  down, the admin's address cannot be read.
+- **Recipient:** `alert_email`, otherwise the address of the oldest active admin. Set `alert_email`: while
+  the database is down, no address can be read from it.
 - **Throttling:** the same error (type and place) at most once per hour, at most 30 mails per day.
   Important alerts (database down, fatal errors) are sent even after the daily limit. The next mail says
   how often the error occurred in between.
@@ -72,8 +72,8 @@ The clean-up runs in the cron job and, as a fallback, on page views at most ever
 **503 on every page.** The database is unreachable, or (with the
 atomic deployment, plain text "Temporarily unavailable.") no complete version is on the server. Check the alert mail and `app/var/php-error.log`.
 
-**Rounds are not reachable for parents.** The admin has not filled in *Angaben für Impressum und
-Datenschutz* in *Mein Profil*, the round or the teacher's account is inactive, or the round has ended.
+**Rounds are not reachable for parents.** The *Angaben für Impressum und Datenschutz* under *Texte* are
+missing, the round or the teacher's account is inactive, or the round has ended.
 
 **Parents get "too many attempts".** Many parents may share one IP address (mobile networks, school
 Wi-Fi). Raise the [rate limits]({{ '/guide/configuration/' | relative_url }}#rate-limits) if this happens

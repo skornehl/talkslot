@@ -12,11 +12,7 @@
       <p class="hint" id="dn-hint">So sehen Eltern Sie auf der Buchungsseite und in E-Mails, z. B. „Frau Muster“ oder „Sabrina Muster“.</p>
     </div>
     <?php if (App\Auth::isAdmin()): ?>
-    <div class="field">
-      <label for="controller_contact">Angaben für Impressum und Datenschutz</label>
-      <textarea id="controller_contact" name="controller_contact" rows="5" maxlength="2000" aria-describedby="cc-hint" placeholder="Vorname Nachname&#10;Straße Hausnummer&#10;PLZ Ort&#10;E-Mail: name@example.org"><?= e($data['controller_contact'] ?? '') ?></textarea>
-      <p class="hint" id="cc-hint">Als Admin sind Sie für alle Terminrunden datenschutzrechtlich verantwortlich. Bitte <strong>vollständigen Namen, Anschrift und E-Mail-Adresse</strong> eintragen (wie im Beispiel) – genau dieser Text erscheint in Impressum und Datenschutzerklärung. Die E-Mail-Adresse weiter unten gilt nur für Zusammenfassungen. Ohne diese Angaben ist keine Runde öffentlich erreichbar.</p>
-    </div>
+    <p class="hint">Die Angaben für Impressum und Datenschutz (die Schule bzw. der Betreiber) pflegen alle Admins gemeinsam unter <a href="<?= e(url('/admin/texts')) ?>">„Texte“</a>.</p>
     <?php endif; ?>
     <div class="field">
       <label for="email">E-Mail-Adresse</label>

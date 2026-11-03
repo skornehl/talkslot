@@ -12,8 +12,8 @@ schools (GDPR/DSGVO, TDDDG) and multilingual families.
   Polish, Russian, Ukrainian and Turkish.
 - **For teachers:** any number of booking rounds with several days, breaks and a live preview; see who
   booked when, move or add bookings, print lists, get a summary mail the evening before.
-- **For the school:** one admin account invites the teachers and is the responsible party for the legal
-  pages. Bookings are deleted automatically the day after the appointment.
+- **For the school:** admins invite the teachers, see all rounds and maintain the legal pages for the
+  school. Bookings are deleted automatically the day after the appointment.
 - **For the operator:** PHP 8.3+ and MariaDB, no framework, no Composer, no Node, no external CDNs.
   Optional zero-downtime deployment via GitHub Actions and FTPS, including one-click rollback.
 
@@ -51,9 +51,10 @@ schools (GDPR/DSGVO, TDDDG) and multilingual families.
 - Optional "remember my appointment on this device" (opt-in, `localStorage` only).
 - Light/dark design following the device, switchable in the footer.
 
-**Teachers and admin (`/admin`, German user interface)**
-- Exactly one admin: invites teachers by e-mail (one-time link, no passwords in mails), deactivates,
-  resets or deletes accounts, sees and edits all rounds, can create rounds for a teacher.
+**Teachers and admins (`/admin`, German user interface)**
+- Admins (one or more): invite teachers and further admins by e-mail (one-time link, no passwords in
+  mails), change roles, deactivate, reset or delete accounts, see and edit all rounds, create rounds for a
+  teacher, maintain the details for the legal pages.
 - Teachers only see their own rounds (enforced centrally, foreign IDs return 404).
 - Rounds: several days, first/last slot, duration, any number of breaks, live preview; add days later;
   block single slots; duplicate; deadlines for booking and changes; ready-to-copy invitation text.
@@ -118,7 +119,7 @@ App: <http://localhost:8080>, admin: <http://localhost:8080/admin>. Mails end up
 4. **Cron:** run `php bin/cron.php` hourly (`5 * * * *`). Without shell access, use the web cron:
    `POST /cron` with header `X-Cron-Token: <HMAC-SHA256 of "cron" with your secret>`; the included
    workflow `.github/workflows/cron.yml` does exactly that.
-5. **Legal texts:** log in as admin, fill in *Mein Profil → Angaben für Impressum und Datenschutz*, then
+5. **Legal texts:** log in as admin, fill in *Texte → Angaben für Impressum und Datenschutz*, then
    check *Texte*: replace the remaining `[PLACEHOLDERS]` (server log retention, supervisory authority).
    The web host comes from `hosting` in `config.php`. The templates cover Art. 13 GDPR but do not replace legal advice.
 

@@ -32,7 +32,7 @@ dev/demo.sh        # optional: three demo rounds with bookings
 
 ## A first tour
 
-1. **Log in** as `sabrina`. She is the admin. Open *Mein Profil* and look at *Angaben für Impressum und
+1. **Log in** as `sabrina`. She is an admin. Open *Texte* and look at *Angaben für Impressum und
    Datenschutz*: without these details no round is public (`dev/demo.sh` filled them in).
 2. **Open a round** on the dashboard (*Alle Runden*). You see the link for parents, the round code, the
    invitation text and the bookings of each day.

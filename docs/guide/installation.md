@@ -84,7 +84,7 @@ page views at most every 15 minutes.
 
 ## 5. Fill in the legal details
 
-Log in as admin and open *Mein Profil*. Fill in *Angaben für Impressum und Datenschutz* (name of the
+Log in as admin and open *Texte*. Fill in *Angaben für Impressum und Datenschutz* (name of the
 school or person, address, e-mail). Until then **no round is public**. Then check *Texte*: the
 imprint and privacy policy are templates with a few `[PLACEHOLDERS]` (server log retention at your web
 host, supervisory authority) that you must replace. See [Privacy and legal]({{ '/guide/privacy/' | relative_url }}).

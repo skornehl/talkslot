@@ -23,7 +23,7 @@ die anderen warten kurz. Neuinstallationen erhalten das neueste Schema direkt au
 
 Migrationen fügen nur Spalten (mit Standardwerten) und Tabellen hinzu, sodass ein Rollback auf eine ältere
 Version weiter funktioniert. Texte für Impressum und Datenschutzerklärung, die nie bearbeitet wurden, werden
-automatisch durch neuere Vorlagen ersetzt; bearbeitete Texte bleiben unverändert, und der Admin sieht unter
+automatisch durch neuere Vorlagen ersetzt; bearbeitete Texte bleiben unverändert, und Admins sehen unter
 *Texte* einen Hinweis, wenn etwas zu tun ist.
 
 ## Fehlermeldungen
@@ -33,8 +33,8 @@ Aufräumläufe, eine nicht erreichbare Datenbank und fehlgeschlagener E-Mail-Ver
 Besucher sehen nur eine neutrale Fehlerseite (503 mit `Retry-After`, wenn die Datenbank ausgefallen ist).
 Der Betreiber erhält eine E-Mail:
 
-- **Empfänger:** `alert_email`, sonst die Adresse des Admins. Setzen Sie `alert_email`: Solange die
-  Datenbank ausgefallen ist, lässt sich die Adresse des Admins nicht lesen.
+- **Empfänger:** `alert_email`, sonst die Adresse des ältesten aktiven Admins. Setzen Sie `alert_email`:
+  Solange die Datenbank ausgefallen ist, lässt sich keine Adresse aus der Datenbank lesen.
 - **Drosselung:** Derselbe Fehler (Art und Stelle) höchstens einmal pro Stunde, höchstens 30 E-Mails pro
   Tag. Wichtige Meldungen (Datenbank ausgefallen, fatale Fehler) werden auch nach Erreichen des Tageslimits
   verschickt. Die nächste E-Mail nennt, wie oft der Fehler zwischendurch aufgetreten ist.
@@ -77,8 +77,8 @@ Die Bereinigung läuft im Cronjob und ersatzweise bei Seitenaufrufen, höchstens
 „Temporarily unavailable.“) es liegt keine vollständige Version auf dem Server. Prüfen Sie die
 Fehler-E-Mail und `app/var/php-error.log`.
 
-**Runden sind für Eltern nicht erreichbar.** Der Admin hat unter *Mein Profil* die *Angaben für Impressum
-und Datenschutz* nicht ausgefüllt, die Runde oder das Konto der Lehrkraft ist inaktiv, oder die Runde ist
+**Runden sind für Eltern nicht erreichbar.** Die *Angaben für Impressum und Datenschutz* unter *Texte*
+fehlen, die Runde oder das Konto der Lehrkraft ist inaktiv, oder die Runde ist
 beendet.
 
 **Eltern erhalten „Zu viele Fehlversuche“ oder „Zu viele Anfragen“.** Viele Eltern teilen sich womöglich eine IP-Adresse (Mobilfunk,
