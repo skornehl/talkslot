@@ -26,7 +26,7 @@ return [
     ],
 
     'languages' => ['de', 'en', 'pl', 'ru', 'uk', 'tr'],   // order = display order; new language: create app/lang/<code>.php
-    'default_language' => 'de',
+    'default_language' => 'de', // shown when the visitor has not chosen a language; must be in 'languages'
 
     // Error reports (exceptions, database unreachable, mail delivery failed …) are mailed to this
     // address; empty = to the email address of the admin account (not possible while the database
