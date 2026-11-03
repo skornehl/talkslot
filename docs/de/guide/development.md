@@ -23,7 +23,7 @@ config/           config.sample.php → config.php (nicht in Git)
 public/           Document Root: index.php (Front Controller), install.php, .htaccess, assets/
 dev/              Docker-Umgebung, reset.sh, demo.sh
 docs/             diese Website (GitHub Pages, Jekyll)
-tests/            unit.php, smoke.sh, deploy.sh
+tests/            unit.php, smoke.sh, browser.mjs, deploy.sh
 ```
 
 ## Tests
@@ -31,6 +31,7 @@ tests/            unit.php, smoke.sh, deploy.sh
 ```bash
 php tests/unit.php      # Unit-Tests, keine Datenbank nötig; die CI führt sie unter PHP 8.3, 8.4 und 8.5 aus
 tests/smoke.sh          # ~300 End-to-End-Prüfungen gegen das Docker-Setup (vorher dev/reset.sh)
+node tests/browser.mjs  # das JavaScript in Headless-Chrome (vorher dev/reset.sh && dev/demo.sh)
 tests/deploy.sh         # das atomare Deployment über lftp file:// unter Last (braucht lftp und die Datenbank)
 ```
 
@@ -38,6 +39,14 @@ Der Smoke-Test deckt ab: Login und Sperre, Kontoverwaltung, Datentrennung zwisch
 Honeypot, XSS-Escaping, SQL-Injection, 20 parallele Buchungen auf einen Termin (genau eine gelingt),
 Verschieben und Stornieren, Buchungslimits, Konflikterkennung, Drucken, Bereinigung und Fehlermeldungen.
 Nach einem vollständigen Durchlauf darf keine Fehler-E-Mail verschickt worden sein.
+
+Der Browser-Test steuert Headless-Chrome (Node 22+, ohne Abhängigkeiten) durch das JavaScript: Zeitfelder und
+Terminvorschau (abgeglichen mit den Terminen, die der Server erzeugt), Datums- und Pausenfelder, Schutz vor
+doppeltem Absenden und Löschbestätigungen, Link kopieren, die Übersetzung im Browser (mit nachgebildeter
+Translator-API), „Termin auf diesem Gerät merken“ einschließlich abgewiesener fremder Links, Fehlerfokus und
+den Hell/Dunkel-Schalter.
+
+Die CI führt bei jedem Push die Unit-Tests aus sowie Smoke- und Browser-Tests gegen die Docker-Umgebung.
 
 ## Konventionen
 

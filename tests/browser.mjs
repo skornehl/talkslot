@@ -1,0 +1,341 @@
+#!/usr/bin/env node
+/*
+ * Browser tests for public/assets/js/*.js: run in headless Chrome against a running instance,
+ * controlled through the DevTools protocol (no dependencies).
+ *
+ *   dev/reset.sh && dev/demo.sh && node tests/browser.mjs [base_url]   (default http://localhost:8080)
+ *
+ * Needs Node 22+ (Node 20: node --experimental-websocket) and Chrome or Chromium (found in PATH, or
+ * set CHROME=/path/to/chrome). Uses the demo data from dev/demo.sh and creates one extra round,
+ * which it deletes again.
+ */
+import { spawn } from 'node:child_process';
+import { mkdtempSync, readFileSync, rmSync, existsSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join, delimiter } from 'node:path';
+
+const BASE = (process.argv[2] || 'http://localhost:8080').replace(/\/$/, '');
+const USER = 'sabrina';
+const PASS = 'Sehr-Sicheres-Dev-Pw1';
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+if (typeof WebSocket === 'undefined') {
+  console.error('This test needs WebSocket in Node: use Node 22+ or run node --experimental-websocket tests/browser.mjs');
+  process.exit(2);
+}
+
+let failed = 0;
+function check(name, ok, detail = '') {
+  console.log((ok ? '  ✓ ' : '  ✗ ') + name + (!ok && detail ? `\n      ${detail}` : ''));
+  if (!ok) failed++;
+}
+const section = (name) => console.log(name);
+
+// --- Chrome ------------------------------------------------------------------------------------
+
+function findChrome() {
+  if (process.env.CHROME) return process.env.CHROME;
+  for (const name of ['google-chrome', 'google-chrome-stable', 'chromium', 'chromium-browser']) {
+    for (const dir of (process.env.PATH || '').split(delimiter)) {
+      if (dir && existsSync(join(dir, name))) return join(dir, name);
+    }
+  }
+  throw new Error('Chrome/Chromium not found – set CHROME=/path/to/chrome');
+}
+
+const profile = mkdtempSync(join(tmpdir(), 'talkslot-browser-'));
+const chrome = spawn(findChrome(), [
+  '--headless=new', '--no-sandbox', '--disable-gpu', '--no-first-run', '--no-default-browser-check',
+  '--remote-debugging-port=0', `--user-data-dir=${profile}`, '--window-size=1280,900', 'about:blank',
+], { stdio: 'ignore' });
+
+async function connect() {
+  const portFile = join(profile, 'DevToolsActivePort');
+  for (let i = 0; i < 100 && !existsSync(portFile); i++) await sleep(100);
+  const port = readFileSync(portFile, 'utf8').split('\n')[0];
+  for (let i = 0; i < 50; i++) {
+    try {
+      const page = (await (await fetch(`http://127.0.0.1:${port}/json/list`)).json()).find((t) => t.type === 'page');
+      if (page) return new Cdp(page.webSocketDebuggerUrl);
+    } catch { /* not ready yet */ }
+    await sleep(100);
+  }
+  throw new Error('no page target');
+}
+
+class Cdp {
+  constructor(url) {
+    this.ws = new WebSocket(url);
+    this.id = 0;
+    this.pending = new Map();
+    this.listeners = [];
+    this.dialogs = [];
+    this.acceptDialogs = true;
+    this.ready = new Promise((r) => this.ws.addEventListener('open', r));
+    this.ws.addEventListener('message', (m) => {
+      const msg = JSON.parse(m.data);
+      if (msg.id && this.pending.has(msg.id)) {
+        const { resolve, reject } = this.pending.get(msg.id);
+        this.pending.delete(msg.id);
+        msg.error ? reject(new Error(msg.error.message)) : resolve(msg.result);
+      } else if (msg.method) {
+        if (msg.method === 'Page.javascriptDialogOpening') {
+          this.dialogs.push({ type: msg.params.type, message: msg.params.message });
+          this.send('Page.handleJavaScriptDialog', { accept: this.acceptDialogs });
+        }
+        this.listeners = this.listeners.filter((l) => !(l.method === msg.method && (l.resolve(msg.params), true)));
+      }
+    });
+  }
+  send(method, params = {}) {
+    const id = ++this.id;
+    this.ws.send(JSON.stringify({ id, method, params }));
+    return new Promise((resolve, reject) => this.pending.set(id, { resolve, reject }));
+  }
+  once(method, timeout = 15000) {
+    return new Promise((resolve, reject) => {
+      const l = { method, resolve };
+      this.listeners.push(l);
+      setTimeout(() => { this.listeners = this.listeners.filter((x) => x !== l); reject(new Error(`timeout waiting for ${method}`)); }, timeout);
+    });
+  }
+}
+
+const cdp = await connect();
+await cdp.ready;
+await cdp.send('Page.enable');
+await cdp.send('Runtime.enable');
+await cdp.send('Emulation.setFocusEmulationEnabled', { enabled: true }); // headless: page counts as focused (clipboard)
+
+/** Evaluates an expression in the page (as a user gesture, so clicks count as user activation). */
+async function js(expression) {
+  const r = await cdp.send('Runtime.evaluate', { expression, awaitPromise: true, returnByValue: true, userGesture: true });
+  if (r.exceptionDetails) throw new Error(`${r.exceptionDetails.exception?.description || r.exceptionDetails.text}\n    in: ${expression.slice(0, 200)}`);
+  return r.result.value;
+}
+async function goto(url) {
+  const loaded = cdp.once('Page.loadEventFired');
+  await cdp.send('Page.navigate', { url: url.startsWith('http') ? url : BASE + url });
+  await loaded;
+}
+/** Runs an action that navigates (e.g. submitting a form) and waits for the new page. */
+async function navigating(expression) {
+  const loaded = cdp.once('Page.loadEventFired');
+  await js(expression);
+  await loaded;
+}
+async function until(expression, timeout = 5000) {
+  for (const end = Date.now() + timeout; Date.now() < end; await sleep(50)) {
+    if (await js(expression)) return true;
+  }
+  return false;
+}
+/** Types text like a user (one input event per character), optionally leaving the field afterwards. */
+async function type(selector, text, { blur = false } = {}) {
+  await js(`(e => { e.focus(); e.value = ''; })(document.querySelector(${JSON.stringify(selector)}))`);
+  for (const ch of text) await cdp.send('Input.insertText', { text: ch });
+  if (blur) await js(`document.querySelector(${JSON.stringify(selector)}).blur()`);
+  return js(`document.querySelector(${JSON.stringify(selector)}).value`);
+}
+const day = (n) => { const d = new Date(); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
+
+try {
+  // --- Admin area ------------------------------------------------------------------------------
+  section('Admin: login and copy link');
+  await goto('/admin/login');
+  await js(`document.querySelector('[name=username]').value = ${JSON.stringify(USER)}; document.querySelector('[name=password]').value = ${JSON.stringify(PASS)}`);
+  await navigating(`document.querySelector('[name=password]').form.requestSubmit()`);
+  check('login through the form', await js(`location.pathname === '/admin' || location.pathname === '/admin/'`), await js('location.href'));
+
+  await cdp.send('Browser.grantPermissions', { origin: BASE, permissions: ['clipboardReadWrite', 'clipboardSanitizedWrite'] });
+  const copyLink = await js(`document.querySelector('[data-copy]').getAttribute('data-copy')`);
+  await js(`document.querySelector('[data-copy]').click()`);
+  const copied = await until(`document.querySelector('[data-copy]').textContent === 'Kopiert ✓'`);
+  const clip = await js(`navigator.clipboard.readText().catch(e => 'ERR ' + e.message)`);
+  check('"Link kopieren" copies and confirms', copied && clip === copyLink && cdp.dialogs.length === 0,
+    `confirmed=${copied} clipboard=${clip} dialogs=${JSON.stringify(cdp.dialogs)}`);
+  const demoRound = await js(`[...document.querySelectorAll('a[href^="/admin/round/"]')].find(a => a.textContent.trim() === 'Elternsprechtag Klasse 7b')?.getAttribute('href')`);
+  check('demo data present (dev/demo.sh)', /^\/admin\/round\/\d+$/.test(demoRound || ''), String(demoRound));
+
+  section('Admin: new round form (times, dates, breaks, preview)');
+  await goto('/admin/round/new');
+  check('time typed as 1430 becomes 14:30 while typing', (await type('#start_time', '1430')) === '14:30');
+  check('time 9 becomes 09:00 when leaving the field', (await type('#start_time', '9', { blur: true })) === '09:00');
+  check('time 930 becomes 09:30 when leaving the field', (await type('#start_time', '930', { blur: true })) === '09:30');
+  check('time 18.15 becomes 18:15', (await type('#end_time', '18.15', { blur: true })) === '18:15');
+  check('invalid time 2575 stays as typed (server rejects it)', (await type('#end_time', '2575', { blur: true })) === '25:75');
+
+  const preview = () => js(`(p => p.hidden ? null : p.textContent)(document.querySelector('[data-slot-preview]'))`);
+  await type('#start_time', '14:00', { blur: true });
+  await type('#end_time', '15:00', { blur: true });
+  await js(`(e => { e.value = '15'; e.dispatchEvent(new Event('input', { bubbles: true })); })(document.querySelector('#slot_minutes'))`);
+  check('preview: 4 slots of 15 minutes', (await preview()) === 'Vorschau: 4 Termine pro Tag: 14:00–14:15, 14:15–14:30, 14:30–14:45, 14:45–15:00', await preview());
+
+  await js(`document.querySelector('[data-add-break]').click()`);
+  check('"+ Pause hinzufügen" adds a row and focuses it', await js(`document.querySelectorAll('[data-breaks] .break-row').length === 1 && document.activeElement.name === 'break_start[]'`));
+  await type('[name="break_start[]"]', '14:20', { blur: true });
+  await type('[name="break_end[]"]', '14:40', { blur: true });
+  check('preview skips the break', (await preview()) === 'Vorschau: 2 Termine pro Tag: 14:00–14:15, 14:40–14:55', await preview());
+  await js(`document.querySelector('[data-remove-break]').click()`);
+  check('removing the break updates the preview', (await preview())?.startsWith('Vorschau: 4 Termine pro Tag') && await js(`document.activeElement.matches('[data-add-break]')`));
+
+  await js(`(e => { e.value = '2030-01-07'; e.dispatchEvent(new Event('change', { bubbles: true })); })(document.querySelector('[name="day_dates[]"]'))`);
+  check('date shown in German with weekday', await js(`document.querySelector('[name="day_dates[]"] + .date-de').textContent`) === 'Mo, 07.01.2030');
+  await js(`document.querySelector('[data-add-date]').click()`);
+  check('"+ weiteren Tag" adds an optional date field', await js(`(l => l.length === 2 && !l[1].required && document.activeElement === l[1])(document.querySelectorAll('[name="day_dates[]"]'))`));
+  await js(`(e => { e.value = '2030-01-08'; e.dispatchEvent(new Event('change', { bubbles: true })); })(document.querySelectorAll('[name="day_dates[]"]')[1])`);
+  check('preview counts all days', (await preview())?.includes('(8 insgesamt an 2 Tagen)'), await preview());
+  await type('#end_time', '13:00', { blur: true });
+  check('no preview when the end is before the start', (await preview()) === null);
+
+  section('Admin: save round, preview matches the server, no double submission');
+  const title = `Browsertest ${Date.now()}`;
+  await js(`document.querySelector('#title').value = ${JSON.stringify(title)}`);
+  await js(`(l => { l[0].value = ${JSON.stringify(day(30))}; l[1].value = ''; })(document.querySelectorAll('[name="day_dates[]"]'))`);
+  await type('#start_time', '15:00', { blur: true });
+  await type('#end_time', '16:10', { blur: true });
+  await js(`(e => { e.value = '20'; e.dispatchEvent(new Event('input', { bubbles: true })); })(document.querySelector('#slot_minutes'))`);
+  await js(`document.querySelector('[data-add-break]').click()`);
+  await type('[name="break_start[]"]', '15:30', { blur: true });
+  await type('[name="break_end[]"]', '15:45', { blur: true });
+  const expected = (await preview()).replace(/^.*: /, '').split(', ');
+  const secondPrevented = await (async () => {
+    const loaded = cdp.once('Page.loadEventFired');
+    const r = await js(`(f => { f.requestSubmit(); const e = new Event('submit', { cancelable: true }); f.dispatchEvent(e); return e.defaultPrevented; })(document.querySelector('form[data-once]'))`);
+    await loaded;
+    return r;
+  })();
+  check('a second submit of the form is blocked', secondPrevented === true);
+  const roundPath = await js('location.pathname');
+  check('round saved', /^\/admin\/round\/\d+$/.test(roundPath), roundPath);
+  const serverSlots = await js(`[...document.querySelectorAll('.slots-table tbody tr td:first-child')].map(td => td.textContent.trim())`);
+  check(`server creates exactly the previewed slots (${expected.join(', ')})`, JSON.stringify(serverSlots) === JSON.stringify(expected), JSON.stringify(serverSlots));
+  await goto('/admin');
+  check('round created only once', await js(`[...document.querySelectorAll('a')].filter(a => a.textContent.trim() === ${JSON.stringify(title)}).length`) === 1);
+
+  section('Admin: confirmation before deleting');
+  await goto(roundPath);
+  cdp.dialogs = [];
+  cdp.acceptDialogs = false;
+  await js(`document.querySelector('form[data-confirm][action$="/delete"]').requestSubmit()`);
+  await sleep(300);
+  check('"Abbrechen" in the dialog keeps the round', cdp.dialogs.length === 1 && cdp.dialogs[0].type === 'confirm'
+    && cdp.dialogs[0].message.includes(title) && await js('location.pathname') === roundPath);
+  cdp.acceptDialogs = true;
+  await navigating(`document.querySelector('form[data-confirm][action$="/delete"]').requestSubmit()`);
+  await goto('/admin');
+  check('"OK" deletes it', await js(`![...document.querySelectorAll('a')].some(a => a.textContent.trim() === ${JSON.stringify(title)})`));
+
+  await goto(demoRound);
+  const slug = (await js(`document.querySelector('[data-copy]').getAttribute('data-copy')`)).replace(/.*\//, '');
+
+  section('Admin: translation in the browser (Translator API simulated)');
+  // Chrome's on-device Translator API is not available headless; this stand-in behaves like it:
+  // every language is ready except Turkish, and "translating" prefixes the language code.
+  const stub = await cdp.send('Page.addScriptToEvaluateOnNewDocument', { source: `
+    Object.defineProperty(navigator, 'userAgentData', { value: { brands: [{ brand: 'Chromium', version: '140' }] } });
+    self.Translator = {
+      availability: async (o) => (o.targetLanguage === 'tr' ? 'unavailable' : 'available'),
+      create: async (o) => ({ translate: async (t) => '[' + o.targetLanguage + '] ' + t, destroy() {} }),
+    };` });
+  await goto(demoRound);
+  check('translation panel replaces the "enter manually" notice', await js(`!document.querySelector('form[data-browser-translate]').hidden && document.querySelector('[data-bt-hint]').hidden`));
+  const status = () => js(`document.querySelector('[data-bt-status]').textContent`);
+  check('ready languages are translated and saved without a click', await until(`document.querySelector('[data-bt-status]').textContent.startsWith('Fertig:')`, 10000), await status());
+  check('the language without a model is reported', (await status()).includes('Nicht im Browser übersetzbar: TR'), await status());
+  check('fields updated in place', await js(`document.querySelector('[name="t_title[pl]"]').value`) === '[pl] Elternsprechtag Klasse 7b');
+  await cdp.send('Page.removeScriptToEvaluateOnNewDocument', { identifier: stub.identifier });
+  const noApi = await cdp.send('Page.addScriptToEvaluateOnNewDocument', { source: `self.Translator = undefined;` });
+  await goto(demoRound);
+  check('translations stored on the server', await js(`document.querySelector('[name="t_title[uk]"]').value`) === '[uk] Elternsprechtag Klasse 7b'
+    && await js(`document.querySelector('[name="t_title[tr]"]').value`) === '');
+  check('without the API the panel stays hidden and the notice remains', await js(`document.querySelector('form[data-browser-translate]').hidden && !document.querySelector('[data-bt-hint]').hidden`));
+  await cdp.send('Page.removeScriptToEvaluateOnNewDocument', { identifier: noApi.identifier });
+
+  section('Admin: print button');
+  const printStub = await cdp.send('Page.addScriptToEvaluateOnNewDocument', { source: `window.print = () => { window.__printed = true; };` });
+  await goto(`${demoRound}/print`);
+  await js(`document.querySelector('[data-print]').click()`);
+  check('"Drucken" opens the print dialog', await js('window.__printed === true'));
+  await cdp.send('Page.removeScriptToEvaluateOnNewDocument', { identifier: printStub.identifier });
+
+  // --- Parent pages ----------------------------------------------------------------------------
+  const KEY = 'tp_bookings';
+  const stored = () => js(`JSON.parse(localStorage.getItem('${KEY}') || '{}')`);
+  const firstFree = `document.querySelector('[name=slot_id]:not(:checked)')`;
+  async function book(name, { remember }) {
+    await goto(`/${slug}`);
+    await js(`${firstFree}.checked = true; document.querySelector('#name').value = ${JSON.stringify(name)};
+      document.querySelector('#privacy').checked = true; document.querySelector('#remember').checked = ${remember};`);
+    await navigating(`document.querySelector('#name').form.requestSubmit()`);
+    return js('location.pathname');
+  }
+
+  section('Parents: remember the appointment on this device');
+  await goto(`/${slug}`);
+  await js(`localStorage.clear()`);
+  const roundId = await js(`document.querySelector('[data-round-id]').getAttribute('data-round-id')`);
+  const managePath = await book('Browser Remember', { remember: true });
+  const entry = (await stored())[roundId];
+  check('booking with consent stores link and appointment', /^\/b\/[A-Za-z0-9_-]{43}$/.test(managePath) && entry?.u?.split('?')[0] === managePath && entry?.l?.length > 0, JSON.stringify(entry));
+
+  await goto(`/${slug}`);
+  check('round page shows the own appointment instead of the slot list', await js(`!document.getElementById('remembered').hidden && document.getElementById('booking-area').hidden`)
+    && await js(`document.querySelector('[data-remembered-link]').getAttribute('href')`) === entry.u
+    && await js(`document.querySelector('[data-remembered-label]').textContent`) === entry.l);
+
+  await goto(managePath);
+  const oldLabel = entry.l;
+  await js(`(f => { f.querySelector('[name=slot_id]').checked = true; })(document.querySelector('input[name=action][value=move]').form)`);
+  await navigating(`document.querySelector('input[name=action][value=move]').form.requestSubmit()`);
+  const moved = (await stored())[roundId];
+  check('moving updates the stored appointment', moved && moved.l !== oldLabel && moved.u.split('?')[0] === managePath, JSON.stringify(moved));
+
+  await js(`(f => { const c = f.querySelector('[name=confirm]'); if (c) c.checked = true; })(document.querySelector('input[name=action][value=cancel]').form)`);
+  await navigating(`document.querySelector('input[name=action][value=cancel]').form.requestSubmit()`);
+  check('cancelling removes the stored appointment', (await stored())[roundId] === undefined);
+
+  await book('Browser Ohne Merken', { remember: false });
+  check('without consent nothing is stored', (await stored())[roundId] === undefined && await js(`localStorage.getItem('${KEY}')`) === null);
+
+  section('Parents: stored entries are not trusted blindly');
+  const fake = 'A'.repeat(43);
+  for (const [what, u] of [['other site', `https://evil.example/b/${fake}`], ['javascript: link', 'javascript:alert(1)//b/' + fake]]) {
+    await js(`localStorage.setItem('${KEY}', JSON.stringify({ ${JSON.stringify(roundId)}: { u: ${JSON.stringify(u)}, l: '<img src=x onerror=alert(1)>' } }))`);
+    await goto(`/${slug}`);
+    check(`link to ${what} is not shown, label only as text`, await js(`document.querySelector('[data-remembered-link]').hidden
+      && document.querySelector('[data-remembered-label]').textContent === '<img src=x onerror=alert(1)>' && !document.querySelector('[data-remembered-label] img')`));
+  }
+  await js(`document.querySelector('[data-remembered-forget]').click()`);
+  check('"vergessen" removes the entry and shows the slot list again', await js(`document.getElementById('remembered').hidden && !document.getElementById('booking-area').hidden && localStorage.getItem('${KEY}') === null`));
+
+  section('Parents: errors and appearance');
+  await js(`localStorage.setItem('${KEY}', JSON.stringify({ ${JSON.stringify(roundId)}: { u: '/b/${fake}', l: 'x' } }))`);
+  await goto(`/${slug}`);
+  await js(`document.querySelector('[data-remembered-forget]').click()`); // back to the form without deleting test data
+  await js(`localStorage.setItem('${KEY}', JSON.stringify({ ${JSON.stringify(roundId)}: { u: '/b/${fake}', l: 'x' } }))`);
+  await js(`${firstFree}.checked = true; document.querySelector('#name').value = 'www.example.org'; document.querySelector('#privacy').checked = true;`);
+  await navigating(`document.querySelector('#name').form.requestSubmit()`);
+  check('error box gets the focus (screen readers)', await js(`document.activeElement && document.activeElement.id === 'form-errors'`));
+  check('with errors the form stays visible despite a stored appointment', await js(`document.getElementById('remembered').hidden && !document.getElementById('booking-area').hidden`));
+  await js(`localStorage.removeItem('${KEY}')`);
+
+  check('appearance switch is shown', await js(`!document.querySelector('[data-theme-switch]').hidden`));
+  await js(`document.querySelector('[data-theme-choice=dark]').click()`);
+  check('"Dunkel" switches and is stored', await js(`document.documentElement.dataset.theme === 'dark' && localStorage.getItem('tp_theme') === 'dark'
+    && document.querySelector('[data-theme-choice=dark]').getAttribute('aria-pressed') === 'true'`));
+  await goto(`/${slug}`);
+  check('the choice applies on the next page', await js(`document.documentElement.dataset.theme === 'dark'`));
+  await js(`document.querySelector('[data-theme-choice=auto]').click()`);
+  check('"Automatisch" follows the device again', await js(`!document.documentElement.hasAttribute('data-theme') && localStorage.getItem('tp_theme') === null`));
+} catch (e) {
+  check('test run completed', false, e.stack || String(e));
+} finally {
+  cdp.ws.close();
+  chrome.kill();
+  await sleep(200);
+  rmSync(profile, { recursive: true, force: true });
+}
+
+console.log(failed === 0 ? 'ALL BROWSER TESTS PASSED' : `${failed} FAILED`);
+process.exit(failed === 0 ? 0 : 1);

@@ -23,7 +23,7 @@ config/           config.sample.php → config.php (not in Git)
 public/           document root: index.php (front controller), install.php, .htaccess, assets/
 dev/              Docker environment, reset.sh, demo.sh
 docs/             this website (GitHub Pages, Jekyll)
-tests/            unit.php, smoke.sh, deploy.sh
+tests/            unit.php, smoke.sh, browser.mjs, deploy.sh
 ```
 
 ## Tests
@@ -31,6 +31,7 @@ tests/            unit.php, smoke.sh, deploy.sh
 ```bash
 php tests/unit.php      # unit tests, no database needed; CI runs them on PHP 8.3, 8.4 and 8.5
 tests/smoke.sh          # ~300 end-to-end checks against the Docker setup (dev/reset.sh first)
+node tests/browser.mjs  # the JavaScript in headless Chrome (dev/reset.sh && dev/demo.sh first)
 tests/deploy.sh         # the atomic deployment via lftp file:// under load (needs lftp and the database)
 ```
 
@@ -38,6 +39,13 @@ The smoke test covers login and lockout, account management, data separation bet
 honeypot, XSS escaping, SQL injection, 20 parallel bookings on one slot (exactly one succeeds), moving and
 cancelling, booking limits, conflict detection, printing, clean-up and error alerts. After a full run no
 alert mail may have been sent.
+
+The browser test drives headless Chrome (Node 22+, no dependencies) through the JavaScript: time fields and
+the slot preview (compared with the slots the server creates), date and break fields, double-submit and
+delete confirmations, copying links, the in-browser translation (with a simulated Translator API), "remember
+my appointment" including rejected foreign links, error focus and the light/dark switch.
+
+CI runs the unit tests on every push, and the smoke and browser tests against the Docker environment.
 
 ## Conventions
 
