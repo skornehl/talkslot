@@ -3,18 +3,18 @@ declare(strict_types=1);
 
 namespace App;
 
-/** Sprechende URLs für Terminrunden. */
+/** Readable URLs for rounds. */
 final class Slug
 {
-    /** Pfade, die die Anwendung selbst belegt. */
+    /** Paths used by the application itself. */
     public const RESERVED = ['admin', 'install', 'impressum', 'datenschutz', 'imprint', 'privacy', 'b', 'assets', 'index', 'robots'];
 
-    /** Länge der Spalte rounds.slug */
+    /** Length of the column rounds.slug */
     public const MAX_LENGTH = 100;
-    /** Platz für den Eindeutigkeitszusatz von unique() ("-2" … "-999") */
+    /** Room for the uniqueness suffix of unique() ("-2" … "-999") */
     public const SUFFIX_RESERVE = 4;
 
-    private const RANDOM_ALPHABET = 'abcdefghijkmnpqrstuvwxyz23456789'; // ohne l, o, 0, 1
+    private const RANDOM_ALPHABET = 'abcdefghijkmnpqrstuvwxyz23456789'; // without l, o, 0, 1
 
     /** "Elternsprechtag August 2026" → "elternsprechtag-august-2026" */
     public static function fromText(string $text, int $maxLength = 80): string
@@ -36,7 +36,7 @@ final class Slug
         return $s;
     }
 
-    /** Hängt einen Zufallsanteil an und kürzt die Basis so, dass alles in die Spalte passt. */
+    /** Appends a random part and shortens the base so that everything fits into the column. */
     public static function withSuffix(string $base): string
     {
         $suffix = self::random();
@@ -45,7 +45,7 @@ final class Slug
         return ($base !== '' ? $base . '-' : '') . $suffix;
     }
 
-    /** Nicht erratbarer Zusatz, 8 Zeichen ≈ 40 Bit. */
+    /** Unguessable suffix, 8 characters ≈ 40 bits. */
     public static function random(int $length = 8): string
     {
         $out = '';
@@ -56,7 +56,7 @@ final class Slug
         return $out;
     }
 
-    /** Macht einen Slug eindeutig (ggf. "-2", "-3" …), optional ohne die Runde $exceptId. */
+    /** Makes a slug unique (adding "-2", "-3" … if needed), optionally ignoring round $exceptId. */
     public static function unique(string $base, ?int $exceptId = null): string
     {
         if ($base === '') {

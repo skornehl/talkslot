@@ -4,10 +4,10 @@ declare(strict_types=1);
 namespace App;
 
 /**
- * Einladungs- und Passwort-Links für Konten.
- * Statt eines Passworts erhält die Person einen einmaligen Link (256-Bit-Token, in der
- * Datenbank nur als SHA-256-Hash, standardmäßig 48 Stunden gültig) und legt ihr
- * Passwort selbst fest. Ein neuer Link macht den vorherigen ungültig.
+ * Invitation and password links for accounts.
+ * Instead of a password, the person receives a single-use link (256-bit token, stored in the
+ * database only as SHA-256 hash, valid for 48 hours by default) and sets their
+ * password themselves. A new link invalidates the previous one.
  */
 final class AccountLinks
 {
@@ -19,7 +19,7 @@ final class AccountLinks
         return max(1, (int) Config::get('access_link_hours', 48));
     }
 
-    /** Erzeugt einen neuen Link-Token für das Konto und liefert die vollständige URL. */
+    /** Creates a new link token for the account and returns the full URL. */
     public static function issue(int $userId): string
     {
         [$plain, $hash] = Token::generate();
@@ -30,7 +30,7 @@ final class AccountLinks
         return abs_url('/admin/invite/' . $plain, ['lang' => null]);
     }
 
-    /** Konto zu einem gültigen, nicht abgelaufenen Token (nur aktive Konten). */
+    /** Account for a valid, unexpired token (active accounts only). */
     public static function findUser(string $plain): ?array
     {
         if (!Token::isWellFormed($plain)) {
@@ -42,7 +42,7 @@ final class AccountLinks
         );
     }
 
-    /** Setzt das Passwort und entwertet den Link. */
+    /** Sets the password and invalidates the link. */
     public static function consume(int $userId, string $password): void
     {
         Db::run(
@@ -52,7 +52,7 @@ final class AccountLinks
         Auth::endOtherSessions($userId, false);
     }
 
-    /** Wurde für das Konto vor weniger als $minutes Minuten ein noch gültiger Link ausgestellt? */
+    /** Was a still valid link issued for the account less than $minutes minutes ago? */
     public static function recentlyIssued(array $user, int $minutes = 15): bool
     {
         $expires = (string) ($user['access_token_expires_at'] ?? '');
@@ -63,15 +63,15 @@ final class AccountLinks
         return $issued > Time::now()->modify('-' . $minutes . ' minutes');
     }
 
-    /** Ein Passwort-Hash, mit dem man sich nicht anmelden kann (für Konten vor der Einladung). */
+    /** A password hash that cannot be used to log in (for accounts before the invitation). */
     public static function unusablePasswordHash(): string
     {
         return password_hash(bin2hex(random_bytes(32)), PASSWORD_DEFAULT);
     }
 
     /**
-     * Verschickt den Link per Mail.
-     * @return array{0:bool,1:string} [versendet, link]
+     * Sends the link by email.
+     * @return array{0:bool,1:string} [sent, link]
      */
     public static function send(array $user, string $kind, ?array $sender = null): array
     {

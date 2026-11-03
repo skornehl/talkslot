@@ -1,7 +1,7 @@
 <?php
 /**
- * Abfrage des Rundencodes für eine geschützte Runde („Nur mit Rundencode“).
- * Titel und Beschreibung der Runde werden erst nach korrekter Eingabe gezeigt.
+ * Asks for the round code of a protected round ("Nur mit Rundencode").
+ * The round's title and description are only shown after correct input.
  * @var array $round @var string $csrf @var array $errors
  */
 ?>

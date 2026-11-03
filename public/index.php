@@ -1,9 +1,9 @@
 <?php
 /**
- * Front-Controller. Alle Anfragen (außer vorhandenen Dateien) landen hier.
+ * Front controller. All requests (except existing files) end up here.
  *
- * app_root.php (vom Deployment hochgeladen, Vorlage bin/app-root.php) nennt das Verzeichnis der
- * aktiven Version außerhalb des Webroots; lokal liegt app/ direkt neben public/.
+ * app_root.php (uploaded by the deployment, template bin/app-root.php) names the directory of the
+ * active version outside the web root; locally app/ sits right next to public/.
  */
 declare(strict_types=1);
 

@@ -1,6 +1,6 @@
 <?php
 /**
- * Bestätigungs- und Änderungsseite (erreichbar nur über den geheimen Link).
+ * Confirmation and change page (reachable only via the secret link).
  * @var array $booking @var string $token @var bool $canChange @var array $days
  * @var string $csrf @var string $done @var bool $mailed @var bool $remember @var array $errors
  */

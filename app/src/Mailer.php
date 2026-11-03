@@ -4,15 +4,15 @@ declare(strict_types=1);
 namespace App;
 
 /**
- * Versand reiner Text-Mails über PHP mail() oder SMTP (mitgeliefertes PHPMailer).
- * Umschaltbar über config "mail.transport": mail | smtp | none.
- * Fehler werden ohne Empfängeradresse protokolliert.
+ * Sends plain-text emails via PHP mail() or SMTP (bundled PHPMailer).
+ * Switchable via config "mail.transport": mail | smtp | none.
+ * Errors are logged without the recipient address.
  */
 final class Mailer
 {
     /**
-     * @param list<array{name:string,type:string,content:string}> $attachments z. B. eine .ics-Datei
-     * @param ?string $replyTo Antwortadresse (z. B. die Lehrkraft); sonst config mail.reply_to
+     * @param list<array{name:string,type:string,content:string}> $attachments e.g. an .ics file
+     * @param ?string $replyTo reply address (e.g. the teacher); otherwise config mail.reply_to
      */
     public static function send(string $to, string $subject, string $body, array $attachments = [], ?string $replyTo = null): bool
     {
@@ -64,7 +64,7 @@ final class Mailer
             $lines
         ));
         if ($attachments) {
-            // multipart/mixed: Textteil + Anhänge (base64)
+            // multipart/mixed: text part + attachments (base64)
             $boundary = 'tp-' . bin2hex(random_bytes(12));
             $textType = $headers['Content-Type'];
             unset($headers['Content-Transfer-Encoding']);
@@ -96,10 +96,10 @@ final class Mailer
         $m->SMTPAuth = $user !== '';
         $m->Username = $user;
         $m->Password = (string) Config::get('mail.smtp.pass', '');
-        // Nur „none“ schaltet die Verschlüsselung ab; alles andere außer „ssl“ heißt STARTTLS
+        // Only "none" disables encryption; anything else except "ssl" means STARTTLS
         $enc = (string) Config::get('mail.smtp.encryption', 'tls');
         $enc = in_array($enc, ['ssl', 'none'], true) ? $enc : 'tls';
-        $m->Timeout = 15; // nicht minutenlang hängen, wenn der Mailserver nicht antwortet
+        $m->Timeout = 15; // don't hang for minutes if the mail server does not respond
         if ($enc === 'ssl') {
             $m->SMTPSecure = \PHPMailer\PHPMailer\PHPMailer::ENCRYPTION_SMTPS;
         } elseif ($enc === 'tls') {

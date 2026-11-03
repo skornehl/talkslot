@@ -1,9 +1,9 @@
--- Datenbankschema TalkSlot (MariaDB/MySQL, InnoDB, utf8mb4)
--- Wird von install.php bzw. bin/install.php ausgeführt.
+-- Database schema TalkSlot (MariaDB/MySQL, InnoDB, utf8mb4)
+-- Executed by install.php or bin/install.php.
 
--- Konten: role admin = darf Konten verwalten, jede Person verwaltet nur eigene Runden.
--- controller_contact: nur beim Admin – Angaben für Impressum und Datenschutz (Platzhalter [[VERANTWORTLICHE]]).
--- access_token_hash: SHA-256 eines Einladungs- bzw. Passwort-Links (einmalig, mit Ablaufzeit).
+-- Accounts: role admin = may manage accounts, every person manages only their own rounds.
+-- controller_contact: admin only – details for legal notice and privacy policy (placeholder [[VERANTWORTLICHE]]).
+-- access_token_hash: SHA-256 of an invitation or password link (single use, with expiry).
 CREATE TABLE IF NOT EXISTS users (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   username VARCHAR(254) NOT NULL,
@@ -70,8 +70,8 @@ CREATE TABLE IF NOT EXISTS day_breaks (
   CONSTRAINT fk_breaks_day FOREIGN KEY (day_id) REFERENCES round_days (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- is_conflict: gebuchter Slot, der nach einer Änderung von Zeiten/Pausen
--- nicht mehr zum Zeitplan passt. Wird nie automatisch gelöscht.
+-- is_conflict: booked slot that no longer fits the schedule after a change to times/breaks.
+-- Never deleted automatically.
 CREATE TABLE IF NOT EXISTS slots (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   day_id INT UNSIGNED NOT NULL,
@@ -83,8 +83,8 @@ CREATE TABLE IF NOT EXISTS slots (
   CONSTRAINT fk_slots_day FOREIGN KEY (day_id) REFERENCES round_days (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- UNIQUE(slot_id) verhindert Doppelbuchungen auf Datenbankebene.
--- token_hash: SHA-256 des Änderungstokens, der Klartext wird nicht gespeichert.
+-- UNIQUE(slot_id) prevents double bookings at database level.
+-- token_hash: SHA-256 of the change token; the plain text is not stored.
 CREATE TABLE IF NOT EXISTS bookings (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   slot_id INT UNSIGNED NOT NULL,
@@ -108,7 +108,7 @@ CREATE TABLE IF NOT EXISTS pages (
   PRIMARY KEY (page_key, lang)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- key_hash: HMAC der gekürzten IP-Adresse, Einträge max. 24 h
+-- key_hash: HMAC of the truncated IP address, entries kept for at most 24 h
 CREATE TABLE IF NOT EXISTS rate_limits (
   bucket VARCHAR(20) NOT NULL,
   key_hash CHAR(64) NOT NULL,
@@ -123,7 +123,7 @@ CREATE TABLE IF NOT EXISTS settings (
   value TEXT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Versandprotokoll der Zusammenfassungs-Mails (verhindert Doppelversand), ohne Inhalte
+-- Delivery log of the summary emails (prevents duplicate sends), without content
 CREATE TABLE IF NOT EXISTS sent_summaries (
   user_id INT UNSIGNED NOT NULL,
   kind VARCHAR(20) NOT NULL,
@@ -133,8 +133,8 @@ CREATE TABLE IF NOT EXISTS sent_summaries (
   CONSTRAINT fk_summaries_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Übersetzungen von Titel/Beschreibung einer Runde (im Browser der Lehrkraft oder von Hand).
--- source_hash: Hash des Originals zum Zeitpunkt der Übersetzung (veraltet, wenn abweichend).
+-- Translations of a round's title/description (in the teacher's browser or by hand).
+-- source_hash: hash of the original at translation time (stale if it differs).
 CREATE TABLE IF NOT EXISTS round_translations (
   round_id INT UNSIGNED NOT NULL,
   lang VARCHAR(5) NOT NULL,

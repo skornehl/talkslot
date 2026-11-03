@@ -165,11 +165,11 @@ Recommended: put the secrets into an environment `production` that only `main` m
 (*Settings → Environments*). After the first deployment open `/install.php`, then
 `gh variable delete ALLOW_INSTALL` so the installer is no longer shipped.
 
-**Rollback:** *Actions → Version umschalten → Run workflow* with `previous`, a version name or `list`:
+**Rollback:** *Actions → Switch version → Run workflow* with `previous`, a version name or `list`:
 
 ```bash
-gh workflow run "Version umschalten"                     # one version back
-gh workflow run "Version umschalten" -f target=list      # show available versions
+gh workflow run "Switch version"                         # one version back
+gh workflow run "Switch version" -f target=list          # show available versions
 ```
 
 The database is not rolled back. That is why migrations (`app/src/Migrations.php`) must only **add**

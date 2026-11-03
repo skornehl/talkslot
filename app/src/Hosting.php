@@ -4,10 +4,10 @@ declare(strict_types=1);
 namespace App;
 
 /**
- * Angaben zum Hoster für die Datenschutzerklärung: ersetzen dort den Platzhalter [[HOSTER]].
- * Sie stehen in der Konfiguration (config.php → 'hosting', je Sprache; beim Deployment die
- * Variablen HOSTING_DE und HOSTING_EN), weil sie zum Server gehören und nicht zur Schule.
- * Fehlen sie, erscheint ein sichtbarer Platzhalter.
+ * Hosting provider details for the privacy policy: they replace the placeholder [[HOSTER]] there.
+ * They live in the configuration (config.php → 'hosting', per language; on deployment the
+ * variables HOSTING_DE and HOSTING_EN), because they belong to the server, not to the school.
+ * If they are missing, a visible placeholder appears.
  */
 final class Hosting
 {
@@ -24,7 +24,7 @@ final class Hosting
         return is_array($cfg) && trim((string) ($cfg[$lang] ?? '')) !== '';
     }
 
-    /** Text für eine Sprache (die Sprache des Seitentexts, nicht unbedingt die der Besucher). */
+    /** Text for one language (the language of the page text, not necessarily that of the visitor). */
     public static function text(string $lang): string
     {
         if (self::configured($lang)) {

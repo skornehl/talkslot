@@ -4,18 +4,18 @@ declare(strict_types=1);
 namespace App;
 
 /**
- * Schema-Änderungen für bereits installierte Datenbanken.
- * schema.sql beschreibt immer den neuesten Stand; neue Installationen bekommen
- * direkt LATEST. Bestehende werden beim nächsten Aufruf schrittweise angehoben.
+ * Schema changes for databases that are already installed.
+ * schema.sql always describes the latest state; new installations get
+ * LATEST directly. Existing ones are upgraded step by step on the next request.
  */
 final class Migrations
 {
     public const LATEST = 12;
 
-    /** Version => SQL-Anweisungen */
+    /** Version => SQL statements */
     private const STEPS = [
         2 => ['ALTER TABLE rounds ADD COLUMN IF NOT EXISTS access_pin VARCHAR(12) NULL AFTER description'],
-        // Mehrere Lehrkräfte: admin_users → users mit Rollen, Runden gehören einer Person
+        // Multiple teachers: admin_users → users with roles, rounds belong to one person
         3 => [
             'RENAME TABLE admin_users TO users',
             "ALTER TABLE users
@@ -43,16 +43,16 @@ final class Migrations
              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
             "DELETE FROM settings WHERE name = 'notify_email'",
         ],
-        // Einladungs-/Passwort-Links statt Startpasswörter per Mail
+        // Invitation/password links instead of initial passwords by email
         4 => [
             'ALTER TABLE users
                 ADD COLUMN IF NOT EXISTS access_token_hash CHAR(64) NULL AFTER must_change_password,
                 ADD COLUMN IF NOT EXISTS access_token_expires_at DATETIME NULL AFTER access_token_hash,
                 ADD UNIQUE KEY IF NOT EXISTS uq_users_access_token (access_token_hash)',
         ],
-        // 5: nur PHP-Schritt (refreshPages) – Kalenderexport aus den Datenschutztexten entfernt
+        // 5: PHP step only (refreshPages) – calendar export removed from the privacy texts
         5 => [],
-        // 6: DeepL-Übersetzungen von Titel/Beschreibung; Datenschutztexte nennen DeepL (refreshPages)
+        // 6: DeepL translations of title/description; privacy texts mention DeepL (refreshPages)
         6 => [
             "ALTER TABLE rounds ADD COLUMN IF NOT EXISTS source_lang VARCHAR(5) NOT NULL DEFAULT 'de' AFTER description",
             "CREATE TABLE IF NOT EXISTS round_translations (
@@ -62,40 +62,40 @@ final class Migrations
                 CONSTRAINT fk_translations_round FOREIGN KEY (round_id) REFERENCES rounds (id) ON DELETE CASCADE
              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
         ],
-        // 7: Rundencode für die Eingabe auf der Startseite; bestehende Runden bekommen einen (RoundCode::backfill)
+        // 7: round code for entry on the start page; existing rounds get one (RoundCode::backfill)
         7 => [
             'ALTER TABLE rounds ADD COLUMN IF NOT EXISTS code CHAR(8) NULL AFTER slug,
                 ADD UNIQUE KEY IF NOT EXISTS uq_rounds_code (code)',
         ],
-        // 8: Übersetzung im Browser statt DeepL (Datenschutztexte ersetzt der Vorlagen-Abgleich in run())
+        // 8: translation in the browser instead of DeepL (privacy texts are replaced by the template sync in run())
         8 => [],
-        // 9: Genau ein Admin (das älteste aktive Admin-Konto bleibt, weitere werden Lehrkräfte);
-        //    er ist für alle Runden verantwortlich, Impressum/Datenschutz nennen ihn (refreshPages)
+        // 9: exactly one admin (the oldest active admin account stays, others become teachers);
+        //    they are the controller for all rounds, legal notice/privacy policy name them (refreshPages)
         9 => [
             "UPDATE users SET role = 'teacher' WHERE role = 'admin' AND id <> (
                 SELECT keep_id FROM (SELECT id AS keep_id FROM users WHERE role = 'admin' ORDER BY is_active DESC, id LIMIT 1) AS keep_admin)",
-            // Kontaktdaten der Lehrkräfte werden nicht mehr gebraucht (Datensparsamkeit)
+            // Teachers' contact details are no longer needed (data minimization)
             "UPDATE users SET controller_contact = NULL WHERE role <> 'admin'",
         ],
-        // 10: Rundencode schützt die Runde („Nur mit Rundencode“) statt eines eigenen Zugangscodes
-        //     (alte PINs gelten nicht mehr; geschützte Runden bleiben geschützt) – siehe pinToCode().
-        //     Die Spalte access_pin bleibt in dieser Version stehen (Übergang während des Uploads)
-        //     und kann in einer späteren Version entfernt werden.
+        // 10: the round code protects the round ("Nur mit Rundencode") instead of a separate access code
+        //     (old PINs are no longer valid; protected rounds stay protected) – see pinToCode().
+        //     The access_pin column remains in this version (transition during the upload)
+        //     and can be removed in a later version.
         10 => [
             'ALTER TABLE rounds ADD COLUMN IF NOT EXISTS code_required TINYINT(1) NOT NULL DEFAULT 0 AFTER code',
         ],
-        // 11: Mehrfachbuchungen begrenzen (none | round | day); bestehende Runden wie bisher ohne Sperre
+        // 11: limit multiple bookings (none | round | day); existing rounds keep working without a limit
         11 => [
             "ALTER TABLE rounds ADD COLUMN IF NOT EXISTS booking_limit VARCHAR(5) NOT NULL DEFAULT 'none' AFTER code_required",
         ],
-        // 12: Sitzungen enden bei Passwortänderung/-reset (Zähler je Konto, in der Sitzung gemerkt)
+        // 12: sessions end on password change/reset (counter per account, remembered in the session)
         12 => [
             'ALTER TABLE users ADD COLUMN IF NOT EXISTS session_epoch INT UNSIGNED NOT NULL DEFAULT 0 AFTER failed_logins',
         ],
     ];
 
-    /** SHA-256 aller früher ausgelieferten Vorlagen von Impressum/Datenschutz (unbearbeitet). */
-    /** SHA-256 der aktuellen Vorlagen app/templates/pages/*.md (tests/unit.php prüft das) */
+    /** SHA-256 of all previously shipped templates of legal notice/privacy policy (unedited). */
+    /** SHA-256 of the current templates app/templates/pages/*.md (checked by tests/unit.php) */
     public const CURRENT_PAGE_HASHES = [
         'imprint.de' => '036e210b629357dfbf768868e3a5f249c888d3052f301170703b196336058f43',
         'imprint.en' => 'f15521ceaa18e97c98190e448cc95eb6130c4cf571164b09819bb40dd7af22c8',
@@ -104,36 +104,36 @@ final class Migrations
     ];
 
     private const OLD_PAGE_HASHES = [
-        // Datenschutz mit Hoster-Platzhalter in eckigen Klammern (vor [[HOSTER]])
+        // Privacy policy with hosting placeholder in square brackets (before [[HOSTER]])
         'ad6f6857bd256028a0bb977342079a12de3896553f38b6988bc90513dd38b3db',
         '144970362b39b145e5d4253ce311bfa38fa4c85a23ed090d14cb9f40340d28df',
-        // Datenschutz mit fest eingetragenem Hoster
+        // Privacy policy with hard-coded hosting provider
         'de6d0d5db54705cdfaebeb229b708e0bb408f52963664220cfcbda4e8e0d2022',
         '709ca1125fecd1230d4dc8d4fdfd92b52a195d1bfdc0d5a705b7cdd536e29120',
-        // Datenschutz ohne Abschnitt zur Darstellung (hell/dunkel)
+        // Privacy policy without the section on appearance (light/dark)
         'bfc745eea89fdf42486366ec3ce736b038c858382f2cb4ff233670e465e06440',
         '8fdf11cfe5fbe26ba706f449dd0471bb73bb06d5c07b584d7fd30f7bfab57fc1',
-        // Fassungen mit Vorlagenhinweisen und Hinweisen zur Schule (bis Version 10)
+        // Versions with template notes and notes on the school (up to version 10)
         '905c83e66c81ce4a3179192145ed7801260dc23a9bc30f42e6c76c39b7d74f8a',
         '64dae24f77aa5056ea551f8429a4a33b2a7916e2b2366d2fed9ab622452a6551',
         'dd0843a163d086b559d734e4d6dc573960a05c7651b2db4866dd34035c443f5d',
         'ee6655d8d71c55f0700c91600e0da896187bb8f61f3bbeda3064f65e0aeeb480',
-        // Datenschutz de/en mit „eingebauter Übersetzungsfunktion“ (Zwischenstand, nur Testinstallationen)
+        // Privacy policy de/en with "built-in translation feature" (interim state, test installations only)
         'e7e7f5e201d3cb8f646da9476aeeb18042b2afbb7e6a493ecdb17095c7b20082',
         'afecb073e5a316485b4105b37b41f0626417fcea78c4f5add76460891afac1e2',
-        // Datenschutz de/en mit Lehrkräften als Verantwortlichen (Translator API, bis Version 8), Impressum en mit Platzhaltern
+        // Privacy policy de/en with teachers as controllers (Translator API, up to version 8), legal notice en with placeholders
         '14875459955518adc09879c03f020f06c5eaa9a19494837f99237b0d4c9932ab',
         '71d92e80a981bf20cd7a6409f6500015799e08cd801815cf303977b3004b09fd',
         'c503bcd0596bc7bc45098fedc8f2b910f452909701ba9e28fc247dd9854fcc94',
-        // Datenschutz de/en mit Admin als Verantwortlichem und Zugangscode (bis Version 9)
+        // Privacy policy de/en with admin as controller and access code (up to version 9)
         'f3ce5609499373779aa2de56e2275a6c55cd32ffffd1cd95cca15462ae390264',
         '460240e538d932258d9aa50a2ec1d127e0b290a8d881f54ce8121e2c2caf7e17',
-        // Zwischenstand des Ein-Admin-Umbaus (nur Testinstallationen)
+        // Interim state of the single-admin rework (test installations only)
         '8c8973faa47678a960e027205d31604c914cfe515a76d5801c4511d341df4cf2',
         'a20f6373f8ed2438a452e4226e3a216820e09da2a8c29b46c090a90bdb6c7fc2',
         'ee6625e4708a310c37db76031304d33ed26f685c92e27b9d4da9a95fc2590ce3',
         'd9b8e0f952fd2b3d0837841005b466241c492f4f06bc648254d2938c83a0624c',
-        // Datenschutz de/en mit DeepL (bis Version 7)
+        // Privacy policy de/en with DeepL (up to version 7)
         '713b85160d48c940afd47de09bd18ad8b1e9b069284992f9b571fc030ed6f25f',
         '4b3e0a3adc7ec55a14c2435835f375581a6c4b300482cc8fd9cd04f3c5a12b23',
         '05b82314637b712949e3b7c8e588f71de71d0c852c4c4dd6e7a4b3a2939c185f',
@@ -158,14 +158,14 @@ final class Migrations
 
     public static function run(): void
     {
-        // Nur in einer von dieser App installierten Datenbank (eigener Versionsmerker)
+        // Only in a database installed by this app (own version marker)
         $version = Settings::get('schema_version');
         if ($version === null) {
             return;
         }
         $current = (int) $version;
-        // Nur ein Aufruf migriert (parallele Seitenaufrufe, z. B. während des Uploads); die anderen
-        // warten kurz und finden dann den neuen Stand vor
+        // Only one request migrates (parallel page requests, e.g. during the upload); the others
+        // wait briefly and then find the new state
         if ($current < self::LATEST) {
             if ((int) Db::value("SELECT GET_LOCK(?, 10)", [Db::table('migrate')]) !== 1) {
                 return;
@@ -177,8 +177,8 @@ final class Migrations
                 Db::value('SELECT RELEASE_LOCK(?)', [Db::table('migrate')]);
             }
         }
-        // Vorlagen für Impressum/Datenschutz: unabhängig von der Schema-Version, sobald die
-        // Dateien auf dem Server zum Code passen (während eines Uploads ggf. erst später)
+        // Templates for legal notice/privacy policy: independent of the schema version, as soon as the
+        // files on the server match the code (possibly only later during an upload)
         if (Settings::get('pages_version') !== self::pagesVersion() && self::refreshPages()) {
             Settings::set('pages_version', self::pagesVersion());
         }
@@ -203,8 +203,8 @@ final class Migrations
     }
 
     /**
-     * Runden mit Zugangscode werden „Nur mit Rundencode“ (wiederholbar). Die PIN-Spalte bleibt
-     * vorerst, damit alter Code während des Uploads geschützte Runden weiter schützt.
+     * Rounds with an access code become "Nur mit Rundencode" (repeatable). The PIN column stays
+     * for now so that old code keeps protecting protected rounds during the upload.
      */
     private static function pinToCode(): void
     {
@@ -214,24 +214,24 @@ final class Migrations
         Db::execRaw("UPDATE rounds SET code_required = 1 WHERE COALESCE(access_pin, '') <> ''");
     }
 
-    /** Kennung der aktuellen Vorlagen (ändert sich mit CURRENT_PAGE_HASHES). */
+    /** Identifier of the current templates (changes with CURRENT_PAGE_HASHES). */
     public static function pagesVersion(): string
     {
         return substr(hash('sha256', implode(',', self::CURRENT_PAGE_HASHES)), 0, 16);
     }
 
     /**
-     * Ersetzt gespeicherte Seiten durch die aktuelle Vorlage – aber nur, wenn sie noch
-     * exakt einer früheren Vorlage entsprechen (also nicht bearbeitet wurden).
-     * Fehlende Sprachen werden aus vorhandenen Vorlagen ergänzt.
-     * @return bool false = Vorlagen auf dem Server passen (noch) nicht zum Code, nichts getan
+     * Replaces stored pages with the current template – but only if they still
+     * exactly match an earlier template (i.e. have not been edited).
+     * Missing languages are filled in from existing templates.
+     * @return bool false = templates on the server do not match the code (yet), nothing done
      */
     public static function refreshPages(): bool
     {
         foreach (self::CURRENT_PAGE_HASHES as $name => $hash) {
             $file = APP_ROOT . "/app/templates/pages/$name.md";
             if (!is_file($file) || hash_file('sha256', $file) !== $hash) {
-                return false; // z. B. Code schon neu, Vorlagen noch alt (Upload läuft)
+                return false; // e.g. code already new, templates still old (upload in progress)
             }
         }
         foreach (['imprint', 'privacy'] as $key) {

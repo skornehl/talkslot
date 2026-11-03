@@ -1,5 +1,5 @@
 <?php
-/** Druckansicht (eigenständige Seite, im Browser als PDF speicherbar). @var array $round @var array $days @var bool $showEmail @var int $dayFilter */
+/** Print view (standalone page, can be saved as PDF in the browser). @var array $round @var array $days @var bool $showEmail @var int $dayFilter */
 ?>
 <!doctype html>
 <html lang="de">

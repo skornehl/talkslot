@@ -1,4 +1,4 @@
-<?php /** Pflicht-Passwortwechsel nach Startpasswort. @var array $errors */ use App\Csrf; ?>
+<?php /** Mandatory password change after the initial password. @var array $errors */ use App\Csrf; ?>
 <div class="narrow">
   <h1>Neues Passwort festlegen</h1>
   <p>Sie haben sich mit einem Startpasswort angemeldet. Bitte legen Sie jetzt ein eigenes Passwort fest, das nur Sie kennen.</p>

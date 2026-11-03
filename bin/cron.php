@@ -1,12 +1,12 @@
 <?php
 /**
- * Cronjob: löscht Buchungen vergangener Tage, deaktiviert/löscht abgelaufene
- * Runden, entfernt alte Rate-Limit-Einträge und verschickt Zusammenfassungen an Lehrkräfte.
+ * Cron job: deletes bookings of past days, deactivates/deletes expired rounds,
+ * removes old rate-limit entries and sends summaries to teachers.
  *
- * Empfohlen: stündlich, z. B. „5 * * * *“
- *   cd /pfad/zu/talkslot-app && php releases/$(cat current)/bin/cron.php   (Deployment mit bin/deploy.sh)
- *   php /pfad/zu/talkslot/bin/cron.php                                    (einfache Installation)
- * Mit -v werden die Anzahlen ausgegeben (keine personenbezogenen Daten).
+ * Recommended: hourly, e.g. "5 * * * *"
+ *   cd /path/to/talkslot-app && php releases/$(cat current)/bin/cron.php   (deployment with bin/deploy.sh)
+ *   php /path/to/talkslot/bin/cron.php                                    (simple installation)
+ * With -v the counts are printed (no personal data).
  */
 declare(strict_types=1);
 
@@ -17,7 +17,7 @@ if (PHP_SAPI !== 'cli') {
 require dirname(__DIR__) . '/app/bootstrap.php';
 
 if (!App\Installer::isInstalled()) {
-    fwrite(STDERR, "Noch nicht installiert – nichts zu tun.\n");
+    fwrite(STDERR, "Not installed yet – nothing to do.\n");
     exit(0);
 }
 App\Migrations::run();

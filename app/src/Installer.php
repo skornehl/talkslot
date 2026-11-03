@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace App;
 
-/** Legt Tabellen, Admin-Konto und Standardtexte an. Danach gesperrt. */
+/** Creates tables, admin account and default texts. Locked afterwards. */
 final class Installer
 {
     public static function lockFile(): string
@@ -11,7 +11,7 @@ final class Installer
         return DATA_ROOT . '/app/var/installed.lock';
     }
 
-    /** Installiert = Lock-Datei oder eigener Schema-Merker in settings (nicht bloß „irgendeine users-Tabelle“). */
+    /** Installed = lock file or our own schema marker in settings (not merely "some users table"). */
     public static function isInstalled(): bool
     {
         if (is_file(self::lockFile())) {
@@ -21,15 +21,15 @@ final class Installer
             return Db::value("SELECT value FROM settings WHERE name = 'schema_version'") !== null
                 || Db::value('SELECT COUNT(*) FROM users') > 0;
         } catch (\PDOException $e) {
-            // Nur „Tabelle fehlt“ (leere Datenbank) heißt nicht installiert. Bei anderen Fehlern
-            // (Datenbank nicht erreichbar, Rechte) bleibt der Installer gesperrt.
+            // Only "table missing" (empty database) means not installed. On other errors
+            // (database unreachable, permissions) the installer stays locked.
             return $e->getCode() !== '42S02';
         }
     }
 
     /**
-     * Tabellen mit unseren Namen, die bereits existieren (z. B. von einer anderen Anwendung
-     * in derselben Datenbank). Dann darf nicht installiert werden.
+     * Tables with our names that already exist (e.g. from another application
+     * in the same database). Installation is not allowed then.
      * @return list<string>
      */
     public static function conflictingTables(): array
@@ -39,7 +39,7 @@ final class Installer
         return array_values(array_intersect($ours, $existing));
     }
 
-    /** @return list<string> Fehlermeldungen (leer = gültig) */
+    /** @return list<string> error messages (empty = valid) */
     public static function validate(string $username, string $password, string $password2, string $email): array
     {
         $errors = [];
@@ -58,13 +58,13 @@ final class Installer
         return $errors;
     }
 
-    /** Legt das erste Konto als Admin an (kann zugleich eigene Runden verwalten). */
+    /** Creates the first account as admin (which can also manage its own rounds). */
     public static function install(string $username, string $password, string $email, string $displayName = ''): void
     {
         if ($conflicts = self::conflictingTables()) {
             throw new \RuntimeException('Die Datenbank enthält bereits Tabellen mit gleichem Namen (' . implode(', ', $conflicts) . '). Bitte eine eigene, leere Datenbank verwenden.');
         }
-        // Kommentarzeilen vor dem Trennen entfernen (sie dürfen dann auch „;“ enthalten)
+        // Remove comment lines before splitting (they may then also contain ";")
         $sql = (string) preg_replace('/^\s*--.*$/m', '', (string) file_get_contents(APP_ROOT . '/app/schema.sql'));
         foreach (explode(';', $sql) as $stmt) {
             $stmt = trim($stmt);

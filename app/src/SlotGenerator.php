@@ -4,17 +4,17 @@ declare(strict_types=1);
 namespace App;
 
 /**
- * Erzeugt Slots aus Tageszeiten, Slot-Dauer und Pausen und gleicht sie mit der
- * Datenbank ab. Gebuchte Slots werden dabei nie gelöscht.
+ * Generates slots from day times, slot duration and breaks and syncs them with the
+ * database. Booked slots are never deleted in the process.
  */
 final class SlotGenerator
 {
     /**
-     * Berechnet die Slots eines Tages. Fällt ein Slot in eine Pause (oder in einen
-     * belegten Zeitraum), geht es direkt nach deren Ende weiter.
+     * Calculates the slots of a day. If a slot falls into a break (or into an
+     * occupied period), it continues directly after its end.
      *
-     * @param list<array{start_time:string,end_time:string}> $blocked Pausen bzw. belegte Zeiträume
-     * @return list<array{start:string,end:string}> Zeiten im Format HH:MM:00
+     * @param list<array{start_time:string,end_time:string}> $blocked breaks or occupied periods
+     * @return list<array{start:string,end:string}> times in HH:MM:00 format
      */
     public static function compute(string $start, string $end, int $minutes, array $blocked): array
     {
@@ -49,12 +49,12 @@ final class SlotGenerator
     }
 
     /**
-     * Gleicht die Slots eines Tages mit dem Zeitplan ab.
-     * - fehlende Slots werden angelegt (Sperren bestehender Slots bleiben erhalten)
-     * - ungebuchte, nicht mehr passende Slots werden gelöscht
-     * - gebuchte, nicht mehr passende Slots werden als Konflikt markiert
+     * Syncs the slots of a day with the schedule.
+     * - missing slots are created (blocks on existing slots are kept)
+     * - unbooked slots that no longer fit are deleted
+     * - booked slots that no longer fit are marked as conflicts
      *
-     * @return int Anzahl der Konflikte
+     * @return int number of conflicts
      */
     public static function sync(int $dayId): int
     {
@@ -74,11 +74,11 @@ final class SlotGenerator
             $desired = self::compute($day['start_time'], $day['end_time'], (int) $day['slot_minutes'], $breaks);
             $desiredStarts = array_column($desired, 'end', 'start');
 
-            // Gebuchte Slots, die nicht mehr passen, blockieren ihren Zeitraum, damit keine
-            // überlappenden neuen Slots entstehen. Gebuchte Slots, die weiterhin passen, bleiben
-            // fest stehen; nur die freien Lücken um beide herum werden neu aufgeteilt. (Ohne
-            // diese Fixierung könnte die Neuberechnung passende Buchungen verschieben und
-            // fälschlich als Konflikt markieren.)
+            // Booked slots that no longer fit block their period so that no overlapping
+            // new slots are created. Booked slots that still fit stay fixed in place;
+            // only the free gaps around both are split up anew. (Without
+            // this pinning the recalculation could shift fitting bookings and
+            // wrongly mark them as conflicts.)
             $conflictRanges = [];
             $kept = [];
             foreach ($existing as $s) {

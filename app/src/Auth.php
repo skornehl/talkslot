@@ -4,20 +4,20 @@ declare(strict_types=1);
 namespace App;
 
 /**
- * Admin-Anmeldung mit sicherer Session.
- * - Session-Cookie nur für /admin, HttpOnly, Secure, SameSite=Strict
- * - Inaktivitäts- und absolutes Timeout
- * - Rollen: genau ein admin (alle Runden, Konten, Texte; verantwortlich) und teacher (nur eigene Runden)
- * - Brute-Force-Schutz: Limit fehlgeschlagener Anmeldungen je (gekürzter, gehashter) IP.
- *   Bewusst keine Kontosperre: Sonst könnte jeder mit wenigen Fehlversuchen die Lehrkraft
- *   dauerhaft aussperren. Gegen verteiltes Raten schützt die Mindestlänge von 12 Zeichen.
+ * Admin login with a secure session.
+ * - Session cookie only for /admin, HttpOnly, Secure, SameSite=Strict
+ * - Inactivity and absolute timeout
+ * - Roles: exactly one admin (all rounds, accounts, texts; controller) and teacher (own rounds only)
+ * - Brute-force protection: limit on failed logins per (truncated, hashed) IP.
+ *   Deliberately no account lockout: otherwise anyone could lock the teacher out permanently
+ *   with a few failed attempts. The minimum length of 12 characters protects against distributed guessing.
  */
 final class Auth
 {
     /**
-     * Startet die Admin-Sitzung. Ohne $force nur, wenn der Browser schon ein Sitzungs-Cookie hat:
-     * Anmelde-, „Passwort vergessen“- und Einladungsseiten legen für anonyme Besucher keine
-     * Sitzungsdatei an (sonst ließe sich der Speicher mit Aufrufen füllen).
+     * Starts the admin session. Without $force only if the browser already has a session cookie:
+     * login, "forgot password" and invitation pages do not create a session file for anonymous
+     * visitors (otherwise the storage could be filled up with requests).
      */
     public static function startSession(bool $force = true): void
     {
@@ -62,13 +62,13 @@ final class Auth
         $_SESSION['last'] = $now;
     }
 
-    /** Angemeldet und Konto weiterhin aktiv? */
+    /** Logged in and account still active? */
     public static function check(): bool
     {
         return self::user() !== null;
     }
 
-    /** Aktuelles Konto (pro Anfrage einmal geladen; deaktivierte Konten gelten als abgemeldet). */
+    /** Current account (loaded once per request; deactivated accounts count as logged out). */
     public static function user(): ?array
     {
         static $cache = [];
@@ -78,7 +78,7 @@ final class Auth
         }
         if (!array_key_exists($uid, $cache)) {
             $user = Db::one('SELECT * FROM users WHERE id = ? AND is_active = 1', [$uid]);
-            // Passwort geändert/zurückgesetzt: ältere Sitzungen gelten nicht mehr
+            // Password changed/reset: older sessions are no longer valid
             $cache[$uid] = $user && (int) ($user['session_epoch'] ?? 0) === (int) ($_SESSION['epoch'] ?? 0) ? $user : null;
         }
         return $cache[$uid];
@@ -95,12 +95,12 @@ final class Auth
     }
 
     /**
-     * Anmeldung. Fehlversuche begrenzt je gekürzter IP (wie bisher) und zusätzlich je Benutzername
-     * (großzügiger, damit eine einzelne IP kein Konto sperren kann, verteiltes Raten aber gebremst
-     * wird). Der Versuch wird vor der Prüfung gezählt (keine parallelen Versuche am Limit vorbei)
-     * und nur bei Erfolg zurückgenommen – ein erfolgreicher Login mit einem anderen Konto setzt den
-     * Zähler nicht zurück.
-     * @return true|string true bei Erfolg, sonst Fehlermeldung
+     * Login. Failed attempts are limited per truncated IP (as before) and additionally per username
+     * (more generously, so that a single IP cannot lock an account, while distributed guessing is
+     * still slowed down). The attempt is counted before the check (no parallel attempts past the limit)
+     * and only taken back on success – a successful login with a different account does not reset
+     * the counter.
+     * @return true|string true on success, otherwise an error message
      */
     public static function attempt(string $username, string $password): bool|string
     {
@@ -108,7 +108,7 @@ final class Auth
         [$userLimit, $userWindow] = RateLimiter::limits('login_user', 20, 3600);
         $generic = 'Anmeldung fehlgeschlagen. Bitte prüfen Sie Ihre Eingaben oder versuchen Sie es später erneut.';
         $subject = 'login:' . mb_strtolower($username);
-        // Zuerst die IP: ist sie gesperrt, wird für (ggf. erfundene) Benutzernamen nichts gespeichert
+        // IP first: if it is blocked, nothing is stored for (possibly made-up) usernames
         if (!RateLimiter::hit('login', $limit, $window)) {
             return $generic;
         }
@@ -118,13 +118,13 @@ final class Auth
         }
 
         $user = Db::one('SELECT * FROM users WHERE username = ?', [$username]);
-        // Auch ohne Benutzer einen Hash prüfen (gleichmäßige Antwortzeit, gleiche Kosten wie echte Hashes)
+        // Check a hash even without a user (uniform response time, same cost as real hashes)
         $hash = $user['password_hash'] ?? self::dummyHash();
         $valid = password_verify($password, $hash);
 
         if (!$user || !$valid || !$user['is_active']) {
             if ($user) {
-                // Nur Zähler (sichtbar in der DB), keine Sperre
+                // Counter only (visible in the DB), no lockout
                 Db::run('UPDATE users SET failed_logins = failed_logins + 1 WHERE id = ?', [$user['id']]);
             }
             return $generic;
@@ -136,7 +136,7 @@ final class Auth
         }
         RateLimiter::undo('login');
         RateLimiter::undo('login_user', $subject);
-        // Ein offener „Passwort vergessen“-Link ist mit der Anmeldung erledigt
+        // An open "forgot password" link is settled by logging in
         Db::run('UPDATE users SET access_token_hash = NULL, access_token_expires_at = NULL WHERE id = ?', [$user['id']]);
 
         self::startSession(true);
@@ -151,14 +151,14 @@ final class Auth
         return true;
     }
 
-    /** Vergleichs-Hash mit den aktuellen Standardkosten (einmal je Anfrage erzeugt). */
+    /** Comparison hash with the current default cost (created once per request). */
     private static function dummyHash(): string
     {
         static $hash = null;
         return $hash ??= password_hash(bin2hex(random_bytes(16)), PASSWORD_DEFAULT);
     }
 
-    /** Beendet alle anderen Sitzungen des Kontos (Zähler erhöhen); die eigene bleibt, wenn angegeben. */
+    /** Ends all other sessions of the account (increments the counter); keeps the own one if given. */
     public static function endOtherSessions(int $userId, bool $keepCurrent): void
     {
         Db::run('UPDATE users SET session_epoch = session_epoch + 1 WHERE id = ?', [$userId]);
@@ -201,7 +201,7 @@ final class Auth
         return true;
     }
 
-    /** Mindestens 12 Zeichen; höchstens 72 Byte, weil bcrypt alles danach ignoriert. */
+    /** At least 12 characters; at most 72 bytes, because bcrypt ignores everything beyond that. */
     public static function passwordPolicy(string $password): ?string
     {
         if (mb_strlen($password) < 12) {

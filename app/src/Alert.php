@@ -4,34 +4,34 @@ declare(strict_types=1);
 namespace App;
 
 /**
- * Meldet Fehler per Mail an den Betreiber: unbehandelte Exceptions, fatale PHP-Fehler,
- * Warnungen, Fehler bei Migration/Bereinigung, nicht erreichbare Datenbank, gescheiterten
- * Mailversand.
+ * Reports errors by email to the operator: unhandled exceptions, fatal PHP errors,
+ * warnings, errors during migration/cleanup, unreachable database, failed
+ * mail delivery.
  *
- * Empfänger: config „alert_email“ (Deployment: Variable ALERT_EMAIL), sonst die E-Mail-Adresse
- * des Admin-Kontos. Ist die Datenbank nicht erreichbar, geht nur die Adresse aus der Config.
+ * Recipient: config "alert_email" (deployment: variable ALERT_EMAIL), otherwise the email address
+ * of the admin account. If the database is unreachable, only the address from the config is used.
  *
- * Gleiche Fehler (Art + Ort) werden höchstens einmal pro Stunde gemeldet, insgesamt höchstens
- * MAX_PER_DAY Mails am Tag; unterdrückte Wiederholungen werden in der nächsten Mail gezählt.
- * Der Zähler liegt in app/var (nicht in der Datenbank, die ja ausgefallen sein kann).
+ * Identical errors (type + location) are reported at most once per hour, with at most
+ * MAX_PER_DAY emails per day in total; suppressed repetitions are counted in the next email.
+ * The counter lives in app/var (not in the database, which may be the thing that failed).
  *
- * Die Mail enthält keine personenbezogenen Daten: Meldung wie im Fehlerprotokoll bereinigt,
- * vom Pfad nur unverfängliche Teile (keine Tokens, keine Runden-Links), kein Query-String,
- * Ablauf nur mit Datei, Zeile und Funktion (ohne Argumente).
+ * The email contains no personal data: message sanitized as in the error log,
+ * only harmless parts of the path (no tokens, no round links), no query string,
+ * stack trace only with file, line and function (without arguments).
  */
 final class Alert
 {
     public const THROTTLE_SECONDS = 3600;
     public const MAX_PER_DAY = 30;
 
-    /** Für Tests: fängt Mails ab, statt sie zu senden (fn(string $to, string $subject, string $body): bool). */
+    /** For tests: intercepts emails instead of sending them (fn(string $to, string $subject, string $body): bool). */
     public static ?\Closure $transport = null;
-    /** Für Tests: anderer Ort für den Zähler. */
+    /** For tests: a different location for the counter. */
     public static ?string $stateFile = null;
 
     private static bool $sending = false;
 
-    /** Exception protokollieren und melden. */
+    /** Log and report an exception. */
     public static function exception(\Throwable $e, string $context = ''): void
     {
         ErrorPage::log($e);
@@ -60,7 +60,7 @@ final class Alert
         );
     }
 
-    /** Fataler PHP-Fehler (aus error_get_last() im Shutdown) bzw. Warnung. */
+    /** Fatal PHP error (from error_get_last() on shutdown) or warning. */
     public static function phpError(int $type, string $message, string $file, int $line): void
     {
         $label = match ($type) {
@@ -77,15 +77,15 @@ final class Alert
     }
 
     /**
-     * Mail an den Betreiber, gedrosselt je $key. Gibt true zurück, wenn gesendet wurde.
-     * $important (Datenbank weg, fataler Fehler): zählt nicht gegen das Tageslimit, damit häufige
-     * kleinere Meldungen (z. B. absichtlich ausgelöste Warnungen) wichtige nicht verdrängen.
+     * Email to the operator, throttled per $key. Returns true if it was sent.
+     * $important (database gone, fatal error): does not count against the daily limit, so that frequent
+     * minor reports (e.g. deliberately triggered warnings) do not crowd out important ones.
      * @param list<string> $lines
      */
     public static function notify(string $key, string $subject, array $lines, bool $important = false): bool
     {
         if (self::$sending) {
-            return false; // Fehler beim Senden der Meldung selbst nicht erneut melden
+            return false; // don't report errors while sending the report itself
         }
         self::$sending = true;
         try {
@@ -134,9 +134,9 @@ final class Alert
     }
 
     /**
-     * Drosselung: null = nicht senden; sonst Anzahl der seit der letzten Mail unterdrückten
-     * gleichen Fehler. Ist app/var nicht beschreibbar, liegt der Zähler im Temp-Verzeichnis; nur
-     * wenn auch das scheitert, wird ungedrosselt gesendet (lieber zu viel als nichts).
+     * Throttling: null = don't send; otherwise the number of identical errors suppressed since the
+     * last email. If app/var is not writable, the counter lives in the temp directory; only
+     * if that fails too, the email is sent unthrottled (better too much than nothing).
      */
     private static function claim(string $key, bool $important): ?int
     {
@@ -166,7 +166,7 @@ final class Alert
                 $state['_count'] = (int) $state['_count'] + 1;
             }
             $state['keys'][$id] = $entry;
-            // Alte Einträge (älter als ein Tag, nichts offen) entfernen
+            // Remove old entries (older than one day, nothing pending)
             $state['keys'] = array_filter($state['keys'], static fn ($e) => $now - (int) $e['last'] < 86400 || (int) $e['suppressed'] > 0);
             ftruncate($fh, 0);
             rewind($fh);
@@ -211,8 +211,8 @@ final class Alert
     }
 
     /**
-     * Methode und Pfad ohne Query-String; nur Wörter und Zahlen (z. B. /admin/round/5/edit)
-     * bleiben, alles andere (Tokens, Runden-Links) wird durch „…“ ersetzt.
+     * Method and path without query string; only words and numbers (e.g. /admin/round/5/edit)
+     * remain, everything else (tokens, round links) is replaced by "…".
      */
     public static function describeRequest(string $method, string $uri): string
     {
@@ -229,7 +229,7 @@ final class Alert
         return ltrim(str_replace(APP_ROOT, '', $file), '/');
     }
 
-    /** Name aus der Konfiguration (ohne Zeilenumbrüche, er steht im Betreff). */
+    /** Name from the configuration (without line breaks, it appears in the subject). */
     private static function appName(): string
     {
         $name = trim((string) preg_replace('/[\r\n]+/', ' ', (string) Config::get('app_name', 'TalkSlot')));

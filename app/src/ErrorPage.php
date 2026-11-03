@@ -3,23 +3,23 @@ declare(strict_types=1);
 
 namespace App;
 
-/** Fehlerprotokoll ohne personenbezogene Daten und neutrale Fehlerseite. */
+/** Error log without personal data, and a neutral error page. */
 final class ErrorPage
 {
-    /** Größe, ab der das Fehlerlog rotiert wird (eine ältere Datei .1 bleibt, älteres entfällt) */
+    /** Size at which the error log is rotated (one older file .1 is kept, anything older is dropped) */
     public const LOG_MAX_BYTES = 5 * 1024 * 1024;
 
     /**
-     * Entfernt Werte in Anführungszeichen und Klammern sowie E-Mail-Adressen aus Fehlermeldungen,
-     * damit z. B. SQL-Fehler keine eingegebenen Daten ins Log schreiben. Vom ersten bis zum letzten
-     * Anführungszeichen wird alles ersetzt (auch bei Namen wie O'Brien), ein einzelnes bis zum Ende.
+     * Removes values in quotes and brackets as well as email addresses from error messages,
+     * so that e.g. SQL errors do not write entered data to the log. Everything from the first to the
+     * last quote is replaced (also for names like O'Brien), a single one up to the end.
      */
     public static function sanitize(string $message): string
     {
         $message = (string) preg_replace('/[^\s@]+@[^\s@]+/u', '[email]', $message);
         foreach (["'", '"'] as $q) {
             $message = (string) preg_replace('/' . $q . '.*' . $q . '/su', $q . '…' . $q, $message);
-            if (substr_count($message, $q) === 1) { // einzelnes Anführungszeichen: Rest gilt als Wert
+            if (substr_count($message, $q) === 1) { // single quote: the rest counts as a value
                 $message = substr($message, 0, (int) strpos($message, $q)) . $q . '…';
             }
         }
@@ -28,8 +28,8 @@ final class ErrorPage
     }
 
     /**
-     * Schreibt eine (bereits bereinigte) Zeile ins Fehlerlog. Wird es größer als LOG_MAX_BYTES, wird
-     * es nach .1 verschoben (die vorige .1 entfällt), damit es den Speicherplatz nicht füllt.
+     * Writes an (already sanitized) line to the error log. If it grows beyond LOG_MAX_BYTES, it is
+     * moved to .1 (the previous .1 is dropped) so it does not fill up the disk.
      */
     public static function writeLog(string $line): void
     {
@@ -54,7 +54,7 @@ final class ErrorPage
     public static function show(?\Throwable $e = null): void
     {
         if (!headers_sent()) {
-            // Datenbank weg: vorübergehend nicht verfügbar (503), sonst interner Fehler (500)
+            // Database gone: temporarily unavailable (503), otherwise internal error (500)
             http_response_code(Db::isUnavailable() ? 503 : 500);
             if (Db::isUnavailable()) {
                 header('Retry-After: 300');
@@ -65,7 +65,7 @@ final class ErrorPage
         $detail = ($e && Config::get('debug', false)) ? $e->getMessage() . "\n" . $e->getTraceAsString() : '';
         $title = function_exists('t') ? t('error.title') : 'Fehler';
         $text = function_exists('t') ? t('error.text') : '';
-        // Ohne Inline-Styles (die CSP erlaubt nur das eigene Stylesheet)
+        // No inline styles (the CSP only allows our own stylesheet)
         $css = function_exists('asset') && defined('PUBLIC_ROOT') ? '<link rel="stylesheet" href="' . e(asset('css/app.css')) . '">' : '';
         echo '<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">'
             . '<title>' . e($title) . '</title>' . $css

@@ -1,14 +1,14 @@
 <?php
 /**
- * Gemeinsamer Einstiegspunkt für Web (public/index.php) und CLI (bin/*.php).
- * Lädt Konfiguration, Autoloader und Fehlerbehandlung.
+ * Shared entry point for web (public/index.php) and CLI (bin/*.php).
+ * Loads configuration, autoloader and error handling.
  */
 declare(strict_types=1);
 
-define('APP_ROOT', dirname(__DIR__)); // Projektwurzel mit app/, bin/, config/
-// Atomares Deployment (bin/deploy.sh): Code und Konfiguration liegen je Version in
-// <Basis>/releases/<Name>/, die veränderlichen Daten (app/var: Sessions, Logs, Sperrdatei,
-// Meldungszähler) bleiben dauerhaft in <Basis>/app/var. Lokal ist beides dasselbe Verzeichnis.
+define('APP_ROOT', dirname(__DIR__)); // Project root containing app/, bin/, config/
+// Atomic deployment (bin/deploy.sh): code and configuration live per version in
+// <base>/releases/<name>/, while mutable data (app/var: sessions, logs, lock file,
+// alert counters) stays permanently in <base>/app/var. Locally both are the same directory.
 define('RELEASE', basename(dirname(APP_ROOT)) === 'releases' ? basename(APP_ROOT) : '');
 define('DATA_ROOT', RELEASE !== '' ? dirname(APP_ROOT, 2) : APP_ROOT);
 
@@ -26,7 +26,7 @@ require __DIR__ . '/helpers.php';
 $configFile = APP_ROOT . '/config/config.php';
 if (!is_file($configFile)) {
     http_response_code(500);
-    echo "Konfiguration fehlt: config/config.php anlegen (Vorlage: config/config.sample.php).\n";
+    echo "Configuration missing: create config/config.php (template: config/config.sample.php).\n";
     exit(1);
 }
 App\Config::load(require $configFile);
@@ -36,33 +36,33 @@ mb_internal_encoding('UTF-8');
 
 error_reporting(E_ALL);
 ini_set('display_errors', App\Config::get('debug', false) ? '1' : '0');
-// PHP selbst protokolliert nicht (seine Meldungen enthalten ggf. Eingaben); die Handler unten
-// schreiben bereinigt über ErrorPage::writeLog() (mit Größenbegrenzung).
+// PHP itself does not log (its messages may contain input); the handlers below
+// write sanitized entries via ErrorPage::writeLog() (with size limit).
 ini_set('log_errors', '0');
 if (is_dir(DATA_ROOT . '/app/var') && is_writable(DATA_ROOT . '/app/var')) {
     ini_set('error_log', DATA_ROOT . '/app/var/php-error.log');
 }
-// Ohne ausreichend langes Secret wären CSRF-, Zugangs- und Cron-Token sowie die IP-Hashes unsicher
+// Without a sufficiently long secret, CSRF, access and cron tokens as well as IP hashes would be insecure
 if (strlen((string) App\Config::get('secret', '')) < 32) {
     http_response_code(500);
-    echo "Konfiguration unvollständig: \"secret\" fehlt oder ist kürzer als 32 Zeichen.\n";
+    echo "Configuration incomplete: \"secret\" is missing or shorter than 32 characters.\n";
     exit(1);
 }
 
-// Unbehandelte Fehler: intern protokollieren (ohne personenbezogene Daten), per Mail an den
-// Betreiber melden (App\Alert, gedrosselt) und nach außen nur eine neutrale Fehlerseite zeigen.
+// Unhandled errors: log internally (without personal data), report by mail to the
+// operator (App\Alert, throttled) and only show a neutral error page to the outside.
 set_exception_handler(static function (Throwable $e): void {
     App\Alert::exception($e);
     if (PHP_SAPI === 'cli') {
-        fwrite(STDERR, 'Fehler: ' . App\ErrorPage::sanitize($e->getMessage()) . "\n");
+        fwrite(STDERR, 'Error: ' . App\ErrorPage::sanitize($e->getMessage()) . "\n");
         exit(1);
     }
     App\ErrorPage::show($e);
 });
 
-// Warnungen und Hinweise bereinigt protokollieren, Warnungen (meist Programmfehler, z. B. fehlender
-// Array-Schlüssel) zusätzlich melden. Mit @ unterdrückte Stellen nicht. false: Anzeige wie
-// konfiguriert (nur mit debug).
+// Log warnings and notices sanitized, additionally report warnings (usually bugs, e.g. a missing
+// array key). Not for places suppressed with @. false: display as
+// configured (only with debug).
 set_error_handler(static function (int $type, string $message, string $file, int $line): bool {
     if (!(error_reporting() & $type)) {
         return false;
@@ -75,8 +75,8 @@ set_error_handler(static function (int $type, string $message, string $file, int
     return false;
 });
 
-// Fatale Fehler (Speicher, Zeitlimit, Syntax) erreichen den Exception-Handler nicht: im Shutdown
-// melden. Etwas Speicher wird freigehalten, damit das auch bei „memory exhausted“ klappt.
+// Fatal errors (memory, time limit, syntax) never reach the exception handler: report them on
+// shutdown. Some memory is kept in reserve so this also works on "memory exhausted".
 $GLOBALS['__alert_reserve'] = str_repeat(' ', 64 * 1024);
 register_shutdown_function(static function (): void {
     unset($GLOBALS['__alert_reserve']);

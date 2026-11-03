@@ -1,5 +1,5 @@
-# Lint und Unit-Tests auf allen unterstützten PHP-Versionen (ohne Datenbank).
-# End-to-End-Tests (tests/smoke.sh, tests/deploy.sh) laufen lokal mit der Docker-Umgebung, siehe README.
+# Lint and unit tests on all supported PHP versions (without a database).
+# End-to-end tests (tests/smoke.sh, tests/deploy.sh) run locally with the Docker environment, see README.
 name: Tests
 
 on:
@@ -16,9 +16,9 @@ jobs:
       matrix:
         php: ['8.3', '8.4', '8.5']
     steps:
-      # Code per git statt actions/checkout: keine fremden Actions nötig. Das Token steht nur im
-      # Header dieser Befehle, nicht in .git/config.
-      - name: Code holen
+      # Code via git instead of actions/checkout: no third-party actions needed. The token is only in
+      # the header of these commands, not in .git/config.
+      - name: Fetch code
         env:
           REPO: ${{ github.repository }}
           REF: ${{ github.sha }}
@@ -26,11 +26,11 @@ jobs:
         run: |
           git init -q . && git remote add origin "https://github.com/$REPO.git"
           AUTH="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$TOKEN" | base64 -w0)"
-          git -c http.extraheader="$AUTH" fetch -q --depth=1 origin "$REF" # Commit, Tag oder Branch
+          git -c http.extraheader="$AUTH" fetch -q --depth=1 origin "$REF" # commit, tag or branch
           git checkout -q --detach "FETCH_HEAD^{commit}"
-          git log -1 --format='Stand: %h %s'
+          git log -1 --format='Checked out: %h %s'
 
-      - name: Lint & Unit-Tests (PHP ${{ matrix.php }})
+      - name: Lint & unit tests (PHP ${{ matrix.php }})
         run: |
           cp dev/config.dev.php config/config.php
           docker run --rm -v "$PWD:/app" -w /app "php:${{ matrix.php }}-cli" sh -c '

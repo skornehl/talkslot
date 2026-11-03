@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace App;
 
-/** Rendert PHP-Templates aus app/templates in ein Layout. */
+/** Renders PHP templates from app/templates into a layout. */
 final class View
 {
     public static function render(string $template, array $vars = [], ?string $layout = 'layout'): void

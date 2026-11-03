@@ -20,7 +20,7 @@ use App\RoundCode;
 use App\Translator;
 use App\View;
 
-/** Öffentliche Seiten für Eltern – ohne Login, ohne Cookies. */
+/** Public pages for parents – no login, no cookies. */
 final class PublicController
 {
     public function dispatch(string $path, string $method): void
@@ -38,14 +38,14 @@ final class PublicController
     }
 
     /**
-     * Startseite mit Eingabe des Rundencodes (Formular per POST, damit der Code nicht in
-     * Adresse, Verlauf und Server-Logs landet; ?code=… in Links geht weiterhin). Ohne Schutz
-     * leitet ein gültiger Code zur Runde weiter; bei „Nur mit Rundencode“ ist der Code der
-     * Zugang und die Runde wird direkt freigeschaltet angezeigt. Nur Fehlversuche mit einem
-     * formal gültigen Code zählen gegen das Limit (je gekürzter IP, gemeinsam mit der
-     * Code-Abfrage auf der Rundenseite), damit sich Eltern hinter einer gemeinsamen IP
-     * (Schul-WLAN, Mobilfunk) nicht durch erfolgreiche Eingaben oder Tippfehler gegenseitig
-     * aussperren. Gezählt wird vor der Suche, bei Erfolg zurückgenommen.
+     * Start page with round code input (form via POST so that the code does not end up in the
+     * address bar, history and server logs; ?code=… in links still works). Without protection
+     * a valid code redirects to the round; with "Nur mit Rundencode" the code is the
+     * access key and the round is shown unlocked directly. Only failed attempts with a
+     * formally valid code count against the limit (per truncated IP, shared with the
+     * code prompt on the round page), so that parents behind a shared IP
+     * (school Wi-Fi, mobile network) do not lock each other out through successful input or typos.
+     * Counted before the lookup, taken back on success.
      */
     private function home(): void
     {
@@ -65,12 +65,12 @@ final class PublicController
                     if (!$found['code_required']) {
                         Http::redirect('/' . $found['slug']);
                     }
-                    // geschützte Runde: der Code ist der Zugang – direkt freigeschaltet anzeigen
+                    // protected round: the code is the access key – show it unlocked directly
                     $this->round((string) $found['slug'], [], [], true);
                     return;
                 }
                 http_response_code(422);
-                // Nur Ziffern (z. B. eine alte PIN): Hinweis auf das Format des Codes
+                // Digits only (e.g. an old PIN): hint about the code format
                 $errors[] = t(preg_match('/^\d{4,12}$/', (string) preg_replace('/\s+/', '', $input)) ? 'err.code_pin' : 'err.code');
             }
         }
@@ -79,7 +79,7 @@ final class PublicController
 
     private function page(string $key): void
     {
-        // Ohne eigene Fassung: Englisch (verständlicher als Deutsch für die meisten), dann Standardsprache
+        // Without a dedicated version: English (more understandable than German for most), then the default language
         $content = null;
         $contentLang = I18n::lang();
         foreach (array_unique([I18n::lang(), 'en', I18n::defaultLanguage()]) as $l) {
@@ -89,9 +89,9 @@ final class PublicController
         }
         $slug = is_string($_GET['r'] ?? null) ? (string) $_GET['r'] : '';
         if ($content !== null) {
-            // Verantwortlich für alle Runden (und im Impressum genannt) ist der Admin
+            // The admin is the controller for all rounds (and named in the legal notice)
             $content = Operator::fill((string) $content, t('privacy.controller.generic'));
-            $content = Hosting::fill($content, $contentLang); // Hoster aus der Konfiguration
+            $content = Hosting::fill($content, $contentLang); // hosting provider from the configuration
         }
         View::render('public/page', [
             'title' => t('footer.' . $key),
@@ -106,7 +106,7 @@ final class PublicController
         View::render('public/notfound', ['title' => t('notfound.title'), 'text' => $text !== '' ? $text : t('notfound.text')]);
     }
 
-    /** Nur aktive Runden aktiver Konten, und nur wenn der Admin die Angaben für Impressum/Datenschutz hinterlegt hat */
+    /** Only active rounds of active accounts, and only if the admin has provided the details for legal notice/privacy policy */
     private static function activeRoundSql(): string
     {
         return ' FROM rounds r JOIN users u ON u.id = r.user_id
@@ -119,8 +119,8 @@ final class PublicController
     }
 
     /**
-     * Rundenseite. Bei PIN-geschützten Runden ohne gültigen Zugang ($granted) wird
-     * stattdessen die Abfrage des Zugangscodes angezeigt.
+     * Round page. For PIN-protected rounds without valid access ($granted), the
+     * access code prompt is shown instead.
      */
     private function round(string $slug, array $errors = [], array $old = [], bool $granted = false): void
     {
@@ -129,7 +129,7 @@ final class PublicController
             $this->notFound();
             return;
         }
-        $round = Translator::localize($round, (int) $round['id'], I18n::lang()); // Titel/Beschreibung in der Sprache der Eltern
+        $round = Translator::localize($round, (int) $round['id'], I18n::lang()); // title/description in the parents' language
         if ($errors) {
             http_response_code(http_response_code() === 429 ? 429 : 422);
         }
@@ -144,8 +144,8 @@ final class PublicController
             ]);
             return;
         }
-        // Zugangstoken: ein mitgeschicktes gültiges behalten (sonst verlängerte jeder Sprachwechsel
-        // es ohne Code beliebig), nur nach Eingabe des Codes ein neues ausstellen
+        // Access token: keep a valid one that was submitted (otherwise every language switch would extend
+        // it indefinitely without the code); only issue a new one after the code has been entered
         $sentAccess = is_string($_POST['access'] ?? null) ? $_POST['access'] : '';
         $access = $protected ? (RoundAccess::validToken($round, $sentAccess) ? $sentAccess : RoundAccess::token($round)) : '';
         $days = BookingService::groupByDay(BookingService::freeSlots($round));
@@ -156,9 +156,9 @@ final class PublicController
             'days' => $days,
             'csrf' => Csrf::publicToken('book:' . $round['id']),
             'access' => $access,
-            // Sprachwechsel auf freigeschalteter Seite per POST, damit der Zugang erhalten bleibt
+            // Language switch on an unlocked page via POST so that access is preserved
             'langSwitchAccess' => $protected ? ['action' => url('/' . $round['slug']), 'access' => $access] : null,
-            // Gibt es ein Buchungsformular, senden die Sprachknöpfe es samt Eingaben ab
+            // If there is a booking form, the language buttons submit it including its input
             'langSwitchForm' => $days ? 'booking-form' : null,
             'errors' => $errors,
             'old' => $old,
@@ -166,9 +166,9 @@ final class PublicController
     }
 
     /**
-     * Rundencode auf der Seite einer geschützten Runde (Link). Fehlversuche teilen sich das
-     * Limit mit der Startseite ('code'): gezählt wird vor der Prüfung, Erfolg wird zurückgenommen;
-     * formal ungültige Eingaben (z. B. eine alte Ziffern-PIN) zählen nicht.
+     * Round code on the page of a protected round (link). Failed attempts share the
+     * limit with the start page ('code'): counted before the check, taken back on success;
+     * formally invalid input (e.g. an old digits-only PIN) does not count.
      */
     private function unlock(array $round, string $slug): void
     {
@@ -214,7 +214,7 @@ final class PublicController
                 return;
             }
             if (Http::post('step') === 'switch') {
-                // Sprachwechsel: Zugangstoken prüfen, Seite in neuer Sprache zeigen
+                // Language switch: check the access token, show the page in the new language
                 RoundAccess::validToken($round, $_POST['access'] ?? null)
                     ? $this->round($slug, [], [], true)
                     : $this->round($slug, [t('err.pin_expired')]);
@@ -233,16 +233,16 @@ final class PublicController
             'privacy' => Http::post('privacy') === '1',
         ];
 
-        // Sprachwechsel: Formular mit allen Eingaben in der neuen Sprache erneut zeigen, nichts buchen
+        // Language switch: show the form again with all input in the new language, book nothing
         if (Http::post('switch_lang') !== '') {
             $this->round($slug, [], $old, true);
             return;
         }
 
-        // Missbrauchsschutz: Rate-Limit, CSRF/Mindestzeit, Honeypot
-        // Zwei Limits je gekürzter IP: alle Versuche großzügig (Bots), erfolgreiche Buchungen
-        // enger. Da sich viele Eltern eine gekürzte IP teilen können (Mobilfunk-CGNAT,
-        // Schul-WLAN), zählen Tippfehler und abgelehnte Versuche nicht gegen das Buchungslimit.
+        // Abuse protection: rate limit, CSRF/minimum time, honeypot
+        // Two limits per truncated IP: all attempts generously (bots), successful bookings
+        // more strictly. Since many parents may share a truncated IP (mobile CGNAT,
+        // school Wi-Fi), typos and rejected attempts do not count against the booking limit.
         [$attemptLimit, $attemptWindow] = RateLimiter::limits('attempt', 150, 3600);
         [$limit, $window] = RateLimiter::limits('booking', 30, 3600);
         if (!RateLimiter::hit('attempt', $attemptLimit, $attemptWindow) || RateLimiter::count('booking', $window) >= $limit) {
@@ -272,8 +272,8 @@ final class PublicController
         try {
             [$id, $token] = BookingService::book($round, (int) $old['slot_id'], self::cleanName($old['name']), $old['email'] ?: null, I18n::lang());
         } catch (BookingException $e) {
-            // Treffer der Sperre für Mehrfachbuchungen zählen wie Buchungen: bremst das Ausprobieren,
-            // ob es für einen Namen schon einen Termin gibt
+            // Hits of the multiple-booking limit count like bookings: slows down probing
+            // whether a name already has an appointment
             if (in_array($e->getMessage(), [BookingService::LIMIT_ROUND, BookingService::LIMIT_DAY], true)) {
                 RateLimiter::hit('booking', $limit, $window);
             }
@@ -358,7 +358,7 @@ final class PublicController
                 $this->manage($token, [t('err.slot')]);
                 return;
             }
-            // Jede Umbuchung verschickt eine Mail: je Buchung höchstens 10 pro Stunde (gegen Mailfluten)
+            // Every rebooking sends an email: at most 10 per hour per booking (against mail floods)
             [$moveLimit, $moveWindow] = RateLimiter::limits('move', 10, 3600);
             if (!RateLimiter::hit('move', $moveLimit, $moveWindow, 'booking:' . $booking['id'])) {
                 http_response_code(429);
@@ -379,7 +379,7 @@ final class PublicController
         $this->manage($token);
     }
 
-    /** Gemeinsame Validierung für Name/E-Mail/Slot (auch vom Admin genutzt). */
+    /** Shared validation for name/email/slot (also used by the admin). */
     public static function validate(array $in, bool $requireSlot): array
     {
         $errors = [];
@@ -390,7 +390,7 @@ final class PublicController
         if (mb_strlen($name) < 2 || mb_strlen($name) > 200) {
             $errors[] = t('err.name');
         } elseif (preg_match('~(://|www\.|https?:)~i', $name)) {
-            // Der Name steht in Mails: keine Links (sonst Phishing über den Absender der Schule)
+            // The name appears in emails: no links (otherwise phishing via the school's sender address)
             $errors[] = t('err.name_link');
         }
         $email = (string) ($in['email'] ?? '');
@@ -401,8 +401,8 @@ final class PublicController
     }
 
     /**
-     * „Termin auf diesem Gerät merken“: Der Parameter nach der Buchung ist signiert und 10 Minuten
-     * gültig, damit ein fremder Link (/b/…?remember=1) keinen Merker im Browser anderer setzen kann.
+     * "Remember my appointment on this device": the parameter after booking is signed and valid for 10
+     * minutes, so that a foreign link (/b/…?remember=1) cannot set a remember-me entry in other people's browsers.
      */
     private static function rememberSignature(string $token): string
     {
@@ -418,7 +418,7 @@ final class PublicController
         return hash_equals(substr(hash_hmac('sha256', 'remember|' . $token . '|' . $m[1], (string) Config::get('secret', '')), 0, 32), $m[2]);
     }
 
-    /** Steuerzeichen entfernen, Leerraum zusammenfassen. */
+    /** Remove control characters, collapse whitespace. */
     public static function cleanName(string $name): string
     {
         $name = (string) preg_replace('/[\p{C}]+/u', ' ', $name);

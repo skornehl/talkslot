@@ -4,20 +4,20 @@ declare(strict_types=1);
 namespace App;
 
 /**
- * Kurzer Rundencode (z. B. „K7MP-3QXA“), mit dem Eltern auf der Startseite zur Runde finden,
- * etwa wenn die Einladung auf Papier verteilt wird.
+ * Short round code (e.g. "K7MP-3QXA") that lets parents find the round on the start page,
+ * e.g. when the invitation is distributed on paper.
  *
- * Bei „Nur mit Rundencode“ ist der Code zugleich der Zugang: Über die Startseite ist man
- * damit direkt freigeschaltet, über den Link wird er abgefragt (RoundAccess). Der Zeichenvorrat
- * enthält keine verwechselbaren Zeichen (kein 0/O, 1/I/L). 8 Zeichen = 31^8 ≈ 8,5 · 10^11
- * Möglichkeiten für alle Runden zusammen: Selbst bei 500 aktiven Runden und 200 Versuchen
- * pro Sekunde über beliebig viele IPs dauert ein Treffer im Mittel über 3 Monate.
+ * With "Nur mit Rundencode" the code is also the access key: via the start page it unlocks
+ * the round directly, via the link it is prompted for (RoundAccess). The character set
+ * contains no confusable characters (no 0/O, 1/I/L). 8 characters = 31^8 ≈ 8.5 · 10^11
+ * possibilities for all rounds together: even with 500 active rounds and 200 attempts
+ * per second across any number of IPs, a hit takes more than 3 months on average.
  */
 final class RoundCode
 {
     public const LENGTH = 8;
     private const ALPHABET = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
-    /** Kyrillische Buchstaben, die wie lateinische aussehen (russische/ukrainische Tastatur) */
+    /** Cyrillic letters that look like Latin ones (Russian/Ukrainian keyboard) */
     private const LOOKALIKES = ['А' => 'A', 'В' => 'B', 'Е' => 'E', 'З' => '3', 'К' => 'K', 'М' => 'M', 'Н' => 'H',
         'Р' => 'P', 'С' => 'C', 'Т' => 'T', 'У' => 'Y', 'Х' => 'X'];
 
@@ -30,7 +30,7 @@ final class RoundCode
         return $code;
     }
 
-    /** Neuer, noch nicht vergebener Code. */
+    /** New code that is not yet assigned. */
     public static function unique(): string
     {
         for ($i = 0; $i < 20; $i++) {
@@ -43,26 +43,26 @@ final class RoundCode
     }
 
     /**
-     * Eingabe vereinheitlichen; null = kein gültiger Code. Egal sind Groß-/Kleinschreibung,
-     * Leerzeichen und Striche aller Art, Vollbreite-Zeichen und kyrillische Doppelgänger.
+     * Normalize input; null = not a valid code. Case, spaces and dashes of all kinds,
+     * full-width characters and Cyrillic look-alikes do not matter.
      */
     public static function normalize(string $input): ?string
     {
         if (!mb_check_encoding($input, 'UTF-8')) {
             return null;
         }
-        $input = mb_convert_kana($input, 'as', 'UTF-8'); // Vollbreite → normal: Ｋ７－ → K7- (ohne intl)
+        $input = mb_convert_kana($input, 'as', 'UTF-8'); // full-width → normal: Ｋ７－ → K7- (without intl)
         $code = strtr(mb_strtoupper((string) preg_replace('/[\s\p{Pd}._]+/u', '', $input), 'UTF-8'), self::LOOKALIKES);
         return strlen($code) === self::LENGTH && strspn($code, self::ALPHABET) === self::LENGTH ? $code : null;
     }
 
-    /** Anzeigeform „K7MP-3QXA“. */
+    /** Display form "K7MP-3QXA". */
     public static function format(?string $code): string
     {
         return $code === null || $code === '' ? '' : implode('-', str_split($code, intdiv(strlen($code) + 1, 2)));
     }
 
-    /** Vergibt Codes an Runden ohne Code (bestehende Runden bei der Umstellung). */
+    /** Assigns codes to rounds without a code (existing rounds during the changeover). */
     public static function backfill(): int
     {
         $n = 0;

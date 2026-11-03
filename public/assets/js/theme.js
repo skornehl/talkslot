@@ -1,7 +1,7 @@
 /*
- * Hell/Dunkel: die im Fuß der Seite gewählte Darstellung vor dem ersten Zeichnen setzen
- * (kein kurzes Aufblitzen). Gespeichert ist nur „light“ oder „dark“ (localStorage
- * „tp_theme“); ohne Eintrag folgt die Seite der Einstellung des Geräts. Umschalten: app.js.
+ * Light/dark: apply the appearance chosen in the page footer before the first paint
+ * (no brief flash). Only "light" or "dark" is stored (localStorage "tp_theme");
+ * without an entry the page follows the device setting. Toggling: app.js.
  */
 (function () {
   'use strict';
@@ -10,5 +10,5 @@
     if (t === 'light' || t === 'dark') {
       document.documentElement.setAttribute('data-theme', t);
     }
-  } catch (e) { /* Speicher gesperrt: automatisch */ }
+  } catch (e) { /* storage blocked: automatic */ }
 })();

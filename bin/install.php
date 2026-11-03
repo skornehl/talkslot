@@ -1,8 +1,8 @@
 <?php
 /**
- * Installation über die Kommandozeile (Alternative zu public/install.php):
- *   php bin/install.php <benutzername> [benachrichtigungs-email]
- * Das Passwort wird verdeckt abgefragt.
+ * Installation from the command line (alternative to public/install.php):
+ *   php bin/install.php <username> [notification-email]
+ * The password is prompted for without echo.
  */
 declare(strict_types=1);
 
@@ -15,7 +15,7 @@ require dirname(__DIR__) . '/app/bootstrap.php';
 use App\Installer;
 
 if (Installer::isInstalled()) {
-    fwrite(STDERR, "Bereits installiert.\n");
+    fwrite(STDERR, "Already installed.\n");
     exit(1);
 }
 $username = $argv[1] ?? '';
@@ -34,13 +34,13 @@ $ask = static function (string $prompt): string {
     }
     return $v;
 };
-$password = $ask('Passwort: ');
-$password2 = $ask('Passwort wiederholen: ');
+$password = $ask('Password: ');
+$password2 = $ask('Repeat password: ');
 
 $errors = Installer::validate($username, $password, $password2, $email);
 if ($errors) {
-    fwrite(STDERR, implode("\n", $errors) . "\nAufruf: php bin/install.php <benutzername> [email]\n");
+    fwrite(STDERR, implode("\n", $errors) . "\nUsage: php bin/install.php <username> [email]\n");
     exit(1);
 }
 Installer::install($username, $password, $email);
-echo "Installation abgeschlossen.\n";
+echo "Installation complete.\n";

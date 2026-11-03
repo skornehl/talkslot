@@ -1,8 +1,8 @@
 <?php
 /**
- * Erzeugt config/config.php aus Umgebungsvariablen (für das Deployment per
- * GitHub Actions; Werte stammen aus Repository-Secrets bzw. -Variablen).
- *   php bin/build-config.php <zieldatei>
+ * Generates config/config.php from environment variables (for deployment via
+ * GitHub Actions; values come from repository secrets and variables).
+ *   php bin/build-config.php <target file>
  */
 declare(strict_types=1);
 
@@ -11,46 +11,46 @@ if (PHP_SAPI !== 'cli') {
 }
 $target = $argv[1] ?? '';
 if ($target === '') {
-    fwrite(STDERR, "Aufruf: php bin/build-config.php <zieldatei>\n");
+    fwrite(STDERR, "Usage: php bin/build-config.php <target file>\n");
     exit(1);
 }
 
-// Werte ohne führende/abschließende Leerzeichen und Zeilenumbrüche (z. B. aus Copy & Paste)
+// Values without leading/trailing whitespace and line breaks (e.g. from copy & paste)
 $env = static fn (string $k, string $default = ''): string => ($v = trim((string) getenv($k))) !== '' ? $v : $default;
-// Installationsschlüssel nur, solange installiert werden darf (Variable ALLOW_INSTALL=1)
+// Install key only while installation is allowed (variable ALLOW_INSTALL=1)
 $allowInstall = $env('ALLOW_INSTALL') === '1';
 $required = array_merge(['BASE_URL', 'APP_SECRET', 'DB_USER', 'DB_PASS'], $allowInstall ? ['INSTALL_KEY'] : []);
 foreach ($required as $k) {
     if ($env($k) === '') {
-        fwrite(STDERR, "Fehlende Variable/Secret: $k\n");
+        fwrite(STDERR, "Missing variable/secret: $k\n");
         exit(1);
     }
 }
-// Platzhalter aus der Ersteinrichtung dürfen nie deployt werden
+// Placeholders from the initial setup must never be deployed
 foreach (['APP_SECRET', 'INSTALL_KEY', 'DB_USER', 'DB_PASS', 'DB_NAME', 'SMTP_USER', 'SMTP_PASS'] as $k) {
     if ($env($k) === 'CHANGE_ME') {
-        fwrite(STDERR, "Secret $k enthält noch den Platzhalter CHANGE_ME\n");
+        fwrite(STDERR, "Secret $k still contains the placeholder CHANGE_ME\n");
         exit(1);
     }
 }
-// Werte mit festem Vorrat prüfen (Tippfehler bei SMTP_ENCRYPTION hieße sonst: Passwort im Klartext)
+// Check values with a fixed set of options (a typo in SMTP_ENCRYPTION would otherwise mean: password in plain text)
 $checks = [
     'MAIL_TRANSPORT' => ['mail', 'smtp', 'none'],
     'SMTP_ENCRYPTION' => ['tls', 'ssl', 'none'],
 ];
 foreach ($checks as $k => $allowed) {
     if ($env($k) !== '' && !in_array($env($k), $allowed, true)) {
-        fwrite(STDERR, "$k muss einer dieser Werte sein: " . implode(', ', $allowed) . "\n");
+        fwrite(STDERR, "$k must be one of: " . implode(', ', $allowed) . "\n");
         exit(1);
     }
 }
 $prefix = getenv('DB_PREFIX') !== false ? trim((string) getenv('DB_PREFIX')) : 'tp_';
 if ($prefix !== '' && !preg_match('/^[A-Za-z0-9_]{1,20}$/', $prefix)) {
-    fwrite(STDERR, "DB_PREFIX: nur Buchstaben, Ziffern und _ (höchstens 20 Zeichen)\n");
+    fwrite(STDERR, "DB_PREFIX: only letters, digits and _ (at most 20 characters)\n");
     exit(1);
 }
 if (strlen($env('APP_SECRET')) < 32 || ($allowInstall && strlen($env('INSTALL_KEY')) < 16)) {
-    fwrite(STDERR, "APP_SECRET (>= 32 Zeichen) oder INSTALL_KEY (>= 16 Zeichen) zu kurz\n");
+    fwrite(STDERR, "APP_SECRET (>= 32 characters) or INSTALL_KEY (>= 16 characters) too short\n");
     exit(1);
 }
 
@@ -64,7 +64,7 @@ $config['db'] = [
     'name' => $env('DB_NAME', $env('DB_USER')),
     'user' => $env('DB_USER'),
     'pass' => $env('DB_PASS'),
-    // Tabellen-Präfix (Variable DB_PREFIX, Standard tp_; leer setzen = kein Präfix)
+    // Table prefix (variable DB_PREFIX, default tp_; set empty = no prefix)
     'prefix' => $prefix,
 ];
 $config['alert_email'] = $env('ALERT_EMAIL');
@@ -82,8 +82,8 @@ $config['mail']['smtp'] = [
     'pass' => $env('SMTP_PASS'),
 ];
 
-$php = "<?php\n// Automatisch erzeugt durch bin/build-config.php beim Deployment – nicht von Hand ändern.\nreturn "
+$php = "<?php\n// Generated automatically by bin/build-config.php during deployment – do not edit by hand.\nreturn "
     . var_export($config, true) . ";\n";
 file_put_contents($target, $php);
 chmod($target, 0600);
-echo "config geschrieben\n";
+echo "config written\n";

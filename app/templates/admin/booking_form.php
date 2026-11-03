@@ -1,5 +1,5 @@
 <?php
-/** Eintrag anlegen/bearbeiten. @var array $slot @var array $round @var ?array $booking @var array $moveOptions @var array $old @var array $errors */
+/** Create/edit an entry. @var array $slot @var array $round @var ?array $booking @var array $moveOptions @var array $old @var array $errors */
 use App\Csrf;
 use App\I18n;
 $action = $booking ? url('/admin/booking/' . (int) $booking['id'] . '/edit') : url('/admin/slot/' . (int) $slot['id'] . '/book');

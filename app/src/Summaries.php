@@ -4,11 +4,11 @@ declare(strict_types=1);
 namespace App;
 
 /**
- * Zusammenfassungs-Mails an Lehrkräfte (pro Person im Profil abschaltbar):
- * - Tagesübersicht am Vorabend: ab config summary_evening_hour (Standard 18 Uhr) für den Folgetag
- * - Übersicht nach Buchungsschluss: sobald für einen Tag der letzte Slot nicht mehr buchbar ist
- * Inhalt: nur Uhrzeit und Name (keine E-Mail-Adressen der Eltern), dazu eine .ics-Datei.
- * sent_summaries verhindert Doppelversand; es wird vor dem Versand eingetragen.
+ * Summary emails to teachers (can be turned off per person in the profile):
+ * - Daily overview the evening before: from config summary_evening_hour (default 6 pm) for the next day
+ * - Overview after the booking deadline: as soon as the last slot of a day can no longer be booked
+ * Content: only time and name (no parents' email addresses), plus an .ics file.
+ * sent_summaries prevents duplicate sends; the entry is made before sending.
  */
 final class Summaries
 {
@@ -48,7 +48,7 @@ final class Summaries
 
     private static function deadline(): int
     {
-        // Tage, deren letzter Slot nicht mehr buchbar ist (Start − Buchungsfrist ≤ jetzt)
+        // Days whose last slot can no longer be booked (start − booking deadline ≤ now)
         $days = Db::all(
             "SELECT d.id, d.day_date, r.id AS round_id, r.title, r.user_id,
                     TIMESTAMP(d.day_date, MAX(s.start_time)) - INTERVAL r.booking_deadline_hours HOUR AS closes_at
@@ -82,7 +82,7 @@ final class Summaries
         return $sent;
     }
 
-    /** Trägt den Versand ein; false, wenn er bereits erfolgt ist. */
+    /** Records the send; false if it has already happened. */
     private static function claim(int $userId, string $kind, string $ref): bool
     {
         return Db::exec(

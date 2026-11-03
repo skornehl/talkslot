@@ -1,6 +1,6 @@
-# Stündlicher „Cronjob“ ohne Server-Crontab: ruft den geschützten Web-Cron der App auf
-# (Datenlöschung, Ablauf von Runden, Zusammenfassungen). Der Schlüssel wird aus APP_SECRET
-# abgeleitet und nur im Header gesendet. GitHub startet geplante Läufe teils mit Verzögerung.
+# Hourly "cron job" without a server crontab: calls the app's protected web cron
+# (data deletion, expiry of rounds, summaries). The key is derived from APP_SECRET
+# and only sent in a header. GitHub sometimes starts scheduled runs with a delay.
 name: Cron
 on:
   schedule:
@@ -13,11 +13,11 @@ concurrency:
   cancel-in-progress: false
 jobs:
   cron:
-    if: vars.FTP_HOST != '' && vars.BASE_URL != '' # nur mit eingerichtetem Deployment
+    if: vars.FTP_HOST != '' && vars.BASE_URL != '' # only with deployment set up
     runs-on: ubuntu-latest
-    environment: production # APP_SECRET liegt in der Umgebung (nur main)
+    environment: production # APP_SECRET lives in the environment (main only)
     steps:
-      - name: Web-Cron aufrufen
+      - name: Call web cron
         env:
           APP_SECRET: ${{ secrets.APP_SECRET }}
           BASE_URL: ${{ vars.BASE_URL }}

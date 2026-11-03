@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace App;
 
-/** Fachlicher Buchungsfehler; die Nachricht ist ein Übersetzungsschlüssel-Suffix (taken, deadline …). */
+/** Domain booking error; the message is a translation key suffix (taken, deadline …). */
 final class BookingException extends \RuntimeException
 {
 }

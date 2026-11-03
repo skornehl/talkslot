@@ -1,4 +1,4 @@
-<?php /** Hell/Dunkel-Schalter im Fuß (nur mit JavaScript sichtbar, siehe app.js). */ ?>
+<?php /** Light/dark toggle in the footer (only visible with JavaScript, see app.js). */ ?>
 <div class="theme-switch" data-theme-switch role="group" aria-label="<?= e(t('theme.label')) ?>" hidden>
   <span class="muted"><?= e(t('theme.label')) ?>:</span>
   <button type="button" class="button-link" data-theme-choice="auto" aria-pressed="true"><?= e(t('theme.auto')) ?></button>
