@@ -24,19 +24,24 @@ op_health > /dev/null; op_code -d '' -H "X-Cron-Token: falsch" "$B/cron" > /dev/
 check "health check and web cron do not start the clean-up fallback of page requests" '[ "$(OP_SETTING last_cleanup)" = 1 ]'
 DBQ "UPDATE tp_settings SET value = '${OP_LC:-1}' WHERE name = 'last_cleanup'"
 
-# A migration that fails is reported (503 + alert mail) instead of being swallowed; here the settings table is
-# missing. Without the lock file the same database counts as empty: before the installer, which the first
-# deployment must pass.
+# A migration that fails is reported by the health check (503 + alert mail) instead of being swallowed, while
+# pages are still served (that is why the deployment cannot rely on them); here the settings table is missing.
+# Without the lock file the same database counts as empty: before the installer, which the first deployment
+# must pass.
 DBQ "RENAME TABLE tp_settings TO tp_settings_op"
 OP_H=$(op_health)
+OP_PAGE=$(op_code "$B/admin/login")
 ALERTS 'rename("/srv/app/app/var/installed.lock", "/srv/app/app/var/installed.lock.op");'
 OP_H2=$(op_health)
+OP_CRON=$(curl -s -d '' -H "X-Cron-Token: $OP_CTOK" "$B/cron")
 ALERTS 'rename("/srv/app/app/var/installed.lock.op", "/srv/app/app/var/installed.lock");'
 DBQ "RENAME TABLE tp_settings_op TO tp_settings"
 OP_ALERTS='$q = urlencode("to:betrieb@example.org subject:\"Health-Check: Migration\""); $u = "http://mail:8025/api/v1/search?query=$q";'
 OP_AL=$(ALERTS "$OP_ALERTS"' echo json_decode(file_get_contents($u), true)["messages_count"] ?? "?";')
-check "health check: failed migration → 503 migration_failed and an alert mail ($OP_AL)" 'op_is "$OP_H" 503 migration_failed && [ "$OP_AL" = 1 ]'
-check "health check: empty database before the installer → 200 not_installed" 'op_is "$OP_H2" 200 not_installed'
+check "health check: failed migration → 503 migration_failed and an alert mail ($OP_AL); the login page is still served ($OP_PAGE)" \
+  'op_is "$OP_H" 503 migration_failed && [ "$OP_AL" = 1 ] && [ "$OP_PAGE" = 200 ]'
+check "empty database before the installer: health check 200 not_installed, web cron not_installed" \
+  'op_is "$OP_H2" 200 not_installed && [ "$OP_CRON" = "{\"status\":\"not_installed\"}" ]'
 ALERTS "$OP_ALERTS"' file_get_contents($u, false, stream_context_create(["http" => ["method" => "DELETE"]]));' # expected, not an error
 
 # Another request holds the migration lock: the health check waits for it (10 s), then reports the schema as

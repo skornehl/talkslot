@@ -15,9 +15,10 @@ check('health check: older MariaDB, MySQL and unknown servers are not supported'
 check('health check key: HMAC-SHA256 of "health" with the secret (like bin/deploy.sh), not the cron key',
     App\Health::token() === hash_hmac('sha256', 'health', (string) App\Config::get('secret')) && App\Health::token() !== App\App::cronToken()
     && preg_match('/^[0-9a-f]{64}$/', App\Health::token()) === 1);
-[, $out] = $run(['-r', 'require "app/bootstrap.php"; App\Alert::$stateFile = tempnam(sys_get_temp_dir(), "alert");
+// Script on stdin (not php -r), so that a coverage run sees these lines
+[, $out] = $run(['--'], [], '<?php require "app/bootstrap.php"; App\Alert::$stateFile = tempnam(sys_get_temp_dir(), "alert");
     App\Alert::$transport = static function ($to, $subject) { echo "ALERT:$subject|"; return true; };
     App\Config::load(["alert_email" => "betrieb@example.org", "db" => ["host" => "127.0.0.1", "port" => 1, "name" => "x", "user" => "x", "pass" => "x"]] + (require "config/config.php"));
-    echo json_encode(App\Health::check()); @unlink(App\Alert::$stateFile);']);
+    echo json_encode(App\Health::check()); @unlink(App\Alert::$stateFile);');
 check('health check with the database down: 503 "db_unreachable", reported as "Datenbank nicht erreichbar"',
     $out === 'ALERT:[' . App\Config::get('app_name', 'TalkSlot') . '] Datenbank nicht erreichbar (Health-Check)|[503,"db_unreachable"]');
