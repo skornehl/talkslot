@@ -86,3 +86,10 @@ look for the alert "Mailversand fehlgeschlagen".
 
 **The privacy policy shows `[HOSTER MIT ANSCHRIFT]`.** Set `hosting` (or `HOSTING_DE`/`HOSTING_EN`); see
 [Privacy and legal]({{ '/guide/privacy/' | relative_url }}).
+
+**An invitation or password link could not be sent.** The admin only sees a hint; the link is never shown
+on screen. Fix the mail delivery (see above), then send it again under *Benutzer → Bearbeiten*.
+
+**A device was lost or an account may be misused.** See
+[If you suspect misuse]({{ '/guide/security/' | relative_url }}#if-you-suspect-misuse): end all sessions,
+check the accounts and the log, change passwords and, if personal data may be affected, report it in time.

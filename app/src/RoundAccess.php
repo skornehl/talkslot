@@ -36,7 +36,7 @@ final class RoundAccess
         return $ts . '.' . self::sign($round, $ts);
     }
 
-    public static function validToken(array $round, mixed $token): bool
+    public static function validToken(array $round, #[\SensitiveParameter] mixed $token): bool
     {
         if (!is_string($token) || !preg_match('/^(\d{10})\.([a-f0-9]{64})$/', $token, $m)) {
             return false;

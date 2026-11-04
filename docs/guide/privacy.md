@@ -29,6 +29,10 @@ ask how long they are kept and state it in the privacy policy.
   who among several admins did what. What teachers do in their own rounds is not recorded, and bookings
   appear only as date and time. Depending on your state, a log of staff actions may still be a matter for
   the staff council (*Personalrat*); you can shorten the retention with `audit_log_days`.
+- **Sign-in times only in coarse steps:** the time of the last sign-in is stored (to tidy up unused
+  accounts), but the users list only shows *never*, *within the last 12 months* or *more than 12 months
+  ago*, so admins do not see when colleagues work. Security mails about account changes name the account
+  concerned and who made the change, never data of parents.
 - **No cookies on parent pages.** The language travels in the URL (`?lang=`), CSRF protection is
   stateless. No cookie banner is needed. Only the admin area uses a session cookie, limited to `/admin`.
 - **No third parties:** no CDNs, web fonts, analytics or external scripts. Translations of a round's title

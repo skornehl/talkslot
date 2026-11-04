@@ -1,4 +1,4 @@
-<?php /** @var array $users @var int $me */ ?>
+<?php /** @var array $users @var int $me */ use App\Csrf; ?>
 <div class="page-head">
   <h1><?= e(__('Benutzer')) ?></h1>
   <a class="button button-primary" href="<?= e(url('/admin/users/new')) ?>"><?= e(__('+ Neuer Benutzer')) ?></a>
@@ -14,11 +14,11 @@
       <td><?= e($u['username']) ?><?= (int) $u['id'] === $me ? ' <span class="badge">' . e(__('Sie')) . '</span>' : '' ?></td>
       <td><?= $u['role'] === 'admin' ? 'Admin' : e(__('Lehrkraft')) ?></td>
       <td><?= (int) $u['round_count'] ?></td>
-      <td class="small nowrap"><?= $u['last_login_at'] ? e(date('d.m.Y H:i', strtotime($u['last_login_at']))) : '<span class="muted">' . e(__('nie')) . '</span>' ?></td>
+      <td class="small"><?= $u['never_signed_in'] ? '<span class="muted">' . e(__('nie')) . '</span>' : ($u['long_inactive'] ? '<strong>' . e(__('vor über 12 Monaten')) . '</strong>' : e(__('in den letzten 12 Monaten'))) ?></td>
       <td>
         <?php if (!$u['is_active']): ?><span class="status status-off"><?= e(__('deaktiviert')) ?></span>
-        <?php elseif ($u['last_login_at'] === null && $u['access_token_expires_at'] !== null && strtotime($u['access_token_expires_at']) > time()): ?><span class="status status-off"><?= e(__('Einladung offen')) ?></span>
-        <?php elseif ($u['last_login_at'] === null): ?><span class="status status-off"><?= e(__('Einladung abgelaufen')) ?></span>
+        <?php elseif ($u['never_signed_in'] && $u['access_token_expires_at'] !== null && strtotime($u['access_token_expires_at']) > time()): ?><span class="status status-off"><?= e(__('Einladung offen')) ?></span>
+        <?php elseif ($u['never_signed_in']): ?><span class="status status-off"><?= e(__('Einladung abgelaufen')) ?></span>
         <?php elseif ($u['must_change_password']): ?><span class="status status-off"><?= e(__('Passwortwechsel offen')) ?></span>
         <?php else: ?><span class="status status-on"><?= e(__('aktiv')) ?></span><?php endif; ?>
       </td>
@@ -28,3 +28,16 @@
   </tbody>
 </table>
 </div>
+
+<section class="card">
+  <h2><?= e(__('Alle Sitzungen beenden')) ?></h2>
+  <p><?= e(__('Meldet alle Konten auf allen Geräten ab, nur diese Sitzung bleibt bestehen. Für den Notfall, z. B. wenn ein Gerät verloren gegangen ist oder Sie einen Missbrauch vermuten. Die Passwörter bleiben unverändert; alle Admins erhalten eine E-Mail.')) ?></p>
+  <form method="post" action="<?= e(url('/admin/users/end-sessions')) ?>" class="form-grid" data-confirm="<?= e(__('Alle Konten auf allen Geräten abmelden?')) ?>">
+    <?= Csrf::adminField() ?>
+    <div class="field">
+      <label for="end_sessions_password"><?= e(__('Ihr Passwort (zur Bestätigung)')) ?></label>
+      <input type="password" id="end_sessions_password" name="current_password" required autocomplete="current-password">
+    </div>
+    <div class="actions"><button type="submit" class="button button-danger"><?= e(__('Alle Sitzungen beenden')) ?></button></div>
+  </form>
+</section>

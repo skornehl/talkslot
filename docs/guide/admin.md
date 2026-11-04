@@ -32,7 +32,13 @@ Under *Benutzer* (users) → *+ Neuer Benutzer* (new user) enter **name and e-ma
 **role** (*Rolle*): *Lehrkraft* (teacher, manages their own rounds) or *Admin*. The person
 receives an **invitation mail** with a link to set their own password (single use, valid for 48 hours by
 default). No password is ever sent by mail. The username is the e-mail address. If the mail cannot be
-sent, the link is shown once so you can pass it on yourself.
+sent, you only see a hint, not the link (with it you could set the password of somebody else's account):
+check the mail delivery (*Texte → E-Mail-Versand*) and send the invitation again.
+
+The column *Letzter Login* (last sign-in) only shows *nie* (never), *in den letzten 12 Monaten* (within
+the last 12 months) or *vor über 12 Monaten* (more than 12 months ago), no times: enough to tidy up
+accounts, without showing everybody's sign-in times to all admins. The overview tells admins how many
+active accounts nobody has used for over 12 months.
 
 For an existing account you can:
 
@@ -43,7 +49,35 @@ For an existing account you can:
 - **delete** it, including all its rounds and bookings.
 
 Nobody can change their own role, deactivate or delete their own account, and at least one active admin
-always remains.
+always remains, even when two admins demote each other at the same moment.
+
+### Protection against misuse
+
+A taken-over session or a misused admin account must not be able to take over other accounts unnoticed:
+
+- **Your password again** (*Ihr Passwort (zur Bestätigung)*) is needed to invite an admin, to give or take
+  away admin rights, to deactivate, reactivate or delete an admin account and to change an e-mail address
+  (password links go there; this applies to your own address too). After 5 wrong entries in 15 minutes
+  the confirmation is refused for a while.
+- **Security mails:** the account holder gets a mail when its password was changed or set; the previous
+  address when an admin changed the e-mail address or the username; all active admins (you included) and
+  the person concerned when admin rights change or an admin account is deactivated, reactivated or
+  deleted. Please do not filter these mails away: they are often the only way to notice misuse.
+- **Password links** are only sent by mail and never shown on screen. A reset by an admin tells the person
+  that their previous password no longer works.
+- **Alle Sitzungen beenden** (end all sessions, at the bottom of *Benutzer*) signs out every account on
+  every device except your current session, e.g. after a lost device or a suspected break-in. It needs
+  your password, and all admins get a mail. What else to do in such a case is described under
+  [Security]({{ '/guide/security/' | relative_url }}#if-you-suspect-misuse).
+
+### When somebody leaves
+
+1. Move the rounds that are still needed to another teacher (field *Lehrkraft* in the round form).
+2. Deactivate the account (*Konto aktiv* unticked), or delete it once nothing of it is needed any more.
+3. For an admin: take away the role first, and change the secrets they knew (e.g. hosting, database,
+   `APP_SECRET`, GitHub).
+
+The hint on the overview about accounts unused for over 12 months helps you not to forget anybody.
 
 ## Rounds of all teachers
 

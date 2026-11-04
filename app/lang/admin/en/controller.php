@@ -129,7 +129,6 @@ return [
     'Einladung' => 'Invitation',
     'Link zum Festlegen eines neuen Passworts' => 'Link to set a new password',
     '{what} an {email} gesendet (gültig {hours} Stunden, einmalig nutzbar).' => '{what} sent to {email} (valid for {hours} hours, single use).',
-    '{what} konnte nicht an {email} gesendet werden. Link (wird nur jetzt angezeigt, bitte persönlich weitergeben): {link}' => '{what} could not be sent to {email}. Link (shown only now, please pass it on in person): {link}',
     'Link ungültig' => 'Invalid link',
     'Dieser Link ist abgelaufen, wurde bereits verwendet oder ist ungültig. Bitte fordern Sie über „Passwort vergessen?“ auf der Anmeldeseite einen neuen Link an.' => 'This link has expired, has already been used or is invalid. Please request a new link via “Forgot password?” on the sign-in page.',
     'Passwort festlegen' => 'Set password',

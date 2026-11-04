@@ -32,8 +32,14 @@ Unter *Benutzer* → *+ Neuer Benutzer* geben Sie **Name und E-Mail-Adresse** ei
 *Lehrkraft* (verwaltet ihre eigenen Runden) oder *Admin*. Die Person erhält
 eine **Einladungs-E-Mail** mit einem Link, über den sie ein eigenes Passwort festlegt (einmal verwendbar,
 standardmäßig 48 Stunden gültig). Passwörter werden nie per E-Mail verschickt. Der Benutzername ist die
-E-Mail-Adresse. Kann die E-Mail nicht versendet werden, wird der Link einmalig angezeigt, damit Sie ihn
-selbst weitergeben können.
+E-Mail-Adresse. Kann die E-Mail nicht versendet werden, sehen Sie nur einen Hinweis, nicht den Link (mit
+ihm könnten Sie das Passwort eines fremden Kontos festlegen): Prüfen Sie den Mailversand (*Texte →
+E-Mail-Versand*) und senden Sie die Einladung danach erneut.
+
+Die Spalte *Letzter Login* zeigt nur *nie*, *in den letzten 12 Monaten* oder *vor über 12 Monaten*, keine
+Uhrzeiten: Das genügt, um Konten aufzuräumen, ohne allen Admins die Anmeldezeiten der Kolleginnen und
+Kollegen zu zeigen. Die Übersicht nennt Admins die Zahl der aktiven Konten, die seit über 12 Monaten
+niemand genutzt hat.
 
 Ein bestehendes Konto können Sie:
 
@@ -46,7 +52,39 @@ Ein bestehendes Konto können Sie:
 - **löschen**, einschließlich aller Runden und Buchungen.
 
 Die eigene Rolle kann niemand ändern, das eigene Konto niemand deaktivieren oder löschen, und mindestens
-ein aktiver Admin bleibt immer bestehen.
+ein aktiver Admin bleibt immer bestehen, auch wenn zwei Admins sich im selben Moment gegenseitig
+herabstufen.
+
+### Schutz vor Missbrauch
+
+Eine übernommene Sitzung oder ein missbrauchtes Admin-Konto soll andere Konten nicht unbemerkt übernehmen
+können:
+
+- **Ihr Passwort noch einmal** (*Ihr Passwort (zur Bestätigung)*) braucht es, um einen Admin einzuladen,
+  Admin-Rechte zu vergeben oder zu entziehen, ein Admin-Konto zu deaktivieren, wieder zu aktivieren oder zu
+  löschen und um eine E-Mail-Adresse zu ändern (dorthin gehen Passwortlinks; das gilt auch für die eigene
+  Adresse). Nach 5 falschen Eingaben in 15 Minuten wird die Bestätigung eine Weile abgelehnt.
+- **Sicherheitsmails:** Der Kontoinhaber erhält eine E-Mail, wenn sein Passwort geändert oder festgelegt
+  wurde; die bisherige Adresse, wenn ein Admin die E-Mail-Adresse oder den Benutzernamen geändert hat; alle
+  aktiven Admins (auch Sie selbst) und die betroffene Person, wenn sich Admin-Rechte ändern oder ein
+  Admin-Konto deaktiviert, wieder aktiviert oder gelöscht wird. Bitte filtern Sie diese Mails nicht weg:
+  Oft sind sie der einzige Weg, einen Missbrauch zu bemerken.
+- **Passwortlinks** gehen nur per E-Mail hinaus und werden nie angezeigt. Setzt ein Admin ein Passwort
+  zurück, erfährt die Person, dass ihr bisheriges Passwort nicht mehr gilt.
+- **Alle Sitzungen beenden** (unten auf der Seite *Benutzer*) meldet alle Konten auf allen Geräten ab, nur
+  Ihre aktuelle Sitzung bleibt bestehen, z. B. nach einem verlorenen Gerät oder bei Verdacht auf einen
+  Einbruch. Es braucht Ihr Passwort, und alle Admins erhalten eine E-Mail. Was in so einem Fall außerdem zu
+  tun ist, steht unter [Sicherheit]({{ '/de/guide/security/' | relative_url }}#bei-verdacht-auf-missbrauch).
+
+### Wenn jemand die Schule verlässt
+
+1. Noch benötigte Runden einer anderen Lehrkraft zuordnen (Feld *Lehrkraft* im Rundenformular).
+2. Das Konto deaktivieren (*Konto aktiv* abwählen) oder löschen, sobald nichts davon mehr gebraucht wird.
+3. Bei Admins: zuerst die Rolle entziehen und die Zugangsdaten ändern, die die Person kannte (z. B.
+   Hosting, Datenbank, `APP_SECRET`, GitHub).
+
+Der Hinweis in der Übersicht auf Konten, die seit über 12 Monaten niemand genutzt hat, hilft, niemanden zu
+vergessen.
 
 ## Runden aller Lehrkräfte
 

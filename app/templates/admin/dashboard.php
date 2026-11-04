@@ -1,7 +1,10 @@
-<?php /** @var array $rounds @var list<string> $profileHints @var list<string> $legalHints @var bool $showOwner @var bool $operatorMissing */ ?>
+<?php /** @var array $rounds @var list<string> $profileHints @var list<string> $legalHints @var bool $showOwner @var bool $operatorMissing @var int $unusedAccounts */ ?>
 <?php foreach ($legalHints as $h): ?>
   <div class="alert alert-warning" role="status"><p><?= e($h) ?> <a href="<?= e(url('/admin/texts')) ?>"><?= e(__('Zu den Texten')) ?></a></p></div>
 <?php endforeach; ?>
+<?php if ($unusedAccounts): ?>
+  <div class="alert alert-info" role="status"><p><?= e(__('Konten, die seit über 12 Monaten nicht genutzt wurden: {count}. Bitte prüfen Sie, ob sie noch gebraucht werden, und deaktivieren Sie die Konten ausgeschiedener Lehrkräfte.', ['count' => $unusedAccounts])) ?> <a href="<?= e(url('/admin/users')) ?>"><?= e(__('Zu den Benutzern')) ?></a></p></div>
+<?php endif; ?>
 <?php if ($operatorMissing && !App\Auth::isAdmin()): ?>
   <div class="alert alert-warning" role="status"><p><?= e(__('Es sind noch keine Angaben für Impressum und Datenschutz hinterlegt (Aufgabe der Admins). Bis dahin sind keine Terminrunden öffentlich erreichbar.')) ?></p></div>
 <?php endif; ?>

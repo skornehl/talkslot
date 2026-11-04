@@ -31,6 +31,10 @@ Datenschutzerklärung.
   wird nicht aufgezeichnet, Buchungen erscheinen nur mit Datum und Uhrzeit. Je nach Bundesland kann ein
   Protokoll von Handlungen der Beschäftigten trotzdem den Personalrat betreffen; die Aufbewahrung lässt
   sich mit `audit_log_days` verkürzen.
+- **Anmeldezeiten nur grob:** Der Zeitpunkt der letzten Anmeldung wird gespeichert (um ungenutzte Konten
+  aufzuräumen), die Benutzerliste zeigt aber nur *nie*, *in den letzten 12 Monaten* oder *vor über 12
+  Monaten*. Admins sehen also nicht, wann Kolleginnen und Kollegen arbeiten. Sicherheitsmails zu
+  Kontoänderungen nennen das betroffene Konto und wer die Änderung gemacht hat, nie Daten von Eltern.
 - **Keine Cookies auf den Elternseiten.** Die Sprache steht in der URL (`?lang=`), der CSRF-Schutz
   arbeitet zustandslos. Ein Cookie-Banner ist nicht nötig. Nur der Admin-Bereich verwendet ein
   Sitzungs-Cookie, beschränkt auf `/admin`.

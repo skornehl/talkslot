@@ -11,6 +11,10 @@ namespace App;
  * - Brute-force protection: limit on failed logins per (truncated, hashed) IP.
  *   Deliberately no account lockout: otherwise anyone could lock the teacher out permanently
  *   with a few failed attempts. The minimum length of 12 characters protects against distributed guessing.
+ * - Sessions end when the password of the account changes (users.session_epoch) or when an admin ends
+ *   all sessions of all accounts (setting global_session_epoch, see endAllSessions()).
+ * - Security-relevant changes ask for the password again (confirmPassword()).
+ * Password and token parameters carry #[\SensitiveParameter]: they never appear in stack traces.
  */
 final class Auth
 {
@@ -79,9 +83,13 @@ final class Auth
             return null;
         }
         if (!array_key_exists($uid, $cache)) {
-            $user = Db::one('SELECT * FROM users WHERE id = ? AND is_active = 1', [$uid]);
-            // Password changed/reset: older sessions are no longer valid
-            $cache[$uid] = $user && (int) ($user['session_epoch'] ?? 0) === (int) ($_SESSION['epoch'] ?? 0) ? $user : null;
+            $user = Db::one(
+                "SELECT u.*, (SELECT value FROM settings WHERE name = 'global_session_epoch') AS global_epoch FROM users u WHERE u.id = ? AND u.is_active = 1",
+                [$uid]
+            );
+            // Password changed/reset (account) or all sessions ended (global): older sessions are no longer valid
+            $cache[$uid] = $user && (int) ($user['session_epoch'] ?? 0) === (int) ($_SESSION['epoch'] ?? 0)
+                && (int) $user['global_epoch'] === (int) ($_SESSION['global_epoch'] ?? 0) ? $user : null;
         }
         return $cache[$uid];
     }
@@ -104,7 +112,7 @@ final class Auth
      * the counter.
      * @return true|string true on success, otherwise an error message
      */
-    public static function attempt(string $username, string $password): bool|string
+    public static function attempt(string $username, #[\SensitiveParameter] string $password): bool|string
     {
         [$limit, $window] = RateLimiter::limits('login', 5, 900);
         [$userLimit, $userWindow] = RateLimiter::limits('login_user', 20, 3600);
@@ -146,6 +154,7 @@ final class Auth
         $_SESSION = [
             'uid' => (int) $user['id'],
             'epoch' => (int) ($user['session_epoch'] ?? 0),
+            'global_epoch' => self::globalEpoch(),
             'started' => time(),
             'last' => time(),
             'csrf' => bin2hex(random_bytes(32)),
@@ -169,6 +178,52 @@ final class Auth
         }
     }
 
+    /**
+     * Ends the sessions of all accounts on all devices (e.g. after a lost device or a suspected break-in;
+     * changing the app secret does not do that). Keeps the current session.
+     */
+    public static function endAllSessions(): void
+    {
+        Db::run(
+            "INSERT INTO settings (name, value) VALUES ('global_session_epoch', '1')
+             ON DUPLICATE KEY UPDATE value = CAST(value AS UNSIGNED) + 1"
+        );
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_regenerate_id(true);
+            $_SESSION['global_epoch'] = self::globalEpoch();
+        }
+    }
+
+    private static function globalEpoch(): int
+    {
+        return (int) Settings::get('global_session_epoch', '0');
+    }
+
+    /**
+     * Asks again for the password of the signed-in account before a security-relevant change (admin
+     * rights, e-mail addresses, ending all sessions), so that a session taken over without the password
+     * cannot make it. Wrong entries are limited per account ("reauth", 5 per 15 minutes); an empty
+     * field does not count.
+     * @return ?string null if confirmed, otherwise the error message ($prompt for a missing or wrong password)
+     */
+    public static function confirmPassword(#[\SensitiveParameter] string $password, string $prompt): ?string
+    {
+        $user = self::user();
+        if (!$user || $password === '') {
+            return $prompt;
+        }
+        [$limit, $window] = RateLimiter::limits('reauth', 5, 900);
+        $subject = 'reauth:' . $user['id'];
+        if (!RateLimiter::hit('reauth', $limit, $window, $subject)) {
+            return __('Zu viele falsche Passwörter. Bitte versuchen Sie es in {minutes} Minuten erneut.', ['minutes' => (int) ceil($window / 60)]);
+        }
+        if (!password_verify($password, (string) $user['password_hash'])) {
+            return $prompt;
+        }
+        RateLimiter::undo('reauth', $subject);
+        return null;
+    }
+
     public static function logout(): void
     {
         $_SESSION = [];
@@ -182,29 +237,31 @@ final class Auth
         }
     }
 
-    public static function changePassword(int $userId, string $current, string $new): bool|string
+    /** Changes the own password; ends the other sessions of the account and tells its owner by e-mail. */
+    public static function changePassword(int $userId, #[\SensitiveParameter] string $currentPassword, #[\SensitiveParameter] string $newPassword): bool|string
     {
         $user = Db::one('SELECT * FROM users WHERE id = ?', [$userId]);
-        if (!$user || !password_verify($current, $user['password_hash'])) {
+        if (!$user || !password_verify($currentPassword, $user['password_hash'])) {
             return __('Das aktuelle Passwort ist falsch.');
         }
-        if (($error = self::passwordPolicy($new)) !== null) {
+        if (($error = self::passwordPolicy($newPassword)) !== null) {
             return $error;
         }
-        if (password_verify($new, $user['password_hash'])) {
+        if (password_verify($newPassword, $user['password_hash'])) {
             return __('Das neue Passwort muss sich vom bisherigen unterscheiden.');
         }
         Db::run(
             'UPDATE users SET password_hash = ?, must_change_password = 0, access_token_hash = NULL, access_token_expires_at = NULL WHERE id = ?',
-            [password_hash($new, PASSWORD_DEFAULT), $userId]
+            [password_hash($newPassword, PASSWORD_DEFAULT), $userId]
         );
         session_regenerate_id(true);
         self::endOtherSessions($userId, true);
+        AccountSecurity::passwordChanged($user);
         return true;
     }
 
     /** At least 12 characters; at most 72 bytes, because bcrypt ignores everything beyond that. */
-    public static function passwordPolicy(string $password): ?string
+    public static function passwordPolicy(#[\SensitiveParameter] string $password): ?string
     {
         if (mb_strlen($password) < 12) {
             return __('Das Passwort muss mindestens 12 Zeichen lang sein.');
