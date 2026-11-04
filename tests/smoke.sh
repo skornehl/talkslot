@@ -4,6 +4,9 @@
 # Prerequisite: freshly installed (dev/reset.sh), config from dev/config.dev.php. The test then
 # reinstalls once more on its own via the web installer (same credentials).
 set -u
+# Dates in the time zone of the app (timezone in config/config.sample.php): "tomorrow" in the test is the
+# app's tomorrow, also on a CI runner in UTC between midnight in Berlin and midnight UTC
+export TZ=Europe/Berlin
 B=${1:-http://localhost:8080}
 USER=${2:-sabrina}
 PASS=${3:-Sehr-Sicheres-Dev-Pw1}
