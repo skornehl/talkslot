@@ -17,12 +17,10 @@ namespace App;
  */
 final class Auth
 {
-    /** Allowed usernames (creating, editing, installing, signing in): ASCII only. */
-    public const USERNAME_PATTERN = '/^[A-Za-z0-9._@+-]{3,254}\z/';
-
+    /** Allowed usernames (creating, editing, installing, signing in): 3–254 characters, ASCII only. */
     public static function validUsername(string $username): bool
     {
-        return preg_match(self::USERNAME_PATTERN, $username) === 1;
+        return preg_match('/^[A-Za-z0-9._@+-]{3,254}\z/', $username) === 1;
     }
 
     /**

@@ -6,7 +6,7 @@ S_HM() { php -r 'echo hash_hmac("sha256", "subject|" . $argv[1], str_repeat("d",
 S_FULL() { DBQ "INSERT INTO tp_rate_limits (bucket, key_hash, window_start, hits) VALUES ('$1', '$2', UNIX_TIMESTAMP(), 100000) ON DUPLICATE KEY UPDATE hits = 100000, window_start = UNIX_TIMESTAMP()"; }
 S_CLEAR() { DBQ "DELETE FROM tp_rate_limits WHERE bucket IN ('login', 'login_user', 'login_device', 'login_notice')"; }
 S_MAILS() { $DC exec -T app php -r '$r = json_decode(file_get_contents("http://mail:8025/api/v1/search?query=" . rawurlencode($argv[1])), true); echo $r["messages_count"] ?? "?";' "$1"; }
-S_MAILTEXT() { $DC exec -T app php -r '$r = json_decode(file_get_contents("http://mail:8025/api/v1/search?query=" . rawurlencode($argv[1])), true); echo json_decode(file_get_contents("http://mail:8025/api/v1/message/" . ($r["messages"][0]["ID"] ?? "")), true)["Text"] ?? "";' "$1"; }
+S_MAILTEXT() { $DC exec -T app php -r '$r = json_decode(file_get_contents("http://mail:8025/api/v1/search?query=" . rawurlencode($argv[1])), true); echo isset($r["messages"][0]["ID"]) ? json_decode(file_get_contents("http://mail:8025/api/v1/message/" . $r["messages"][0]["ID"]), true)["Text"] : "";' "$1"; }
 S_LOGIN() { # cookie jar, username, password → HTTP status
   local t; t=$(curl -s -c "$1" -b "$1" "$B/admin/login" | csrf)
   curl -s -o /dev/null -w '%{http_code}' -c "$1" -b "$1" --data-urlencode "csrf=$t" --data-urlencode "username=$2" --data-urlencode "password=$3" "$B/admin/login"

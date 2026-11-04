@@ -76,7 +76,7 @@ final class PasswordRules
             $parts = preg_split('/[^\p{L}\p{N}]+/u', $at === false ? $value : substr($value, 0, $at), -1, PREG_SPLIT_NO_EMPTY) ?: [];
             foreach (array_merge([$value], $parts) as $part) {
                 $length = mb_strlen($part);
-                if ($length >= 5 ? str_contains($lower, $part) : $length === 4 && in_array($part, $words, true)) {
+                if ($length >= 5 ? str_contains($lower, $part) : ($length === 4 && in_array($part, $words, true))) {
                     return true;
                 }
             }
