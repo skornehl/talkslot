@@ -49,7 +49,14 @@ Die Seite der Runde zeigt alles, was Sie brauchen:
 - den **Rundencode**, z. B. `3MMP-WYA9`. Eltern können ihn statt des Links auf der Startseite eingeben,
   praktisch für Einladungen auf Papier. Verwechslungen wie `0`/`O`, Bindestriche sowie Groß- und
   Kleinschreibung spielen keine Rolle.
-- einen fertigen **Einladungstext** mit Link und Code (*Einladungstext kopieren*, *Als E-Mail öffnen*).
+- einen fertigen **Einladungstext** (*Einladungstext kopieren*, *Als E-Mail öffnen*) mit dem Link, einem
+  direkten Link für jede weitere Elternsprache (`Türkçe: …?lang=tr`), gegebenenfalls Ort und Code sowie
+  demselben Satz zu Mehrfachbuchungen, den Eltern auf der Seite der Runde lesen (zum Beispiel die
+  Geschwisterregel).
+
+Eltern wählen ihre Sprache ganz oben auf jeder Seite, jeweils unter ihrem eigenen Namen (*Deutsch,
+English, Polski, Русский, Українська, Türkçe*). Ist ihr Browser auf eine andere angebotene Sprache
+eingestellt, erscheint über der Seite ein Link dorthin.
 
 Mit *Nur mit Rundencode* zeigt der Link allein nur eine Code-Abfrage; Titel und Termine bleiben für Fremde
 verborgen. Ein neuer Code (beim Bearbeiten) macht den alten sofort ungültig; bestehende Buchungen bleiben

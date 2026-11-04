@@ -37,6 +37,7 @@ final class App
         // switch_lang: language button that submits the booking form including its input
         $lang = $_POST['switch_lang'] ?? $_GET['lang'] ?? $_POST['lang'] ?? null;
         I18n::init(is_string($lang) ? $lang : null);
+        header('Vary: Accept-Language'); // the browser language decides whether a link to it is offered
         (new PublicController())->dispatch($path, Http::method());
     }
 

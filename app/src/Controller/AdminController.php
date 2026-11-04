@@ -14,10 +14,10 @@ use App\Csrf;
 use App\Db;
 use App\Http;
 use App\I18n;
+use App\Invitation;
 use App\Notifier;
 use App\Operator;
 use App\RateLimiter;
-use App\RoundAccess;
 use App\RoundCode;
 use App\SlotGenerator;
 use App\Slug;
@@ -444,7 +444,7 @@ final class AdminController
             'conflicts' => $conflicts,
             'publicUrl' => abs_url('/' . $round['slug']),
             'homeUrl' => abs_url('/'),
-            'invitation' => self::invitationText($round, $owner),
+            'invitation' => Invitation::text($round, $owner),
             'owner' => $owner,
             'showOwner' => Auth::isAdmin(),
             'addDayData' => $addDayData ?? self::defaultDayData(),
@@ -487,35 +487,6 @@ final class AdminController
     private static function translationFingerprint(?array $t): string
     {
         return $t ? hash('sha256', $t['title'] . "\0" . ($t['description'] ?? '') . "\0" . $t['source_hash']) : '';
-    }
-
-    /** Text to pass on to parents (link and access code if applicable). */
-    private static function invitationText(array $round, array $owner): string
-    {
-        $lines = [
-            __('Liebe Eltern,'),
-            '',
-            __('über den folgenden Link können Sie einen Gesprächstermin für „{title}“ bei {teacher} buchen:', ['title' => $round['title'], 'teacher' => $owner['display_name'] ?: __('mir')]),
-            abs_url('/' . $round['slug']),
-        ];
-        if (trim((string) ($round['location'] ?? '')) !== '') {
-            $lines[] = '';
-            $lines[] = __('Ort: {location}', ['location' => trim((string) $round['location'])]);
-        }
-        $code = RoundCode::format($round['code'] ?? null);
-        if ($code !== '' && RoundAccess::required($round)) {
-            $lines[] = '';
-            $lines[] = __('Code der Terminvergabe: {code} (wird nach dem Öffnen des Links abgefragt).', ['code' => $code]);
-            $lines[] = __('Alternativ können Sie auf {url} nur diesen Code eingeben.', ['url' => abs_url('/')]);
-            $lines[] = __('Bitte geben Sie Link und Code nicht weiter.');
-        } elseif ($code !== '') {
-            $lines[] = __('Alternativ können Sie auf {url} den Code der Terminvergabe {code} eingeben.', ['url' => abs_url('/'), 'code' => $code]);
-        }
-        $lines[] = '';
-        $lines[] = __('Bitte buchen Sie nur einen Termin. Nach der Buchung erhalten Sie einen persönlichen Link, über den Sie den Termin ändern oder absagen können.');
-        $lines[] = '';
-        $lines[] = __('Viele Grüße');
-        return implode("\n", $lines);
     }
 
     // ---------------------------------------------------------------- Translations

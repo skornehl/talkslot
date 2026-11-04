@@ -46,6 +46,8 @@ ask how long they are kept and state it in the privacy policy.
   concerned and who made the change, never data of parents.
 - **No cookies on parent pages.** The language travels in the URL (`?lang=`), CSRF protection is
   stateless. No cookie banner is needed. Only the admin area uses a session cookie, limited to `/admin`.
+  The browser language (`Accept-Language`, sent by every browser anyway) only decides whether a link to
+  that language is shown at the top; the page never switches by itself, and nothing is stored.
 - **No third parties:** no CDNs, web fonts, analytics or external scripts. Translations of a round's title
   happen in the teacher's browser with a local model; no text is sent to a translation service.
 - **No page translation of booking lists:** the admin area and the print view carry `translate="no"`,

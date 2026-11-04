@@ -9,7 +9,8 @@ schools (GDPR/DSGVO, TDDDG) and multilingual families.
 
 - **For parents:** open a link or enter a short round code, pick a free slot, done. Change or cancel via a
   personal link; optional confirmation mail with a calendar file. Parent pages in German, English,
-  Polish, Russian, Ukrainian and Turkish.
+  Polish, Russian, Ukrainian and Turkish, chosen at the top of every page; the invitation text carries a
+  direct link per language.
 - **For teachers:** any number of booking rounds with several days, breaks and a live preview; see who
   booked when, move or add bookings, print lists, get a summary mail the evening before.
 - **For the school:** admins invite the teachers, see all rounds and maintain the legal pages for the
@@ -62,7 +63,7 @@ schools (GDPR/DSGVO, TDDDG) and multilingual families.
 - Rounds: several days, first/last slot, duration, any number of breaks, live preview; add days later;
   location (per round, optionally per day); block single slots; duplicate with a new first day; templates
   (e.g. "parent-teacher day, 08:00–16:00, 15 minutes"); deadlines for booking and changes; ready-to-copy
-  invitation text.
+  invitation text with a direct link per parent language and the round's rule on multiple bookings.
 - Bookings: overview, edit, move, delete, add manually (with a mail to the parents, ticked as soon as an
   address is entered). Changed times never delete bookings, conflicts are flagged with ⚠. Dialogs, hints
   and messages say clearly that parents are not notified automatically of deletions, of a new date or
@@ -241,7 +242,7 @@ All options are documented in [`config/config.sample.php`](config/config.sample.
 | Option | Default | Meaning |
 |---|---|---|
 | `app_name` | `TalkSlot` | name in header, mails and alert subjects |
-| `languages` | `de, en, pl, ru, uk, tr` | parent-facing languages, in the order of the flags (variable `LANGUAGES`) |
+| `languages` | `de, en, pl, ru, uk, tr` | parent-facing languages, in the order of the language choice (variable `LANGUAGES`) |
 | `default_language` | `de` | language shown until the visitor picks one; must be in `languages` (variable `DEFAULT_LANGUAGE`) |
 | `timezone` | `Europe/Berlin` | |
 | `alert_email` | – | recipient of error alerts (else the admin's address) |
@@ -251,7 +252,7 @@ All options are documented in [`config/config.sample.php`](config/config.sample.
 | `rate_limits` | see file | generous, since many parents share an IP (mobile CGNAT, school Wi-Fi) |
 
 **Adding a language:** copy `app/lang/en.php` to e.g. `app/lang/it.php`, translate it, add the code to
-`languages` and a flag `public/assets/flags/it.svg`. Optionally add `app/templates/pages/{imprint,privacy}.it.md`;
+`languages` and a flag `public/assets/flags/it.svg` (admin translation form). Optionally add `app/templates/pages/{imprint,privacy}.it.md`;
 otherwise the legal pages fall back to English.
 
 ## Security
@@ -284,6 +285,7 @@ otherwise the legal pages fall back to English.
 
 - Data minimisation: a free-text name and an optional e-mail address, nothing else.
 - **No cookies on parent pages** (language via `?lang=`, stateless CSRF), so no cookie banner is needed.
+  The browser language only offers a link to that language; the page never switches by itself.
 - IP addresses only for rate limiting: shortened (IPv4 /24, IPv6 /48), HMAC-hashed, deleted after 24 h.
 - No external resources, fonts, scripts or tracking.
 - Admin area and print view are marked `translate="no"`, so browsers do not offer their cloud page

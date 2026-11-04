@@ -50,7 +50,9 @@ Datenschutzerklärung.
   Kontoänderungen nennen das betroffene Konto und wer die Änderung gemacht hat, nie Daten von Eltern.
 - **Keine Cookies auf den Elternseiten.** Die Sprache steht in der URL (`?lang=`), der CSRF-Schutz
   arbeitet zustandslos. Ein Cookie-Banner ist nicht nötig. Nur der Admin-Bereich verwendet ein
-  Sitzungs-Cookie, beschränkt auf `/admin`.
+  Sitzungs-Cookie, beschränkt auf `/admin`. Die Browsersprache (`Accept-Language`, die jeder Browser
+  ohnehin sendet) entscheidet nur, ob oben ein Link zu dieser Sprache erscheint; die Seite wechselt nie
+  von selbst, und es wird nichts gespeichert.
 - **Keine Drittanbieter:** keine CDNs, Webfonts, Analysetools oder externen Skripte. Übersetzungen des
   Titels einer Runde entstehen im Browser der Lehrkraft mit einem lokalen Modell; es wird kein Text an
   einen Übersetzungsdienst gesendet.

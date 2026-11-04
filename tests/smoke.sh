@@ -144,8 +144,8 @@ check "link invalid after cancellation (404)" '[ "$code" = 404 ]'
 
 echo "Languages"
 LP=$(curl -s "$B/$SLUG?lang=tr")
-check "Turkish page with flags for 6 languages" 'echo "$LP" | grep -q "Boş bir saat seçin" && [ "$(echo "$LP" | grep -c "assets/flags/")" = 6 ] && echo "$LP" | grep -q "title=\"Українська\""'
-check "flag SVG served" '[ "$(curl -s -o /dev/null -w "%{http_code}" "$B/assets/flags/uk.svg")" = 200 ]'
+check "Turkish page with the names of all 6 languages" 'echo "$LP" | grep -q "Boş bir saat seçin" && [ "$(echo "$LP" | grep -c "name=\"switch_lang\" value=")" = 6 ] && echo "$LP" | grep -q "lang=\"uk\">Українська</button>"'
+check "flag SVG served (admin translation form)" '[ "$(curl -s -o /dev/null -w "%{http_code}" "$B/assets/flags/uk.svg")" = 200 ]'
 check "privacy page in a new language falls back to English" 'curl -s "$B/datenschutz?lang=pl" | grep -q "Controller"'
 check "privacy page without Google Calendar" '! curl -s "$B/datenschutz" | grep -qiE "google[- ]?(kalender|calendar)"'
 
@@ -375,7 +375,7 @@ check "code assigned right when creating/duplicating (not only when viewing)" '[
 AR=$(curl -s -b "$J" "$B/admin/round/$RID"); RCODE=$(rcode "$RID")
 check "round code shown + in the invitation text ($RCODE)" '[[ "$RCODE" =~ ^[2-9A-HJKMNP-Z]{4}-[2-9A-HJKMNP-Z]{4}$ ]] && echo "$AR" | grep -q "den Code der Terminvergabe $RCODE eingeben"'
 check "home page with code field" 'curl -s "$B/" | grep -q "name=\"code\""'
-check "without language choice always German (browser language ignored)" 'curl -s -H "Accept-Language: en-US,en;q=0.9" "$B/" | grep -q "<html lang=\"de\">" && curl -s -H "Accept-Language: tr" "$B/$SLUG" | grep -q ">Name <"'
+check "without language choice always German (the browser language does not switch)" 'curl -s -H "Accept-Language: en-US,en;q=0.9" "$B/" | grep -q "<html lang=\"de\">" && curl -s -H "Accept-Language: tr" "$B/$SLUG" | grep -q ">Name <"'
 r=$(curl -s -o /dev/null -w '%{http_code} %{redirect_url}' -G --data-urlencode "code=$(echo "$RCODE" | tr A-Z a-z | tr - ' ')" -d lang=tr "$B/")
 check "code (lower case, with spaces) → round, language kept ($r)" '[[ "$r" == "303 "*"/$SLUG?lang=tr" ]]'
 CYR=$(echo "$RCODE" | sed 's/A/А/g;s/B/В/g;s/C/С/g;s/E/Е/g;s/H/Н/g;s/K/К/g;s/M/М/g;s/P/Р/g;s/T/Т/g;s/X/Х/g;s/Y/У/g;s/3/З/g;s/-/–/')

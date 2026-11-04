@@ -42,8 +42,8 @@ Stand möchten.
    Sie einen Namen ein und setzen Sie den Haken bei der Datenschutz-Checkbox. Die Bestätigungsseite zeigt
    den persönlichen Änderungslink. Mit E-Mail-Adresse kommt die Bestätigung in Mailpit an, inklusive
    Kalenderdatei.
-4. **Wechseln Sie die Sprache** über die Flaggen in der Fußzeile und probieren Sie den hellen und dunklen
-   Modus aus.
+4. **Wechseln Sie die Sprache** ganz oben auf der Seite und probieren Sie in der Fußzeile den hellen und
+   dunklen Modus aus.
 5. **Legen Sie eine eigene Terminrunde an** mit *+ Neue Runde*: Wählen Sie ein oder mehrere Daten, den
    ersten und letzten Termin, die Dauer und Pausen. Die Vorschau zeigt die entstehenden Zeitfenster,
    bevor Sie speichern.

@@ -38,7 +38,7 @@ links are random tokens and keep working. It does not sign anybody out of the ad
 
 | Option | Default | Meaning | Deployment |
 |---|---|---|---|
-| `languages` | `de, en, pl, ru, uk, tr` | parent-facing languages, in the order of the flags | `LANGUAGES`, e.g. `de,en,tr` |
+| `languages` | `de, en, pl, ru, uk, tr` | parent-facing languages, in the order of the language choice at the top of the page | `LANGUAGES`, e.g. `de,en,tr` |
 | `default_language` | `de` | shown until the visitor picks a language; must be in `languages` | `DEFAULT_LANGUAGE` |
 
 The build aborts if a language has no file in `app/lang/` or the default is not offered.
@@ -48,8 +48,9 @@ The admin area is in German or English, chosen per account under *Mein Profil*. 
 and for the login page when the browser asks for neither language. Entries in the admin log are written in
 this language.
 
-**Adding a language:** copy `app/lang/en.php` to e.g. `app/lang/it.php` and translate it, add a flag
-`public/assets/flags/it.svg` and the code to `languages`. Optionally add
+**Adding a language:** copy `app/lang/en.php` to e.g. `app/lang/it.php` and translate it (`lang.name` is
+the language's own name, shown in the language choice), add a flag `public/assets/flags/it.svg` (used in
+the translation form of the admin area) and the code to `languages`. Optionally add
 `app/templates/pages/imprint.it.md` and `privacy.it.md`; without them the legal pages fall back to English.
 Please have native speakers review translations.
 
