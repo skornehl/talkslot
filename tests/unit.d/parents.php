@@ -101,8 +101,8 @@ unset($_SERVER['HTTP_ACCEPT_LANGUAGE'], $_SERVER['REQUEST_URI']);
 App\I18n::init(null);
 
 // Invitation text: direct link per further language, the booking rule as on the round page
-$invite = static fn (array $round, string $lang = 'de'): string => App\AdminI18n::with($lang, static fn () => (string) (new ReflectionMethod(App\Controller\AdminController::class, 'invitationText'))
-    ->invoke(null, $round + ['title' => 'Elternsprechtag 7b', 'slug' => 'elternsprechtag-7b', 'location' => '', 'code' => 'K7MP3QXA', 'code_required' => 0, 'booking_limit' => 'round'], ['display_name' => 'Frau Berger']));
+$invite = static fn (array $round, string $lang = 'de'): string => App\AdminI18n::with($lang, static fn () => App\Invitation::text(
+    $round + ['title' => 'Elternsprechtag 7b', 'slug' => 'elternsprechtag-7b', 'location' => '', 'code' => 'K7MP3QXA', 'code_required' => 0, 'booking_limit' => 'round'], ['display_name' => 'Frau Berger']));
 $inv = $invite([]);
 $lines = explode("\n", $inv);
 $base = abs_url('/elternsprechtag-7b');
