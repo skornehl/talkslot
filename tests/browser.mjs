@@ -73,6 +73,7 @@ class Cdp {
     this.listeners = [];
     this.dialogs = [];
     this.acceptDialogs = true;
+    this.errors = []; // uncaught JavaScript errors in the pages (Runtime.exceptionThrown)
     this.ready = new Promise((r) => this.ws.addEventListener('open', r));
     this.ws.addEventListener('message', (m) => {
       const msg = JSON.parse(m.data);
@@ -81,6 +82,10 @@ class Cdp {
         this.pending.delete(msg.id);
         msg.error ? reject(new Error(msg.error.message)) : resolve(msg.result);
       } else if (msg.method) {
+        if (msg.method === 'Runtime.exceptionThrown') {
+          const d = msg.params.exceptionDetails;
+          this.errors.push(`${d.exception?.description || d.text} (${d.url || '?'}:${d.lineNumber})`);
+        }
         if (msg.method === 'Page.javascriptDialogOpening') {
           this.dialogs.push({ type: msg.params.type, message: msg.params.message });
           this.send('Page.handleJavaScriptDialog', { accept: this.acceptDialogs });
@@ -230,6 +235,15 @@ try {
   await js(`document.querySelector('[data-open-details="duplicate"]').click()`, { gesture: true });
   await sleep(50);
   check('button opens it and focuses the date', await js(`document.getElementById('duplicate').open && document.activeElement.id === 'first_date'`));
+
+  section('Admin: template form (times and breaks, no dates)');
+  await goto('/admin/templates/new');
+  await js(`document.querySelector('[data-add-break]').click()`, { gesture: true });
+  check('"+ Pause hinzufügen" adds a break row in the template form', await js(`document.querySelectorAll('[data-breaks] .break-row').length`) === 1
+    && await js(`document.activeElement.name === 'break_start[]'`));
+  await type('[name="break_start[]"]', '15:00', { blur: true });
+  await type('[name="break_end[]"]', '15:30', { blur: true });
+  check('template form: preview skips the break', ((await preview()) || '').includes('14:45–15:00, 15:30–15:45'), await preview());
 
   section('Admin: confirmation before deleting');
   await goto(roundPath);
@@ -442,6 +456,7 @@ try {
   check('the choice applies on the next page', await js(`document.documentElement.dataset.theme === 'dark'`));
   await js(`document.querySelector('[data-theme-choice=auto]').click()`);
   check('"Automatisch" follows the device again', await js(`!document.documentElement.hasAttribute('data-theme') && localStorage.getItem('tp_theme') === null`));
+  check('no uncaught JavaScript errors on any page', cdp.errors.length === 0, cdp.errors.join('\n      '));
 } catch (e) {
   check('test run completed', false, e.stack || String(e));
 } finally {

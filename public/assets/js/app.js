@@ -449,14 +449,17 @@ var L = (function () {
     }
     box.addEventListener('input', update);
     box.addEventListener('change', update);
+    // Dates only where the form has them (templates have times and breaks, but no dates)
     var addDate = box.querySelector('[data-add-date]');
-    addDate.addEventListener('click', function () {
-      var inputs = box.querySelectorAll('[name="day_dates[]"]');
-      var n = inputs[inputs.length - 1].cloneNode();
-      n.value = ''; n.required = false; n.setAttribute('aria-label', L('Datum {n}', { n: inputs.length + 1 }));
-      addDate.parentNode.insertBefore(n, addDate);
-      n.focus();
-    });
+    if (addDate) {
+      addDate.addEventListener('click', function () {
+        var inputs = box.querySelectorAll('[name="day_dates[]"]');
+        var n = inputs[inputs.length - 1].cloneNode();
+        n.value = ''; n.required = false; n.setAttribute('aria-label', L('Datum {n}', { n: inputs.length + 1 }));
+        addDate.parentNode.insertBefore(n, addDate);
+        n.focus();
+      });
+    }
     // Breaks: no empty rows up front, "+ Pause hinzufügen" adds one from the template
     var breakList = box.querySelector('[data-breaks]');
     box.querySelector('[data-add-break]').addEventListener('click', function () {
