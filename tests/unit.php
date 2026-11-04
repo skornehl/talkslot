@@ -651,5 +651,10 @@ check('without details: no name, not ready, placeholder gets the fallback',
     App\Operator::name() === '' && !App\Operator::ready() && App\Operator::fill('[[VERANTWORTLICHE]]', '(fehlt)') === '(fehlt)');
 $contact->setValue(null, null);
 
+// Further tests in tests/unit.d/*.php (one file per topic, included here in name order, with check() and $run)
+foreach (glob(__DIR__ . '/unit.d/*.php') ?: [] as $file) {
+    require $file;
+}
+
 echo $fail === 0 ? "ALL UNIT TESTS PASSED\n" : "$fail FAILED\n";
 exit($fail === 0 ? 0 : 1);
