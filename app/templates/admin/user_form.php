@@ -15,6 +15,15 @@
     <input type="email" id="email" name="email" required maxlength="254" autocapitalize="none" spellcheck="false" value="<?= e($data['email'] ?? '') ?>" aria-describedby="em-hint">
     <p class="hint" id="em-hint"><?= $user ? 'Für Zusammenfassungen und neue Startpasswörter.' : 'Dient als Benutzername. Die Zugangsdaten werden an diese Adresse geschickt.' ?></p>
   </div>
+  <div class="field">
+    <label for="lang">Sprache / Language</label>
+    <select id="lang" name="lang" aria-describedby="lang-hint">
+      <?php foreach (['de' => 'Deutsch', 'en' => 'English'] as $code => $name): ?>
+        <option value="<?= $code ?>"<?= ($data['lang'] ?? ($user ? App\AdminI18n::default() : App\AdminI18n::lang())) === $code ? ' selected' : '' ?>><?= $name ?></option>
+      <?php endforeach; ?>
+    </select>
+    <p class="hint" id="lang-hint">Sprache des Verwaltungsbereichs und der E-Mails an diese Person (Einladung, Zusammenfassungen).</p>
+  </div>
   <?php if ($user): ?>
   <div class="field">
     <label for="username">Benutzername (Login)</label>

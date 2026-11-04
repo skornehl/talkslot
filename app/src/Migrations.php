@@ -10,7 +10,7 @@ namespace App;
  */
 final class Migrations
 {
-    public const LATEST = 17;
+    public const LATEST = 18;
 
     /** Version => SQL statements */
     private const STEPS = [
@@ -126,6 +126,10 @@ final class Migrations
                 created_at DATETIME NOT NULL, updated_at DATETIME NOT NULL,
                 UNIQUE KEY uq_templates_name (name)
              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        ],
+        // 18: admin area in German or English, per account (NULL = admin_language)
+        18 => [
+            'ALTER TABLE users ADD COLUMN IF NOT EXISTS lang VARCHAR(5) NULL AFTER email',
         ],
     ];
 

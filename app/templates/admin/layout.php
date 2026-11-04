@@ -4,7 +4,7 @@ use App\Auth;
 use App\Csrf;
 ?>
 <!doctype html>
-<html lang="de">
+<html lang="<?= e(App\AdminI18n::lang()) ?>">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -14,6 +14,9 @@ use App\Csrf;
 <script src="<?= e(asset('js/theme.js')) ?>"></script>
 <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>">
 <link rel="icon" href="data:,">
+<?php if (App\AdminI18n::lang() === 'en'): ?>
+<script type="application/json" id="tp-i18n"><?= json_encode(require APP_ROOT . '/app/lang/admin/en/js.php', JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?></script>
+<?php endif; ?>
 <script src="<?= e(asset('js/app.js')) ?>" defer></script>
 </head>
 <body class="admin">

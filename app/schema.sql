@@ -4,6 +4,7 @@
 -- Accounts: role admin = may manage accounts, every person manages only their own rounds.
 -- controller_contact: admin only – details for legal notice and privacy policy (placeholder [[VERANTWORTLICHE]]).
 -- access_token_hash: SHA-256 of an invitation or password link (single use, with expiry).
+-- lang: language of the admin area and of mails to the account (de, en; NULL = admin_language).
 CREATE TABLE IF NOT EXISTS users (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   username VARCHAR(254) NOT NULL,
@@ -11,6 +12,7 @@ CREATE TABLE IF NOT EXISTS users (
   role ENUM('admin','teacher') NOT NULL DEFAULT 'teacher',
   display_name VARCHAR(200) NOT NULL DEFAULT '',
   email VARCHAR(254) NULL,
+  lang VARCHAR(5) NULL,
   controller_contact TEXT NULL,
   is_active TINYINT(1) NOT NULL DEFAULT 1,
   must_change_password TINYINT(1) NOT NULL DEFAULT 0,

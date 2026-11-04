@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\AccountLinks;
+use App\AdminI18n;
 use App\Audit;
 use App\Auth;
 use App\BookingException;
@@ -94,6 +95,7 @@ final class AdminController
         // (stateless CSRF tokens, see formToken()); everything else does
         Auth::startSession(!($path === '/login' || $path === '/forgot' || str_starts_with($path, '/invite/')));
         header('X-Robots-Tag: noindex, nofollow');
+        AdminI18n::set(AdminI18n::forRequest(Auth::check() ? Auth::user() : null));
 
         if ($path === '/login') {
             $method === 'POST' ? $this->loginPost() : $this->login();
@@ -361,7 +363,7 @@ final class AdminController
             }
             $this->flash('success', $newCode ? 'Runde gespeichert, neuer Rundencode erzeugt (der bisherige gilt nicht mehr).' : 'Runde gespeichert.');
             $ownerChanged = (int) $owner['id'] !== (int) $round['user_id'];
-            $this->audit('bearbeitet'
+            $this->audit(fn () => 'bearbeitet'
                 . ($round['title'] !== $data['title'] ? ' (bisher „' . $round['title'] . '“)' : '')
                 . ((int) $round['is_active'] !== $data['is_active'] ? ($data['is_active'] ? ', aktiviert' : ', deaktiviert') : '')
                 . ($ownerChanged ? ', Lehrkraft bisher ' . self::accountLabel($this->userById((int) $round['user_id'])) : '')
@@ -384,7 +386,7 @@ final class AdminController
                 return [$id, $this->createDays($id, $dayData)];
             });
             $this->flash('success', 'Runde angelegt: ' . count($dayData['dates']) . ' Tag(e), ' . $count . ' Termine erzeugt.');
-            $this->audit('angelegt (' . implode(', ', array_map(static fn ($d) => self::when($d), $dayData['dates'])) . ')' . ($data['is_active'] ? ', aktiv' : ''), $id);
+            $this->audit(fn () => 'angelegt (' . implode(', ', array_map(static fn ($d) => self::when($d), $dayData['dates'])) . ')' . ($data['is_active'] ? ', aktiv' : ''), $id);
         }
         Http::redirect('/admin/round/' . $id);
     }
@@ -588,7 +590,7 @@ final class AdminController
             $removed ? "$removed entfernt" : '',
         ]);
         if ($parts) {
-            $this->audit('Übersetzungen bearbeitet (' . implode(', ', $parts) . ')', $id);
+            $this->audit(fn () => 'Übersetzungen bearbeitet (' . implode(', ', $parts) . ')', $id);
         }
         $this->flash('success', $parts ? implode(', ', $parts) . '.' : 'Keine Änderungen.');
         if ($conflicts) {
@@ -607,7 +609,7 @@ final class AdminController
             Http::redirect('/admin/round/' . $id);
         }
         Db::run('UPDATE rounds SET is_active = ?, expired_at = IF(? = 1, NULL, expired_at), updated_at = ? WHERE id = ?', [$active, $active, Time::nowSql(), $id]);
-        $this->audit($active ? 'aktiviert' : 'deaktiviert', $id);
+        $this->audit(fn () => $active ? 'aktiviert' : 'deaktiviert', $id);
         $this->flash('success', $active ? 'Runde aktiviert – der Link ist jetzt erreichbar.' : 'Runde deaktiviert – keine neuen Buchungen mehr; Eltern können über ihren Link weiterhin absagen.');
         Http::redirect('/admin/round/' . $id);
     }
@@ -670,7 +672,7 @@ final class AdminController
             }
             return $newId;
         });
-        $this->audit('dupliziert' . ($firstDate !== '' ? ' mit erstem Tag am ' . self::when($firstDate) : ''), $id);
+        $this->audit(fn () => 'dupliziert' . ($firstDate !== '' ? ' mit erstem Tag am ' . self::when($firstDate) : ''), $id);
         $this->flash('success', $firstDate !== ''
             ? 'Runde dupliziert (ohne Buchungen, inaktiv), erster Tag am ' . fmt_date($firstDate) . '. Bitte den Titel prüfen.'
             : 'Runde dupliziert (ohne Buchungen, inaktiv). Bitte Titel und Daten anpassen.');
@@ -681,7 +683,7 @@ final class AdminController
     {
         $this->round($id);
         $booked = (int) Db::value('SELECT COUNT(*) FROM bookings b JOIN slots s ON s.id = b.slot_id JOIN round_days d ON d.id = s.day_id WHERE d.round_id = ?', [$id]);
-        $this->audit('gelöscht' . ($booked ? " (mit $booked Buchung(en))" : ''), $id);
+        $this->audit(fn () => 'gelöscht' . ($booked ? " (mit $booked Buchung(en))" : ''), $id);
         Db::run('DELETE FROM rounds WHERE id = ?', [$id]);
         $this->flash('success', 'Runde mit allen Tagen und Buchungen gelöscht.');
         Http::redirect('/admin');
@@ -702,7 +704,7 @@ final class AdminController
         if ($round['expired_at'] !== null && max($dayData['dates']) >= Time::today()) {
             Db::run('UPDATE rounds SET expired_at = NULL WHERE id = ?', [$roundId]);
         }
-        $this->audit('Tag(e) hinzugefügt: ' . implode(', ', array_map(static fn ($d) => self::when($d), $dayData['dates'])), $roundId);
+        $this->audit(fn () => 'Tag(e) hinzugefügt: ' . implode(', ', array_map(static fn ($d) => self::when($d), $dayData['dates'])), $roundId);
         $this->flash('success', count($dayData['dates']) . " Tag(e) angelegt: $count Termine erzeugt.");
         Http::redirect('/admin/round/' . $roundId);
     }
@@ -869,7 +871,7 @@ final class AdminController
         if ($in['date'] >= Time::today()) {
             Db::run('UPDATE rounds SET expired_at = NULL WHERE id = ? AND expired_at IS NOT NULL', [$day['round_id']]);
         }
-        $this->audit('Tag ' . self::when($day['day_date']) . ' bearbeitet' . ($in['date'] !== $day['day_date'] ? ' (jetzt ' . self::when($in['date']) . ')' : ''), (int) $day['round_id']);
+        $this->audit(fn () => 'Tag ' . self::when($day['day_date']) . ' bearbeitet' . ($in['date'] !== $day['day_date'] ? ' (jetzt ' . self::when($in['date']) . ')' : ''), (int) $day['round_id']);
         $this->afterSync((int) $day['round_id'], $id, 'Tag gespeichert.');
     }
 
@@ -881,7 +883,7 @@ final class AdminController
             $this->flash('error', "An diesem Tag gibt es $bookings Buchung(en). Bitte das Löschen ausdrücklich bestätigen.");
             Http::redirect('/admin/round/' . $day['round_id'], [], 'day-' . $id);
         }
-        $this->audit('Tag ' . self::when($day['day_date']) . ' gelöscht' . ($bookings ? " (mit $bookings Buchung(en))" : ''), (int) $day['round_id']);
+        $this->audit(fn () => 'Tag ' . self::when($day['day_date']) . ' gelöscht' . ($bookings ? " (mit $bookings Buchung(en))" : ''), (int) $day['round_id']);
         Db::run('DELETE FROM round_days WHERE id = ?', [$id]);
         $this->flash('success', 'Tag gelöscht' . ($bookings ? " (inkl. $bookings Buchung(en))." : '.'));
         Http::redirect('/admin/round/' . $day['round_id']);
@@ -898,7 +900,7 @@ final class AdminController
             Http::redirect('/admin/round/' . $day['round_id'], [], 'day-' . $dayId);
         }
         Db::run('INSERT INTO day_breaks (day_id, start_time, end_time, label) VALUES (?, ?, ?, ?)', [$dayId, $start, $end, $label !== '' ? $label : null]);
-        $this->audit('Pause am ' . self::when($day['day_date']) . ' hinzugefügt (' . fmt_range($start, $end) . ')', (int) $day['round_id']);
+        $this->audit(fn () => 'Pause am ' . self::when($day['day_date']) . ' hinzugefügt (' . fmt_range($start, $end) . ')', (int) $day['round_id']);
         $this->afterSync((int) $day['round_id'], $dayId, 'Pause hinzugefügt.');
     }
 
@@ -908,7 +910,7 @@ final class AdminController
         // Ownership is checked via the day
         $day = $this->day((int) $break['day_id']);
         Db::run('DELETE FROM day_breaks WHERE id = ?', [$id]);
-        $this->audit('Pause am ' . self::when($day['day_date']) . ' entfernt (' . fmt_range($break['start_time'], $break['end_time']) . ')', (int) $day['round_id']);
+        $this->audit(fn () => 'Pause am ' . self::when($day['day_date']) . ' entfernt (' . fmt_range($break['start_time'], $break['end_time']) . ')', (int) $day['round_id']);
         $this->afterSync((int) $day['round_id'], (int) $day['id'], 'Pause entfernt.');
     }
 
@@ -945,7 +947,7 @@ final class AdminController
     {
         $slot = $this->slot($id);
         Db::run('UPDATE slots SET is_blocked = 1 - is_blocked WHERE id = ?', [$id]);
-        $this->audit('Termin ' . self::when($slot['day_date'], $slot['start_time']) . ($slot['is_blocked'] ? ' freigegeben' : ' gesperrt'), (int) $slot['round_id']);
+        $this->audit(fn () => 'Termin ' . self::when($slot['day_date'], $slot['start_time']) . ($slot['is_blocked'] ? ' freigegeben' : ' gesperrt'), (int) $slot['round_id']);
         $this->flash('success', $slot['is_blocked'] ? 'Slot freigegeben.' : 'Slot gesperrt.');
         Http::redirect('/admin/round/' . $slot['round_id'], [], 'slot-' . $id);
     }
@@ -980,7 +982,7 @@ final class AdminController
             $this->flash('error', 'Dieser Slot ist bereits belegt.');
             Http::redirect('/admin/round/' . $round['id'], [], 'slot-' . $slotId);
         }
-        $this->audit('Buchung ' . self::when($slot['day_date'], $slot['start_time']) . ' eingetragen', (int) $round['id']);
+        $this->audit(fn () => 'Buchung ' . self::when($slot['day_date'], $slot['start_time']) . ' eingetragen', (int) $round['id']);
         $msg = 'Eintrag angelegt. Änderungslink für die Eltern (wird nur jetzt angezeigt): ' . abs_url('/b/' . $token, ['lang' => $old['lang']]);
         if ($old['send_mail'] && $old['email'] !== '' && $this->teacherMailAllowed($msg)) {
             $booking = BookingService::findById($id);
@@ -1034,7 +1036,7 @@ final class AdminController
         }
         BookingService::update($id, PublicController::cleanName($old['name']), $old['email'] ?: null, $old['lang']);
         $target = $moved ? BookingService::findById($id) : null;
-        $this->audit('Buchung ' . self::when($booking['day_date'], $booking['start_time']) . ' geändert'
+        $this->audit(fn () => 'Buchung ' . self::when($booking['day_date'], $booking['start_time']) . ' geändert'
             . ($target ? ', umgebucht auf ' . self::when($target['day_date'], $target['start_time']) : ''), (int) $booking['round_id']);
         $msg = $moved ? 'Eintrag gespeichert und umgebucht.' : 'Eintrag gespeichert.';
         if ($old['send_mail'] && $old['email'] !== '' && $this->teacherMailAllowed($msg)) {
@@ -1049,7 +1051,7 @@ final class AdminController
     {
         $booking = $this->booking($id);
         BookingService::delete($booking);
-        $this->audit('Buchung ' . self::when($booking['day_date'], $booking['start_time']) . ' gelöscht', (int) $booking['round_id']);
+        $this->audit(fn () => 'Buchung ' . self::when($booking['day_date'], $booking['start_time']) . ' gelöscht', (int) $booking['round_id']);
         $this->flash('success', 'Eintrag gelöscht – der Slot ist wieder frei.');
         Http::redirect('/admin/round/' . $booking['round_id'], [], 'day-' . $booking['day_id']);
     }
@@ -1171,6 +1173,7 @@ final class AdminController
             'email' => Http::post('email'),
             'summary_evening' => Http::post('summary_evening') === '1' ? 1 : 0,
             'summary_deadline' => Http::post('summary_deadline') === '1' ? 1 : 0,
+            'lang' => in_array(Http::post('lang'), AdminI18n::LANGUAGES, true) ? Http::post('lang') : AdminI18n::of(Auth::user()),
         ];
         $errors = [];
         if ($data['display_name'] === '') {
@@ -1200,9 +1203,10 @@ final class AdminController
             ]));
         }
         Db::run(
-            'UPDATE users SET display_name = ?, email = ?, summary_evening = ?, summary_deadline = ? WHERE id = ?',
-            [$data['display_name'], $data['email'] !== '' ? $data['email'] : null, $data['summary_evening'], $data['summary_deadline'], Auth::id()]
+            'UPDATE users SET display_name = ?, email = ?, summary_evening = ?, summary_deadline = ?, lang = ? WHERE id = ?',
+            [$data['display_name'], $data['email'] !== '' ? $data['email'] : null, $data['summary_evening'], $data['summary_deadline'], $data['lang'], Auth::id()]
         );
+        AdminI18n::set($data['lang']); // the confirmation already in the new language
         $this->flash('success', 'Profil gespeichert.');
         Http::redirect('/admin/profile');
     }
@@ -1277,6 +1281,8 @@ final class AdminController
             // Admins can make others admins and take the role away again, but not change their own
             'role' => $isSelf ? $user['role'] : (Http::post('role') === 'admin' ? 'admin' : 'teacher'),
             'is_active' => $user ? (Http::post('is_active') === '1' ? 1 : 0) : 1,
+            // Language of the account (admin area, invitation and summaries); new accounts: the inviter's
+            'lang' => in_array(Http::post('lang'), AdminI18n::LANGUAGES, true) ? Http::post('lang') : ($user ? AdminI18n::of($user) : AdminI18n::lang()),
         ];
         // New accounts: username = email address. Freely changeable when editing.
         $data['username'] = $user ? Http::post('username') : $data['email'];
@@ -1309,8 +1315,8 @@ final class AdminController
         }
         if ($user) {
             Db::run(
-                'UPDATE users SET username = ?, display_name = ?, email = ?, role = ?, is_active = ? WHERE id = ?',
-                [$data['username'], $data['display_name'], $data['email'], $data['role'], $data['is_active'], $id]
+                'UPDATE users SET username = ?, display_name = ?, email = ?, role = ?, is_active = ?, lang = ? WHERE id = ?',
+                [$data['username'], $data['display_name'], $data['email'], $data['role'], $data['is_active'], $data['lang'], $id]
             );
             $changes = array_filter([
                 $data['role'] !== $user['role'] ? 'Rolle jetzt ' . ($data['role'] === 'admin' ? 'Admin' : 'Lehrkraft') : '',
@@ -1318,15 +1324,15 @@ final class AdminController
                 $data['display_name'] !== $user['display_name'] ? 'Name jetzt „' . $data['display_name'] . '“' : '',
                 $data['email'] !== (string) $user['email'] || $data['username'] !== $user['username'] ? 'E-Mail/Benutzername geändert' : '',
             ]);
-            $this->audit('Konto ' . self::accountLabel($user) . ' bearbeitet' . ($changes ? ': ' . implode(', ', $changes) : ''));
+            $this->audit(fn () => 'Konto ' . self::accountLabel($user) . ' bearbeitet' . ($changes ? ': ' . implode(', ', $changes) : ''));
             $this->flash('success', 'Benutzer gespeichert.' . (!$data['is_active'] ? ' Das Konto ist deaktiviert; seine Runden sind öffentlich nicht mehr erreichbar.' : ''));
         } else {
             $id = Db::insert(
-                'INSERT INTO users (username, password_hash, role, display_name, email, is_active, created_at)
-                 VALUES (?, ?, ?, ?, ?, 1, ?)',
-                [$data['username'], AccountLinks::unusablePasswordHash(), $data['role'], $data['display_name'], $data['email'], Time::nowSql()]
+                'INSERT INTO users (username, password_hash, role, display_name, email, lang, is_active, created_at)
+                 VALUES (?, ?, ?, ?, ?, ?, 1, ?)',
+                [$data['username'], AccountLinks::unusablePasswordHash(), $data['role'], $data['display_name'], $data['email'], $data['lang'], Time::nowSql()]
             );
-            $this->audit('Konto ' . self::accountLabel($data) . ' angelegt (' . ($data['role'] === 'admin' ? 'Admin' : 'Lehrkraft') . ') und eingeladen');
+            $this->audit(fn () => 'Konto ' . self::accountLabel($data) . ' angelegt (' . ($data['role'] === 'admin' ? 'Admin' : 'Lehrkraft') . ') und eingeladen');
             $this->linkFlash($this->userById($id), AccountLinks::INVITE);
         }
         Http::redirect('/admin/users');
@@ -1346,7 +1352,7 @@ final class AdminController
         }
         Db::run('UPDATE users SET password_hash = ? WHERE id = ?', [AccountLinks::unusablePasswordHash(), $id]);
         Auth::endOtherSessions($id, false);
-        $this->audit('Konto ' . self::accountLabel($user) . ': ' . ($user['last_login_at'] === null ? 'Einladung erneut gesendet' : 'Link zum Zurücksetzen des Passworts gesendet'));
+        $this->audit(fn () => 'Konto ' . self::accountLabel($user) . ': ' . ($user['last_login_at'] === null ? 'Einladung erneut gesendet' : 'Link zum Zurücksetzen des Passworts gesendet'));
         $this->linkFlash($user, $user['last_login_at'] === null ? AccountLinks::INVITE : AccountLinks::RESET);
         Http::redirect('/admin/users');
     }
@@ -1467,7 +1473,7 @@ final class AdminController
             Http::redirect('/admin/users/' . $id . '/edit');
         }
         $rounds = (int) Db::value('SELECT COUNT(*) FROM rounds WHERE user_id = ?', [$id]);
-        $this->audit('Konto ' . self::accountLabel($user) . ' gelöscht' . ($rounds ? " (mit $rounds Runde(n))" : ''));
+        $this->audit(fn () => 'Konto ' . self::accountLabel($user) . ' gelöscht' . ($rounds ? " (mit $rounds Runde(n))" : ''));
         Db::run('DELETE FROM users WHERE id = ?', [$id]);
         $this->flash('success', "Benutzer „{$user['username']}“ mit allen Runden und Buchungen gelöscht.");
         Http::redirect('/admin/users');
@@ -1574,7 +1580,7 @@ final class AdminController
             Http::redirect('/admin/texts');
         }
         Operator::save($contact);
-        $this->audit('Angaben für Impressum und Datenschutz geändert');
+        $this->audit(fn () => 'Angaben für Impressum und Datenschutz geändert');
         $this->flash('success', 'Angaben für Impressum und Datenschutz gespeichert.');
         Http::redirect('/admin/texts');
     }
@@ -1612,7 +1618,7 @@ final class AdminController
              ON DUPLICATE KEY UPDATE content = ?, updated_at = ?',
             [$key, $lang, $content, Time::nowSql(), $content, Time::nowSql()]
         );
-        $this->audit(($key === 'imprint' ? 'Impressum' : 'Datenschutzerklärung') . ' (' . strtoupper($lang) . ') geändert');
+        $this->audit(fn () => ($key === 'imprint' ? 'Impressum' : 'Datenschutzerklärung') . ' (' . strtoupper($lang) . ') geändert');
         $this->flash('success', 'Text gespeichert.');
         Http::redirect('/admin/page/' . $key . '/' . $lang);
     }
@@ -1735,10 +1741,10 @@ final class AdminController
         $json = json_encode($settings, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
         if ($row) {
             Db::run('UPDATE round_templates SET name = ?, data = ?, updated_at = ? WHERE id = ?', [$data['name'], $json, Time::nowSql(), $id]);
-            $this->audit('Vorlage „' . $data['name'] . '“ bearbeitet' . ($row['name'] !== $data['name'] ? ' (bisher „' . $row['name'] . '“)' : ''));
+            $this->audit(fn () => 'Vorlage „' . $data['name'] . '“ bearbeitet' . ($row['name'] !== $data['name'] ? ' (bisher „' . $row['name'] . '“)' : ''));
         } else {
             Db::insert('INSERT INTO round_templates (name, data, created_at, updated_at) VALUES (?, ?, ?, ?)', [$data['name'], $json, Time::nowSql(), Time::nowSql()]);
-            $this->audit('Vorlage „' . $data['name'] . '“ angelegt');
+            $this->audit(fn () => 'Vorlage „' . $data['name'] . '“ angelegt');
         }
         $this->flash('success', 'Vorlage gespeichert. Sie steht jetzt beim Anlegen einer neuen Runde zur Auswahl.');
         Http::redirect('/admin/templates');
@@ -1748,7 +1754,7 @@ final class AdminController
     {
         $row = $this->template($id);
         Db::run('DELETE FROM round_templates WHERE id = ?', [$id]);
-        $this->audit('Vorlage „' . $row['name'] . '“ gelöscht');
+        $this->audit(fn () => 'Vorlage „' . $row['name'] . '“ gelöscht');
         $this->flash('success', 'Vorlage gelöscht. Bereits angelegte Runden bleiben unverändert.');
         Http::redirect('/admin/templates');
     }
@@ -1780,7 +1786,7 @@ final class AdminController
             'INSERT INTO round_templates (name, data, created_at, updated_at) VALUES (?, ?, ?, ?)',
             [$name, json_encode($settings + self::TEMPLATE_DEFAULTS, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR), Time::nowSql(), Time::nowSql()]
         );
-        $this->audit('Vorlage „' . $name . '“ aus der Runde erstellt', $roundId);
+        $this->audit(fn () => 'Vorlage „' . $name . '“ aus der Runde erstellt', $roundId);
         $this->flash('success', 'Vorlage aus der Runde erstellt (Zeiten und Pausen des ersten Tages, Einstellungen der Runde). Bitte Namen und Angaben prüfen.');
         Http::redirect('/admin/templates/' . $id . '/edit');
     }
@@ -1808,12 +1814,17 @@ final class AdminController
         ]);
     }
 
-    /** Logs a change if an admin made it (see Audit). With $roundId the round is named first. */
-    private function audit(string $message, ?int $roundId = null): void
+    /**
+     * Logs a change if an admin made it (see Audit). With $roundId the round is named first.
+     * $message is a closure so that the entry is written in the default language of the installation,
+     * whatever the language of the admin (one language in the log).
+     */
+    private function audit(\Closure $message, ?int $roundId = null): void
     {
         if (!Auth::isAdmin()) {
             return;
         }
+        $message = AdminI18n::with(AdminI18n::default(), $message);
         if ($roundId !== null) {
             $round = Db::one(
                 "SELECT r.title, COALESCE(NULLIF(u.display_name, ''), u.username) AS owner FROM rounds r JOIN users u ON u.id = r.user_id WHERE r.id = ?",

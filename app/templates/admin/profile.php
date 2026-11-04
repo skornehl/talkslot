@@ -23,6 +23,14 @@
       <label for="current_password_email">Aktuelles Passwort <span class="muted small">(nur nötig, wenn Sie die E-Mail-Adresse ändern)</span></label>
       <input type="password" id="current_password_email" name="current_password" autocomplete="current-password">
     </div>
+    <div class="field">
+      <label for="lang">Sprache / Language</label>
+      <select id="lang" name="lang">
+        <?php foreach (['de' => 'Deutsch', 'en' => 'English'] as $code => $name): ?>
+          <option value="<?= $code ?>"<?= ($data['lang'] ?? App\AdminI18n::default()) === $code ? ' selected' : '' ?>><?= $name ?></option>
+        <?php endforeach; ?>
+      </select>
+    </div>
     <fieldset class="field pin-fieldset">
       <legend>Zusammenfassungen per E-Mail</legend>
       <div class="check">

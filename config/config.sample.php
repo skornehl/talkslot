@@ -65,6 +65,10 @@ return [
     // Daily summary for teachers and reminders to parents are sent for the next day from this hour on (local time)
     'summary_evening_hour' => 18,
 
+    // Language of the admin area for accounts without their own choice and before signing in
+    // (de or en; everybody can change it under "Mein Profil")
+    'admin_language' => 'de',
+
     // Log of the changes made by admins (Protokoll): entries are deleted after this many days
     'audit_log_days' => 90,
 

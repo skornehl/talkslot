@@ -562,6 +562,45 @@ check('build-version: file with version, commit, timestamp', $rc === 0 && $info[
 [$rc, $out] = $run(['bin/next-version.php']);
 check('next-version: prints a version (' . trim($out) . ')', $rc === 0 && preg_match('/^v\d+\.\d+\.\d+$/', trim($out)));
 
+echo "Admin area in German and English\n";
+// Every __('…') / __h('…') text (German) needs an English version in app/lang/admin/en/*.php,
+// with the same placeholders; entries nobody uses any more are reported as well
+$used = [];
+$files = array_merge(glob(dirname(__DIR__) . '/app/src/*.php'), glob(dirname(__DIR__) . '/app/src/Controller/*.php'),
+    glob(dirname(__DIR__) . '/app/templates/*.php'), glob(dirname(__DIR__) . '/app/templates/admin/*.php'), [dirname(__DIR__) . '/public/install.php']);
+foreach ($files as $f) {
+    $tk = token_get_all((string) file_get_contents($f));
+    foreach ($tk as $i => $tok) {
+        if (is_array($tok) && $tok[0] === T_STRING && in_array($tok[1], ['__', '__h'], true) && ($tk[$i + 1] ?? null) === '('
+            && is_array($tk[$i + 2] ?? null) && $tk[$i + 2][0] === T_CONSTANT_ENCAPSED_STRING) {
+            $used[(string) eval('return ' . $tk[$i + 2][1] . ';')] = basename($f) . ':' . $tk[$i + 2][2];
+        }
+    }
+}
+// JavaScript texts: L('…') in public/assets/js/app.js
+preg_match_all("/\\bL\\('((?:[^'\\\\]|\\\\.)*)'/", (string) file_get_contents(dirname(__DIR__) . '/public/assets/js/app.js'), $jm);
+foreach ($jm[1] as $js) {
+    $used[stripcslashes($js)] = 'app.js';
+}
+$dict = App\AdminI18n::dictionary();
+$missing = array_diff_key($used, $dict);
+check('admin texts: every German text has an English version' . ($missing ? ' (missing: ' . implode(' | ', array_map(static fn ($k, $w) => "$w: $k", array_keys(array_slice($missing, 0, 5, true)), array_slice($missing, 0, 5, true))) . (count($missing) > 5 ? ' … ' . count($missing) . ' in total' : '') . ')' : ''), !$missing);
+$unused = array_diff_key($dict, $used);
+check('admin texts: no unused English entries' . ($unused ? ' (' . implode(' | ', array_slice(array_keys($unused), 0, 5)) . ')' : ''), !$unused);
+$ph = static fn (string $s): array => (preg_match_all('/\{(\w+)\}/', $s, $m) ? array_values(array_unique($m[1])) : []);
+$badPh = array_filter($dict, static fn ($en, $de) => ($a = $ph($de)) != ($b = $ph((string) $en)) && (sort($a) || true) && (sort($b) || true) && $a !== $b, ARRAY_FILTER_USE_BOTH);
+check('admin texts: same placeholders in both languages' . ($badPh ? ' (' . implode(' | ', array_slice(array_keys($badPh), 0, 3)) . ')' : ''), !$badPh);
+check('admin language: German text unchanged, English from the dictionary, missing → German, placeholders',
+    App\AdminI18n::with('de', static fn () => __('Profil gespeichert.')) === 'Profil gespeichert.'
+    && App\AdminI18n::with('en', static fn () => __('Nicht übersetzt {x}', ['x' => 1])) === 'Nicht übersetzt 1'
+    && App\AdminI18n::with('de', static fn () => __h('A & {b}', ['b' => '<i>c</i>'])) === 'A &amp; <i>c</i>');
+$_SERVER['HTTP_ACCEPT_LANGUAGE'] = 'fr-FR,en;q=0.8,de;q=0.5';
+check('admin language before signing in: browser language, ?lang= wins, account setting wins over both',
+    App\AdminI18n::forRequest(null) === 'en' && (($_GET['lang'] = 'de') && App\AdminI18n::forRequest(null) === 'de')
+    && App\AdminI18n::forRequest(['lang' => 'en']) === 'en' && App\AdminI18n::forRequest(['lang' => null]) === 'de');
+unset($_GET['lang'], $_SERVER['HTTP_ACCEPT_LANGUAGE']);
+check('admin language without browser hint: configured default', App\AdminI18n::forRequest(null) === App\AdminI18n::default());
+
 echo "Operator details\n";
 // Without a database: the cached details are set directly (contact() only reads the settings once)
 $contact = new ReflectionProperty(App\Operator::class, 'contact');
