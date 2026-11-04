@@ -121,7 +121,7 @@
       var box = document.getElementById(link.getAttribute('data-open-details'));
       if (box) {
         box.open = true;
-        var field = box.querySelector('input, select, button');
+        var field = box.querySelector('input:not([type=hidden]), select, textarea, button');
         if (field) {
           window.setTimeout(function () { field.focus(); }, 0);
         }

@@ -222,6 +222,13 @@ try {
   await goto('/admin');
   check('round created only once', await js(`[...document.querySelectorAll('a')].filter(a => a.textContent.trim() === ${JSON.stringify(title)}).length`) === 1);
 
+  section('Admin: "Duplizieren …" opens the form with the date');
+  await goto(roundPath);
+  check('duplicate form closed at first', await js(`!document.getElementById('duplicate').open`));
+  await js(`document.querySelector('[data-open-details="duplicate"]').click()`, { gesture: true });
+  await sleep(50);
+  check('button opens it and focuses the date', await js(`document.getElementById('duplicate').open && document.activeElement.id === 'first_date'`));
+
   section('Admin: confirmation before deleting');
   await goto(roundPath);
   cdp.dialogs = [];
