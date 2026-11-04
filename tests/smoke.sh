@@ -46,6 +46,7 @@ check "wrong password → 401" '[ "$code" = 401 ]'
 code=$(curl -s -o /dev/null -w '%{http_code}' -c "$J" -b "$J" -d "csrf=$T&username=$USER&password=$PASS" "$B/admin/login")
 check "Login → 303" '[ "$code" = 303 ]'
 grep -q 'tp_admin' "$J" && ok "session cookie set" || bad "session cookie"
+check "footer: Powered by TalkSlot with version, linked to the project page (public and admin)" 'curl -s "$B/" | grep -q "Powered by <a href=\"https://skornehl.github.io/talkslot/\">TalkSlot \(v[0-9]\|dev\)" && curl -s -b "$J" "$B/admin" | grep -q "Powered by <a href=\"https://skornehl.github.io/talkslot/\">TalkSlot " && ! curl -s "$B/" | grep -q "class=\"version\">Version"'
 grep -q '/admin' "$J" && ok "cookie path /admin" || bad "cookie path"
 T=$(curl -s -b "$J" "$B/admin" | csrf)
 code=$(curl -s -o /dev/null -w '%{http_code}' -b "$J" -d "title=Test" "$B/admin/round/new")

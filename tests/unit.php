@@ -106,11 +106,11 @@ $names = new ReflectionProperty(I18n::class, 'names');
 check('language name is cached', I18n::name('pl') === 'Polski' && ($names->getValue()['pl'] ?? null) === 'Polski' && I18n::name('xx') === 'XX');
 
 echo "Version\n";
-$lbl = static fn (string $v, string $at = '') => App\Version::label(['version' => $v, 'commit' => 'abc1234', 'built_at' => $at]);
-check('release tag', $lbl('v1.2.0') === '1.2.0' && $lbl('v2.0.0-rc.1') === '2.0.0-rc.1');
-check('commits after the release', $lbl('v1.2.0-3-gabc1234def') === '1.2.0+3 (abc1234)');
-check('no release yet / local', $lbl('abc1234') === 'abc1234' && $lbl('dev') === 'dev (abc1234)');
-check('timestamp in local time', $lbl('v1.2.0', '2026-11-02T08:14:01Z') === '1.2.0 · 02.11.2026 09:14');
+$lbl = static fn (string $v, string $at = '') => App\Version::short(['version' => $v, 'commit' => 'abc1234', 'built_at' => $at]);
+check('release tag', $lbl('v1.2.0') === 'v1.2.0' && $lbl('v2.0.0-rc.1') === 'v2.0.0-rc.1' && $lbl('1.2.0') === 'v1.2.0');
+check('commits after the release', $lbl('v1.2.0-3-gabc1234def') === 'v1.2.0+3 (abc1234)');
+check('no release yet / local', $lbl('abc1234') === 'abc1234' && $lbl('dev') === 'dev (abc1234)' && $lbl('') === 'dev (abc1234)');
+check('no build time in the footer label', $lbl('v1.2.0', '2026-11-02T08:14:01Z') === 'v1.2.0');
 $nx = static fn (string $last, array $msgs) => App\Version::next($last, $msgs);
 check('first release v1.0.0', $nx('', ['feat: x']) === 'v1.0.0');
 check('fix/chore/docs → Patch', $nx('v1.2.3', ['fix(ui): a', 'chore: b', 'Merge pull request #5 from x']) === 'v1.2.4');

@@ -31,28 +31,27 @@ final class Version
         ];
     }
 
+    /** Project page linked in the footer ("Powered by TalkSlot …"). */
+    public const PROJECT_URL = 'https://skornehl.github.io/talkslot/';
+
     /**
-     * Display, e.g. "1.2.0", "1.2.0+3 (abc1234)" (3 commits after the release) or "abc1234"
-     * (no release yet); with the deployment time in local time.
+     * Short display for the footer, e.g. "v1.2.0", "v1.2.0+3 (abc1234)" (3 commits after the release),
+     * "abc1234" (no release yet) or "dev (abc1234)" (local). The build time stays in info().
      */
-    public static function label(?array $info = null): string
+    public static function short(?array $info = null): string
     {
         $info ??= self::info();
         $v = $info['version'];
         if (preg_match('/^v?(\d+\.\d+\.\d+(?:-[0-9A-Za-z.]+?)?)-(\d+)-g([0-9a-f]+)(-dirty)?$/', $v, $m)) {
-            $label = $m[1] . '+' . $m[2] . ' (' . substr($m[3], 0, 7) . ')';
-        } elseif (preg_match('/^v?(\d+\.\d+\.\d+(?:-[0-9A-Za-z.]+)?)$/', $v, $m)) {
-            $label = $m[1];
-        } elseif ($v === 'dev' || $v === '') {
-            $label = 'dev' . ($info['commit'] !== '' ? ' (' . $info['commit'] . ')' : '');
-        } else {
-            $label = substr($v, 0, 40); // commit only (no tag reachable)
+            return 'v' . $m[1] . '+' . $m[2] . ' (' . substr($m[3], 0, 7) . ')';
         }
-        $ts = $info['built_at'] !== '' ? strtotime($info['built_at']) : false;
-        if ($ts !== false) {
-            $label .= ' · ' . (new \DateTimeImmutable('@' . $ts))->setTimezone(new \DateTimeZone(date_default_timezone_get()))->format('d.m.Y H:i');
+        if (preg_match('/^v?(\d+\.\d+\.\d+(?:-[0-9A-Za-z.]+)?)$/', $v, $m)) {
+            return 'v' . $m[1];
         }
-        return $label;
+        if ($v === 'dev' || $v === '') {
+            return 'dev' . ($info['commit'] !== '' ? ' (' . $info['commit'] . ')' : '');
+        }
+        return substr($v, 0, 40); // commit only (no tag reachable)
     }
 
     /**

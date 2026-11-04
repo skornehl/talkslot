@@ -14,7 +14,6 @@ return [
     'theme.auto' => 'Automatycznie',
     'theme.light' => 'Jasny',
     'theme.dark' => 'Ciemny',
-    'footer.version' => 'Wersja',
     'footer.language' => 'Język',
 
     'home.title' => 'Rezerwacja terminów',

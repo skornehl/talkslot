@@ -14,7 +14,6 @@ return [
     'theme.auto' => 'Automatic',
     'theme.light' => 'Light',
     'theme.dark' => 'Dark',
-    'footer.version' => 'Version',
     'footer.language' => 'Language',
 
     'home.title' => 'Appointments',

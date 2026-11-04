@@ -17,7 +17,6 @@ return [
     'theme.auto' => 'Automatisch',
     'theme.light' => 'Hell',
     'theme.dark' => 'Dunkel',
-    'footer.version' => 'Version',
     'footer.language' => 'Sprache',
 
     'home.title' => 'Terminvergabe',

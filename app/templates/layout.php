@@ -29,7 +29,7 @@ use App\I18n;
     <nav aria-label="<?= e(t('footer.imprint')) ?> / <?= e(t('footer.privacy')) ?>">
       <a href="<?= e(url('/impressum')) ?>"><?= e(t('footer.imprint')) ?></a>
       <a href="<?= e(url('/datenschutz', ['r' => $privacyRound ?? null])) ?>"><?= e(t('footer.privacy')) ?></a>
-      <span class="version"><?= e(t('footer.version')) ?> <?= e(App\Version::label()) ?></span>
+      <?php require __DIR__ . '/_powered_by.php'; ?>
     </nav>
     <?php if (count(I18n::languages()) > 1):
       // Language links only for harmless paths (otherwise e.g. /\\host → foreign domain), else home page

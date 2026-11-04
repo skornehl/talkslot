@@ -14,7 +14,6 @@ return [
     'theme.auto' => 'Otomatik',
     'theme.light' => 'Açık',
     'theme.dark' => 'Koyu',
-    'footer.version' => 'Sürüm',
     'footer.language' => 'Dil',
 
     'home.title' => 'Randevu alma',
