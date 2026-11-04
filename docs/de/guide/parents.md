@@ -25,21 +25,38 @@ Benutzerkonto brauchen Sie nicht.
 
 ## Termin ändern oder absagen
 
-Nach der Buchung sehen Sie **Ihren persönlichen Link**. Bewahren Sie ihn gut auf, zum Beispiel als
-Lesezeichen: Damit können Sie den Termin auf einen anderen freien Termin verschieben oder absagen – bis zu
-der Frist, die die Lehrkraft festgelegt hat. Wenn Sie eine E-Mail-Adresse angegeben haben, steht der Link
-auch in der Bestätigungs-E-Mail und in der Erinnerung, und der Kalendereintrag aktualisiert sich von
-selbst, wenn Sie den Termin verschieben. Hat die Lehrkraft einen Ort angegeben, steht er auf der
-Buchungsseite, in der Bestätigung und in der Kalenderdatei.
+Nach der Buchung sehen Sie **Ihren persönlichen Link**. Er ist der einzige Schlüssel zu Ihrem Termin: Damit
+können Sie den Termin auf einen anderen freien Termin verschieben oder absagen – bis zu der Frist, die die
+Lehrkraft festgelegt hat. Bewahren Sie ihn gut auf; die Seite hilft dabei:
+
+- **Link kopieren** legt ihn in die Zwischenablage, zum Beispiel für Ihre Notizen.
+- **In Kalender eintragen** lädt den Termin als Kalenderdatei herunter. Der persönliche Link steht in der
+  Beschreibung des Eintrags.
+- **Teilen …** (nur auf Geräten, die das anbieten, meist Handys) schickt ihn Ihnen selbst, zum Beispiel in
+  einem Messenger. Wer den Link hat, kann den Termin ändern oder absagen – teilen Sie ihn also nur mit
+  Personen, denen Sie vertrauen.
+- **Bestätigung per E-Mail erhalten**, falls Sie beim Buchen keine Adresse angegeben haben: Die Bestätigung
+  mit Link und Kalenderdatei geht an eine Adresse, die Sie dort eingeben. Die Adresse wird nicht
+  gespeichert, und das geht höchstens zweimal innerhalb von 24 Stunden.
+
+*Termin ändern* und *Termin absagen* sind darunter eingeklappt; öffnen Sie sie, wenn Sie sie brauchen.
+Wenn Sie beim Buchen eine E-Mail-Adresse angegeben haben, steht der Link auch in der Bestätigungs-E-Mail und
+in der Erinnerung, und der Kalendereintrag aktualisiert sich von selbst, wenn Sie den Termin verschieben.
+Hat die Lehrkraft einen Ort angegeben, steht er auf der Buchungsseite, in der Bestätigung und in der
+Kalenderdatei.
 
 ![Bestätigungsseite mit dem persönlichen Link]({{ '/assets/img/booking-confirmed.webp' | relative_url }})
 
 ## Gut zu wissen
 
 - **Geschwister:** Buchen Sie für jedes Kind einzeln, jeweils mit dem Namen des Kindes. Bei manchen
-  Terminvergaben ist nur ein Termin pro Person möglich.
-- **Auf diesem Gerät merken:** Mit einem freiwilligen Häkchen wird der Link zu Ihrem Termin in Ihrem
-  Browser gespeichert. So sehen Sie ihn, wenn Sie die Terminvergabe erneut öffnen. Dabei wird nichts an den
-  Server übertragen, und Sie können den Eintrag jederzeit löschen.
+  Terminvergaben ist nur ein Termin pro Person möglich. Haben Sie einen Termin auf diesem Gerät gemerkt,
+  zeigt die Terminvergabe ihn statt der Terminliste; *Weiteren Termin buchen (z. B. für ein
+  Geschwisterkind)* holt das Formular zurück, ohne etwas zu vergessen.
+- **Auf diesem Gerät merken:** Mit einem freiwilligen Häkchen werden der Link zu Ihrem Termin, seine
+  Bezeichnung und sein Datum in Ihrem Browser gespeichert. So sehen Sie ihn, wenn Sie die Terminvergabe
+  erneut öffnen. Jede Buchung bekommt einen eigenen Eintrag. Dabei wird nichts an den Server übertragen. Sie
+  können einen Eintrag jederzeit löschen (Ihr Termin bleibt bestehen); nach einer Absage und nach dem Tag
+  des Termins verschwindet er von selbst.
 - **Datenschutz:** Die Buchungsseite setzt keine Cookies und verfolgt Sie nicht. Ihre Angaben werden am Tag
   nach dem Termin automatisch gelöscht.

@@ -149,10 +149,10 @@ final class Migrations
     public const CURRENT_PAGE_HASHES = [
         'imprint.de' => '557dbb64b5ab373144a29e23a36056355fe02bdc7ff70a43d690d6acb8a74672',
         'imprint.en' => '0692f22c0bb7dd3c6f76c96c51f3dc78e25af54f97b4c556fb7268b8e372fa3f',
-        'privacy.de' => 'ac8cf4d882a13a6e127476ab13de02524316d343a746b4b8ff055c3aa0d09347',
-        'privacy.en' => '320c437da7fbf0e1ab24328e555348c160b1ac8bc551dfcb7229ae0593de2683',
-        'privacy-private.de' => '8e63fee7c9e729b8faf94be1e0ed98291a59170a51b768b4c8ac9a75b2226693',
-        'privacy-private.en' => '91d703acbd4ef5aa44d3c0527bffac75ccb3bf5376643e4b0605c1bef1a5cc47',
+        'privacy.de' => '12d249130ce60c94e7cd8f430e6cea2809d121351ab59090db0e0cc014eb4afe',
+        'privacy.en' => '53be37d7c9c6697144d9400fe8a4536dee767f9ee22fe2636224d2484d04390a',
+        'privacy-private.de' => 'de4289fa6a99be078922c0d4f2a945805de5fe1398b6e682f256f99cf9a8dabd',
+        'privacy-private.en' => '05bcdc8ab770ab9e17046b5b89e2d9bc9bbbe7a39a66e4fa6c777950c345995b',
     ];
 
     /**
@@ -220,6 +220,10 @@ final class Migrations
         'c503bcd0596bc7bc45098fedc8f2b910f452909701ba9e28fc247dd9854fcc94',
         'd71943ef603c979ebf3bda10357c80b6395568f07d1690798db8b52dfd016a5c',
         'f1ac0f64ece1e1ce11b4322831f8d121b6d5a3ea450183d6a277cf26d9c0f3b1',
+        // Privacy policy de/en for public schools without the calendar download, the later confirmation mail
+        // and the expiry of the remember-me entry (interim state on main after v1.5.0)
+        'ac8cf4d882a13a6e127476ab13de02524316d343a746b4b8ff055c3aa0d09347',
+        '320c437da7fbf0e1ab24328e555348c160b1ac8bc551dfcb7229ae0593de2683',
     ];
 
     public static function run(): void

@@ -79,6 +79,7 @@ return [
         'attempt' => [150, 3600],   // all booking attempts (incl. input errors)
         'booking' => [30, 3600],    // successful bookings
         'manage' => [300, 3600],    // requests to change links
+        'confirm' => [2, 86400],    // confirmation mails sent from the appointment page, per booking (at most 24 hours)
         'login' => [5, 900],        // failed admin logins
         'login_user' => [20, 3600], // failed logins per account from devices that never signed in to it
         'login_device' => [20, 3600], // failed logins per known device (instead of login_user)

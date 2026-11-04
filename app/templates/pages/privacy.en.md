@@ -22,7 +22,7 @@ Parents and guardians can use this page to book, change and cancel meetings (e.g
 - your **e-mail address**, only if you choose to provide it. It is used solely for the booking confirmation and messages about your appointment (change, cancellation, a reminder the evening before if the teacher has turned it on for the round), never for advertising or newsletters.
 - the chosen **time slot**, the time of booking and the selected language.
 
-If you provide an e-mail address, you receive confirmations with your appointment as a calendar file (.ics). What you store in your own calendar is your own responsibility.
+If you provide an e-mail address, you receive confirmations with your appointment as a calendar file (.ics). On the page of your appointment you can also download the calendar file and have the confirmation sent to an e-mail address later (at most twice within 24 hours). That address is only used to send this e-mail and is not stored in the booking service. What you store in your own calendar is your own responsibility.
 
 **When you visit the site:**
 
@@ -64,9 +64,9 @@ No data is transferred to countries outside the EU/EEA.
 
 ## Remember my appointment
 
-Only if you tick “Remember my appointment on this device” when booking (it is not pre-ticked), your browser stores the link to your appointment and its description in local storage (localStorage). This data stays on your device and is not sent to the server.
+Only if you tick “Remember my appointment on this device” when booking (it is not pre-ticked), your browser stores the link to your appointment, its description and its date in local storage (localStorage). When you open the page again, you see your appointments instead of the list of slots; if you book several (e.g. for siblings), each one is remembered. This data stays on your device and is not sent to the server.
 
-You can withdraw this consent at any time using “Remove saved appointment from this device” on the booking page or by clearing the site data in your browser. It is removed automatically after a cancellation.
+You can withdraw this consent at any time using “Remove saved appointment from this device” on the booking page or by clearing the site data in your browser. It is removed automatically after a cancellation, and after the day of the appointment (the next time these pages are opened on your device).
 
 ## Appearance (light/dark)
 

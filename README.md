@@ -45,13 +45,16 @@ schools (GDPR/DSGVO, TDDDG) and multilingual families.
 - Only free slots are shown, grouped by day. Required: name and acknowledging the privacy notice; e-mail is
   optional.
 - Personal link to **move or cancel**; confirmation and change mails contain an `.ics` file that updates the
-  same calendar entry when the booking is moved.
+  same calendar entry when the booking is moved. The confirmation page offers *Copy link*, *Add to
+  calendar*, *Share* (where the device has it, with a warning) and the confirmation by e-mail afterwards
+  (the address is not stored).
 - **Multiple bookings** per round configurable: one per person per round, one per person per day, or allowed.
   Same person = same name (case/spacing ignored) and, if both bookings have one, the same e-mail.
 - Location of the meeting (e.g. the room) on the booking page, in the confirmation and the calendar file;
   optional reminder mail the evening before.
 - Optional **"round code required"**: the link alone shows nothing but a code prompt.
-- Optional "remember my appointment on this device" (opt-in, `localStorage` only).
+- Optional "remember my appointment on this device" (opt-in, `localStorage` only): one entry per booking, so
+  siblings can be booked from the same device; removed after the day of the appointment.
 - Light/dark design following the device, switchable in the footer.
 
 **Teachers and admins (`/admin`, German or English user interface)**

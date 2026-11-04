@@ -100,6 +100,7 @@ Wi-Fi).
 | `attempt` | 150 per hour | all booking attempts, including input errors |
 | `booking` | 30 per hour | successful bookings |
 | `manage` | 300 per hour | requests to change links |
+| `confirm` | 2 per 24 hours | confirmation mails parents send to themselves from the appointment page, per booking, not per IP address (the window cannot be longer than 24 hours) |
 | `login` | 5 per 15 min | failed admin logins |
 | `login_user` | 20 per hour | failed logins **per account**, from devices that have not signed in to it before |
 | `login_device` | 20 per hour | failed logins **per known device** (instead of `login_user`) |
