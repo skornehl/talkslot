@@ -39,15 +39,58 @@ App\Config::load($cfg);
 check('booking without an address: nothing sent, nothing queued', App\Notifier::sendOrQueue(['id' => 1, 'email' => null], 'booked', null) === null
     && App\Notifier::sendOrQueue([], 'changed', null) === null);
 
-// One SMTP connection per run of the outbox (keep-alive); after an error the next mail connects again
+// One SMTP connection per run of the outbox (keep-alive): a minimal SMTP server in a subprocess counts the
+// connections (EHLO) and mails; STOP ends it and it prints "<connections>|<mails>"
+$server = proc_open([PHP_BINARY, '-r', '
+    $s = stream_socket_server("tcp://127.0.0.1:0");
+    echo substr(strrchr(stream_socket_get_name($s, false), ":"), 1), "\n";
+    $connections = $mails = 0;
+    $stop = false;
+    while (!$stop && ($c = stream_socket_accept($s, 10))) {
+        fwrite($c, "220 test\r\n");
+        $data = false;
+        while (($line = fgets($c)) !== false) {
+            $cmd = strtoupper(substr($line, 0, 4));
+            if ($data) {
+                if (rtrim($line) === ".") {
+                    $data = false;
+                    $mails++;
+                    fwrite($c, "250 queued\r\n");
+                }
+            } elseif ($cmd === "QUIT" || $cmd === "STOP") {
+                $stop = $cmd === "STOP";
+                fwrite($c, "221 bye\r\n");
+                break;
+            } else {
+                $connections += (int) ($cmd === "EHLO");
+                $data = $cmd === "DATA";
+                fwrite($c, $data ? "354 go on\r\n" : "250 ok\r\n");
+            }
+        }
+        fclose($c);
+    }
+    echo "$connections|$mails\n";'], [1 => ['pipe', 'w']], $serverPipes);
+$port = (int) fgets($serverPipes[1]);
+App\Config::load(['mail' => ['transport' => 'smtp', 'from_address' => 'absender@example.org', 'smtp' => ['host' => '127.0.0.1', 'port' => $port, 'encryption' => 'none', 'user' => '', 'pass' => '']] + $cfg['mail']] + $cfg);
+$sent = App\Mailer::batch(static fn (): array => array_map(static fn (string $to): bool => App\Mailer::send($to, 'S', 'B'), ['a@example.org', 'b@example.org', 'c@example.org']));
+$sent[] = App\Mailer::send('d@example.org', 'S', 'B') && App\Mailer::send('e@example.org', 'S', 'B');
+$stop = stream_socket_client('tcp://127.0.0.1:' . $port);
+fgets($stop);
+fwrite($stop, "STOP\r\n");
+fgets($stop);
+$counted = trim((string) fgets($serverPipes[1]));
+proc_close($server);
+check("batch: three mails over one SMTP connection, single mails one each ($counted)", $sent === [true, true, true, true] && $counted === '3|5');
+
+// After an error the failed connection is dropped, the next mail connects again
 App\Config::load(['alert_email' => 'betrieb@example.org', 'mail' => ['transport' => 'smtp', 'smtp' => ['host' => '127.0.0.1', 'port' => 1, 'encryption' => 'none', 'user' => '', 'pass' => '']] + $cfg['mail']] + $cfg);
 App\Alert::$stateFile = tempnam(sys_get_temp_dir(), 'alert');
 $alerts = [];
 App\Alert::$transport = static function (string $to, string $subject) use (&$alerts): bool { $alerts[] = $subject; return true; };
-$results = App\Mailer::batch(static fn (): array => [App\Mailer::send('a@example.org', 'S', 'B'), App\Mailer::send('b@example.org', 'S', 'B')]);
-$smtp = (new ReflectionProperty(App\Mailer::class, 'smtp'))->getValue();
-check('batch: SMTP unreachable → each mail fails on its own, reported once, no connection left over',
-    $results === [false, false] && $alerts === ['[TalkSlot] Mailversand fehlgeschlagen'] && $smtp === null);
+$smtp = new ReflectionProperty(App\Mailer::class, 'smtp');
+$results = App\Mailer::batch(static fn (): array => [App\Mailer::send('a@example.org', 'S', 'B'), $smtp->getValue(), App\Mailer::send('b@example.org', 'S', 'B')]);
+check('batch: SMTP unreachable → the connection is dropped after the error, each mail fails on its own, reported once',
+    $results === [false, null, false] && $alerts === ['[TalkSlot] Mailversand fehlgeschlagen'] && $smtp->getValue() === null);
 App\Config::load(['mail' => ['transport' => 'none'] + $cfg['mail']] + $cfg);
 check('batch: returns the result of the run', App\Mailer::batch(static fn (): string => App\Mailer::send('a@example.org', 'S', 'B') ? 'sent' : 'failed') === 'sent');
 @unlink(App\Alert::$stateFile);
