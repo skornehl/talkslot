@@ -4,7 +4,8 @@ description: Terminrunden anlegen, Eltern einladen und Buchungen verwalten.
 ---
 
 Lehrkräfte melden sich unter `/admin` mit ihrer E-Mail-Adresse an. Sie sehen und ändern nur ihre eigenen
-Terminrunden. Die Bezeichnungen sind die des Admin-Bereichs.
+Terminrunden. Die Bezeichnungen sind die des deutschen Admin-Bereichs; unter *Mein Profil* lässt er sich auf
+Englisch umstellen.
 
 ## Runde anlegen
 

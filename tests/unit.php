@@ -503,6 +503,10 @@ $envOk = ['BASE_URL' => 'https://t.example/', 'APP_SECRET' => str_repeat('s', 40
 check('build-config: missing secret → abort', $rc === 1 && str_contains($err, 'Missing variable/secret: APP_SECRET'));
 [$rc, , $err] = $run(['bin/build-config.php', $cfgFile], ['DB_PASS' => 'CHANGE_ME'] + $envOk);
 check('build-config: placeholder CHANGE_ME → abort', $rc === 1 && str_contains($err, 'CHANGE_ME'));
+[$rc, , $err] = $run(['bin/build-config.php', $cfgFile], ['ADMIN_LANGUAGE' => 'fr'] + $envOk);
+check('build-config: unknown admin language → abort', $rc === 1 && str_contains($err, 'ADMIN_LANGUAGE must be de or en'));
+[$rc] = $run(['bin/build-config.php', $cfgFile], ['ADMIN_LANGUAGE' => 'EN'] + $envOk);
+check('build-config: admin language taken over', $rc === 0 && (static fn ($f) => require $f)($cfgFile)['admin_language'] === 'en');
 [$rc, , $err] = $run(['bin/build-config.php', $cfgFile], ['APP_SECRET' => 'kurz'] + $envOk);
 check('build-config: secret too short → abort', $rc === 1 && str_contains($err, 'too short'));
 [$rc] = $run(['bin/build-config.php', $cfgFile], $envOk);
@@ -590,6 +594,7 @@ check('admin texts: no unused English entries' . ($unused ? ' (' . implode(' | '
 $ph = static fn (string $s): array => (preg_match_all('/\{(\w+)\}/', $s, $m) ? array_values(array_unique($m[1])) : []);
 $badPh = array_filter($dict, static fn ($en, $de) => ($a = $ph($de)) != ($b = $ph((string) $en)) && (sort($a) || true) && (sort($b) || true) && $a !== $b, ARRAY_FILTER_USE_BOTH);
 check('admin texts: same placeholders in both languages' . ($badPh ? ' (' . implode(' | ', array_slice(array_keys($badPh), 0, 3)) . ')' : ''), !$badPh);
+check('admin language: a value containing a placeholder is not replaced again', __('{a} {b}', ['a' => '{b}', 'b' => 'x']) === '{b} x');
 check('admin language: German text unchanged, English from the dictionary, missing → German, placeholders',
     App\AdminI18n::with('de', static fn () => __('Profil gespeichert.')) === 'Profil gespeichert.'
     && App\AdminI18n::with('en', static fn () => __('Nicht übersetzt {x}', ['x' => 1])) === 'Nicht übersetzt 1'

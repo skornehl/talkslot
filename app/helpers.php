@@ -32,11 +32,7 @@ function __(string $de, array $vars = []): string
  */
 function __h(string $de, array $html = []): string
 {
-    $text = e(\App\AdminI18n::translate($de));
-    foreach ($html as $k => $v) {
-        $text = str_replace('{' . $k . '}', (string) $v, $text);
-    }
-    return $text;
+    return \App\AdminI18n::fill(e(\App\AdminI18n::translate($de)), $html);
 }
 
 /**

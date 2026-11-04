@@ -86,10 +86,17 @@ final class AdminI18n
     public static function translate(string $de, array $vars = []): string
     {
         $text = self::$lang === 'de' ? $de : (self::dictionary()[$de] ?? $de);
+        return self::fill($text, $vars);
+    }
+
+    /** Replaces {name} placeholders in one pass (a value that itself contains "{…}" stays as it is). */
+    public static function fill(string $text, array $vars): string
+    {
+        $map = [];
         foreach ($vars as $k => $v) {
-            $text = str_replace('{' . $k . '}', (string) $v, $text);
+            $map['{' . $k . '}'] = (string) $v;
         }
-        return $text;
+        return $map ? strtr($text, $map) : $text;
     }
 
     /** German → English, from all files in app/lang/admin/en/. */

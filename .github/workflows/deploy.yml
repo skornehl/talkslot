@@ -104,6 +104,7 @@ jobs:
           APP_NAME: ${{ vars.APP_NAME }}
           LANGUAGES: ${{ vars.LANGUAGES }}
           DEFAULT_LANGUAGE: ${{ vars.DEFAULT_LANGUAGE }}
+          ADMIN_LANGUAGE: ${{ vars.ADMIN_LANGUAGE }}
           HOSTING_DE: ${{ vars.HOSTING_DE }}
           HOSTING_EN: ${{ vars.HOSTING_EN }}
           MAIL_TRANSPORT: ${{ vars.MAIL_TRANSPORT }}

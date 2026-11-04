@@ -581,6 +581,9 @@ check "migration 16: log table created" '[ "$(DBQ "SELECT COUNT(*) FROM informat
 DBQ "DROP TABLE tp_round_templates; UPDATE tp_settings SET value = '16' WHERE name = 'schema_version'"
 curl -s -o /dev/null "$B/"
 check "migration 17: template table created" '[ "$(DBQ "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=\"tp_round_templates\"")" = 1 ] && [ "$(DBQ "SELECT value FROM tp_settings WHERE name=\"schema_version\"")" = "$LATEST" ] && [ "$(curl -s -o /dev/null -w "%{http_code}" -b "$J" "$B/admin/templates")" = 200 ]'
+DBQ "ALTER TABLE tp_users DROP COLUMN lang; UPDATE tp_settings SET value = '17' WHERE name = 'schema_version'"
+curl -s -o /dev/null "$B/"
+check "migration 18: language column for accounts, existing ones keep the default (German)" '[ "$(DBQ "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=\"tp_users\" AND COLUMN_NAME=\"lang\"")" = 1 ] && [ "$(DBQ "SELECT value FROM tp_settings WHERE name=\"schema_version\"")" = "$LATEST" ] && curl -s -b "$J" "$B/admin" | grep -q "<html lang=\"de\">"'
 
 echo "Web cron"
 CTOK=$(printf 'cron' | openssl dgst -sha256 -hmac "$(printf 'd%.0s' {1..64})" | sed 's/.*= //')

@@ -28,4 +28,5 @@ return [
     'Fr' => 'Fri',
     'Sa' => 'Sat',
     '{weekday}, {d}.{m}.{y}' => '{weekday}, {d}/{m}/{y}',
+    'Datum {n}' => 'Date {n}',
 ];

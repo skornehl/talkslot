@@ -18,7 +18,7 @@ MariaDB database and runs on ordinary shared hosting.
 | **Admins** | `/admin` | one or more accounts: invite teachers, see and edit all rounds, create rounds for teachers, maintain templates, imprint and privacy policy on behalf of the school, which is the controller under the GDPR |
 | **Operator** | server, GitHub | installs, configures and updates TalkSlot (often one of the admins) |
 
-The admin area is in German. Parent pages and mails are available in German, English, Polish,
+The admin area is in German or English (per account). Parent pages and mails are available in German, English, Polish,
 Russian, Ukrainian and Turkish; more languages can be added.
 
 ## Concepts

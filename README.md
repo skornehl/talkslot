@@ -17,8 +17,8 @@ schools (GDPR/DSGVO, TDDDG) and multilingual families.
 - **For the operator:** PHP 8.3+ and MariaDB, no framework, no Composer, no Node, no external CDNs.
   Optional zero-downtime deployment via GitHub Actions and FTPS, including one-click rollback.
 
-> The admin area and mails to teachers are in German. Parent-facing pages and mails are translated into
-> six languages (translations should be reviewed by native speakers).
+> The admin area and mails to teachers are in German or English (per account). Parent-facing pages and
+> mails are translated into six languages (translations should be reviewed by native speakers).
 
 ## Contents
 
@@ -53,7 +53,7 @@ schools (GDPR/DSGVO, TDDDG) and multilingual families.
 - Optional "remember my appointment on this device" (opt-in, `localStorage` only).
 - Light/dark design following the device, switchable in the footer.
 
-**Teachers and admins (`/admin`, German user interface)**
+**Teachers and admins (`/admin`, German or English user interface)**
 - Admins (one or more): invite teachers and further admins by e-mail (one-time link, no passwords in
   mails), change roles, deactivate, reset or delete accounts, see and edit all rounds, create rounds for a
   teacher, maintain templates and the details for the legal pages. A log (*Protokoll*) shows which admin

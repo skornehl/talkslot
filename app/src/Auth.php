@@ -54,9 +54,11 @@ final class Auth
         if (isset($_SESSION['uid'])) {
             $absolute = (int) Config::get('session_absolute_hours', 8) * 3600;
             if ($now - (int) ($_SESSION['last'] ?? 0) > $idle || $now - (int) ($_SESSION['started'] ?? 0) > $absolute) {
+                // The admin language is not set yet: the message in the language of the account that was signed in
+                $lang = AdminI18n::forRequest(self::user());
                 self::logout();
                 session_start();
-                $_SESSION['flash'][] = ['info', 'Die Sitzung ist abgelaufen. Bitte melden Sie sich erneut an.'];
+                $_SESSION['flash'][] = ['info', AdminI18n::with($lang, static fn () => __('Die Sitzung ist abgelaufen. Bitte melden Sie sich erneut an.'))];
             }
         }
         $_SESSION['last'] = $now;
@@ -106,7 +108,7 @@ final class Auth
     {
         [$limit, $window] = RateLimiter::limits('login', 5, 900);
         [$userLimit, $userWindow] = RateLimiter::limits('login_user', 20, 3600);
-        $generic = 'Anmeldung fehlgeschlagen. Bitte prüfen Sie Ihre Eingaben oder versuchen Sie es später erneut.';
+        $generic = __('Anmeldung fehlgeschlagen. Bitte prüfen Sie Ihre Eingaben oder versuchen Sie es später erneut.');
         $subject = 'login:' . mb_strtolower($username);
         // IP first: if it is blocked, nothing is stored for (possibly made-up) usernames
         if (!RateLimiter::hit('login', $limit, $window)) {
@@ -184,13 +186,13 @@ final class Auth
     {
         $user = Db::one('SELECT * FROM users WHERE id = ?', [$userId]);
         if (!$user || !password_verify($current, $user['password_hash'])) {
-            return 'Das aktuelle Passwort ist falsch.';
+            return __('Das aktuelle Passwort ist falsch.');
         }
         if (($error = self::passwordPolicy($new)) !== null) {
             return $error;
         }
         if (password_verify($new, $user['password_hash'])) {
-            return 'Das neue Passwort muss sich vom bisherigen unterscheiden.';
+            return __('Das neue Passwort muss sich vom bisherigen unterscheiden.');
         }
         Db::run(
             'UPDATE users SET password_hash = ?, must_change_password = 0, access_token_hash = NULL, access_token_expires_at = NULL WHERE id = ?',
@@ -205,8 +207,8 @@ final class Auth
     public static function passwordPolicy(string $password): ?string
     {
         if (mb_strlen($password) < 12) {
-            return 'Das Passwort muss mindestens 12 Zeichen lang sein.';
+            return __('Das Passwort muss mindestens 12 Zeichen lang sein.');
         }
-        return strlen($password) > 72 ? 'Das Passwort darf höchstens 72 Byte lang sein (etwa 72 Zeichen, Umlaute zählen doppelt).' : null;
+        return strlen($password) > 72 ? __('Das Passwort darf höchstens 72 Byte lang sein (etwa 72 Zeichen, Umlaute zählen doppelt).') : null;
     }
 }

@@ -41,7 +41,12 @@ Buchungen, Änderungslinks, Einladungs- und Passwortlinks sind Zufallstokens und
 | `default_language` | `de` | wird angezeigt, bis Besucher eine Sprache wählen; muss in `languages` enthalten sein | `DEFAULT_LANGUAGE` |
 
 Der Build bricht ab, wenn eine Sprache keine Datei in `app/lang/` hat oder die Standardsprache nicht
-angeboten wird. Der Adminbereich ist immer deutschsprachig.
+angeboten wird.
+
+Der Adminbereich ist deutsch- oder englischsprachig, gewählt pro Konto unter *Mein Profil*.
+`admin_language` (`de` oder `en`, beim Deployment die Variable `ADMIN_LANGUAGE`) ist der Standard für Konten
+ohne eigene Wahl und für die Anmeldeseite, wenn der Browser keine der beiden Sprachen nennt. Einträge im
+Protokoll werden in dieser Sprache geschrieben.
 
 **Sprache hinzufügen:** Kopieren Sie `app/lang/en.php` z. B. nach `app/lang/it.php` und übersetzen Sie
 die Datei, legen Sie eine Flagge `public/assets/flags/it.svg` an und tragen Sie den Code in `languages`

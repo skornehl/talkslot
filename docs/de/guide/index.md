@@ -18,7 +18,7 @@ einer MariaDB-Datenbank geschrieben und läuft auf gewöhnlichem Shared Hosting 
 | **Admins** | `/admin` | ein oder mehrere Konten: laden Lehrkräfte ein, sehen und bearbeiten alle Runden, legen Runden für Lehrkräfte an, pflegen Vorlagen, Impressum und Datenschutzerklärung für die Schule, die Verantwortliche im Sinne der DSGVO ist |
 | **Betreiber** | Server, GitHub | installiert, konfiguriert und aktualisiert TalkSlot (oft eine der Personen mit Admin-Konto) |
 
-Der Adminbereich ist deutschsprachig. Elternseiten und E-Mails gibt es auf Deutsch, Englisch, Polnisch,
+Den Adminbereich gibt es auf Deutsch und Englisch (pro Konto). Elternseiten und E-Mails gibt es auf Deutsch, Englisch, Polnisch,
 Russisch, Ukrainisch und Türkisch; weitere Sprachen lassen sich ergänzen.
 
 ## Begriffe

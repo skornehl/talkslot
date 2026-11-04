@@ -40,8 +40,12 @@ final class Summaries
                 continue;
             }
             $rows = self::bookings('d.day_date = ? AND r.user_id = ?', [$tomorrow, $u['id']]);
-            $subject = 'Morgen: ' . count($rows) . ' Termin' . (count($rows) === 1 ? '' : 'e') . ' (' . I18n::with('de', static fn () => fmt_date($tomorrow)) . ')';
-            $sent += (int) self::send($u, $subject, 'Ihre Termine für morgen:', $rows, 'termine-' . $tomorrow . '.ics');
+            // In the teacher's language (dates as well)
+            $sent += (int) AdminI18n::with(AdminI18n::of($u), static function () use ($u, $rows, $tomorrow): bool {
+                $vars = ['count' => count($rows), 'date' => fmt_date($tomorrow)];
+                $subject = count($rows) === 1 ? __('Morgen: {count} Termin ({date})', $vars) : __('Morgen: {count} Termine ({date})', $vars);
+                return self::send($u, $subject, __('Ihre Termine für morgen:'), $rows, 'termine-' . $tomorrow . '.ics');
+            });
         }
         return $sent;
     }
@@ -73,11 +77,15 @@ final class Summaries
                 'SELECT COUNT(*) FROM slots s LEFT JOIN bookings b ON b.slot_id = s.id WHERE s.day_id = ? AND b.id IS NULL AND s.is_blocked = 0',
                 [$day['id']]
             );
-            $date = I18n::with('de', static fn () => fmt_date($day['day_date']));
-            $subject = 'Buchungsschluss: ' . $day['title'] . ' – ' . $date;
-            $intro = 'Für diesen Tag sind keine Buchungen mehr möglich. Endgültige Terminliste'
-                . ($free > 0 ? " ($free Termin" . ($free === 1 ? '' : 'e') . ' blieb' . ($free === 1 ? '' : 'en') . ' frei)' : '') . ':';
-            $sent += (int) self::send($user, $subject, $intro, $rows, 'termine-' . $day['day_date'] . '.ics');
+            $sent += (int) AdminI18n::with(AdminI18n::of($user), static function () use ($user, $day, $rows, $free): bool {
+                $subject = __('Buchungsschluss: {title} – {date}', ['date' => fmt_date($day['day_date']), 'title' => $day['title']]);
+                $intro = match (true) {
+                    $free === 0 => __('Für diesen Tag sind keine Buchungen mehr möglich. Endgültige Terminliste:'),
+                    $free === 1 => __('Für diesen Tag sind keine Buchungen mehr möglich. Endgültige Terminliste ({count} Termin blieb frei):', ['count' => $free]),
+                    default => __('Für diesen Tag sind keine Buchungen mehr möglich. Endgültige Terminliste ({count} Termine blieben frei):', ['count' => $free]),
+                };
+                return self::send($user, $subject, $intro, $rows, 'termine-' . $day['day_date'] . '.ics');
+            });
         }
         return $sent;
     }
@@ -101,37 +109,36 @@ final class Summaries
         );
     }
 
+    /** Called within AdminI18n::with() in the recipient's language. */
     private static function send(array $user, string $subject, string $intro, array $rows, string $icsName): bool
     {
-        return (bool) I18n::with('de', static function () use ($user, $subject, $intro, $rows, $icsName): bool {
-            $lines = ['Hallo ' . $user['display_name'] . ',', '', $intro, ''];
-            $currentTitle = null;
-            foreach ($rows as $r) {
-                if ($r['title'] !== $currentTitle) {
-                    $currentTitle = $r['title'];
-                    $lines[] = '';
-                    $lines[] = $r['title'] . ' – ' . fmt_date($r['day_date']);
-                }
-                $lines[] = '  ' . fmt_range($r['start_time'], $r['end_time']) . '  ' . $r['name'];
+        $lines = [__('Hallo {name},', ['name' => $user['display_name']]), '', $intro, ''];
+        $currentTitle = null;
+        foreach ($rows as $r) {
+            if ($r['title'] !== $currentTitle) {
+                $currentTitle = $r['title'];
+                $lines[] = '';
+                $lines[] = $r['title'] . ' – ' . fmt_date($r['day_date']);
             }
-            if (!$rows) {
-                $lines[] = '(keine Buchungen)';
-            }
-            $roundIds = array_unique(array_column($rows, 'round_id'));
-            $lines[] = '';
-            foreach ($roundIds as $rid) {
-                $lines[] = 'Übersicht und Druckansicht: ' . abs_url('/admin/round/' . (int) $rid, ['lang' => null]);
-            }
-            $lines[] = '';
-            $lines[] = '--';
-            $lines[] = 'Diese Zusammenfassung können Sie im Profil abbestellen. Bitte löschen Sie sie spätestens 15 Monate nach dem Termin (siehe Datenschutzhinweise).';
+            $lines[] = '  ' . fmt_range($r['start_time'], $r['end_time']) . '  ' . $r['name'];
+        }
+        if (!$rows) {
+            $lines[] = __('(keine Buchungen)');
+        }
+        $roundIds = array_unique(array_column($rows, 'round_id'));
+        $lines[] = '';
+        foreach ($roundIds as $rid) {
+            $lines[] = __('Übersicht und Druckansicht: {url}', ['url' => abs_url('/admin/round/' . (int) $rid, ['lang' => null])]);
+        }
+        $lines[] = '';
+        $lines[] = '--';
+        $lines[] = __('Diese Zusammenfassung können Sie im Profil abbestellen. Bitte löschen Sie sie spätestens 15 Monate nach dem Termin (siehe Datenschutzhinweise).');
 
-            $attachments = $rows ? [[
-                'name' => $icsName,
-                'type' => 'text/calendar; charset=utf-8; method=PUBLISH',
-                'content' => IcsExport::forRound(['title' => $rows[0]['title']], $rows),
-            ]] : [];
-            return Mailer::send((string) $user['email'], $subject, implode("\n", $lines), $attachments);
-        });
+        $attachments = $rows ? [[
+            'name' => $icsName,
+            'type' => 'text/calendar; charset=utf-8; method=PUBLISH',
+            'content' => IcsExport::forRound(['title' => $rows[0]['title']], $rows),
+        ]] : [];
+        return Mailer::send((string) $user['email'], $subject, implode("\n", $lines), $attachments);
     }
 }

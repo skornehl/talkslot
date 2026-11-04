@@ -26,7 +26,7 @@ use App\Translator;
 use App\View;
 
 /**
- * Admin area (German only).
+ * Admin area (German or English, see AdminI18n).
  * Teachers see and change only their own rounds; admin accounts see and edit all
  * rounds including bookings, manage accounts and the global texts. Their changes are logged (Audit).
  * Enforced centrally in round()/day()/slot()/booking() via mayAccess().
@@ -122,7 +122,7 @@ final class AdminController
             Http::redirect('/admin/login');
         }
         if ($method === 'POST' && !Csrf::checkAdmin($_POST['csrf'] ?? null)) {
-            $this->flash('error', 'Das Formular ist abgelaufen. Bitte erneut versuchen.');
+            $this->flash('error', __('Das Formular ist abgelaufen. Bitte erneut versuchen.'));
             Http::redirect('/admin');
         }
         // The initial password must be replaced before anything else
@@ -139,7 +139,7 @@ final class AdminController
             }
         }
         http_response_code(404);
-        $this->render('admin/message', ['title' => 'Nicht gefunden', 'text' => 'Diese Seite gibt es nicht.']);
+        $this->render('admin/message', ['title' => __('Nicht gefunden'), 'text' => __('Diese Seite gibt es nicht.')]);
     }
 
     // ---------------------------------------------------------------- Login
@@ -151,7 +151,7 @@ final class AdminController
         }
         $username = (string) ($_SESSION['login_user'] ?? '');
         unset($_SESSION['login_user']);
-        $this->render('admin/login', ['title' => 'Anmelden', 'error' => $error, 'username' => $username, 'csrf' => self::formToken('login')], 'admin/layout');
+        $this->render('admin/login', ['title' => __('Anmelden'), 'error' => $error, 'username' => $username, 'csrf' => self::formToken('login')], 'admin/layout');
     }
 
     /**
@@ -171,7 +171,7 @@ final class AdminController
     private function loginPost(): void
     {
         if (!self::checkFormToken('login')) {
-            $this->login('Das Formular ist abgelaufen. Bitte erneut versuchen.');
+            $this->login(__('Das Formular ist abgelaufen. Bitte erneut versuchen.'));
             return;
         }
         $result = Auth::attempt(Http::post('username'), Http::postRaw('password'));
@@ -184,8 +184,9 @@ final class AdminController
 
     private function logout(): void
     {
+        $lang = AdminI18n::lang();
         Auth::logout();
-        Http::redirect('/admin/login');
+        Http::redirect('/admin/login', ['lang' => $lang !== AdminI18n::default() ? $lang : null]);
     }
 
     // ---------------------------------------------------------------- Rounds
@@ -204,7 +205,7 @@ final class AdminController
             $all ? [] : [Auth::id()]
         );
         $this->render('admin/dashboard', [
-            'title' => $all ? 'Alle Terminrunden' : 'Meine Terminrunden',
+            'title' => $all ? __('Alle Terminrunden') : __('Meine Terminrunden'),
             'rounds' => $rounds,
             'showOwner' => $all,
             'profileHints' => $this->profileHints(),
@@ -240,7 +241,7 @@ final class AdminController
             'code_required' => 0, 'booking_limit' => 'round', 'remind_parents' => 1, 'user_id' => Auth::id(),
         ];
         $this->render('admin/round_form', [
-            'title' => $round ? 'Runde bearbeiten' : 'Neue Runde',
+            'title' => $round ? __('Runde bearbeiten') : __('Neue Runde'),
             'round' => $round,
             'data' => $data,
             'owners' => Auth::isAdmin() ? self::ownerChoices((int) ($round['user_id'] ?? 0)) : [],
@@ -291,27 +292,30 @@ final class AdminController
 
         $errors = [];
         if (mb_strlen($data['title']) < 1 || mb_strlen($data['title']) > 200) {
-            $errors[] = 'Bitte einen Titel (max. 200 Zeichen) angeben.';
+            $errors[] = __('Bitte einen Titel (max. 200 Zeichen) angeben.');
         }
         if (mb_strlen($data['description']) > 5000) {
-            $errors[] = 'Der Beschreibungstext ist zu lang (max. 5000 Zeichen).';
+            $errors[] = __('Der Beschreibungstext ist zu lang (max. 5000 Zeichen).');
         }
         if (mb_strlen($data['location']) > 200) {
-            $errors[] = 'Ort: höchstens 200 Zeichen.';
+            $errors[] = __('Ort: höchstens 200 Zeichen.');
         }
-        foreach (['booking_deadline_hours' => 'Buchungsfrist', 'cancel_deadline_hours' => 'Änderungsfrist'] as $field => $label) {
+        foreach ([
+            'booking_deadline_hours' => __('Buchungsfrist: ganze Zahl zwischen 0 und 720 Stunden.'),
+            'cancel_deadline_hours' => __('Änderungsfrist: ganze Zahl zwischen 0 und 720 Stunden.'),
+        ] as $field => $error) {
             if (!ctype_digit((string) $data[$field]) || (int) $data[$field] > 720) {
-                $errors[] = "$label: ganze Zahl zwischen 0 und 720 Stunden.";
+                $errors[] = $error;
             }
         }
         if ($deleteAfter !== '' && (!ctype_digit($deleteAfter) || (int) $deleteAfter > 8760)) {
-            $errors[] = 'Löschfrist: leer lassen (nie löschen) oder 0–8760 Stunden.';
+            $errors[] = __('Löschfrist: leer lassen (nie löschen) oder 0–8760 Stunden.');
         }
         // Block publishing only if the round would (newly) become public as a result: when
         // activating it or reassigning an active round – not on every change to it
         $publishing = $owner && $data['is_active'] && (!$round || !$round['is_active'] || (int) $owner['id'] !== (int) $round['user_id']);
         if (!$owner) {
-            $errors[] = 'Bitte eine aktive Lehrkraft für die Runde wählen.';
+            $errors[] = __('Bitte eine aktive Lehrkraft für die Runde wählen.');
         } elseif ($publishing && ($hint = $this->publishBlocker($owner)) !== null) {
             $errors[] = $hint;
         }
@@ -361,17 +365,17 @@ final class AdminController
             if ($newCode) {
                 Db::run('UPDATE rounds SET code = ? WHERE id = ?', [RoundCode::unique(), $id]);
             }
-            $this->flash('success', $newCode ? 'Runde gespeichert, neuer Rundencode erzeugt (der bisherige gilt nicht mehr).' : 'Runde gespeichert.');
+            $this->flash('success', $newCode ? __('Runde gespeichert, neuer Rundencode erzeugt (der bisherige gilt nicht mehr).') : __('Runde gespeichert.'));
             $ownerChanged = (int) $owner['id'] !== (int) $round['user_id'];
-            $this->audit(fn () => 'bearbeitet'
-                . ($round['title'] !== $data['title'] ? ' (bisher „' . $round['title'] . '“)' : '')
-                . ((int) $round['is_active'] !== $data['is_active'] ? ($data['is_active'] ? ', aktiviert' : ', deaktiviert') : '')
-                . ($ownerChanged ? ', Lehrkraft bisher ' . self::accountLabel($this->userById((int) $round['user_id'])) : '')
-                . ($newCode ? ', neuer Rundencode' : ''), $id);
+            $this->audit(fn () => __('bearbeitet')
+                . ($round['title'] !== $data['title'] ? ' (' . __('bisher „{title}“', ['title' => $round['title']]) . ')' : '')
+                . ((int) $round['is_active'] !== $data['is_active'] ? ', ' . ($data['is_active'] ? __('aktiviert') : __('deaktiviert')) : '')
+                . ($ownerChanged ? ', ' . __('Lehrkraft bisher {account}', ['account' => self::accountLabel($this->userById((int) $round['user_id']))]) : '')
+                . ($newCode ? ', ' . __('neuer Rundencode') : ''), $id);
             if ($ownerChanged) {
                 $booked = (int) Db::value('SELECT COUNT(*) FROM bookings b JOIN slots s ON s.id = b.slot_id JOIN round_days d ON d.id = s.day_id WHERE d.round_id = ?', [$id]);
-                $this->flash('info', 'Die Runde gehört jetzt ' . ($owner['display_name'] ?: $owner['username']) . '.'
-                    . ($booked ? " Die {$booked} bestehende(n) Buchung(en) sieht ab jetzt diese Lehrkraft; Zusammenfassungen gehen an sie." : ''));
+                $this->flash('info', __('Die Runde gehört jetzt {name}.', ['name' => $owner['display_name'] ?: $owner['username']])
+                    . ($booked ? ' ' . __('Die {count} bestehende(n) Buchung(en) sieht ab jetzt diese Lehrkraft; Zusammenfassungen gehen an sie.', ['count' => $booked]) : ''));
             }
         } else {
             // Round and days together: if creating the days fails, no empty round is left behind
@@ -385,8 +389,9 @@ final class AdminController
                 );
                 return [$id, $this->createDays($id, $dayData)];
             });
-            $this->flash('success', 'Runde angelegt: ' . count($dayData['dates']) . ' Tag(e), ' . $count . ' Termine erzeugt.');
-            $this->audit(fn () => 'angelegt (' . implode(', ', array_map(static fn ($d) => self::when($d), $dayData['dates'])) . ')' . ($data['is_active'] ? ', aktiv' : ''), $id);
+            $this->flash('success', __('Runde angelegt: {days} Tag(e), {slots} Termine erzeugt.', ['days' => count($dayData['dates']), 'slots' => $count]));
+            $this->audit(fn () => __('angelegt ({dates})', ['dates' => implode(', ', array_map(static fn ($d) => self::when($d), $dayData['dates']))])
+                . ($data['is_active'] ? ', ' . __('aktiv') : ''), $id);
         }
         Http::redirect('/admin/round/' . $id);
     }
@@ -470,28 +475,28 @@ final class AdminController
     private static function invitationText(array $round, array $owner): string
     {
         $lines = [
-            'Liebe Eltern,',
+            __('Liebe Eltern,'),
             '',
-            'über den folgenden Link können Sie einen Gesprächstermin für „' . $round['title'] . '“ bei ' . ($owner['display_name'] ?: 'mir') . ' buchen:',
+            __('über den folgenden Link können Sie einen Gesprächstermin für „{title}“ bei {teacher} buchen:', ['title' => $round['title'], 'teacher' => $owner['display_name'] ?: __('mir')]),
             abs_url('/' . $round['slug']),
         ];
         if (trim((string) ($round['location'] ?? '')) !== '') {
             $lines[] = '';
-            $lines[] = 'Ort: ' . trim((string) $round['location']);
+            $lines[] = __('Ort: {location}', ['location' => trim((string) $round['location'])]);
         }
         $code = RoundCode::format($round['code'] ?? null);
         if ($code !== '' && RoundAccess::required($round)) {
             $lines[] = '';
-            $lines[] = 'Code der Terminvergabe: ' . $code . ' (wird nach dem Öffnen des Links abgefragt).';
-            $lines[] = 'Alternativ können Sie auf ' . abs_url('/') . ' nur diesen Code eingeben.';
-            $lines[] = 'Bitte geben Sie Link und Code nicht weiter.';
+            $lines[] = __('Code der Terminvergabe: {code} (wird nach dem Öffnen des Links abgefragt).', ['code' => $code]);
+            $lines[] = __('Alternativ können Sie auf {url} nur diesen Code eingeben.', ['url' => abs_url('/')]);
+            $lines[] = __('Bitte geben Sie Link und Code nicht weiter.');
         } elseif ($code !== '') {
-            $lines[] = 'Alternativ können Sie auf ' . abs_url('/') . ' den Code der Terminvergabe ' . $code . ' eingeben.';
+            $lines[] = __('Alternativ können Sie auf {url} den Code der Terminvergabe {code} eingeben.', ['url' => abs_url('/'), 'code' => $code]);
         }
         $lines[] = '';
-        $lines[] = 'Bitte buchen Sie nur einen Termin. Nach der Buchung erhalten Sie einen persönlichen Link, über den Sie den Termin ändern oder absagen können.';
+        $lines[] = __('Bitte buchen Sie nur einen Termin. Nach der Buchung erhalten Sie einen persönlichen Link, über den Sie den Termin ändern oder absagen können.');
         $lines[] = '';
-        $lines[] = 'Viele Grüße';
+        $lines[] = __('Viele Grüße');
         return implode("\n", $lines);
     }
 
@@ -585,17 +590,18 @@ final class AdminController
             Translator::save($id, $lang, $title, $desc, $hash, true);
             $saved++;
         }
-        $parts = array_filter([
-            $saved ? "$saved Übersetzung(en) gespeichert" : '',
-            $removed ? "$removed entfernt" : '',
-        ]);
-        if ($parts) {
-            $this->audit(fn () => 'Übersetzungen bearbeitet (' . implode(', ', $parts) . ')', $id);
+        // A closure, so that the log gets its own language (see audit())
+        $parts = static fn (): string => implode(', ', array_filter([
+            $saved ? __('{count} Übersetzung(en) gespeichert', ['count' => $saved]) : '',
+            $removed ? __('{count} entfernt', ['count' => $removed]) : '',
+        ]));
+        if ($saved || $removed) {
+            $this->audit(fn () => __('Übersetzungen bearbeitet ({changes})', ['changes' => $parts()]), $id);
         }
-        $this->flash('success', $parts ? implode(', ', $parts) . '.' : 'Keine Änderungen.');
+        $this->flash('success', $saved || $removed ? $parts() . '.' : __('Keine Änderungen.'));
         if ($conflicts) {
-            $this->flash('warning', 'Nicht gespeichert, weil inzwischen anderweitig geändert (z. B. in einem anderen Fenster): '
-                . implode(', ', array_map([I18n::class, 'name'], $conflicts)) . '. Bitte die aktuellen Texte prüfen und erneut speichern.');
+            $this->flash('warning', __('Nicht gespeichert, weil inzwischen anderweitig geändert (z. B. in einem anderen Fenster): {languages}. Bitte die aktuellen Texte prüfen und erneut speichern.',
+                ['languages' => implode(', ', array_map([I18n::class, 'name'], $conflicts))]));
         }
         Http::redirect('/admin/round/' . $id, [], 'translations');
     }
@@ -609,8 +615,8 @@ final class AdminController
             Http::redirect('/admin/round/' . $id);
         }
         Db::run('UPDATE rounds SET is_active = ?, expired_at = IF(? = 1, NULL, expired_at), updated_at = ? WHERE id = ?', [$active, $active, Time::nowSql(), $id]);
-        $this->audit(fn () => $active ? 'aktiviert' : 'deaktiviert', $id);
-        $this->flash('success', $active ? 'Runde aktiviert – der Link ist jetzt erreichbar.' : 'Runde deaktiviert – keine neuen Buchungen mehr; Eltern können über ihren Link weiterhin absagen.');
+        $this->audit(fn () => $active ? __('aktiviert') : __('deaktiviert'), $id);
+        $this->flash('success', $active ? __('Runde aktiviert – der Link ist jetzt erreichbar.') : __('Runde deaktiviert – keine neuen Buchungen mehr; Eltern können über ihren Link weiterhin absagen.'));
         Http::redirect('/admin/round/' . $id);
     }
 
@@ -623,14 +629,14 @@ final class AdminController
         if ($firstDate !== '') {
             $oldFirst = Db::value('SELECT MIN(day_date) FROM round_days WHERE round_id = ?', [$id]);
             if (!Time::isDate($firstDate) || $oldFirst === null) {
-                $this->flash('error', $oldFirst === null ? 'Die Runde hat keine Tage, die verschoben werden könnten.' : 'Bitte ein gültiges Datum für den ersten Tag angeben.');
+                $this->flash('error', $oldFirst === null ? __('Die Runde hat keine Tage, die verschoben werden könnten.') : __('Bitte ein gültiges Datum für den ersten Tag angeben.'));
                 Http::redirect('/admin/round/' . $id);
             }
             $shift = (int) (new \DateTimeImmutable((string) $oldFirst))->diff(new \DateTimeImmutable($firstDate))->format('%r%a');
         }
         $newId = Db::transaction(function () use ($round, $shift): int {
             $now = Time::nowSql();
-            $title = rtrim(mb_substr($round['title'] . ' (Kopie)', 0, 200));
+            $title = rtrim(mb_substr(__('{title} (Kopie)', ['title' => $round['title']]), 0, 200));
             $newId = Db::insert(
                 'INSERT INTO rounds (title, slug, description, location, source_lang, code_required, booking_limit, remind_parents, is_active,
                                      booking_deadline_hours, cancel_deadline_hours, delete_after_hours, created_at, updated_at, user_id, code)
@@ -672,10 +678,10 @@ final class AdminController
             }
             return $newId;
         });
-        $this->audit(fn () => 'dupliziert' . ($firstDate !== '' ? ' mit erstem Tag am ' . self::when($firstDate) : ''), $id);
+        $this->audit(fn () => $firstDate !== '' ? __('dupliziert mit erstem Tag am {date}', ['date' => self::when($firstDate)]) : __('dupliziert'), $id);
         $this->flash('success', $firstDate !== ''
-            ? 'Runde dupliziert (ohne Buchungen, inaktiv), erster Tag am ' . fmt_date($firstDate) . '. Bitte den Titel prüfen.'
-            : 'Runde dupliziert (ohne Buchungen, inaktiv). Bitte Titel und Daten anpassen.');
+            ? __('Runde dupliziert (ohne Buchungen, inaktiv), erster Tag am {date}. Bitte den Titel prüfen.', ['date' => fmt_date($firstDate)])
+            : __('Runde dupliziert (ohne Buchungen, inaktiv). Bitte Titel und Daten anpassen.'));
         Http::redirect('/admin/round/' . $newId);
     }
 
@@ -683,9 +689,9 @@ final class AdminController
     {
         $this->round($id);
         $booked = (int) Db::value('SELECT COUNT(*) FROM bookings b JOIN slots s ON s.id = b.slot_id JOIN round_days d ON d.id = s.day_id WHERE d.round_id = ?', [$id]);
-        $this->audit(fn () => 'gelöscht' . ($booked ? " (mit $booked Buchung(en))" : ''), $id);
+        $this->audit(fn () => $booked ? __('gelöscht (mit {count} Buchung(en))', ['count' => $booked]) : __('gelöscht'), $id);
         Db::run('DELETE FROM rounds WHERE id = ?', [$id]);
-        $this->flash('success', 'Runde mit allen Tagen und Buchungen gelöscht.');
+        $this->flash('success', __('Runde mit allen Tagen und Buchungen gelöscht.'));
         Http::redirect('/admin');
     }
 
@@ -704,8 +710,8 @@ final class AdminController
         if ($round['expired_at'] !== null && max($dayData['dates']) >= Time::today()) {
             Db::run('UPDATE rounds SET expired_at = NULL WHERE id = ?', [$roundId]);
         }
-        $this->audit(fn () => 'Tag(e) hinzugefügt: ' . implode(', ', array_map(static fn ($d) => self::when($d), $dayData['dates'])), $roundId);
-        $this->flash('success', count($dayData['dates']) . " Tag(e) angelegt: $count Termine erzeugt.");
+        $this->audit(fn () => __('Tag(e) hinzugefügt: {dates}', ['dates' => implode(', ', array_map(static fn ($d) => self::when($d), $dayData['dates']))]), $roundId);
+        $this->flash('success', __('{days} Tag(e) angelegt: {slots} Termine erzeugt.', ['days' => count($dayData['dates']), 'slots' => $count]));
         Http::redirect('/admin/round/' . $roundId);
     }
 
@@ -732,15 +738,15 @@ final class AdminController
         $minutes = Http::post('slot_minutes');
 
         if (!$dates) {
-            $errors[] = 'Bitte mindestens ein Datum angeben.';
+            $errors[] = __('Bitte mindestens ein Datum angeben.');
         } elseif (count($dates) > 30) {
-            $errors[] = 'Höchstens 30 Tage auf einmal.';
+            $errors[] = __('Höchstens 30 Tage auf einmal.');
         }
         foreach ($dates as $d) {
             if (!Time::isDate($d)) {
-                $errors[] = "Ungültiges Datum: $d";
+                $errors[] = __('Ungültiges Datum: {date}', ['date' => $d]);
             } elseif ($roundId !== null && $this->dateTaken($roundId, $d)) {
-                $errors[] = 'Den ' . fmt_date($d) . ' gibt es in dieser Runde bereits – bitte den vorhandenen Tag bearbeiten.';
+                $errors[] = __('Den {date} gibt es in dieser Runde bereits – bitte den vorhandenen Tag bearbeiten.', ['date' => fmt_date($d)]);
             }
         }
         $errors = array_merge($errors, self::timeErrors($start, $end, $minutes));
@@ -758,12 +764,15 @@ final class AdminController
         if (!$errors && !SlotGenerator::compute($start, $end, (int) $minutes, array_map(
             static fn ($b) => ['start_time' => $b[0], 'end_time' => $b[1]], $breaks
         ))) {
-            $errors[] = self::NO_SLOTS;
+            $errors[] = self::noSlots();
         }
         return [$dayData, $errors];
     }
 
-    private const NO_SLOTS = 'Mit diesen Zeiten und Pausen entsteht kein einziger Termin.';
+    private static function noSlots(): string
+    {
+        return __('Mit diesen Zeiten und Pausen entsteht kein einziger Termin.');
+    }
 
     /**
      * Breaks from the form (break_start[], break_end[], break_label[]); empty rows are skipped.
@@ -787,7 +796,7 @@ final class AdminController
             $ns = Time::normalizeTime($s);
             $ne = Time::normalizeTime($e);
             if (!$ns || !$ne || $ns >= $ne) {
-                $errors[] = 'Pause ' . ($i + 1) . ': Bitte Start- und Endzeit angeben (Start vor Ende).';
+                $errors[] = __('Pause {n}: Bitte Start- und Endzeit angeben (Start vor Ende).', ['n' => $i + 1]);
                 continue;
             }
             $breaks[] = [$ns, $ne, mb_substr($bl[$i] ?? '', 0, 100)];
@@ -800,10 +809,10 @@ final class AdminController
     {
         $errors = [];
         if (!$start || !$end || $start >= $end) {
-            $errors[] = 'Bitte gültige Zeiten angeben (erster Termin vor dem Ende, z. B. 14:00 bis 18:00).';
+            $errors[] = __('Bitte gültige Zeiten angeben (erster Termin vor dem Ende, z. B. 14:00 bis 18:00).');
         }
         if (!ctype_digit($minutes) || (int) $minutes < 5 || (int) $minutes > 240) {
-            $errors[] = 'Dauer pro Termin: 5 bis 240 Minuten.';
+            $errors[] = __('Dauer pro Termin: 5 bis 240 Minuten.');
         }
         return $errors;
     }
@@ -838,7 +847,7 @@ final class AdminController
     {
         $day = $this->day($id);
         $this->render('admin/day_form', [
-            'title' => 'Tag bearbeiten',
+            'title' => __('Tag bearbeiten'),
             'day' => $day,
             'round' => $this->round((int) $day['round_id']),
             'errors' => $errors,
@@ -850,12 +859,12 @@ final class AdminController
         $day = $this->day($id);
         [$in, $errors] = $this->dayInput();
         if (!$errors && $this->dateTaken((int) $day['round_id'], $in['date'], $id)) {
-            $errors[] = 'Diesen Tag gibt es in der Runde bereits.';
+            $errors[] = __('Diesen Tag gibt es in der Runde bereits.');
         }
         if (!$errors) {
             $breaks = Db::all('SELECT start_time, end_time FROM day_breaks WHERE day_id = ?', [$id]);
             if (!SlotGenerator::compute($in['start'], $in['end'], $in['minutes'], $breaks)) {
-                $errors[] = self::NO_SLOTS;
+                $errors[] = self::noSlots();
             }
         }
         if ($errors) {
@@ -871,8 +880,10 @@ final class AdminController
         if ($in['date'] >= Time::today()) {
             Db::run('UPDATE rounds SET expired_at = NULL WHERE id = ? AND expired_at IS NOT NULL', [$day['round_id']]);
         }
-        $this->audit(fn () => 'Tag ' . self::when($day['day_date']) . ' bearbeitet' . ($in['date'] !== $day['day_date'] ? ' (jetzt ' . self::when($in['date']) . ')' : ''), (int) $day['round_id']);
-        $this->afterSync((int) $day['round_id'], $id, 'Tag gespeichert.');
+        $this->audit(fn () => $in['date'] !== $day['day_date']
+            ? __('Tag {date} bearbeitet (jetzt {new})', ['date' => self::when($day['day_date']), 'new' => self::when($in['date'])])
+            : __('Tag {date} bearbeitet', ['date' => self::when($day['day_date'])]), (int) $day['round_id']);
+        $this->afterSync((int) $day['round_id'], $id, __('Tag gespeichert.'));
     }
 
     private function dayDelete(int $id): void
@@ -880,12 +891,14 @@ final class AdminController
         $day = $this->day($id);
         $bookings = (int) Db::value('SELECT COUNT(*) FROM bookings b JOIN slots s ON s.id = b.slot_id WHERE s.day_id = ?', [$id]);
         if ($bookings > 0 && Http::post('confirm') !== '1') {
-            $this->flash('error', "An diesem Tag gibt es $bookings Buchung(en). Bitte das Löschen ausdrücklich bestätigen.");
+            $this->flash('error', __('An diesem Tag gibt es {count} Buchung(en). Bitte das Löschen ausdrücklich bestätigen.', ['count' => $bookings]));
             Http::redirect('/admin/round/' . $day['round_id'], [], 'day-' . $id);
         }
-        $this->audit(fn () => 'Tag ' . self::when($day['day_date']) . ' gelöscht' . ($bookings ? " (mit $bookings Buchung(en))" : ''), (int) $day['round_id']);
+        $this->audit(fn () => $bookings
+            ? __('Tag {date} gelöscht (mit {count} Buchung(en))', ['date' => self::when($day['day_date']), 'count' => $bookings])
+            : __('Tag {date} gelöscht', ['date' => self::when($day['day_date'])]), (int) $day['round_id']);
         Db::run('DELETE FROM round_days WHERE id = ?', [$id]);
-        $this->flash('success', 'Tag gelöscht' . ($bookings ? " (inkl. $bookings Buchung(en))." : '.'));
+        $this->flash('success', $bookings ? __('Tag gelöscht (inkl. {count} Buchung(en)).', ['count' => $bookings]) : __('Tag gelöscht.'));
         Http::redirect('/admin/round/' . $day['round_id']);
     }
 
@@ -896,12 +909,12 @@ final class AdminController
         $end = Time::normalizeTime(Http::post('end_time'));
         $label = mb_substr(Http::post('label'), 0, 100);
         if (!$start || !$end || $start >= $end) {
-            $this->flash('error', 'Pause: Bitte gültige Start- und Endzeit angeben (Start vor Ende).');
+            $this->flash('error', __('Pause: Bitte gültige Start- und Endzeit angeben (Start vor Ende).'));
             Http::redirect('/admin/round/' . $day['round_id'], [], 'day-' . $dayId);
         }
         Db::run('INSERT INTO day_breaks (day_id, start_time, end_time, label) VALUES (?, ?, ?, ?)', [$dayId, $start, $end, $label !== '' ? $label : null]);
-        $this->audit(fn () => 'Pause am ' . self::when($day['day_date']) . ' hinzugefügt (' . fmt_range($start, $end) . ')', (int) $day['round_id']);
-        $this->afterSync((int) $day['round_id'], $dayId, 'Pause hinzugefügt.');
+        $this->audit(fn () => __('Pause am {date} hinzugefügt ({time})', ['date' => self::when($day['day_date']), 'time' => fmt_range($start, $end)]), (int) $day['round_id']);
+        $this->afterSync((int) $day['round_id'], $dayId, __('Pause hinzugefügt.'));
     }
 
     private function breakDelete(int $id): void
@@ -910,17 +923,17 @@ final class AdminController
         // Ownership is checked via the day
         $day = $this->day((int) $break['day_id']);
         Db::run('DELETE FROM day_breaks WHERE id = ?', [$id]);
-        $this->audit(fn () => 'Pause am ' . self::when($day['day_date']) . ' entfernt (' . fmt_range($break['start_time'], $break['end_time']) . ')', (int) $day['round_id']);
-        $this->afterSync((int) $day['round_id'], (int) $day['id'], 'Pause entfernt.');
+        $this->audit(fn () => __('Pause am {date} entfernt ({time})', ['date' => self::when($day['day_date']), 'time' => fmt_range($break['start_time'], $break['end_time'])]), (int) $day['round_id']);
+        $this->afterSync((int) $day['round_id'], (int) $day['id'], __('Pause entfernt.'));
     }
 
     private function afterSync(int $roundId, int $dayId, string $message): never
     {
         $conflicts = SlotGenerator::sync($dayId);
         if ($conflicts > 0) {
-            $this->flash('warning', $message . " Achtung: $conflicts gebuchte(r) Termin(e) passen nicht mehr zum Zeitplan und sind als Konflikt markiert. Bitte umbuchen oder löschen.");
+            $this->flash('warning', $message . ' ' . __('Achtung: {count} gebuchte(r) Termin(e) passen nicht mehr zum Zeitplan und sind als Konflikt markiert. Bitte umbuchen oder löschen.', ['count' => $conflicts]));
         } else {
-            $this->flash('success', $message . ' Slots wurden aktualisiert.');
+            $this->flash('success', $message . ' ' . __('Slots wurden aktualisiert.'));
         }
         Http::redirect('/admin/round/' . $roundId, [], 'day-' . $dayId);
     }
@@ -933,10 +946,10 @@ final class AdminController
         $end = Time::normalizeTime(Http::post('end_time'));
         $minutes = Http::post('slot_minutes');
         $location = trim(Http::post('location'));
-        $errors = Time::isDate($date) ? [] : ['Bitte ein gültiges Datum angeben.'];
+        $errors = Time::isDate($date) ? [] : [__('Bitte ein gültiges Datum angeben.')];
         $errors = array_merge($errors, self::timeErrors($start, $end, $minutes));
         if (mb_strlen($location) > 200) {
-            $errors[] = 'Ort: höchstens 200 Zeichen.';
+            $errors[] = __('Ort: höchstens 200 Zeichen.');
         }
         return [['date' => $date, 'start' => $start, 'end' => $end, 'minutes' => (int) $minutes, 'location' => $location], $errors];
     }
@@ -947,8 +960,10 @@ final class AdminController
     {
         $slot = $this->slot($id);
         Db::run('UPDATE slots SET is_blocked = 1 - is_blocked WHERE id = ?', [$id]);
-        $this->audit(fn () => 'Termin ' . self::when($slot['day_date'], $slot['start_time']) . ($slot['is_blocked'] ? ' freigegeben' : ' gesperrt'), (int) $slot['round_id']);
-        $this->flash('success', $slot['is_blocked'] ? 'Slot freigegeben.' : 'Slot gesperrt.');
+        $this->audit(fn () => $slot['is_blocked']
+            ? __('Termin {slot} freigegeben', ['slot' => self::when($slot['day_date'], $slot['start_time'])])
+            : __('Termin {slot} gesperrt', ['slot' => self::when($slot['day_date'], $slot['start_time'])]), (int) $slot['round_id']);
+        $this->flash('success', $slot['is_blocked'] ? __('Slot freigegeben.') : __('Slot gesperrt.'));
         Http::redirect('/admin/round/' . $slot['round_id'], [], 'slot-' . $id);
     }
 
@@ -956,7 +971,7 @@ final class AdminController
     {
         $slot = $this->slot($slotId);
         $this->render('admin/booking_form', [
-            'title' => 'Eintrag anlegen',
+            'title' => __('Eintrag anlegen'),
             'slot' => $slot,
             'round' => $this->round((int) $slot['round_id']),
             'booking' => null,
@@ -979,14 +994,14 @@ final class AdminController
         try {
             [$id, $token] = BookingService::adminBook($round, $slotId, PublicController::cleanName($old['name']), $old['email'] ?: null, $old['lang']);
         } catch (BookingException) {
-            $this->flash('error', 'Dieser Slot ist bereits belegt.');
+            $this->flash('error', __('Dieser Slot ist bereits belegt.'));
             Http::redirect('/admin/round/' . $round['id'], [], 'slot-' . $slotId);
         }
-        $this->audit(fn () => 'Buchung ' . self::when($slot['day_date'], $slot['start_time']) . ' eingetragen', (int) $round['id']);
-        $msg = 'Eintrag angelegt. Änderungslink für die Eltern (wird nur jetzt angezeigt): ' . abs_url('/b/' . $token, ['lang' => $old['lang']]);
+        $this->audit(fn () => __('Buchung {slot} eingetragen', ['slot' => self::when($slot['day_date'], $slot['start_time'])]), (int) $round['id']);
+        $msg = __('Eintrag angelegt. Änderungslink für die Eltern (wird nur jetzt angezeigt): {link}', ['link' => abs_url('/b/' . $token, ['lang' => $old['lang']])]);
         if ($old['send_mail'] && $old['email'] !== '' && $this->teacherMailAllowed($msg)) {
             $booking = BookingService::findById($id);
-            $msg .= $booking && Notifier::parentBooked($booking, $token) ? ' – Bestätigung per E-Mail gesendet.' : ' – E-Mail konnte nicht gesendet werden.';
+            $msg .= ' – ' . ($booking && Notifier::parentBooked($booking, $token) ? __('Bestätigung per E-Mail gesendet.') : __('E-Mail konnte nicht gesendet werden.'));
         }
         $this->flash('success', $msg);
         Http::redirect('/admin/round/' . $round['id'], [], 'slot-' . $slotId);
@@ -1004,7 +1019,7 @@ final class AdminController
             [$round['id']]
         );
         $this->render('admin/booking_form', [
-            'title' => 'Eintrag bearbeiten',
+            'title' => __('Eintrag bearbeiten'),
             'slot' => array_merge($booking, ['id' => $booking['slot_id']]),
             'round' => $round,
             'booking' => $booking,
@@ -1030,18 +1045,19 @@ final class AdminController
                 BookingService::move($booking, (int) $old['move_to'], true);
                 $moved = true;
             } catch (BookingException) {
-                $this->bookingEdit($id, ['Der gewählte Slot ist nicht mehr frei. Es wurde nichts geändert.'], $old);
+                $this->bookingEdit($id, [__('Der gewählte Slot ist nicht mehr frei. Es wurde nichts geändert.')], $old);
                 return;
             }
         }
         BookingService::update($id, PublicController::cleanName($old['name']), $old['email'] ?: null, $old['lang']);
         $target = $moved ? BookingService::findById($id) : null;
-        $this->audit(fn () => 'Buchung ' . self::when($booking['day_date'], $booking['start_time']) . ' geändert'
-            . ($target ? ', umgebucht auf ' . self::when($target['day_date'], $target['start_time']) : ''), (int) $booking['round_id']);
-        $msg = $moved ? 'Eintrag gespeichert und umgebucht.' : 'Eintrag gespeichert.';
+        $this->audit(fn () => $target
+            ? __('Buchung {slot} geändert, umgebucht auf {target}', ['slot' => self::when($booking['day_date'], $booking['start_time']), 'target' => self::when($target['day_date'], $target['start_time'])])
+            : __('Buchung {slot} geändert', ['slot' => self::when($booking['day_date'], $booking['start_time'])]), (int) $booking['round_id']);
+        $msg = $moved ? __('Eintrag gespeichert und umgebucht.') : __('Eintrag gespeichert.');
         if ($old['send_mail'] && $old['email'] !== '' && $this->teacherMailAllowed($msg)) {
             $updated = BookingService::findById($id);
-            $msg .= $updated && Notifier::parentChanged($updated, null) ? ' Änderung per E-Mail mitgeteilt.' : ' E-Mail konnte nicht gesendet werden.';
+            $msg .= ' ' . ($updated && Notifier::parentChanged($updated, null) ? __('Änderung per E-Mail mitgeteilt.') : __('E-Mail konnte nicht gesendet werden.'));
         }
         $this->flash('success', $msg);
         Http::redirect('/admin/round/' . $booking['round_id'], [], 'day-' . (BookingService::findById($id)['day_id'] ?? ''));
@@ -1051,8 +1067,8 @@ final class AdminController
     {
         $booking = $this->booking($id);
         BookingService::delete($booking);
-        $this->audit(fn () => 'Buchung ' . self::when($booking['day_date'], $booking['start_time']) . ' gelöscht', (int) $booking['round_id']);
-        $this->flash('success', 'Eintrag gelöscht – der Slot ist wieder frei.');
+        $this->audit(fn () => __('Buchung {slot} gelöscht', ['slot' => self::when($booking['day_date'], $booking['start_time'])]), (int) $booking['round_id']);
+        $this->flash('success', __('Eintrag gelöscht – der Slot ist wieder frei.'));
         Http::redirect('/admin/round/' . $booking['round_id'], [], 'day-' . $booking['day_id']);
     }
 
@@ -1086,7 +1102,7 @@ final class AdminController
                 [$day['id']]
             );
             foreach (Db::all('SELECT * FROM day_breaks WHERE day_id = ?', [$day['id']]) as $br) {
-                $rows[] = ['start_time' => $br['start_time'], 'end_time' => $br['end_time'], 'break' => $br['label'] ?: 'Pause'];
+                $rows[] = ['start_time' => $br['start_time'], 'end_time' => $br['end_time'], 'break' => $br['label'] ?: __('Pause')];
             }
             usort($rows, static fn ($a, $b) => strcmp($a['start_time'], $b['start_time']));
             $day['rows'] = $rows;
@@ -1114,16 +1130,16 @@ final class AdminController
     {
         if (!Operator::ready()) {
             return Auth::isAdmin()
-                ? 'Bevor Runden aktiviert werden können, tragen Sie bitte unter „Texte“ die Angaben für Impressum und Datenschutz ein (die Schule bzw. der Betreiber ist für alle Runden datenschutzrechtlich verantwortlich).'
-                : 'Runden können erst aktiviert werden, wenn ein Admin die Angaben für Impressum und Datenschutz hinterlegt hat.';
+                ? __('Bevor Runden aktiviert werden können, tragen Sie bitte unter „Texte“ die Angaben für Impressum und Datenschutz ein (die Schule bzw. der Betreiber ist für alle Runden datenschutzrechtlich verantwortlich).')
+                : __('Runden können erst aktiviert werden, wenn ein Admin die Angaben für Impressum und Datenschutz hinterlegt hat.');
         }
         if (!$owner['is_active']) {
-            return 'Das Konto dieser Lehrkraft ist deaktiviert – die Runde wäre öffentlich nicht erreichbar. Bitte die Runde einer aktiven Lehrkraft zuordnen oder das Konto wieder aktivieren.';
+            return __('Das Konto dieser Lehrkraft ist deaktiviert – die Runde wäre öffentlich nicht erreichbar. Bitte die Runde einer aktiven Lehrkraft zuordnen oder das Konto wieder aktivieren.');
         }
         if (trim((string) $owner['display_name']) === '') {
             return (int) $owner['id'] === Auth::id()
-                ? 'Bevor eine Runde aktiviert werden kann, tragen Sie bitte unter „Mein Profil“ Ihren Anzeigenamen ein (Eltern sehen ihn auf der Buchungsseite).'
-                : 'Für diese Lehrkraft fehlt ein Anzeigename (unter „Benutzer“ ergänzen).';
+                ? __('Bevor eine Runde aktiviert werden kann, tragen Sie bitte unter „Mein Profil“ Ihren Anzeigenamen ein (Eltern sehen ihn auf der Buchungsseite).')
+                : __('Für diese Lehrkraft fehlt ein Anzeigename (unter „Benutzer“ ergänzen).');
         }
         return null;
     }
@@ -1148,10 +1164,10 @@ final class AdminController
         $u = Auth::user();
         $hints = [];
         if (trim((string) $u['display_name']) === '') {
-            $hints[] = 'Anzeigename fehlt – er wird Eltern auf der Buchungsseite angezeigt.';
+            $hints[] = __('Anzeigename fehlt – er wird Eltern auf der Buchungsseite angezeigt.');
         }
         if ((string) $u['email'] === '' && ($u['summary_evening'] || $u['summary_deadline'])) {
-            $hints[] = 'Keine E-Mail-Adresse hinterlegt – Zusammenfassungen können nicht versendet werden.';
+            $hints[] = __('Keine E-Mail-Adresse hinterlegt – Zusammenfassungen können nicht versendet werden.');
         }
         return $hints;
     }
@@ -1159,7 +1175,7 @@ final class AdminController
     private function profile(array $errors = [], ?array $data = null): void
     {
         $this->render('admin/profile', [
-            'title' => 'Mein Profil',
+            'title' => __('Mein Profil'),
             'user' => Auth::user(),
             'data' => $data ?? Auth::user(),
             'errors' => $errors,
@@ -1177,37 +1193,42 @@ final class AdminController
         ];
         $errors = [];
         if ($data['display_name'] === '') {
-            $errors[] = 'Bitte einen Anzeigenamen angeben (z. B. „Frau Muster“).';
+            $errors[] = __('Bitte einen Anzeigenamen angeben (z. B. „Frau Muster“).');
         }
         if ($data['email'] !== '' && !is_valid_email($data['email'])) {
-            $errors[] = 'Die E-Mail-Adresse ist ungültig.';
+            $errors[] = __('Die E-Mail-Adresse ist ungültig.');
         } elseif ($data['email'] !== '' && $this->emailTaken($data['email'], Auth::id())) {
-            $errors[] = 'Diese E-Mail-Adresse gehört bereits zu einem anderen Konto.';
+            $errors[] = __('Diese E-Mail-Adresse gehört bereits zu einem anderen Konto.');
         }
         // Password reset links go to this address: changing it requires the current password
         $oldEmail = (string) (Auth::user()['email'] ?? '');
         $emailChanged = mb_strtolower($data['email']) !== mb_strtolower($oldEmail);
         if (!$errors && $emailChanged && !password_verify(Http::postRaw('current_password'), (string) Auth::user()['password_hash'])) {
-            $errors[] = 'Zum Ändern der E-Mail-Adresse bitte Ihr aktuelles Passwort eingeben.';
+            $errors[] = __('Zum Ändern der E-Mail-Adresse bitte Ihr aktuelles Passwort eingeben.');
         }
         if ($errors) {
             $this->profile($errors, $data);
             return;
         }
         if ($emailChanged && is_valid_email($oldEmail)) {
-            Mailer::send($oldEmail, 'Ihre E-Mail-Adresse wurde geändert', implode("\n", [
-                'Hallo ' . (Auth::user()['display_name'] ?: Auth::user()['username']) . ',', '',
-                'für Ihr Konto bei ' . app_name() . ' (' . abs_url('/admin', ['lang' => null]) . ') wurde die E-Mail-Adresse geändert'
-                    . ($data['email'] !== '' ? ' auf ' . $data['email'] : ' (keine Adresse mehr hinterlegt)') . '.',
-                'Waren Sie das nicht, wenden Sie sich bitte umgehend an einen Admin.',
-            ]));
+            // In the language of the account (as it was before this change)
+            AdminI18n::with(AdminI18n::of(Auth::user()), static function () use ($oldEmail, $data): void {
+                $vars = ['app' => app_name(), 'url' => abs_url('/admin', ['lang' => null]), 'email' => $data['email']];
+                Mailer::send($oldEmail, __('Ihre E-Mail-Adresse wurde geändert'), implode("\n", [
+                    __('Hallo {name},', ['name' => Auth::user()['display_name'] ?: Auth::user()['username']]), '',
+                    $data['email'] !== ''
+                        ? __('für Ihr Konto bei {app} ({url}) wurde die E-Mail-Adresse geändert auf {email}.', $vars)
+                        : __('für Ihr Konto bei {app} ({url}) wurde die E-Mail-Adresse geändert (keine Adresse mehr hinterlegt).', $vars),
+                    __('Waren Sie das nicht, wenden Sie sich bitte umgehend an einen Admin.'),
+                ]));
+            });
         }
         Db::run(
             'UPDATE users SET display_name = ?, email = ?, summary_evening = ?, summary_deadline = ?, lang = ? WHERE id = ?',
             [$data['display_name'], $data['email'] !== '' ? $data['email'] : null, $data['summary_evening'], $data['summary_deadline'], $data['lang'], Auth::id()]
         );
         AdminI18n::set($data['lang']); // the confirmation already in the new language
-        $this->flash('success', 'Profil gespeichert.');
+        $this->flash('success', __('Profil gespeichert.'));
         Http::redirect('/admin/profile');
     }
 
@@ -1218,13 +1239,13 @@ final class AdminController
             $this->profile([$result]);
             return;
         }
-        $this->flash('success', 'Passwort geändert.');
+        $this->flash('success', __('Passwort geändert.'));
         Http::redirect('/admin/profile');
     }
 
     private function passwordChangeForm(array $errors = []): void
     {
-        $this->render('admin/password_change', ['title' => 'Neues Passwort festlegen', 'errors' => $errors]);
+        $this->render('admin/password_change', ['title' => __('Neues Passwort festlegen'), 'errors' => $errors]);
     }
 
     private function passwordChangeSave(): void
@@ -1234,7 +1255,7 @@ final class AdminController
             $this->passwordChangeForm([$result]);
             return;
         }
-        $this->flash('success', 'Passwort festgelegt. Bitte ergänzen Sie jetzt Ihr Profil.');
+        $this->flash('success', __('Passwort festgelegt. Bitte ergänzen Sie jetzt Ihr Profil.'));
         Http::redirect('/admin/profile');
     }
 
@@ -1242,7 +1263,7 @@ final class AdminController
     {
         $new = Http::postRaw('new_password');
         if ($new !== Http::postRaw('new_password2')) {
-            return 'Die neuen Passwörter stimmen nicht überein.';
+            return __('Die neuen Passwörter stimmen nicht überein.');
         }
         return Auth::changePassword(Auth::id(), Http::postRaw('current_password'), $new);
     }
@@ -1256,14 +1277,14 @@ final class AdminController
                     (SELECT COUNT(*) FROM rounds r WHERE r.user_id = u.id) AS round_count
                FROM users u ORDER BY u.is_active DESC, u.display_name, u.username'
         );
-        $this->render('admin/users', ['title' => 'Benutzer', 'users' => $users, 'me' => Auth::id()]);
+        $this->render('admin/users', ['title' => __('Benutzer'), 'users' => $users, 'me' => Auth::id()]);
     }
 
     private function userForm(?int $id = null, array $errors = [], ?array $data = null): void
     {
         $user = $id ? $this->userById($id) : null;
         $this->render('admin/user_form', [
-            'title' => $user ? 'Benutzer bearbeiten' : 'Neuer Benutzer',
+            'title' => $user ? __('Benutzer bearbeiten') : __('Neuer Benutzer'),
             'user' => $user,
             'data' => $data ?? $user ?? ['username' => '', 'display_name' => '', 'email' => '', 'role' => 'teacher', 'is_active' => 1],
             'errors' => $errors,
@@ -1292,22 +1313,22 @@ final class AdminController
         }
         $errors = [];
         if ($data['display_name'] === '') {
-            $errors[] = 'Bitte einen Namen angeben (so wird er Eltern angezeigt, z. B. „Frau Muster“).';
+            $errors[] = __('Bitte einen Namen angeben (so wird er Eltern angezeigt, z. B. „Frau Muster“).');
         }
         if (!is_valid_email($data['email'])) {
-            $errors[] = 'Bitte eine gültige E-Mail-Adresse angeben – an sie gehen die Zugangsdaten.';
+            $errors[] = __('Bitte eine gültige E-Mail-Adresse angeben – an sie gehen die Zugangsdaten.');
         } elseif ($this->emailTaken($data['email'], $id ?? 0)) {
-            $errors[] = 'Für diese E-Mail-Adresse bzw. diesen Benutzernamen gibt es bereits ein Konto.';
+            $errors[] = __('Für diese E-Mail-Adresse bzw. diesen Benutzernamen gibt es bereits ein Konto.');
         }
         if (!preg_match('/^[A-Za-z0-9._@+-]{3,254}$/', $data['username'])) {
-            $errors[] = 'Benutzername: 3–254 Zeichen, nur Buchstaben, Ziffern und . _ @ + -';
+            $errors[] = __('Benutzername: 3–254 Zeichen, nur Buchstaben, Ziffern und . _ @ + -');
         } elseif (Db::value('SELECT id FROM users WHERE username = ? AND id <> ?', [$data['username'], $id ?? 0]) !== null) {
-            $errors[] = 'Für diese E-Mail-Adresse bzw. diesen Benutzernamen gibt es bereits ein Konto.';
+            $errors[] = __('Für diese E-Mail-Adresse bzw. diesen Benutzernamen gibt es bereits ein Konto.');
         }
         // At least one active admin must remain (counting the others; this account only if it stays an active admin)
         $otherActiveAdmins = $this->activeAdminCount() - ($user && $user['role'] === 'admin' && $user['is_active'] ? 1 : 0);
         if ($user && $user['role'] === 'admin' && ($data['role'] !== 'admin' || !$data['is_active']) && $otherActiveAdmins < 1) {
-            $errors[] = 'Es muss mindestens ein aktives Admin-Konto geben.';
+            $errors[] = __('Es muss mindestens ein aktives Admin-Konto geben.');
         }
         if ($errors) {
             $this->userForm($id, $errors, $data);
@@ -1318,21 +1339,22 @@ final class AdminController
                 'UPDATE users SET username = ?, display_name = ?, email = ?, role = ?, is_active = ?, lang = ? WHERE id = ?',
                 [$data['username'], $data['display_name'], $data['email'], $data['role'], $data['is_active'], $data['lang'], $id]
             );
-            $changes = array_filter([
-                $data['role'] !== $user['role'] ? 'Rolle jetzt ' . ($data['role'] === 'admin' ? 'Admin' : 'Lehrkraft') : '',
-                $data['is_active'] !== (int) $user['is_active'] ? ($data['is_active'] ? 'aktiviert' : 'deaktiviert') : '',
-                $data['display_name'] !== $user['display_name'] ? 'Name jetzt „' . $data['display_name'] . '“' : '',
-                $data['email'] !== (string) $user['email'] || $data['username'] !== $user['username'] ? 'E-Mail/Benutzername geändert' : '',
+            // A closure, so that the log gets its own language (see audit())
+            $changes = static fn (): array => array_filter([
+                $data['role'] !== $user['role'] ? __('Rolle jetzt {role}', ['role' => self::roleLabel($data['role'])]) : '',
+                $data['is_active'] !== (int) $user['is_active'] ? ($data['is_active'] ? __('aktiviert') : __('deaktiviert')) : '',
+                $data['display_name'] !== $user['display_name'] ? __('Name jetzt „{name}“', ['name' => $data['display_name']]) : '',
+                $data['email'] !== (string) $user['email'] || $data['username'] !== $user['username'] ? __('E-Mail/Benutzername geändert') : '',
             ]);
-            $this->audit(fn () => 'Konto ' . self::accountLabel($user) . ' bearbeitet' . ($changes ? ': ' . implode(', ', $changes) : ''));
-            $this->flash('success', 'Benutzer gespeichert.' . (!$data['is_active'] ? ' Das Konto ist deaktiviert; seine Runden sind öffentlich nicht mehr erreichbar.' : ''));
+            $this->audit(fn () => __('Konto {account} bearbeitet', ['account' => self::accountLabel($user)]) . ($changes() ? ': ' . implode(', ', $changes()) : ''));
+            $this->flash('success', __('Benutzer gespeichert.') . (!$data['is_active'] ? ' ' . __('Das Konto ist deaktiviert; seine Runden sind öffentlich nicht mehr erreichbar.') : ''));
         } else {
             $id = Db::insert(
                 'INSERT INTO users (username, password_hash, role, display_name, email, lang, is_active, created_at)
                  VALUES (?, ?, ?, ?, ?, ?, 1, ?)',
                 [$data['username'], AccountLinks::unusablePasswordHash(), $data['role'], $data['display_name'], $data['email'], $data['lang'], Time::nowSql()]
             );
-            $this->audit(fn () => 'Konto ' . self::accountLabel($data) . ' angelegt (' . ($data['role'] === 'admin' ? 'Admin' : 'Lehrkraft') . ') und eingeladen');
+            $this->audit(fn () => __('Konto {account} angelegt ({role}) und eingeladen', ['account' => self::accountLabel($data), 'role' => self::roleLabel($data['role'])]));
             $this->linkFlash($this->userById($id), AccountLinks::INVITE);
         }
         Http::redirect('/admin/users');
@@ -1343,16 +1365,18 @@ final class AdminController
     {
         $user = $this->userById($id);
         if ((int) $user['id'] === Auth::id()) {
-            $this->flash('error', 'Ihr eigenes Passwort ändern Sie unter „Mein Profil“.');
+            $this->flash('error', __('Ihr eigenes Passwort ändern Sie unter „Mein Profil“.'));
             Http::redirect('/admin/users');
         }
         if (!filter_var((string) $user['email'], FILTER_VALIDATE_EMAIL)) {
-            $this->flash('error', 'Für dieses Konto ist keine E-Mail-Adresse hinterlegt.');
+            $this->flash('error', __('Für dieses Konto ist keine E-Mail-Adresse hinterlegt.'));
             Http::redirect('/admin/users/' . $id . '/edit');
         }
         Db::run('UPDATE users SET password_hash = ? WHERE id = ?', [AccountLinks::unusablePasswordHash(), $id]);
         Auth::endOtherSessions($id, false);
-        $this->audit(fn () => 'Konto ' . self::accountLabel($user) . ': ' . ($user['last_login_at'] === null ? 'Einladung erneut gesendet' : 'Link zum Zurücksetzen des Passworts gesendet'));
+        $this->audit(fn () => $user['last_login_at'] === null
+            ? __('Konto {account}: Einladung erneut gesendet', ['account' => self::accountLabel($user)])
+            : __('Konto {account}: Link zum Zurücksetzen des Passworts gesendet', ['account' => self::accountLabel($user)]));
         $this->linkFlash($user, $user['last_login_at'] === null ? AccountLinks::INVITE : AccountLinks::RESET);
         Http::redirect('/admin/users');
     }
@@ -1361,11 +1385,14 @@ final class AdminController
     private function linkFlash(array $user, string $kind): void
     {
         [$sent, $link] = AccountLinks::send($user, $kind, Auth::user());
-        $what = $kind === AccountLinks::INVITE ? 'Einladung' : 'Link zum Festlegen eines neuen Passworts';
+        $vars = [
+            'what' => $kind === AccountLinks::INVITE ? __('Einladung') : __('Link zum Festlegen eines neuen Passworts'),
+            'email' => $user['email'], 'hours' => AccountLinks::validHours(), 'link' => $link,
+        ];
         if ($sent) {
-            $this->flash('success', "$what an {$user['email']} gesendet (gültig " . AccountLinks::validHours() . ' Stunden, einmalig nutzbar).');
+            $this->flash('success', __('{what} an {email} gesendet (gültig {hours} Stunden, einmalig nutzbar).', $vars));
         } else {
-            $this->flash('warning', "$what konnte nicht an {$user['email']} gesendet werden. Link (wird nur jetzt angezeigt, bitte persönlich weitergeben): $link");
+            $this->flash('warning', __('{what} konnte nicht an {email} gesendet werden. Link (wird nur jetzt angezeigt, bitte persönlich weitergeben): {link}', $vars));
         }
     }
 
@@ -1376,30 +1403,31 @@ final class AdminController
         $user = $this->linkUser($token);
         if (!$user) {
             http_response_code(404);
-            $this->render('admin/message', ['title' => 'Link ungültig', 'text' => 'Dieser Link ist abgelaufen, wurde bereits verwendet oder ist ungültig. Bitte fordern Sie über „Passwort vergessen?“ auf der Anmeldeseite einen neuen Link an.']);
+            $this->render('admin/message', ['title' => __('Link ungültig'), 'text' => __('Dieser Link ist abgelaufen, wurde bereits verwendet oder ist ungültig. Bitte fordern Sie über „Passwort vergessen?“ auf der Anmeldeseite einen neuen Link an.')]);
             return;
         }
-        $this->render('admin/invite', ['title' => 'Passwort festlegen', 'user' => $user, 'token' => $token, 'errors' => $errors, 'csrf' => self::formToken('invite')]);
+        $this->render('admin/invite', ['title' => __('Passwort festlegen'), 'user' => $user, 'token' => $token, 'errors' => $errors, 'csrf' => self::formToken('invite')]);
     }
 
     private function inviteSave(string $token): void
     {
         $user = $this->linkUser($token);
         if (!$user || !self::checkFormToken('invite')) {
-            $this->inviteForm($token, $user ? ['Das Formular ist abgelaufen. Bitte erneut versuchen.'] : []);
+            $this->inviteForm($token, $user ? [__('Das Formular ist abgelaufen. Bitte erneut versuchen.')] : []);
             return;
         }
         $new = Http::postRaw('new_password');
-        $error = Auth::passwordPolicy($new) ?? ($new !== Http::postRaw('new_password2') ? 'Die Passwörter stimmen nicht überein.' : null);
+        $error = Auth::passwordPolicy($new) ?? ($new !== Http::postRaw('new_password2') ? __('Die Passwörter stimmen nicht überein.') : null);
         if ($error !== null) {
             $this->inviteForm($token, [$error]);
             return;
         }
         AccountLinks::consume((int) $user['id'], $new);
         Auth::startSession(true);
-        $this->flash('success', 'Ihr Passwort ist gespeichert. Bitte melden Sie sich jetzt an.');
+        $this->flash('success', __('Ihr Passwort ist gespeichert. Bitte melden Sie sich jetzt an.'));
         $_SESSION['login_user'] = $user['username']; // not in the URL (access logs)
-        Http::redirect('/admin/login');
+        $lang = AdminI18n::of($user);
+        Http::redirect('/admin/login', ['lang' => $lang !== AdminI18n::default() ? $lang : null]);
     }
 
     /** Check the token; failed attempts limited per IP. */
@@ -1418,7 +1446,7 @@ final class AdminController
 
     private function forgotForm(bool $done = false): void
     {
-        $this->render('admin/forgot', ['title' => 'Passwort vergessen', 'done' => $done, 'csrf' => self::formToken('forgot')]);
+        $this->render('admin/forgot', ['title' => __('Passwort vergessen'), 'done' => $done, 'csrf' => self::formToken('forgot')]);
     }
 
     /**
@@ -1461,21 +1489,23 @@ final class AdminController
     {
         $user = $this->userById($id);
         if ((int) $user['id'] === Auth::id()) {
-            $this->flash('error', 'Sie können Ihr eigenes Konto nicht löschen.');
+            $this->flash('error', __('Sie können Ihr eigenes Konto nicht löschen.'));
             Http::redirect('/admin/users');
         }
         if ($user['role'] === 'admin' && $user['is_active'] && $this->activeAdminCount() <= 1) {
-            $this->flash('error', 'Es muss mindestens ein aktives Admin-Konto geben.');
+            $this->flash('error', __('Es muss mindestens ein aktives Admin-Konto geben.'));
             Http::redirect('/admin/users');
         }
         if (Http::post('confirm') !== '1') {
-            $this->flash('error', 'Bitte das Löschen ausdrücklich bestätigen.');
+            $this->flash('error', __('Bitte das Löschen ausdrücklich bestätigen.'));
             Http::redirect('/admin/users/' . $id . '/edit');
         }
         $rounds = (int) Db::value('SELECT COUNT(*) FROM rounds WHERE user_id = ?', [$id]);
-        $this->audit(fn () => 'Konto ' . self::accountLabel($user) . ' gelöscht' . ($rounds ? " (mit $rounds Runde(n))" : ''));
+        $this->audit(fn () => $rounds
+            ? __('Konto {account} gelöscht (mit {count} Runde(n))', ['account' => self::accountLabel($user), 'count' => $rounds])
+            : __('Konto {account} gelöscht', ['account' => self::accountLabel($user)]));
         Db::run('DELETE FROM users WHERE id = ?', [$id]);
-        $this->flash('success', "Benutzer „{$user['username']}“ mit allen Runden und Buchungen gelöscht.");
+        $this->flash('success', __('Benutzer „{name}“ mit allen Runden und Buchungen gelöscht.', ['name' => $user['username']]));
         Http::redirect('/admin/users');
     }
 
@@ -1494,7 +1524,7 @@ final class AdminController
         if (RateLimiter::hit('teacher_mail', $limit, $window, 'user:' . Auth::id())) {
             return true;
         }
-        $msg .= ' Keine E-Mail gesendet: Höchstzahl von Mails je Stunde erreicht, bitte später erneut speichern.';
+        $msg .= ' ' . __('Keine E-Mail gesendet: Höchstzahl von Mails je Stunde erreicht, bitte später erneut speichern.');
         return false;
     }
 
@@ -1522,8 +1552,7 @@ final class AdminController
         $hints = [];
         $deepl = Db::all("SELECT lang FROM pages WHERE page_key = 'privacy' AND content LIKE '%DeepL%' ORDER BY lang");
         if ($deepl) {
-            $hints[] = 'Die Datenschutzerklärung (' . $list($deepl) . ') nennt noch DeepL. '
-                . 'Übersetzt wird inzwischen im Browser der Lehrkraft – bitte den Absatz „Übersetzung der Texte der Lehrkraft“ durch den aus der Vorlage ersetzen.';
+            $hints[] = __('Die Datenschutzerklärung ({languages}) nennt noch DeepL. Übersetzt wird inzwischen im Browser der Lehrkraft – bitte den Absatz „Übersetzung der Texte der Lehrkraft“ durch den aus der Vorlage ersetzen.', ['languages' => $list($deepl)]);
         }
         // Old model: teacher as controller, operator as processor
         $old = Db::all(
@@ -1532,13 +1561,11 @@ final class AdminController
                 OR content LIKE '%on behalf of the teachers%') ORDER BY lang"
         );
         if ($old) {
-            $hints[] = 'Die Datenschutzerklärung (' . $list($old) . ') beschreibt noch das alte Modell (Lehrkräfte verantwortlich, Betreiberin als Auftragsverarbeiterin). '
-                . 'Verantwortlich ist jetzt der Betreiber (die Angaben für Impressum und Datenschutz) – bitte Abschnitt 1, 6 und 9 an die Vorlage anpassen.';
+            $hints[] = __('Die Datenschutzerklärung ({languages}) beschreibt noch das alte Modell (Lehrkräfte verantwortlich, Betreiberin als Auftragsverarbeiterin). Verantwortlich ist jetzt der Betreiber (die Angaben für Impressum und Datenschutz) – bitte Abschnitt 1, 6 und 9 an die Vorlage anpassen.', ['languages' => $list($old)]);
         }
         $noPlaceholder = Db::all("SELECT lang FROM pages WHERE page_key IN ('imprint', 'privacy') AND content NOT LIKE '%[[VERANTWORTLICHE]]%' GROUP BY lang ORDER BY lang");
         if ($noPlaceholder) {
-            $hints[] = 'Impressum bzw. Datenschutzerklärung (' . $list($noPlaceholder) . ') enthalten den Platzhalter [[VERANTWORTLICHE]] nicht – '
-                . 'die Angaben für Impressum und Datenschutz erscheinen dort nicht automatisch.';
+            $hints[] = __('Impressum bzw. Datenschutzerklärung ({languages}) enthalten den Platzhalter [[VERANTWORTLICHE]] nicht – die Angaben für Impressum und Datenschutz erscheinen dort nicht automatisch.', ['languages' => $list($noPlaceholder)]);
         }
         // Reminder mails to parents: the privacy policy should name them as a purpose of the address
         $noReminder = Db::value('SELECT 1 FROM rounds WHERE remind_parents = 1 LIMIT 1') !== null
@@ -1546,16 +1573,14 @@ final class AdminController
                          AND content NOT LIKE '%Erinnerung%' AND content NOT LIKE '%reminder%' ORDER BY lang")
             : [];
         if ($noReminder) {
-            $hints[] = 'Die Datenschutzerklärung (' . $list($noReminder) . ') erwähnt die Erinnerung an Eltern am Vortag noch nicht – '
-                . 'bitte den Punkt „E-Mail-Adresse“ in Abschnitt 2 an die Vorlage anpassen (oder die Erinnerung in den Runden abschalten).';
+            $hints[] = __('Die Datenschutzerklärung ({languages}) erwähnt die Erinnerung an Eltern am Vortag noch nicht – bitte den Punkt „E-Mail-Adresse“ in Abschnitt 2 an die Vorlage anpassen (oder die Erinnerung in den Runden abschalten).', ['languages' => $list($noReminder)]);
         }
         $hosting = array_values(array_filter(
             array_column(Db::all("SELECT DISTINCT lang FROM pages WHERE page_key = 'privacy' AND content LIKE '%[[HOSTER]]%' ORDER BY lang"), 'lang'),
             static fn ($l) => !\App\Hosting::configured((string) $l)
         ));
         if ($hosting) {
-            $hints[] = 'Für die Datenschutzerklärung (' . implode(', ', array_map('strtoupper', $hosting)) . ') fehlen die Angaben zum Hoster '
-                . '(Konfiguration „hosting“, beim Deployment die Variablen HOSTING_DE bzw. HOSTING_EN) – bis dahin steht dort ein Platzhalter.';
+            $hints[] = __('Für die Datenschutzerklärung ({languages}) fehlen die Angaben zum Hoster (Konfiguration „hosting“, beim Deployment die Variablen HOSTING_DE bzw. HOSTING_EN) – bis dahin steht dort ein Platzhalter.', ['languages' => implode(', ', array_map('strtoupper', $hosting))]);
         }
         return $hints;
     }
@@ -1564,10 +1589,10 @@ final class AdminController
     private static function operatorHints(): array
     {
         if (!Operator::ready()) {
-            return ['Die Angaben für Impressum und Datenschutz fehlen – ohne sie ist keine Runde öffentlich erreichbar.'];
+            return [__('Die Angaben für Impressum und Datenschutz fehlen – ohne sie ist keine Runde öffentlich erreichbar.')];
         }
         if (!str_contains(Operator::contact(), '@')) {
-            return ['In den Angaben für Impressum und Datenschutz fehlt eine E-Mail-Adresse (für das Impressum vorgeschrieben).'];
+            return [__('In den Angaben für Impressum und Datenschutz fehlt eine E-Mail-Adresse (für das Impressum vorgeschrieben).')];
         }
         return [];
     }
@@ -1576,12 +1601,12 @@ final class AdminController
     {
         $contact = Http::post('controller_contact');
         if (mb_strlen($contact) > 2000) {
-            $this->flash('error', 'Die Angaben sind zu lang (höchstens 2000 Zeichen).');
+            $this->flash('error', __('Die Angaben sind zu lang (höchstens 2000 Zeichen).'));
             Http::redirect('/admin/texts');
         }
         Operator::save($contact);
-        $this->audit(fn () => 'Angaben für Impressum und Datenschutz geändert');
-        $this->flash('success', 'Angaben für Impressum und Datenschutz gespeichert.');
+        $this->audit(fn () => __('Angaben für Impressum und Datenschutz geändert'));
+        $this->flash('success', __('Angaben für Impressum und Datenschutz gespeichert.'));
         Http::redirect('/admin/texts');
     }
 
@@ -1591,7 +1616,7 @@ final class AdminController
             'operatorContact' => Operator::contact(),
             'operatorHints' => self::operatorHints(),
             'legalHints' => self::legalHints(),
-            'title' => 'Impressum & Datenschutz',
+            'title' => __('Impressum & Datenschutz'),
             'languages' => I18n::languages(),
             'mailTransport' => (string) \App\Config::get('mail.transport', 'mail'),
             'mailFrom' => (string) \App\Config::get('mail.from_address', ''),
@@ -1602,7 +1627,7 @@ final class AdminController
     {
         $this->assertLang($lang);
         $this->render('admin/page_form', [
-            'title' => ($key === 'imprint' ? 'Impressum' : 'Datenschutzerklärung') . ' (' . strtoupper($lang) . ')',
+            'title' => self::pageLabel($key) . ' (' . strtoupper($lang) . ')',
             'key' => $key,
             'lang' => $lang,
             'content' => (string) Db::value('SELECT content FROM pages WHERE page_key = ? AND lang = ?', [$key, $lang]),
@@ -1618,9 +1643,14 @@ final class AdminController
              ON DUPLICATE KEY UPDATE content = ?, updated_at = ?',
             [$key, $lang, $content, Time::nowSql(), $content, Time::nowSql()]
         );
-        $this->audit(fn () => ($key === 'imprint' ? 'Impressum' : 'Datenschutzerklärung') . ' (' . strtoupper($lang) . ') geändert');
-        $this->flash('success', 'Text gespeichert.');
+        $this->audit(fn () => __('{page} ({lang}) geändert', ['page' => self::pageLabel($key), 'lang' => strtoupper($lang)]));
+        $this->flash('success', __('Text gespeichert.'));
         Http::redirect('/admin/page/' . $key . '/' . $lang);
+    }
+
+    private static function pageLabel(string $key): string
+    {
+        return $key === 'imprint' ? __('Impressum') : __('Datenschutzerklärung');
     }
 
     // ---------------------------------------------------------------- Helpers
@@ -1643,13 +1673,16 @@ final class AdminController
     /** Short description for the list, e.g. "08:00–16:00 Uhr, 15 Min., 1 Pause". */
     private static function templateSummary(array $s): string
     {
-        $parts = [$s['start'] . '–' . $s['end'] . ' Uhr', (int) $s['minutes'] . ' Min. pro Termin'];
+        $parts = [
+            __('{start}–{end} Uhr', ['start' => $s['start'], 'end' => $s['end']]),
+            __('{minutes} Min. pro Termin', ['minutes' => (int) $s['minutes']]),
+        ];
         if ($s['breaks']) {
-            $parts[] = implode(', ', array_map(static fn ($b) => ($b[2] !== '' ? $b[2] . ' ' : 'Pause ') . $b[0] . '–' . $b[1], $s['breaks']));
+            $parts[] = implode(', ', array_map(static fn ($b) => ($b[2] !== '' ? $b[2] : __('Pause')) . ' ' . $b[0] . '–' . $b[1], $s['breaks']));
         }
-        $parts[] = ['round' => 'ein Termin pro Person', 'day' => 'ein Termin pro Person und Tag'][$s['booking_limit']] ?? 'Mehrfachbuchungen erlaubt';
+        $parts[] = ['round' => __('ein Termin pro Person'), 'day' => __('ein Termin pro Person und Tag')][$s['booking_limit']] ?? __('Mehrfachbuchungen erlaubt');
         if ($s['location'] !== '') {
-            $parts[] = 'Ort: ' . $s['location'];
+            $parts[] = __('Ort: {location}', ['location' => $s['location']]);
         }
         return implode(' · ', $parts);
     }
@@ -1661,7 +1694,7 @@ final class AdminController
             $row['summary'] = self::templateSummary(self::templateSettings($row));
         }
         unset($row);
-        $this->render('admin/templates', ['title' => 'Vorlagen', 'templates' => $rows]);
+        $this->render('admin/templates', ['title' => __('Vorlagen'), 'templates' => $rows]);
     }
 
     private function template(int $id): array
@@ -1674,7 +1707,7 @@ final class AdminController
         $row = $id ? $this->template($id) : null;
         $data ??= ['name' => $row['name'] ?? ''] + ($row ? self::templateSettings($row) : self::TEMPLATE_DEFAULTS);
         $this->render('admin/template_form', [
-            'title' => $row ? 'Vorlage bearbeiten' : 'Neue Vorlage',
+            'title' => $row ? __('Vorlage bearbeiten') : __('Neue Vorlage'),
             'row' => $row,
             'data' => $data,
             'dayData' => ['dates' => [''], 'start' => $data['start'], 'end' => $data['end'], 'minutes' => $data['minutes'], 'breaks' => $data['breaks']],
@@ -1706,29 +1739,32 @@ final class AdminController
             'description' => trim(str_replace("\r\n", "\n", Http::post('description'))),
         ];
         if ($data['name'] === '' || mb_strlen($data['name']) > 100) {
-            $errors[] = 'Bitte einen Namen für die Vorlage angeben (max. 100 Zeichen).';
+            $errors[] = __('Bitte einen Namen für die Vorlage angeben (max. 100 Zeichen).');
         } elseif (Db::value('SELECT id FROM round_templates WHERE name = ? AND id <> ?', [$data['name'], $id ?? 0]) !== null) {
-            $errors[] = 'Eine Vorlage mit diesem Namen gibt es bereits.';
+            $errors[] = __('Eine Vorlage mit diesem Namen gibt es bereits.');
         }
         $errors = array_merge($errors, self::timeErrors($start, $end, $minutes));
         if (!$errors && !SlotGenerator::compute($start, $end, (int) $minutes, array_map(
             static fn ($b) => ['start_time' => $b[0], 'end_time' => $b[1]], $breaks
         ))) {
-            $errors[] = self::NO_SLOTS;
+            $errors[] = self::noSlots();
         }
-        foreach (['booking_deadline_hours' => 'Buchungsfrist', 'cancel_deadline_hours' => 'Änderungsfrist'] as $field => $label) {
+        foreach ([
+            'booking_deadline_hours' => __('Buchungsfrist: ganze Zahl zwischen 0 und 720 Stunden.'),
+            'cancel_deadline_hours' => __('Änderungsfrist: ganze Zahl zwischen 0 und 720 Stunden.'),
+        ] as $field => $error) {
             if (!ctype_digit((string) $data[$field]) || (int) $data[$field] > 720) {
-                $errors[] = "$label: ganze Zahl zwischen 0 und 720 Stunden.";
+                $errors[] = $error;
             }
         }
         if ($deleteAfter !== '' && (!ctype_digit($deleteAfter) || (int) $deleteAfter > 8760)) {
-            $errors[] = 'Löschfrist: leer lassen (nie löschen) oder 0–8760 Stunden.';
+            $errors[] = __('Löschfrist: leer lassen (nie löschen) oder 0–8760 Stunden.');
         }
         if (mb_strlen($data['location']) > 200) {
-            $errors[] = 'Ort: höchstens 200 Zeichen.';
+            $errors[] = __('Ort: höchstens 200 Zeichen.');
         }
         if (mb_strlen($data['description']) > 5000) {
-            $errors[] = 'Der Beschreibungstext ist zu lang (max. 5000 Zeichen).';
+            $errors[] = __('Der Beschreibungstext ist zu lang (max. 5000 Zeichen).');
         }
         if ($errors) {
             $this->templateForm($id, $errors, $data);
@@ -1741,12 +1777,13 @@ final class AdminController
         $json = json_encode($settings, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
         if ($row) {
             Db::run('UPDATE round_templates SET name = ?, data = ?, updated_at = ? WHERE id = ?', [$data['name'], $json, Time::nowSql(), $id]);
-            $this->audit(fn () => 'Vorlage „' . $data['name'] . '“ bearbeitet' . ($row['name'] !== $data['name'] ? ' (bisher „' . $row['name'] . '“)' : ''));
+            $this->audit(fn () => __('Vorlage „{name}“ bearbeitet', ['name' => $data['name']])
+                . ($row['name'] !== $data['name'] ? ' (' . __('bisher „{title}“', ['title' => $row['name']]) . ')' : ''));
         } else {
             Db::insert('INSERT INTO round_templates (name, data, created_at, updated_at) VALUES (?, ?, ?, ?)', [$data['name'], $json, Time::nowSql(), Time::nowSql()]);
-            $this->audit(fn () => 'Vorlage „' . $data['name'] . '“ angelegt');
+            $this->audit(fn () => __('Vorlage „{name}“ angelegt', ['name' => $data['name']]));
         }
-        $this->flash('success', 'Vorlage gespeichert. Sie steht jetzt beim Anlegen einer neuen Runde zur Auswahl.');
+        $this->flash('success', __('Vorlage gespeichert. Sie steht jetzt beim Anlegen einer neuen Runde zur Auswahl.'));
         Http::redirect('/admin/templates');
     }
 
@@ -1754,8 +1791,8 @@ final class AdminController
     {
         $row = $this->template($id);
         Db::run('DELETE FROM round_templates WHERE id = ?', [$id]);
-        $this->audit(fn () => 'Vorlage „' . $row['name'] . '“ gelöscht');
-        $this->flash('success', 'Vorlage gelöscht. Bereits angelegte Runden bleiben unverändert.');
+        $this->audit(fn () => __('Vorlage „{name}“ gelöscht', ['name' => $row['name']]));
+        $this->flash('success', __('Vorlage gelöscht. Bereits angelegte Runden bleiben unverändert.'));
         Http::redirect('/admin/templates');
     }
 
@@ -1786,8 +1823,8 @@ final class AdminController
             'INSERT INTO round_templates (name, data, created_at, updated_at) VALUES (?, ?, ?, ?)',
             [$name, json_encode($settings + self::TEMPLATE_DEFAULTS, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR), Time::nowSql(), Time::nowSql()]
         );
-        $this->audit(fn () => 'Vorlage „' . $name . '“ aus der Runde erstellt', $roundId);
-        $this->flash('success', 'Vorlage aus der Runde erstellt (Zeiten und Pausen des ersten Tages, Einstellungen der Runde). Bitte Namen und Angaben prüfen.');
+        $this->audit(fn () => __('Vorlage „{name}“ aus der Runde erstellt', ['name' => $name]), $roundId);
+        $this->flash('success', __('Vorlage aus der Runde erstellt (Zeiten und Pausen des ersten Tages, Einstellungen der Runde). Bitte Namen und Angaben prüfen.'));
         Http::redirect('/admin/templates/' . $id . '/edit');
     }
 
@@ -1806,7 +1843,7 @@ final class AdminController
         $more = count($rows) > self::LOG_PAGE_SIZE;
         $rows = array_slice($rows, 0, self::LOG_PAGE_SIZE);
         $this->render('admin/audit', [
-            'title' => 'Protokoll',
+            'title' => __('Protokoll'),
             'rows' => $rows,
             'older' => $more ? (int) end($rows)['id'] : 0,
             'paged' => $before > 0,
@@ -1824,15 +1861,17 @@ final class AdminController
         if (!Auth::isAdmin()) {
             return;
         }
-        $message = AdminI18n::with(AdminI18n::default(), $message);
-        if ($roundId !== null) {
+        Audit::log(AdminI18n::with(AdminI18n::default(), static function () use ($message, $roundId): string {
+            $text = $message();
+            if ($roundId === null) {
+                return $text;
+            }
             $round = Db::one(
                 "SELECT r.title, COALESCE(NULLIF(u.display_name, ''), u.username) AS owner FROM rounds r JOIN users u ON u.id = r.user_id WHERE r.id = ?",
                 [$roundId]
             );
-            $message = 'Runde „' . ($round['title'] ?? '?') . '“ (' . ($round['owner'] ?? '?') . '): ' . $message;
-        }
-        Audit::log($message);
+            return __('Runde „{title}“ ({owner}): {message}', ['title' => $round['title'] ?? '?', 'owner' => $round['owner'] ?? '?', 'message' => $text]);
+        }));
     }
 
     private static function when(string $date, ?string $time = null): string
@@ -1842,7 +1881,12 @@ final class AdminController
 
     private static function accountLabel(array $user): string
     {
-        return '„' . ($user['display_name'] !== '' ? $user['display_name'] : $user['username']) . '“';
+        return __('„{name}“', ['name' => $user['display_name'] !== '' ? $user['display_name'] : $user['username']]);
+    }
+
+    private static function roleLabel(string $role): string
+    {
+        return $role === 'admin' ? __('Admin') : __('Lehrkraft');
     }
 
     private function render(string $template, array $vars, string $layout = 'admin/layout'): void
@@ -1860,7 +1904,7 @@ final class AdminController
     private function notFound(): never
     {
         http_response_code(404);
-        $this->render('admin/message', ['title' => 'Nicht gefunden', 'text' => 'Der Eintrag existiert nicht (mehr).']);
+        $this->render('admin/message', ['title' => __('Nicht gefunden'), 'text' => __('Der Eintrag existiert nicht (mehr).')]);
         exit;
     }
 

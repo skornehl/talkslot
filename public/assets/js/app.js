@@ -453,7 +453,7 @@ var L = (function () {
     addDate.addEventListener('click', function () {
       var inputs = box.querySelectorAll('[name="day_dates[]"]');
       var n = inputs[inputs.length - 1].cloneNode();
-      n.value = ''; n.required = false; n.setAttribute('aria-label', 'Datum ' + (inputs.length + 1));
+      n.value = ''; n.required = false; n.setAttribute('aria-label', L('Datum {n}', { n: inputs.length + 1 }));
       addDate.parentNode.insertBefore(n, addDate);
       n.focus();
     });

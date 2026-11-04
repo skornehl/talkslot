@@ -18,10 +18,12 @@ It is recommended, so that bookings are deleted and summary mails and reminders 
 use the web cron (the included GitHub workflow calls it hourly). As a fallback, clean-up also runs on page
 views at most every 15 minutes.
 
-## Why is the admin area only in German?
+## Which languages does the admin area speak?
 
-TalkSlot started at a German school. Parent pages and mails are translated into six languages, because
-parents come from many backgrounds. Translating the admin area is welcome as a contribution.
+German and English. Every account picks its language under *Mein Profil* (*Sprache / Language*); mails to
+teachers (invitation, password link, summaries) follow it. Before signing in, the browser language decides;
+`admin_language` sets the default. Parent pages and mails are translated into six languages, because
+parents come from many backgrounds.
 
 ## How do I add a language for parents?
 

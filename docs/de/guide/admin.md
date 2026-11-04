@@ -7,7 +7,7 @@ Das erste **Admin-Konto** wird bei der Installation angelegt; es kann weitere Ko
 Admins sehen und bearbeiten alle Runden, legen Runden für Lehrkräfte an, verwalten die Konten und pflegen
 die Rechtstexte. Verantwortlicher im Sinne der DSGVO ist für alle Terminrunden der Betreiber der Plattform
 (meist die Schule); die Lehrkräfte nutzen die Plattform in seinem Auftrag. Die Bezeichnungen unten sind die
-des Admin-Bereichs.
+des deutschen Admin-Bereichs; jedes Konto kann ihn unter *Mein Profil* auf Englisch umstellen.
 
 ![Admin-Übersicht über alle Runden]({{ '/assets/img/admin-dashboard.webp' | relative_url }})
 

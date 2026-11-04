@@ -27,7 +27,9 @@ final class AccountLinks
             'UPDATE users SET access_token_hash = ?, access_token_expires_at = ? WHERE id = ?',
             [$hash, Time::now()->modify('+' . self::validHours() . ' hours')->format('Y-m-d H:i:s'), $userId]
         );
-        return abs_url('/admin/invite/' . $plain, ['lang' => null]);
+        // The page behind the link in the recipient's language (only named if it is not the default)
+        $lang = AdminI18n::of(['lang' => Db::value('SELECT lang FROM users WHERE id = ?', [$userId])]);
+        return abs_url('/admin/invite/' . $plain, ['lang' => $lang !== AdminI18n::default() ? $lang : null]);
     }
 
     /** Account for a valid, unexpired token (active accounts only). */
@@ -77,36 +79,36 @@ final class AccountLinks
     {
         $link = self::issue((int) $user['id']);
         $until = Time::now()->modify('+' . self::validHours() . ' hours');
-        $untilText = I18n::with('de', static fn () => fmt_date($until->format('Y-m-d'))) . ', ' . $until->format('H:i') . ' Uhr';
-        if ($kind === self::INVITE) {
-            $subject = 'Einladung zu ' . app_name();
-            $lines = [
-                'Hallo ' . $user['display_name'] . ',',
+        // In the recipient's language (dates as well), not in the language of whoever triggers it
+        [$subject, $lines] = AdminI18n::with(AdminI18n::of($user), static function () use ($user, $kind, $link, $until): array {
+            $untilText = __('{date}, {time} Uhr', ['date' => fmt_date($until->format('Y-m-d')), 'time' => $until->format('H:i')]);
+            if ($kind === self::INVITE) {
+                return [__('Einladung zu {app}', ['app' => app_name()]), [
+                    __('Hallo {name},', ['name' => $user['display_name']]),
+                    '',
+                    __('für Sie wurde ein Konto bei {app} angelegt. Damit können Sie Gesprächstermine (z. B. Elternsprechtage) vergeben.', ['app' => app_name()]),
+                    '',
+                    __('Bitte legen Sie über diesen Link Ihr Passwort fest:'),
+                    $link,
+                    '',
+                    __('Der Link ist einmalig nutzbar und gültig bis {until}.', ['until' => $untilText]),
+                    __('Ihr Benutzername: {username}', ['username' => $user['username']]),
+                    '',
+                    __('Prüfen Sie danach unter „Mein Profil“ Ihren Anzeigenamen (so sehen Eltern Sie) und Ihre E-Mail-Adresse für Zusammenfassungen.'),
+                ]];
+            }
+            return [__('Passwort festlegen für {app}', ['app' => app_name()]), [
+                __('Hallo {name},', ['name' => $user['display_name']]),
                 '',
-                'für Sie wurde ein Konto bei ' . app_name() . ' angelegt. Damit können Sie Gesprächstermine (z. B. Elternsprechtage) vergeben.',
-                '',
-                'Bitte legen Sie über diesen Link Ihr Passwort fest:',
+                __('für Ihr Konto bei {app} wurde ein Link zum Festlegen eines neuen Passworts angefordert:', ['app' => app_name()]),
                 $link,
                 '',
-                'Der Link ist einmalig nutzbar und gültig bis ' . $untilText . '.',
-                'Ihr Benutzername: ' . $user['username'],
+                __('Der Link ist einmalig nutzbar und gültig bis {until}.', ['until' => $untilText]),
+                __('Ihr Benutzername: {username}', ['username' => $user['username']]),
                 '',
-                'Prüfen Sie danach unter „Mein Profil“ Ihren Anzeigenamen (so sehen Eltern Sie) und Ihre E-Mail-Adresse für Zusammenfassungen.',
-            ];
-        } else {
-            $subject = 'Passwort festlegen für ' . app_name();
-            $lines = [
-                'Hallo ' . $user['display_name'] . ',',
-                '',
-                'für Ihr Konto bei ' . app_name() . ' wurde ein Link zum Festlegen eines neuen Passworts angefordert:',
-                $link,
-                '',
-                'Der Link ist einmalig nutzbar und gültig bis ' . $untilText . '.',
-                'Ihr Benutzername: ' . $user['username'],
-                '',
-                'Falls Sie das nicht angefordert haben, können Sie diese E-Mail ignorieren – Ihr bisheriges Passwort bleibt dann unverändert.',
-            ];
-        }
+                __('Falls Sie das nicht angefordert haben, können Sie diese E-Mail ignorieren – Ihr bisheriges Passwort bleibt dann unverändert.'),
+            ]];
+        });
         $replyTo = $sender && filter_var((string) ($sender['email'] ?? ''), FILTER_VALIDATE_EMAIL) ? (string) $sender['email'] : null;
         $sent = Mailer::send((string) $user['email'], $subject, implode("\n", $lines), [], $replyTo);
         return [$sent, $link];
