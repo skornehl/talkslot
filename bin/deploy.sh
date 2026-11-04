@@ -3,10 +3,11 @@
 # and only then made active by replacing the pointer file "current".
 # Visitors therefore never see a half-uploaded mix of the old and the new version.
 #
-#   bin/deploy.sh upload <name>          upload a version from build/ (not active yet), verify that
-#                                         all files have arrived, restrict access to its config.php
-#   bin/deploy.sh activate <name>        switch, update the fixed files in the web directory,
-#                                         check the site (otherwise switch back at once), delete old versions
+#   bin/deploy.sh upload <name>          upload a version from build/ (not active yet), restrict access to
+#                                         its config.php, verify that all files have arrived
+#   bin/deploy.sh activate <name>        switch, update the fixed files in the web directory, check the site
+#                                         (otherwise switch back at once), delete old versions, restrict
+#                                         access to the config.php of the remaining ones
 #   bin/deploy.sh switch <name|previous> switch to an existing version (rollback)
 #   bin/deploy.sh discard <name>         delete an uploaded version that was never activated
 #   bin/deploy.sh prune                  delete all versions except the active one (after changing
@@ -16,7 +17,8 @@
 # Environment: FTP_URL (e.g. ftp://ftp.example.org), APP_DIR, WEB_DIR (relative to the FTP root;
 # APP_DIR outside the web root), FTP_USER and LFTP_PASSWORD, BASE_URL (for the check), KEEP (versions kept, default 5),
 # BUILD_DIR (default build), CONFIG_MODE (permissions of config.php after the upload, default 600;
-# 640 if PHP reads it through the group, keep = leave them to the server). Server layout: README, section "Deployment".
+# 640 if PHP reads it through the group, keep = leave them to the server; never readable for others).
+# Server layout: README, section "Deployment".
 set -euo pipefail
 
 die() { echo "::error::$*" >&2; exit 1; }
@@ -33,7 +35,9 @@ NAME_RX='^[A-Za-z0-9][A-Za-z0-9._-]*$'
 SAFE_RX='^[A-Za-z0-9._/:@-]+$'
 for v in "$FTP_URL" "$APP_DIR" "$WEB_DIR" "$BUILD_DIR"; do [[ $v =~ $SAFE_RX ]] || die "Invalid characters in: $v"; done
 [[ $KEEP =~ ^[0-9]+$ ]] && [ "$KEEP" -ge 2 ] || die "KEEP must be at least 2"
-[[ $CONFIG_MODE =~ ^([0-7]{3,4}|keep)$ ]] || die "CONFIG_MODE must be an octal mode like 600 or 640, or keep"
+# The owner (PHP) must read it, others never: 644 or 666 would silently undo the protection (keep is the
+# deliberate exception, the admin area then warns if needed)
+[[ $CONFIG_MODE =~ ^(0?[4-7][0-7]0|keep)$ ]] || die "CONFIG_MODE must be 600, 640 (owner may read, others may not) or keep"
 FTP_USER=$(printf '%s' "${FTP_USER:-}" | tr -d '\r\n')
 [[ $FTP_USER != *"'"* ]] || die "Invalid FTP user name"
 TMP=$(mktemp -d)
@@ -59,6 +63,20 @@ put_atomic() {
 
 releases() { # existing versions, oldest first
   ftp "cls -1 $APP_DIR/releases/" 2>/dev/null | sed -e 's#/$##' -e 's#.*/##' | grep -E "$NAME_RX" | LC_ALL=C sort || true
+}
+
+# Set CONFIG_MODE on the config.php of the given versions. It holds the database and SMTP passwords and
+# APP_SECRET; mirror --no-perms leaves its permissions to the FTP server (often 644, readable for every user
+# of a shared server). One lftp call: chmod goes on after a file it cannot change, and a failure only warns.
+protect_config() {
+  local n files=''
+  [ "$CONFIG_MODE" != keep ] && [ $# -gt 0 ] || return 0
+  for n in "$@"; do files+=" $APP_DIR/releases/$n/config/config.php"; done
+  if ftp "chmod $CONFIG_MODE$files"; then
+    echo "config.php: permissions $CONFIG_MODE in $*"
+  else
+    echo "::warning::Could not set the permissions of config.php to $CONFIG_MODE in $* (no chmod on this FTP server?). Please check them in $APP_DIR/releases/<version>/config/config.php; the admin area warns while every user of the server can read one of them."
+  fi
 }
 
 current() {
@@ -147,8 +165,11 @@ case "$cmd" in
   upload)
     [[ $name =~ $NAME_RX ]] || die "Version name missing or invalid"
     [ -d "$BUILD_DIR/app/releases/$name" ] && [ -d "$BUILD_DIR/web/v/$name" ] || die "No build for $name in $BUILD_DIR"
-    ftp "mirror -R --no-perms --parallel=2 --verbose=1 $BUILD_DIR/app/releases/$name $APP_DIR/releases/$name;
-      mirror -R --no-perms --verbose=1 $BUILD_DIR/app/app/var $APP_DIR/app/var;
+    # The code first and right after it the permissions of config.php, so that others can read it as briefly
+    # as possible (FTP cannot set them before the upload)
+    ftp "mirror -R --no-perms --parallel=2 --verbose=1 $BUILD_DIR/app/releases/$name $APP_DIR/releases/$name"
+    protect_config "$name"
+    ftp "mirror -R --no-perms --verbose=1 $BUILD_DIR/app/app/var $APP_DIR/app/var;
       mirror -R --no-perms --parallel=2 --verbose=1 $BUILD_DIR/web/v/$name $WEB_DIR/v/$name;
       put $BUILD_DIR/web/v/.htaccess -o $WEB_DIR/v/.htaccess"
     # Completeness: all files of the build must be on the server
@@ -158,12 +179,6 @@ case "$cmd" in
       ftp "find $WEB_DIR/v/$name" | grep -v '/$' | sed "s#^$WEB_DIR/v/$name/#web/#"; } > "$TMP/remote"
     missing=$(comm -23 <(LC_ALL=C sort "$TMP/local") <(LC_ALL=C sort "$TMP/remote"))
     [ -z "$missing" ] || die "Files missing on the server: $(head -5 <<< "$missing" | tr '\n' ' ')"
-    # config.php holds the database and SMTP passwords and APP_SECRET; mirror --no-perms leaves its
-    # permissions to the FTP server (often 644, readable for every user of a shared server)
-    if [ "$CONFIG_MODE" != keep ]; then
-      ftp "chmod $CONFIG_MODE $APP_DIR/releases/$name/config/config.php" && echo "config.php: permissions $CONFIG_MODE" \
-        || echo "::warning::Could not set the permissions of config.php to $CONFIG_MODE (no chmod on this FTP server?). Please check them; the admin area warns if every user of the server can read the file."
-    fi
     echo "Uploaded and complete: $name ($(wc -l < "$TMP/local") files) – not active yet"
     ;;
 
@@ -184,6 +199,9 @@ case "$cmd" in
       exit 1
     fi
     cleanup "$name"
+    # The older versions have the same secrets in their config.php (also those uploaded before CONFIG_MODE
+    # existed). Only after the check: PHP has then read the new one with CONFIG_MODE, so a rollback still works.
+    [ -z "${BASE_URL:-}" ] || protect_config $(releases)
     ;;
 
   switch)

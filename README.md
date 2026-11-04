@@ -148,13 +148,14 @@ Optional, for shared hosting with FTPS. Every push to `main` runs the tests, upl
 switches over **atomically**:
 
 1. The new version is uploaded completely into its own directory (`<APP_DIR>/releases/<name>/`, assets to
-   `<WEB_DIR>/v/<name>/`) while the old one keeps running, and checked for completeness. Its `config.php`
-   gets the permissions `600` (variable `CONFIG_MODE`: `640` or `keep` if PHP runs as a different user
-   than FTP; a server without `chmod` only causes a warning).
+   `<WEB_DIR>/v/<name>/`) while the old one keeps running, and checked for completeness. Right after the
+   code, its `config.php` gets the permissions `600` (variable `CONFIG_MODE`: `640` or `keep` if PHP runs
+   as a different user than FTP; a server without `chmod` only causes a warning).
 2. A pointer file `<APP_DIR>/current` is replaced in one step. Old and new code never run side by side.
 3. The site is checked (login page, start page, CSS). On failure it switches straight back and the run
    fails.
-4. The last five versions are kept for rollbacks.
+4. The last five versions are kept for rollbacks; once the check has passed, their `config.php` gets the
+   same permissions.
 
 ```
 <APP_DIR>/current            name of the active version
@@ -191,6 +192,12 @@ gh workflow run "Switch version" -f target=prune         # delete all versions e
 
 After changing secrets (database or SMTP password, `APP_SECRET`) run `prune`: older versions keep the old
 values in their `config.php`.
+
+**Upgrading from a version without `CONFIG_MODE`:** until then `config.php` kept the FTP server's default
+permissions (often `644`) in every version on the server. The first deployment after the update restricts
+all of them. If other users of your server could read the file (ask your web host how customers are
+separated), change the secrets as described in
+[Changing secrets](https://skornehl.github.io/talkslot/guide/operations/#changing-secrets).
 
 The database is not rolled back. That is why migrations (`app/src/Migrations.php`) must only **add**
 columns with defaults and tables, so an older version keeps working with a newer schema.

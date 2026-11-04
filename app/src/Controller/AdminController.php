@@ -209,7 +209,7 @@ final class AdminController
             'rounds' => $rounds,
             'showOwner' => $all,
             // config.php readable for every user of the server (only admins can have that fixed)
-            'configPermissions' => Auth::isAdmin() ? \App\Config::exposedPermissions() : null,
+            'configExposed' => Auth::isAdmin() ? \App\Config::exposedFiles() : [],
             'profileHints' => $this->profileHints(),
             'operatorMissing' => !Operator::ready(),
             'legalHints' => Auth::isAdmin() ? array_merge(self::operatorHints(), self::legalHints()) : [],

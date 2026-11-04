@@ -5,8 +5,8 @@
 <?php if ($operatorMissing && !App\Auth::isAdmin()): ?>
   <div class="alert alert-warning" role="status"><p><?= e(__('Es sind noch keine Angaben für Impressum und Datenschutz hinterlegt (Aufgabe der Admins). Bis dahin sind keine Terminrunden öffentlich erreichbar.')) ?></p></div>
 <?php endif; ?>
-<?php if ($configPermissions !== null): ?>
-  <div class="alert alert-warning" role="status"><p><?= e(__('Die Datei config/config.php ist für alle Benutzer des Servers lesbar (Rechte {mode}). Sie enthält die Passwörter für Datenbank und Mailversand sowie den geheimen Schlüssel. Bitte setzen Sie die Rechte auf 600 (oder 640), z. B. im FTP-Programm, oder geben Sie diesen Hinweis an die technische Betreuung weiter.', ['mode' => $configPermissions])) ?></p></div>
+<?php if ($configExposed): ?>
+  <div class="alert alert-warning" role="status"><p><?= e(__('Die Konfiguration ist für alle Benutzer des Servers lesbar: {files}. Sie enthält die Passwörter für Datenbank und Mailversand sowie den geheimen Schlüssel. Bitte setzen Sie die Rechte auf 600 (oder 640), z. B. im FTP-Programm, oder geben Sie diesen Hinweis an die technische Betreuung weiter.', ['files' => implode(', ', array_map(static fn (string $file, string $mode): string => "$file ($mode)", array_keys($configExposed), $configExposed))])) ?></p></div>
 <?php endif; ?>
 <?php if ($profileHints): ?>
   <div class="alert alert-warning" role="status">

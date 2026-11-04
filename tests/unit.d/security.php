@@ -14,15 +14,39 @@ check('config.php only for the owner or its group (600, 640, 660, 400): no warni
     $cfgMode(0600) === null && $cfgMode(0640) === null && $cfgMode(0660) === null && $cfgMode(0400) === null);
 unlink($cfgFile);
 check('missing file: no warning', App\Config::exposedPermissions($cfgFile) === null);
-check('without an argument: the config.php of this installation',
-    App\Config::exposedPermissions() === App\Config::exposedPermissions(APP_ROOT . '/config/config.php'));
 
-$dashboard = static fn (?string $perms): string => App\View::capture('admin/dashboard', [
-    'title' => 'Alle Terminrunden', 'rounds' => [], 'showOwner' => true, 'configPermissions' => $perms,
+// Installation layout: config/config.php directly (manual installation) or one copy per version in
+// releases/<name>/config/ (atomic deployment, bin/deploy.sh). Every copy holds the same secrets.
+$cfgRoot = sys_get_temp_dir() . '/tp-config-' . bin2hex(random_bytes(4));
+$cfgPut = static function (string $path, int $perms) use ($cfgRoot): void {
+    @mkdir(dirname("$cfgRoot/$path"), 0700, true);
+    file_put_contents("$cfgRoot/$path", '<?php return [];');
+    chmod("$cfgRoot/$path", $perms);
+};
+check('nothing there: no warning', App\Config::exposedFiles($cfgRoot) === []);
+$cfgPut('config/config.php', 0640);
+check('manual installation, config.php 640: no warning', App\Config::exposedFiles($cfgRoot) === []);
+chmod("$cfgRoot/config/config.php", 0644);
+check('manual installation, config.php 644: reported with its path', App\Config::exposedFiles($cfgRoot) === ['config/config.php' => '0644']);
+unlink("$cfgRoot/config/config.php");
+$cfgPut('releases/20261102-100000-v1.9.0/config/config.php', 0644);
+$cfgPut('releases/20261102-110000-v1.9.1/config/config.php', 0600);
+$cfgPut('releases/20261102-120000-v1.9.2/config/config.php', 0666);
+check('atomic deployment: every version is checked, not only the active one',
+    App\Config::exposedFiles($cfgRoot) === ['releases/20261102-100000-v1.9.0/config/config.php' => '0644', 'releases/20261102-120000-v1.9.2/config/config.php' => '0666']);
+exec('rm -rf ' . escapeshellarg($cfgRoot));
+check('without an argument: the config.php of this installation',
+    App\Config::exposedFiles() === App\Config::exposedFiles(DATA_ROOT)
+    && array_key_exists('config/config.php', App\Config::exposedFiles()) === (App\Config::exposedPermissions(APP_ROOT . '/config/config.php') !== null));
+
+$dashboard = static fn (array $exposed): string => App\View::capture('admin/dashboard', [
+    'title' => 'Alle Terminrunden', 'rounds' => [], 'showOwner' => true, 'configExposed' => $exposed,
     'profileHints' => [], 'operatorMissing' => false, 'legalHints' => [],
 ]);
-check('dashboard: warning with the permissions, nothing without exposure',
-    str_contains($dashboard('0644'), 'Die Datei config/config.php ist für alle Benutzer des Servers lesbar (Rechte 0644).')
-    && !str_contains($dashboard(null), 'config/config.php'));
+$cfgTwo = ['releases/a/config/config.php' => '0644', 'releases/b/config/config.php' => '0666'];
+check('dashboard: warning with the paths and permissions, nothing without exposure',
+    str_contains($dashboard(['config/config.php' => '0644']), 'Die Konfiguration ist für alle Benutzer des Servers lesbar: config/config.php (0644).')
+    && str_contains($dashboard($cfgTwo), 'lesbar: releases/a/config/config.php (0644), releases/b/config/config.php (0666).')
+    && !str_contains($dashboard([]), 'config.php'));
 check('dashboard in English: warning translated',
-    str_contains(App\AdminI18n::with('en', static fn () => $dashboard('0666')), 'The file config/config.php can be read by every user of the server (permissions 0666).'));
+    str_contains(App\AdminI18n::with('en', static fn () => $dashboard($cfgTwo)), 'The configuration can be read by every user of the server: releases/a/config/config.php (0644), releases/b/config/config.php (0666).'));

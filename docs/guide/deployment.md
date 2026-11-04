@@ -14,14 +14,15 @@ made for shared hosting where you only have FTP access. Everything is optional: 
    values stop the run before anything is uploaded.
 2. **Upload next to the running version.** The new version goes into its own directory
    (`<APP_DIR>/releases/<name>/`, assets into `<WEB_DIR>/v/<name>/`). The live site is untouched.
-   Afterwards every file is checked on the server, and `config.php` is made readable for its owner only
-   ([permissions](#permissions-of-configphp)).
+   Right after the code, its `config.php` is made readable for its owner only
+   ([permissions](#permissions-of-configphp)). Afterwards every file is checked on the server.
 3. **Switch in one step.** The pointer file `<APP_DIR>/current` is replaced (uploaded as `current.new`,
    then renamed). From that moment every request is served by the new version. Old and new code never
    run side by side, so they cannot write inconsistent data.
 4. **Check.** The login page, start page and the new version's CSS are fetched. If that fails, the
    workflow switches back to the previous version at once, deletes the broken one and fails.
-5. **Clean up.** The five newest versions stay on the server for rollbacks.
+5. **Clean up.** The five newest versions stay on the server for rollbacks; their `config.php` gets the
+   same permissions as the new one.
 
 ```
 <APP_DIR>/current            name of the active version, e.g. 20261102-153012-v1.1.0
@@ -67,21 +68,31 @@ Sessions live in the shared `app/var/`, so nobody is logged out by a deployment.
 | `MAIL_FROM`, `MAIL_FROM_NAME`, `MAIL_REPLY_TO`, `ALERT_EMAIL` | variables | | mail settings |
 | `MAIL_TRANSPORT`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_ENCRYPTION` | variables | | for SMTP |
 | `SMTP_USER`, `SMTP_PASS` | secrets | | for SMTP |
-| `CONFIG_MODE` | variable | | permissions of `config.php` on the server: `600` (default), `640` or `keep`, see below |
+| `CONFIG_MODE` | variable | | permissions of `config.php` on the server: `600` (default), `640` or `keep`; modes readable for others are rejected; see below |
 
 ### Permissions of config.php {#permissions-of-configphp}
 
 `config.php` contains the database and SMTP passwords and `APP_SECRET`. An FTP upload gives every file
-the server's default permissions, often `644`: on a shared server every other user could read it. After
-the upload the deployment therefore runs `chmod 600` on it.
+the server's default permissions, often `644`: on a shared server every other user could read it. The
+deployment therefore runs `chmod 600` on the new version's `config.php` right after uploading its code.
+Once the new version has passed the check (PHP can read a file with these permissions), the older
+versions on the server get them too: they contain the same secrets.
 
-- If your FTP server does not support `chmod`, the run shows a warning and goes on. Set the permissions
-  in your web host's file manager; the TalkSlot dashboard warns admins as long as every user of the server
-  can read the file.
+- If your FTP server does not support `chmod`, the run shows a warning and goes on. Every deployment then
+  uploads a new copy with the default permissions, so after each one set the permissions of
+  `<APP_DIR>/releases/<name>/config/config.php` in your web host's file manager, for every version on the
+  server. The TalkSlot dashboard warns admins and lists each copy that every user of the server can read.
 - If PHP runs as a different user than your FTP account (rare on shared hosting), PHP cannot read a file
   with `600`. The check after switching then fails with HTTP 500 and the previous version stays active.
   Set the variable `CONFIG_MODE` to `640` (PHP reads the file through its group) or, if that is not enough
   either, to `keep` (leave the permissions to the server): `gh variable set CONFIG_MODE --body 640`.
+  `640` only protects the file if no other customer is in its group (some hosts put all customers in one
+  group, or run PHP for everyone as the same user); the dashboard cannot detect that, so ask your web host.
+
+**Upgrading from a version without `CONFIG_MODE`:** until then `config.php` kept the default permissions
+in every version on the server. The first deployment after the update restricts all of them. If other
+users of the server could read the file until then (ask your web host how customers are separated),
+[change the secrets]({{ '/guide/operations/' | relative_url }}#changing-secrets).
 
 ## Rollback
 

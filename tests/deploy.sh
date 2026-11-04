@@ -54,21 +54,26 @@ A=20261102-100000-v1.9.0; build $A v1.9.0
 load_start; dep upload $A > "$T/out" 2>&1; rc=$?; load_stop
 ok 'upload complete, only 200s under load' '[ $rc = 0 ] && grep -q "Uploaded and complete" "$T/out" && only200'
 ok 'not active yet after upload' '[ "$(html /admin/login)" = empty ] && [ ! -e "$BASE/current" ]'
+mode() { stat -c %a "$BASE/releases/$1/$2"; }
+ok 'config.php only readable for its owner right after the upload (600)' '[ "$(mode $A config/config.php)" = 600 ] && grep -q "config.php: permissions 600 in $A" "$T/out"'
 load_start; dep activate $A > "$T/out" 2>&1; rc=$?; load_stop
 ok 'switch ok, only 200s under load' '[ $rc = 0 ] && only200' || cat "$T/out"
 ok 'pointer to A, A is served' '[ "$(cat "$BASE/current")" = $A ] && html /admin/login | grep -q "/v/$A/css/app.css" && [ "$(code /v/$A/css/app.css)" = 200 ] && html / | grep -q v1.9.0'
 ok 'app_root.php finds the app directory (from APP_DIR/WEB_DIR)' 'grep -qF "/../talkslot-app'"'"')" "$WEB/app_root.php" && [ ! -e "$WEB/assets" ]'
 ok 'app/var shared (sessions, logs), version without its own app/var' '[ -f "$BASE/app/var/.htaccess" ] && [ ! -e "$BASE/releases/$A/app/var" ]'
-mode() { stat -c %a "$BASE/releases/$1/$2"; }
-ok 'config.php only readable for its owner (600)' '[ "$(mode $A config/config.php)" = 600 ]'
 
 echo "Next version"
 B=20261102-110000-v1.9.1; build $B v1.9.1
-ok 'invalid CONFIG_MODE rejected before the upload' '! CONFIG_MODE="600; rm -r x" dep upload $B > /dev/null 2>&1 && [ ! -e "$BASE/releases/$B" ]'
-load_start; CONFIG_MODE=640 dep upload $B > "$T/out" 2>&1 && dep activate $B > "$T/out" 2>&1; rc=$?; load_stop
+ok 'invalid CONFIG_MODE (injection, readable for others, not for the owner) rejected before the upload' \
+  '(for m in "600; rm -r x" 644 666 0604 200; do ! CONFIG_MODE=$m dep upload $B > /dev/null 2>&1 || exit 1; done) && [ ! -e "$BASE/releases/$B" ]'
+chmod 644 "$BASE/releases/$A/config/config.php" # like a version uploaded before CONFIG_MODE existed
+load_start; CONFIG_MODE=640 dep upload $B > "$T/out" 2>&1; rc=$?; AMODE=$(mode $A config/config.php)
+[ $rc = 0 ] && CONFIG_MODE=640 dep activate $B > "$T/out" 2>&1; rc=$?; load_stop
 ok 'B active, only 200s under load' '[ $rc = 0 ] && [ "$(cat "$BASE/current")" = $B ] && html / | grep -q v1.9.1 && only200'
 ok 'A is kept for a rollback' '[ -d "$BASE/releases/$A" ] && [ -d "$WEB/v/$A" ]'
 ok 'CONFIG_MODE=640: group may read config.php (PHP via the group)' '[ "$(mode $B config/config.php)" = 640 ]'
+ok 'older version: config.php untouched by the upload, CONFIG_MODE once the new version passed the check' \
+  '[ "$AMODE" = 644 ] && [ "$(mode $A config/config.php)" = 640 ]'
 ok 'list marks the active one' 'dep list | grep -q "^\* $B" && dep list | grep -q "^  $A"'
 
 echo "Switch (rollback)"
@@ -83,11 +88,16 @@ echo "Broken version"
 C=20261102-120000-v1.9.2; build $C v1.9.2
 echo '<?php throw new Error("broken");' > "$T/build/app/releases/$C/app/src/App.php"
 dep upload $C > /dev/null 2>&1; dep activate $C > "$T/out" 2>&1; rc=$?
-ok 'check fails → back to B' '[ $rc != 0 ] && grep -q "switched back to $B" "$T/out" && [ "$(cat "$BASE/current")" = $B ] && html / | grep -q v1.9.1'
+ok 'check fails → back to B, hint at CONFIG_MODE' '[ $rc != 0 ] && grep -q "switched back to $B" "$T/out" && grep -q "set CONFIG_MODE to 640" "$T/out" && [ "$(cat "$BASE/current")" = $B ] && html / | grep -q v1.9.1'
+ok 'check failed: older versions keep their permissions (the rollback target stays readable for PHP)' '[ "$(mode $B config/config.php)" = 640 ] && [ "$(mode $A config/config.php)" = 640 ]'
 ok 'broken version deleted' '[ ! -e "$BASE/releases/$C" ] && [ ! -e "$WEB/v/$C" ]'
 D=20261102-123000-v1.9.2; build $D v1.9.2; CONFIG_MODE=keep dep upload $D > "$T/out" 2>&1
 ok 'CONFIG_MODE=keep: permissions of config.php left to the server' '! grep -q "config.php: permissions" "$T/out" && [ "$(mode $D config/config.php)" = "$(mode $D app/bootstrap.php)" ]'
 ok 'discard deletes a never-activated version, never the active one' 'dep discard $D > /dev/null 2>&1 && [ ! -e "$BASE/releases/$D" ] && ! dep discard $B > /dev/null 2>&1 && [ -d "$BASE/releases/$B" ]'
+E=20261102-124500-v1.9.2; build $E v1.9.2; rm "$T/build/app/releases/$E/config/config.php"
+dep upload $E > "$T/out" 2>&1; rc=$?
+ok 'chmod fails (here: no config.php) → only a warning, the upload goes on' '[ $rc = 0 ] && grep -q "::warning::Could not set the permissions of config.php to 600 in $E" "$T/out" && grep -q "Uploaded and complete: $E" "$T/out"'
+dep discard $E > /dev/null 2>&1
 
 echo "Pointer emergencies (app_root.php)"
 rm "$BASE/current"

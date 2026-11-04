@@ -140,8 +140,8 @@ jobs:
         if: github.ref == 'refs/heads/main' && steps.current.outputs.superseded != '1'
         run: sudo apt-get install -y -qq lftp > /dev/null
 
-      # Upload via FTPS into a new directory; the running version stays untouched. At the end it is
-      # verified that all files have arrived; config.php is restricted to its owner (CONFIG_MODE, default 600).
+      # Upload via FTPS into a new directory; the running version stays untouched. config.php is restricted
+      # to its owner (CONFIG_MODE, default 600); at the end it is verified that all files have arrived.
       # Only main goes live.
       - name: Upload (not active yet)
         id: upload
@@ -187,7 +187,7 @@ jobs:
           bin/deploy.sh discard "$NAME"
 
       # Replace the pointer file, update the fixed files in the web directory, check the site (otherwise
-      # switch back at once), delete old versions (the last five are kept)
+      # switch back at once), delete old versions (the last five are kept) and restrict their config.php too
       - name: Switch and check
         if: github.ref == 'refs/heads/main' && steps.current.outputs.superseded != '1' && steps.current_after.outputs.superseded != '1'
         env:

@@ -7,8 +7,8 @@ echo "Security: permissions of config.php"
 CFG="$ROOT/config/config.php"
 CFG_KEEP=$(stat -c %a "$CFG")
 chmod o+r "$CFG"
-CFG_NOTE="Die Datei config/config.php ist für alle Benutzer des Servers lesbar (Rechte $(printf '%04o' "0$(stat -c %a "$CFG")"))."
-check "config.php readable for every user: admins see a warning with its permissions" 'curl -s -b "$J" "$B/admin" | grep -qF "$CFG_NOTE"'
+CFG_NOTE="Die Konfiguration ist für alle Benutzer des Servers lesbar: config/config.php ($(printf '%04o' "0$(stat -c %a "$CFG")"))."
+check "config.php readable for every user: admins see a warning with its path and permissions" 'curl -s -b "$J" "$B/admin" | grep -qF "$CFG_NOTE"'
 # Teachers cannot have that fixed: no warning for them
 CFG_PW=Rechte-Lehrkraft-123
 DBQ "INSERT INTO tp_users (username, password_hash, role, display_name, email, created_at) VALUES ('cfg-teacher@example.org', '$($DC exec -T app php -r 'echo password_hash($argv[1], PASSWORD_DEFAULT);' "$CFG_PW")', 'teacher', 'Herr Rechte', 'cfg-teacher@example.org', NOW())"
