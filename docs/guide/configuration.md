@@ -99,7 +99,7 @@ generous on purpose: many parents may share one address (mobile networks, school
 | `booking` | 30 per hour | successful bookings |
 | `manage` | 300 per hour | requests to change links |
 | `login` | 5 per 15 min | failed admin logins (additionally 20 per user name and hour) |
-| `reauth` | 5 per 15 min | wrong passwords when confirming a change of admin rights, an e-mail address or ending all sessions (per account, not per IP address) |
+| `reauth` | 5 per 15 min | wrong passwords when confirming a change of admin rights, an e-mail address or ending all sessions, and when changing the own password (one counter per sign-in, not per IP address) |
 
 `csrf_min_age_seconds` (default 2) is the minimum time between loading and submitting a public form, a
 simple brake for bots.

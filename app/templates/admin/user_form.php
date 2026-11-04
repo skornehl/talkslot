@@ -52,7 +52,7 @@
   <div class="field">
     <label for="current_password"><?= e(__('Ihr Passwort (zur Bestätigung)')) ?></label>
     <input type="password" id="current_password" name="current_password" autocomplete="current-password" aria-describedby="pw-hint">
-    <p class="hint" id="pw-hint"><?= e(__('Nur nötig, wenn Sie Admin-Rechte vergeben oder entziehen, ein Admin-Konto deaktivieren oder wieder aktivieren oder die E-Mail-Adresse ändern. Alle Admins und die betroffene Person erhalten dann eine E-Mail.')) ?></p>
+    <p class="hint" id="pw-hint"><?= e(__('Nur nötig, wenn Sie Admin-Rechte vergeben oder entziehen, ein Admin-Konto deaktivieren oder wieder aktivieren oder die E-Mail-Adresse ändern. Dann geht eine E-Mail hinaus: bei Admin-Rechten an alle Admins und die betroffene Person, bei einer neuen E-Mail-Adresse an die bisherige.')) ?></p>
   </div>
   <?php if (!$user): ?>
     <p class="hint"><?= e(__('Beim Speichern erhält die Person eine Einladung per E-Mail mit einem Link, über den sie ihr Passwort selbst festlegt (einmalig nutzbar, {hours} Stunden gültig). Danach kann sie ihre Terminrunden selbst verwalten; Sie können Runden auch für sie anlegen.', ['hours' => (int) App\AccountLinks::validHours()])) ?></p>

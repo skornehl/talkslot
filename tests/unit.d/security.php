@@ -25,6 +25,11 @@ foreach (array_merge(glob(APP_ROOT . '/app/src/*.php') ?: [], glob(APP_ROOT . '/
 }
 check('#[\SensitiveParameter] on every password and token parameter (' . count($params) . ' found'
     . ($missing ? '; missing: ' . implode(', ', $missing) : '') . ')', count($params) >= 25 && !$missing);
+// Beyond the names: mail texts carry invitation, password and booking links, the input of a round code
+$marked = static fn (string $class, string $method, int $i): bool
+    => (bool) (new ReflectionMethod($class, $method))->getParameters()[$i]->getAttributes(SensitiveParameter::class);
+check('#[\SensitiveParameter] also on the mail text and the entered round code',
+    $marked(App\Mailer::class, 'send', 2) && $marked(App\RoundAccess::class, 'checkCode', 1));
 [$rc, $trace] = $run(['-d', 'zend.exception_ignore_args=0', '-d', 'zend.exception_string_param_max_len=100', '-r', 'require "app/bootstrap.php";
     App\Config::load(["db" => ["host" => "127.0.0.1", "port" => 1, "name" => "x", "user" => "x", "pass" => "x"]] + (require "config/config.php"));
     try { App\Auth::attempt("sabrina", "Geheim-Passwort-42"); } catch (Throwable $e) { echo $e->getTraceAsString(); }']);

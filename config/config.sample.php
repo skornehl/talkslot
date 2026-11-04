@@ -80,7 +80,7 @@ return [
         'booking' => [30, 3600],    // successful bookings
         'manage' => [300, 3600],    // requests to change links
         'login' => [5, 900],        // failed admin logins
-        'reauth' => [5, 900],       // wrong passwords when confirming admin rights, e-mail changes, ending all sessions (per account)
+        'reauth' => [5, 900],       // wrong passwords when confirming admin rights, e-mail changes, ending all sessions and changing the own password (per sign-in)
     ],
     'csrf_min_age_seconds' => 2,    // form can be submitted after N seconds at the earliest (bot brake)
 ];

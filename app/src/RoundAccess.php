@@ -24,7 +24,7 @@ final class RoundAccess
     }
 
     /** Does the input (case/format irrelevant, see RoundCode::normalize) match the round code? */
-    public static function checkCode(array $round, string $input): bool
+    public static function checkCode(array $round, #[\SensitiveParameter] string $input): bool
     {
         $code = RoundCode::normalize($input);
         return $code !== null && (string) ($round['code'] ?? '') !== '' && hash_equals((string) $round['code'], $code);

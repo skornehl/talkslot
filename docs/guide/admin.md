@@ -58,7 +58,8 @@ A taken-over session or a misused admin account must not be able to take over ot
 - **Your password again** (*Ihr Passwort (zur Bestätigung)*) is needed to invite an admin, to give or take
   away admin rights, to deactivate, reactivate or delete an admin account and to change an e-mail address
   (password links go there; this applies to your own address too). After 5 wrong entries in 15 minutes
-  the confirmation is refused for a while.
+  (wrong current passwords when changing your own password count too) the confirmation is refused for a
+  while; signing out and in again starts afresh.
 - **Security mails:** the account holder gets a mail when its password was changed or set; the previous
   address when an admin changed the e-mail address or the username; all active admins (you included) and
   the person concerned when admin rights change or an admin account is deactivated, reactivated or

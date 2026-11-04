@@ -63,7 +63,9 @@ können:
 - **Ihr Passwort noch einmal** (*Ihr Passwort (zur Bestätigung)*) braucht es, um einen Admin einzuladen,
   Admin-Rechte zu vergeben oder zu entziehen, ein Admin-Konto zu deaktivieren, wieder zu aktivieren oder zu
   löschen und um eine E-Mail-Adresse zu ändern (dorthin gehen Passwortlinks; das gilt auch für die eigene
-  Adresse). Nach 5 falschen Eingaben in 15 Minuten wird die Bestätigung eine Weile abgelehnt.
+  Adresse). Nach 5 falschen Eingaben in 15 Minuten (falsche aktuelle Passwörter beim Ändern des eigenen
+  Passworts zählen mit) wird die Bestätigung eine Weile abgelehnt; nach Ab- und erneutem Anmelden geht es
+  sofort wieder.
 - **Sicherheitsmails:** Der Kontoinhaber erhält eine E-Mail, wenn sein Passwort geändert oder festgelegt
   wurde; die bisherige Adresse, wenn ein Admin die E-Mail-Adresse oder den Benutzernamen geändert hat; alle
   aktiven Admins (auch Sie selbst) und die betroffene Person, wenn sich Admin-Rechte ändern oder ein

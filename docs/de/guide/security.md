@@ -45,8 +45,11 @@ keine öffentlichen Issues.
 - Passwörter ab 12 Zeichen bis 72 Byte (die Grenze von bcrypt).
 - Einen Admin einladen, Admin-Rechte vergeben oder entziehen, ein Admin-Konto deaktivieren, wieder
   aktivieren oder löschen, eine E-Mail-Adresse ändern (eigene oder fremde) und alle Sitzungen beenden
-  fragen das Passwort des handelnden Kontos erneut ab, höchstens 5 Fehleingaben pro Konto in 15 Minuten.
-  Eine übernommene Sitzung allein genügt dafür nicht.
+  fragen das Passwort des handelnden Kontos erneut ab. Fehleingaben dort und beim Ändern des eigenen
+  Passworts zählen gemeinsam, höchstens 5 in 15 Minuten pro Anmeldung (Konto und Sitzung). Eine neue
+  Anmeldung braucht das Passwort: Eine übernommene Sitzung allein genügt für diese Änderungen also nicht,
+  und auch über die Passwortänderung kann sie nicht unbegrenzt raten. Den Kontoinhaber kann sie davon
+  nicht aussperren, seine eigene Anmeldung hat einen eigenen Zähler.
 - Sicherheitsmails: an den Kontoinhaber, wenn sein Passwort geändert oder festgelegt wurde, an die bisherige
   Adresse, wenn E-Mail-Adresse oder Benutzername geändert wurden, an alle aktiven Admins und die betroffene
   Person, wenn sich Admin-Rechte ändern und wenn alle Sitzungen beendet wurden.

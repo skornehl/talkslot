@@ -116,8 +116,13 @@ final class AccountSecurity
     /** @return array{0:string,1:list<string>} [subject, lines] */
     private static function passwordChangedText(array $user): array
     {
-        return [__('Ihr Passwort wurde geändert'), [
-            __('für Ihr Konto „{username}“ bei {app} ({url}) wurde soeben ein neues Passwort festgelegt. Andere Anmeldungen des Kontos wurden dabei beendet.', self::vars(['username' => $user['username']])),
+        $vars = self::vars(['username' => $user['username']]);
+        // The first password (invitation, never signed in yet): nothing was changed, no session ended
+        $first = ($user['last_login_at'] ?? null) === null;
+        return [$first ? __('Ihr Passwort wurde festgelegt') : __('Ihr Passwort wurde geändert'), [
+            $first
+                ? __('für Ihr Konto „{username}“ bei {app} ({url}) wurde soeben das Passwort festgelegt.', $vars)
+                : __('für Ihr Konto „{username}“ bei {app} ({url}) wurde soeben ein neues Passwort festgelegt. Andere Anmeldungen des Kontos wurden dabei beendet.', $vars),
             '',
             __('Waren Sie das nicht, legen Sie bitte über „Passwort vergessen?“ auf der Anmeldeseite ein neues Passwort fest und wenden Sie sich umgehend an einen Admin.'),
         ]];
@@ -144,7 +149,7 @@ final class AccountSecurity
                 $usernameChanged ? __('– Benutzername jetzt: {username}', $vars) : '',
             ]));
         }
-        if ($emailChanged) {
+        if ($emailChanged && (string) $after['email'] !== '') {
             $lines[] = __('Links zum Festlegen eines neuen Passworts gehen ab jetzt an die neue Adresse.');
         }
         $lines[] = '';

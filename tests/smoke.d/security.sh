@@ -27,16 +27,16 @@ check "admin invited with the password: notice to all admins, only the invitatio
 ZLINK=$(AS_TEXT "to:as-admin-$AS@example.org subject:Einladung" | grep -o 'http[^ ]*/admin/invite/[A-Za-z0-9_-]\{43\}' | head -1)
 JZ=$(mktemp)
 curl -s -o /dev/null -c "$JZ" -b "$JZ" --data-urlencode "csrf=$(curl -s -c "$JZ" -b "$JZ" "$ZLINK" | csrf)" -d "new_password=Sicher-Passwort-123&new_password2=Sicher-Passwort-123" "$ZLINK"
-check "password set through the link: e-mail to the account holder" '[ "$(AS_COUNT "to:as-admin-$AS@example.org subject:\"Ihr Passwort wurde geändert\"")" = 1 ] && AS_TEXT "to:as-admin-$AS@example.org subject:\"Ihr Passwort wurde geändert\"" | has "für Ihr Konto „as-admin-$AS@example.org“"'
+check "first password set through the invitation: e-mail to the account holder (set, not changed)" '[ "$(AS_COUNT "to:as-admin-$AS@example.org subject:\"Ihr Passwort wurde festgelegt\"")" = 1 ] && M=$(AS_TEXT "to:as-admin-$AS@example.org subject:\"Ihr Passwort wurde festgelegt\"") && echo "$M" | has "für Ihr Konto „as-admin-$AS@example.org“ bei" && echo "$M" | has "wurde soeben das Passwort festgelegt." && ! echo "$M" | has "Andere Anmeldungen"'
 AS_LOGIN "$JZ" "as-admin-$AS@example.org" Sicher-Passwort-123
 TZ=$(curl -s -b "$JZ" "$B/admin/profile" | csrf)
 curl -s -o /dev/null -c "$JZ" -b "$JZ" --data-urlencode "csrf=$TZ" -d "current_password=Sicher-Passwort-123&new_password=Sicher-Passwort-456&new_password2=Sicher-Passwort-456" "$B/admin/password"
-check "password changed in the profile: e-mail to the account holder" '[ "$(AS_COUNT "to:as-admin-$AS@example.org subject:\"Ihr Passwort wurde geändert\"")" = 2 ] && [ "$(AS_CODE "$JZ")" = 200 ]'
+check "password changed in the profile: e-mail to the account holder" '[ "$(AS_COUNT "to:as-admin-$AS@example.org subject:\"Ihr Passwort wurde geändert\"")" = 1 ] && AS_TEXT "to:as-admin-$AS@example.org subject:\"Ihr Passwort wurde geändert\"" | has "Andere Anmeldungen des Kontos wurden dabei beendet." && [ "$(AS_CODE "$JZ")" = 200 ]'
 # Without an address (profile, own e-mail removed): changing the password still works, nothing is sent
 PZ() { curl -s -L -b "$JZ" --data-urlencode "csrf=$TZ" -d "display_name=Frau+Sicher&summary_evening=1&summary_deadline=1&current_password=Sicher-Passwort-456" "$@" "$B/admin/profile"; }
-check "own e-mail address removed: notice to the previous address" 'PZ -d "email=" | has "Profil gespeichert" && AS_TEXT "to:as-admin-$AS@example.org subject:\"E-Mail-Adresse wurde geändert\"" | has "(keine Adresse mehr hinterlegt)"'
+check "own e-mail address removed: notice to the previous address (no new address to send links to)" 'PZ -d "email=" | has "Profil gespeichert" && M=$(AS_TEXT "to:as-admin-$AS@example.org subject:\"E-Mail-Adresse wurde geändert\"") && echo "$M" | has "(keine Adresse mehr hinterlegt)" && ! echo "$M" | has "an die neue Adresse"'
 curl -s -o /dev/null -c "$JZ" -b "$JZ" --data-urlencode "csrf=$TZ" -d "current_password=Sicher-Passwort-456&new_password=Sicher-Passwort-123&new_password2=Sicher-Passwort-123" "$B/admin/password"
-check "password changed without an address: no mail, still changed" '[ "$(AS_COUNT "to:as-admin-$AS@example.org subject:\"Ihr Passwort wurde geändert\"")" = 2 ] && PZ -d "email=as-admin-$AS@example.org" | has "Zum Ändern der E-Mail-Adresse bitte"'
+check "password changed without an address: no mail, still changed" '[ "$(AS_COUNT "to:as-admin-$AS@example.org subject:\"Ihr Passwort wurde geändert\"")" = 1 ] && PZ -d "email=as-admin-$AS@example.org" | has "Zum Ändern der E-Mail-Adresse bitte"'
 curl -s -o /dev/null -b "$JZ" --data-urlencode "csrf=$TZ" --data-urlencode "display_name=Frau Sicher" -d "summary_evening=1&summary_deadline=1&email=as-admin-$AS@example.org&current_password=Sicher-Passwort-123" "$B/admin/profile"
 
 # A teacher: name, activation and username without the password; role and e-mail address only with it
@@ -134,7 +134,24 @@ check "admin deleted with the password: notice to all admins and to the deleted 
 # Wrong passwords are limited per account (5 per 15 minutes), then even the right one is refused
 DBQ "DELETE FROM tp_rate_limits WHERE bucket = 'reauth'"
 for i in 1 2 3 4 5; do AS_POST -d "current_password=falsch-$i" "$B/admin/users/end-sessions" >/dev/null; done
-check "confirming the password: after 5 wrong ones even the right one is refused for a while" 'AS_POST --data-urlencode "current_password=$PASS" "$B/admin/users/end-sessions" | has "Zu viele falsche Passwörter. Bitte versuchen Sie es in 15 Minuten erneut."'
+check "confirming the password: after 5 wrong ones even the right one is refused for a while" 'AS_POST --data-urlencode "current_password=$PASS" "$B/admin/users/end-sessions" | has "Zu viele falsche Passwörter. Bitte versuchen Sie es in 15 Minuten erneut oder melden Sie sich ab und wieder an."'
+# Changing the own password counts in the same counter: a taken-over session cannot guess the password there
+# without a limit and then use it where it is asked for. The counter belongs to the sign-in, so it cannot
+# lock the account holder out either: another session of the same account has its own. (The new password
+# is too short on purpose: with the right current one, only that message comes and nothing changes.)
+DBQ "DELETE FROM tp_rate_limits WHERE bucket = 'reauth'"
+JP=$(mktemp); AS_LOGIN "$JP" "$USER" "$PASS"
+TP=$(curl -s -b "$JP" "$B/admin/profile" | csrf)
+AS_PW() { curl -s -L -b "$1" --data-urlencode "csrf=$2" --data-urlencode "current_password=$3" -d "new_password=zu-kurz&new_password2=zu-kurz" "$B/admin/password"; }
+check "changing the password with a wrong current one: refused" 'AS_PW "$JP" "$TP" falsch-1 | has "Das aktuelle Passwort ist falsch."'
+for i in 2 3 4 5; do AS_PW "$JP" "$TP" "falsch-$i" >/dev/null; done
+check "changing the password: after 5 wrong current ones even the right one is refused" 'AS_PW "$JP" "$TP" "$PASS" | has "Zu viele falsche Passwörter." && ! AS_PW "$JP" "$TP" "$PASS" | has "mindestens 12 Zeichen"'
+check "... and confirming a change in the same session as well (one counter)" 'curl -s -L -b "$JP" --data-urlencode "csrf=$TP" --data-urlencode "current_password=$PASS" "$B/admin/users/end-sessions" | has "Zu viele falsche Passwörter." && [ "$(AS_CODE "$J")" = 200 ]'
+check "another sign-in of the account is not locked out: its own counter" 'AS_PW "$J" "$T" "$PASS" | has "Das Passwort muss mindestens 12 Zeichen lang sein."'
+DBQ "DELETE FROM tp_rate_limits WHERE bucket = 'reauth'"
+for i in 1 2 3 4 5; do AS_POST -d "current_password=falsch-$i" "$B/admin/users/end-sessions" >/dev/null; done
+check "wrong passwords when confirming count for changing the password too" 'AS_PW "$J" "$T" "$PASS" | has "Zu viele falsche Passwörter." && AS_PW "$JP" "$TP" "$PASS" | has "mindestens 12 Zeichen"'
+rm -f "$JP"
 DBQ "DELETE FROM tp_rate_limits WHERE bucket = 'reauth'"
 
 # Sign-ins only in coarse steps; the overview points to accounts unused for over 12 months

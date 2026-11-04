@@ -13,7 +13,8 @@ namespace App;
  *   with a few failed attempts. The minimum length of 12 characters protects against distributed guessing.
  * - Sessions end when the password of the account changes (users.session_epoch) or when an admin ends
  *   all sessions of all accounts (setting global_session_epoch, see endAllSessions()).
- * - Security-relevant changes ask for the password again (confirmPassword()).
+ * - Security-relevant changes ask for the password again (confirmPassword()); wrong entries there and
+ *   when changing the own password are limited per sign-in (verifyOwnPassword()).
  * Password and token parameters carry #[\SensitiveParameter]: they never appear in stack traces.
  */
 final class Auth
@@ -202,23 +203,37 @@ final class Auth
     /**
      * Asks again for the password of the signed-in account before a security-relevant change (admin
      * rights, e-mail addresses, ending all sessions), so that a session taken over without the password
-     * cannot make it. Wrong entries are limited per account ("reauth", 5 per 15 minutes); an empty
-     * field does not count.
+     * cannot make it. Wrong entries are limited, see verifyOwnPassword().
      * @return ?string null if confirmed, otherwise the error message ($prompt for a missing or wrong password)
      */
     public static function confirmPassword(#[\SensitiveParameter] string $password, string $prompt): ?string
     {
         $user = self::user();
-        if (!$user || $password === '') {
-            return $prompt;
+        return $user ? self::verifyOwnPassword($user, $password, $prompt) : $prompt;
+    }
+
+    /**
+     * Checks the own password for confirmPassword() and changePassword(). Both count wrong entries in the
+     * same counter ("reauth", 5 per 15 minutes), so neither is a way around the other: a taken-over
+     * session cannot guess the password where it is not limited and then use it where it is asked for.
+     * The counter belongs to the sign-in (account and session ID), not to the account alone: a new session
+     * needs the password, so a taken-over session gets no more attempts that way, but it cannot lock the
+     * account holder out of changing the password or ending all sessions either (signing in again starts
+     * a new counter). An empty field does not count.
+     * @return ?string null if right, otherwise $wrong or the message that there were too many wrong entries
+     */
+    private static function verifyOwnPassword(array $user, #[\SensitiveParameter] string $password, string $wrong): ?string
+    {
+        if ($password === '') {
+            return $wrong;
         }
         [$limit, $window] = RateLimiter::limits('reauth', 5, 900);
-        $subject = 'reauth:' . $user['id'];
+        $subject = 'reauth:' . $user['id'] . ':' . session_id();
         if (!RateLimiter::hit('reauth', $limit, $window, $subject)) {
-            return __('Zu viele falsche Passwörter. Bitte versuchen Sie es in {minutes} Minuten erneut.', ['minutes' => (int) ceil($window / 60)]);
+            return __('Zu viele falsche Passwörter. Bitte versuchen Sie es in {minutes} Minuten erneut oder melden Sie sich ab und wieder an.', ['minutes' => (int) ceil($window / 60)]);
         }
         if (!password_verify($password, (string) $user['password_hash'])) {
-            return $prompt;
+            return $wrong;
         }
         RateLimiter::undo('reauth', $subject);
         return null;
@@ -237,12 +252,16 @@ final class Auth
         }
     }
 
-    /** Changes the own password; ends the other sessions of the account and tells its owner by e-mail. */
+    /**
+     * Changes the own password; ends the other sessions of the account and tells its owner by e-mail.
+     * Wrong current passwords count like those in confirmPassword() (verifyOwnPassword()).
+     */
     public static function changePassword(int $userId, #[\SensitiveParameter] string $currentPassword, #[\SensitiveParameter] string $newPassword): bool|string
     {
         $user = Db::one('SELECT * FROM users WHERE id = ?', [$userId]);
-        if (!$user || !password_verify($currentPassword, $user['password_hash'])) {
-            return __('Das aktuelle Passwort ist falsch.');
+        $wrong = __('Das aktuelle Passwort ist falsch.');
+        if (($error = $user ? self::verifyOwnPassword($user, $currentPassword, $wrong) : $wrong) !== null) {
+            return $error;
         }
         if (($error = self::passwordPolicy($newPassword)) !== null) {
             return $error;

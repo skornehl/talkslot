@@ -2,11 +2,11 @@
 /** English texts of the admin area: German original => English (see App\AdminI18n). Account security: confirming the password, security notices, ending all sessions. */
 return [
     // Confirming the password (Auth::confirmPassword) and the account forms
-    'Zu viele falsche Passwörter. Bitte versuchen Sie es in {minutes} Minuten erneut.' => 'Too many wrong passwords. Please try again in {minutes} minutes.',
+    'Zu viele falsche Passwörter. Bitte versuchen Sie es in {minutes} Minuten erneut oder melden Sie sich ab und wieder an.' => 'Too many wrong passwords. Please try again in {minutes} minutes or sign out and in again.',
     'Zur Bestätigung bitte Ihr Passwort eingeben (nötig bei Admin-Rechten und E-Mail-Adressen).' => 'Please enter your password to confirm (needed for admin rights and email addresses).',
     'Zum Löschen eines Admin-Kontos bitte Ihr Passwort eingeben.' => 'Please enter your password to delete an admin account.',
     'Ihr Passwort (zur Bestätigung)' => 'Your password (to confirm)',
-    'Nur nötig, wenn Sie Admin-Rechte vergeben oder entziehen, ein Admin-Konto deaktivieren oder wieder aktivieren oder die E-Mail-Adresse ändern. Alle Admins und die betroffene Person erhalten dann eine E-Mail.' => 'Only needed when you grant or remove admin rights, deactivate or reactivate an admin account or change the email address. All admins and the person concerned then receive an email.',
+    'Nur nötig, wenn Sie Admin-Rechte vergeben oder entziehen, ein Admin-Konto deaktivieren oder wieder aktivieren oder die E-Mail-Adresse ändern. Dann geht eine E-Mail hinaus: bei Admin-Rechten an alle Admins und die betroffene Person, bei einer neuen E-Mail-Adresse an die bisherige.' => 'Only needed when you grant or remove admin rights, deactivate or reactivate an admin account or change the email address. An email then goes out: for admin rights to all admins and the person concerned, for a new email address to the previous one.',
     'Beim Speichern erhält die Person eine Einladung per E-Mail mit einem Link, über den sie ihr Passwort selbst festlegt (einmalig nutzbar, {hours} Stunden gültig). Danach kann sie ihre Terminrunden selbst verwalten; Sie können Runden auch für sie anlegen.' => 'When you save, the person receives an invitation by email with a link for setting their password themselves (single use, valid for {hours} hours). After that they can manage their rounds themselves; you can also create rounds for them.',
     '{what} konnte nicht an {email} gesendet werden. Bitte prüfen Sie den Mailversand (unter „Texte“) und senden Sie den Link danach über „Bearbeiten“ erneut.' => '{what} could not be sent to {email}. Please check the email delivery (under “Texts”) and then send the link again via “Edit”.',
     // Users list and overview: sign-ins only in coarse steps
@@ -23,6 +23,8 @@ return [
     'Alle Sitzungen beendet: Alle Konten müssen sich auf allen Geräten neu anmelden, nur diese Sitzung bleibt bestehen.' => 'All sessions ended: all accounts have to sign in again on every device; only this session stays.',
     // Security notices by email (App\AccountSecurity, AccountLinks)
     'Ihr Passwort wurde geändert' => 'Your password has been changed',
+    'Ihr Passwort wurde festgelegt' => 'Your password has been set',
+    'für Ihr Konto „{username}“ bei {app} ({url}) wurde soeben das Passwort festgelegt.' => 'the password for your account “{username}” at {app} ({url}) has just been set.',
     'für Ihr Konto „{username}“ bei {app} ({url}) wurde soeben ein neues Passwort festgelegt. Andere Anmeldungen des Kontos wurden dabei beendet.' => 'a new password has just been set for your account “{username}” at {app} ({url}). Other sessions of the account have been ended.',
     'Waren Sie das nicht, legen Sie bitte über „Passwort vergessen?“ auf der Anmeldeseite ein neues Passwort fest und wenden Sie sich umgehend an einen Admin.' => 'If this was not you, please set a new password via “Forgot your password?” on the sign-in page and contact an admin immediately.',
     'Ihr Benutzername wurde geändert' => 'Your username has been changed',

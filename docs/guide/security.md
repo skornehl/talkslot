@@ -42,8 +42,11 @@ not public issues.
 - Passwords from 12 characters up to 72 bytes (the bcrypt limit).
 - Inviting an admin, giving or taking away admin rights, deactivating, reactivating or deleting an admin
   account, changing an e-mail address (own or somebody else's) and ending all sessions ask for the
-  password of the acting account again, at most 5 wrong entries per account in 15 minutes. A taken-over
-  session alone is not enough for them.
+  password of the acting account again. Wrong entries there and when changing the own password count
+  together, at most 5 in 15 minutes per sign-in (account and session). A new sign-in needs the password,
+  so a taken-over session alone is not enough for these changes, and it gets no unlimited guessing via
+  the password change either. It cannot lock the account holder out of them: their own sign-in has its
+  own counter.
 - Security mails: to the account holder when its password was changed or set, to the previous address when
   the e-mail address or username was changed, to all active admins and the person concerned when admin
   rights change and when all sessions were ended.
