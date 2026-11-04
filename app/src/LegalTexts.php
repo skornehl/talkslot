@@ -54,10 +54,9 @@ final class LegalTexts
         $open = [];
         $rows = Db::all("SELECT page_key, lang, content FROM pages WHERE page_key IN ('imprint', 'privacy') ORDER BY page_key = 'imprint', lang");
         foreach ($rows as $row) {
-            if (!in_array($row['lang'], I18n::languages(), true)) {
-                continue; // not offered: parents do not see it, admins cannot edit it
-            }
-            $found = self::placeholders(self::render((string) $row['content'], (string) $row['lang'], ''));
+            // Only offered languages: parents do not see the others, and admins cannot edit them
+            $found = in_array($row['lang'], I18n::languages(), true)
+                ? self::placeholders(self::render((string) $row['content'], (string) $row['lang'], '')) : [];
             if ($found) {
                 $open[] = ['key' => (string) $row['page_key'], 'lang' => (string) $row['lang'], 'placeholders' => $found];
             }
