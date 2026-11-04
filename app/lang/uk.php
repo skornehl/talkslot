@@ -14,7 +14,6 @@ return [
     'theme.auto' => 'Автоматично',
     'theme.light' => 'Світле',
     'theme.dark' => 'Темне',
-    'footer.version' => 'Версія',
     'footer.language' => 'Мова',
 
     'home.title' => 'Запис на зустріч',

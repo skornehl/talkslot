@@ -65,7 +65,7 @@ $legalQuery = ['lang' => App\AdminI18n::lang() !== 'de' && App\I18n::lang() === 
     <nav aria-label="<?= e(__('Rechtliches')) ?>">
       <a href="<?= e(url('/impressum', $legalQuery)) ?>"><?= e(__('Impressum')) ?></a>
       <a href="<?= e(url('/datenschutz', $legalQuery)) ?>"><?= e(__('Datenschutz')) ?></a>
-      <span class="version">Version <?= e(App\Version::label()) ?></span>
+      <?php require dirname(__DIR__) . '/_powered_by.php'; ?>
     </nav>
     <?php require dirname(__DIR__) . '/_theme_switch.php'; ?>
   </div>
