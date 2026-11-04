@@ -40,7 +40,7 @@ final class Installer
     }
 
     /** @return list<string> error messages (empty = valid) */
-    public static function validate(string $username, string $password, string $password2, string $email): array
+    public static function validate(string $username, #[\SensitiveParameter] string $password, #[\SensitiveParameter] string $password2, string $email): array
     {
         $errors = [];
         if (!Auth::validUsername($username)) {
@@ -60,7 +60,7 @@ final class Installer
     }
 
     /** Creates the first account as admin (which can also manage its own rounds). */
-    public static function install(string $username, string $password, string $email, string $displayName = ''): void
+    public static function install(string $username, #[\SensitiveParameter] string $password, string $email, string $displayName = ''): void
     {
         if ($conflicts = self::conflictingTables()) {
             throw new \RuntimeException('Die Datenbank enthält bereits Tabellen mit gleichem Namen (' . implode(', ', $conflicts) . '). Bitte eine eigene, leere Datenbank verwenden.');

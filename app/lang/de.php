@@ -17,7 +17,8 @@ return [
     'theme.auto' => 'Automatisch',
     'theme.light' => 'Hell',
     'theme.dark' => 'Dunkel',
-    'footer.language' => 'Sprache',
+    'lang.label' => 'Sprache',
+    'lang.suggest' => 'Diese Seite auf Deutsch anzeigen',
 
     'home.title' => 'Terminvergabe',
     'home.text' => 'Bitte verwenden Sie den Link aus Ihrer Einladung oder geben Sie hier den Code der Terminvergabe ein.',
@@ -28,6 +29,8 @@ return [
     'notfound.text' => 'Diese Seite gibt es nicht, oder die Terminvergabe ist nicht mehr aktiv.',
     'error.title' => 'Es ist ein Fehler aufgetreten',
     'error.text' => 'Bitte versuchen Sie es später erneut.',
+    'crosssite.title' => 'Anfrage abgelehnt',
+    'crosssite.text' => 'Dieses Formular wurde von einer anderen Website aus abgeschickt und deshalb nicht verarbeitet. Bitte öffnen Sie die Seite direkt und versuchen Sie es dort erneut.',
     'privacy.controller.generic' => 'Die Angaben zur verantwortlichen Stelle werden gerade ergänzt. Bitte wenden Sie sich bis dahin an die Lehrkraft, bei der Sie einen Termin gebucht haben.',
     'page.missing' => 'Dieser Text wurde noch nicht hinterlegt.',
 

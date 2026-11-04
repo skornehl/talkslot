@@ -47,7 +47,8 @@ Copy `config/config.sample.php` to `config/config.php` and fill in at least:
 | `hosting` | your web host for the privacy policy, see [Privacy]({{ '/guide/privacy/' | relative_url }}) |
 
 All options are explained in [Configuration]({{ '/guide/configuration/' | relative_url }}). Keep
-`config.php` readable only for the PHP user (`chmod 600` or `640`).
+`config.php` readable only for the PHP user (`chmod 600` or `640`): it contains the database and mail
+passwords and the secret. The dashboard warns admins as long as every user of the server can read it.
 
 ## 3. Install
 
@@ -86,9 +87,11 @@ page views at most every 15 minutes.
 ## 5. Fill in the legal details
 
 Log in as admin and open *Texte*. Fill in *Angaben für Impressum und Datenschutz* (name of the
-school or person, address, e-mail). Until then **no round is public**. Then check *Texte*: the
-imprint and privacy policy are templates with a few `[PLACEHOLDERS]` (server log retention at your web
-host, supervisory authority) that you must replace. See [Privacy and legal]({{ '/guide/privacy/' | relative_url }}).
+school or person, address, e-mail). Until then **no round is public**. Then check *Texte*: the privacy
+policy is installed as the template for a public school (a template for private operators can be loaded
+on the text form). Imprint and privacy policy contain `[PLACEHOLDERS]` (data protection officer, provisions
+of your state, server log retention at your web host, supervisory authority) that you must replace; until
+then **no round can be activated**. See [Privacy and legal]({{ '/guide/privacy/' | relative_url }}).
 
 ## Go-live checklist
 
@@ -97,6 +100,8 @@ host, supervisory authority) that you must replace. See [Privacy and legal]({{ '
 - [ ] `debug` is `false`, `alert_email` is set
 - [ ] Cron job or web cron runs (`bin/cron.php -v` prints the counts)
 - [ ] Test booking with e-mail address: the mail arrives and is not marked as spam
-- [ ] Admin details, imprint and privacy policy complete in all languages you offer
-- [ ] Data processing agreement (DPA, *AVV*) with your web host
+- [ ] Admin details, imprint and privacy policy complete in all languages you offer (no `[PLACEHOLDERS]`
+      left; the dashboard shows no hint)
+- [ ] Data processing agreement (DPA, *AVV*) with your web host; if someone other than the school runs the
+      server, an agreement under Art. 28 GDPR between the school and that person
 - [ ] Teacher invitation tested; a test round booked, moved and cancelled on a phone, then deleted

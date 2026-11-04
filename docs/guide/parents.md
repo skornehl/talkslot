@@ -9,8 +9,10 @@ You received a link or a **round code** from your child's teacher. You do not ne
 
 1. **Open the link**, or go to the start page of your school's booking site and enter the round code
    (for example `K7MP-3QXA`; dashes and upper or lower case do not matter).
-2. **Choose a language** with the flags at the bottom of the page if you like: German, English, Polish,
-   Russian, Ukrainian or Turkish (depending on the school).
+2. **Choose a language** at the top of the page if you like: Deutsch, English, Polski, Русский,
+   Українська or Türkçe (depending on the school). If your browser is set to one of these languages, a
+   link above the page offers it; the page does not switch by itself. Invitations from the teacher usually
+   contain a direct link for each language.
 3. **Pick a free time slot.** Only free slots are shown, grouped by day.
 4. **Enter a name**, usually your child's first and last name. An **e-mail address is optional**: with it,
    you get a confirmation with your personal link and a calendar file, and usually a reminder the

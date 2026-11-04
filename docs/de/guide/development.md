@@ -43,8 +43,13 @@ Nach einem vollständigen Durchlauf darf keine Fehler-E-Mail verschickt worden s
 Der Browser-Test steuert Headless-Chrome (Node 22+, ohne Abhängigkeiten) durch das JavaScript: Zeitfelder und
 Terminvorschau (abgeglichen mit den Terminen, die der Server erzeugt), Datums- und Pausenfelder, Schutz vor
 doppeltem Absenden und Löschbestätigungen, Link kopieren, die Übersetzung im Browser (mit nachgebildeter
-Translator-API, einschließlich Sprachpaket-Downloads, Neuübersetzung und Fehlerfällen), „Termin auf diesem Gerät merken“ einschließlich abgewiesener fremder Links, Fehlerfokus und
+Translator-API, einschließlich Sprachpaket-Downloads, Neuübersetzung und Fehlerfällen), „Termin auf diesem Gerät merken“ einschließlich abgewiesener fremder Links, die Sprachwahl in Handybreite
+(Enter bucht weiterhin, ein Wechsel behält die Eingaben, Hinweis auf die Browsersprache), Fehlerfokus und
 den Hell/Dunkel-Schalter.
+
+Die Sicherheitsinvarianten (Rollen in der Routentabelle, keine Datenänderung durch GET, Sperre auf jedem
+Buchungsweg, Sicherheits-Header auf Fehlerseiten, abgelehnte seitenübergreifende Formulare) stehen in
+`tests/unit.d/security.php` und `tests/smoke.d/security.sh`; siehe [Sicherheit]({{ '/de/guide/security/' | relative_url }}).
 
 Die CI führt bei jedem Push die Unit-Tests aus sowie Smoke-, Browser- und Deploy-Tests gegen die Docker-Umgebung.
 
@@ -57,6 +62,11 @@ Die CI führt bei jedem Push die Unit-Tests aus sowie Smoke-, Browser- und Deplo
   Releases werden daraus abgeleitet.
 - **Datenbank:** ausschließlich Prepared Statements; das SQL-Audit im Unit-Test schlägt bei
   eingesetzten (verketteten) Variablen fehl.
+- **Admin-Routen:** Tragen Sie eine Route in `AdminController::ROUTES` mit der Rolle, die sie braucht, als
+  viertem Element ein (`'teacher'` für jedes angemeldete Konto, `'admin'` nur für Admin-Konten). Eine Route
+  ohne bekannte Rolle ist nur für Admins erreichbar. GET-Routen dürfen keine Daten verändern; der Smoke-Test
+  ruft jede GET-Route der Tabelle auf und schlägt bei einem Platzhalter fehl, den er noch nicht füllen kann
+  (dann die IDs in `tests/smoke.d/security.sh` ergänzen).
 - **Migrationen** (`app/src/Migrations.php`) fügen nur Spalten mit Standardwerten und Tabellen hinzu, damit
   ein Rollback auf eine ältere Version weiter funktioniert. Erhöhen Sie `LATEST`, fügen Sie den Schritt
   hinzu und aktualisieren Sie `schema.sql`.

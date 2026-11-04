@@ -49,7 +49,14 @@ Die Seite der Runde zeigt alles, was Sie brauchen:
 - den **Rundencode**, z. B. `3MMP-WYA9`. Eltern können ihn statt des Links auf der Startseite eingeben,
   praktisch für Einladungen auf Papier. Verwechslungen wie `0`/`O`, Bindestriche sowie Groß- und
   Kleinschreibung spielen keine Rolle.
-- einen fertigen **Einladungstext** mit Link und Code (*Einladungstext kopieren*, *Als E-Mail öffnen*).
+- einen fertigen **Einladungstext** (*Einladungstext kopieren*, *Als E-Mail öffnen*) mit dem Link, einem
+  direkten Link für jede weitere Elternsprache (`Türkçe: …?lang=tr`), gegebenenfalls Ort und Code sowie
+  demselben Satz zu Mehrfachbuchungen, den Eltern auf der Seite der Runde lesen (zum Beispiel die
+  Geschwisterregel).
+
+Eltern wählen ihre Sprache ganz oben auf jeder Seite, jeweils unter ihrem eigenen Namen (*Deutsch,
+English, Polski, Русский, Українська, Türkçe*). Ist ihr Browser auf eine andere angebotene Sprache
+eingestellt, erscheint über der Seite ein Link dorthin.
 
 Mit *Nur mit Rundencode* zeigt der Link allein nur eine Code-Abfrage; Titel und Termine bleiben für Fremde
 verborgen. Ein neuer Code (beim Bearbeiten) macht den alten sofort ungültig; bestehende Buchungen bleiben
@@ -62,16 +69,32 @@ verborgen. Ein neuer Code (beim Bearbeiten) macht den alten sofort ungültig; be
 Pro Tag sehen Sie alle Termine mit den Buchungen:
 
 - ***Bearbeiten***: Name oder E-Mail-Adresse ändern oder die Buchung auf einen anderen
-  Termin **verschieben**, optional mit einer E-Mail an die Eltern.
+  Termin **verschieben**, mit einer E-Mail an die Eltern (*Änderung per E-Mail mitteilen*, standardmäßig
+  angehakt). Die E-Mail nennt Datum, Uhrzeit und Ort in der Sprache der Eltern und geht deshalb auch
+  hinaus, wenn Sie hier nichts ändern, etwa nachdem der Tag ein anderes Datum oder einen anderen Ort
+  bekommen hat; soll keine E-Mail hinausgehen, nehmen Sie das Häkchen heraus.
 - ***Löschen***: eine Buchung entfernen.
-- ***Eintragen***: selbst einen Termin eintragen, z. B. nach einem Telefonat, optional mit
-  Bestätigungs-E-Mail.
+- ***Eintragen***: selbst einen Termin eintragen, z. B. nach einem Telefonat. Die Bestätigungs-E-Mail mit
+  Änderungslink ist angehakt, sobald Sie eine E-Mail-Adresse eintragen; nur so erfahren die Eltern von
+  dem Eintrag.
 - ***Sperren***: einen Termin sperren, damit niemand ihn buchen kann, und wieder freigeben.
 - **Tage**: Zeiten und den Ort eines einzelnen Tages bearbeiten (*Tag bearbeiten*), Pausen hinzufügen,
   einen Tag drucken (*Tag drucken*), weitere Tage hinzufügen (*+ Tag hinzufügen*) oder einen Tag löschen.
 
 Wenn Sie Zeiten oder Pausen ändern, werden **gebuchte Termine nie gelöscht**; Termine, die nicht mehr
 passen, werden mit ⚠ markiert, damit Sie sie verschieben können.
+
+**Die Eltern werden nicht automatisch benachrichtigt**, wenn Sie eine Buchung, einen Tag oder eine Runde
+löschen, wenn ein Tag ein anderes Datum oder einen anderen Ort bekommt, die Runde einen anderen Ort oder
+(durch einen Admin) eine andere Lehrkraft, oder wenn eine Buchung zum Konflikt wird; ebenso, wenn ein
+Admin ein Konto löscht. Darauf weisen die Bestätigungsdialoge, die Hinweise in den Formularen und die
+Meldung danach hin, jeweils mit der Zahl der betroffenen Buchungen. Bitte informieren Sie die Eltern
+selbst, persönlich, wenn keine E-Mail-Adresse hinterlegt ist. Besteht die Buchung noch, geht es am
+einfachsten über den Eintrag: *Bearbeiten* öffnen und mit *Änderung per E-Mail mitteilen* speichern, dann
+erhalten Eltern mit E-Mail-Adresse die neuen Daten in ihrer Sprache (höchstens 30 E-Mails pro Stunde aus
+Ihrem Konto; darüber hinaus bittet die Meldung, später erneut zu speichern). Öffnen Sie vor dem Löschen
+eines Tages oder einer Runde die Druckansicht: Danach ist nicht mehr zu sehen, wer gebucht hatte. Um einen
+Konflikt umzubuchen, bearbeiten Sie die Buchung und lassen *Änderung per E-Mail mitteilen* angehakt.
 
 Weitere Aktionen für die Runde: bearbeiten, deaktivieren, ***Druckansicht / PDF***, löschen und
 ***Duplizieren …***: eine Kopie mit neuem Link und Code, mit Zeiten, Pausen, gesperrten Terminen,

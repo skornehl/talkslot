@@ -14,7 +14,7 @@
   <?php if (!empty($round['auto_translated'])): ?>
     <p class="small muted" data-auto-translated><?= e(t('round.auto_translated', ['source' => App\I18n::name($round['source_lang'])])) ?></p>
   <?php endif; ?>
-  <p class="alert alert-info"><?= e(t(['round' => 'round.limit_round', 'day' => 'round.limit_day'][$round['booking_limit'] ?? 'none'] ?? 'round.one_only')) ?></p>
+  <p class="alert alert-info"><?= e(t(App\BookingService::limitNotice($round))) ?></p>
 
   <?php require __DIR__ . '/_remembered.php'; ?>
 

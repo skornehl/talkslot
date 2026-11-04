@@ -14,7 +14,8 @@ return [
     'theme.auto' => 'Automatycznie',
     'theme.light' => 'Jasny',
     'theme.dark' => 'Ciemny',
-    'footer.language' => 'Język',
+    'lang.label' => 'Język',
+    'lang.suggest' => 'Wyświetl tę stronę po polsku',
 
     'home.title' => 'Rezerwacja terminów',
     'home.text' => 'Prosimy skorzystać z linku z zaproszenia lub wpisać tutaj kod z zaproszenia.',
@@ -25,6 +26,8 @@ return [
     'notfound.text' => 'Ta strona nie istnieje lub rezerwacja nie jest już aktywna.',
     'error.title' => 'Wystąpił błąd',
     'error.text' => 'Prosimy spróbować ponownie później.',
+    'crosssite.title' => 'Żądanie odrzucone',
+    'crosssite.text' => 'Ten formularz został wysłany z innej strony internetowej, dlatego nie został przetworzony. Prosimy otworzyć stronę bezpośrednio i spróbować ponownie.',
     'privacy.controller.generic' => 'Dane administratora są właśnie uzupełniane. Do tego czasu prosimy kontaktować się z nauczycielem, u którego zarezerwowali Państwo termin.',
     'page.missing' => 'Ten tekst nie został jeszcze dodany.',
 

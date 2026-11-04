@@ -39,7 +39,8 @@ danach kann sich dieser Browser sofort anmelden.
 ## Wie füge ich eine Sprache für Eltern hinzu?
 
 Kopieren Sie `app/lang/en.php`, übersetzen Sie die Datei, legen Sie eine Flagge unter
-`public/assets/flags/` ab und tragen Sie den Code in `languages` ein.
+`public/assets/flags/` ab (für das Übersetzungsformular im Adminbereich) und tragen Sie den Code in
+`languages` ein.
 Siehe [Konfiguration]({{ '/de/guide/configuration/' | relative_url }}#languages).
 
 ## Funktioniert es mit MySQL, PostgreSQL oder SQLite?

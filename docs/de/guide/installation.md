@@ -49,7 +49,9 @@ Kopieren Sie `config/config.sample.php` nach `config/config.php` und füllen Sie
 | `hosting` | Ihr Hoster für die Datenschutzerklärung, siehe [Datenschutz]({{ '/de/guide/privacy/' | relative_url }}) |
 
 Alle Optionen erklärt [Konfiguration]({{ '/de/guide/configuration/' | relative_url }}). Machen Sie
-`config.php` nur für den PHP-Benutzer lesbar (`chmod 600` oder `640`).
+`config.php` nur für den PHP-Benutzer lesbar (`chmod 600` oder `640`): Die Datei enthält die Passwörter für
+Datenbank und Mailversand und den geheimen Schlüssel. Solange alle Benutzer des Servers sie lesen können,
+warnt die Übersicht die Admins.
 
 ## 3. Installieren
 
@@ -91,9 +93,12 @@ Aufräumen außerdem bei Seitenaufrufen, höchstens alle 15 Minuten.
 
 Melden Sie sich als Admin an und öffnen Sie *Texte*. Füllen Sie *Angaben für Impressum und
 Datenschutz* aus (Name der Schule oder Person, Anschrift, E-Mail). Bis dahin ist **keine Terminrunde
-öffentlich**. Prüfen Sie danach *Texte*: Impressum und Datenschutzerklärung sind Vorlagen mit einigen
-Platzhaltern in eckigen Klammern wie `[ZUSTÄNDIGE LANDESDATENSCHUTZBEHÖRDE MIT ADRESSE]` (Speicherdauer der Server-Logs bei Ihrem Hoster, Aufsichtsbehörde), die Sie ersetzen
-müssen. Siehe [Datenschutz und Recht]({{ '/de/guide/privacy/' | relative_url }}).
+öffentlich**. Prüfen Sie danach *Texte*: Die Datenschutzerklärung ist als Vorlage für eine öffentliche
+Schule installiert (die Vorlage für private Träger lässt sich im Formular des Textes laden). Impressum und
+Datenschutzerklärung enthalten Platzhalter in eckigen Klammern wie
+`[ZUSTÄNDIGE LANDESDATENSCHUTZBEHÖRDE MIT ADRESSE]` (Datenschutzbeauftragte, Vorschriften Ihres Landes,
+Speicherdauer der Server-Logs bei Ihrem Hoster, Aufsichtsbehörde), die Sie ersetzen müssen; bis dahin
+**lässt sich keine Runde aktivieren**. Siehe [Datenschutz und Recht]({{ '/de/guide/privacy/' | relative_url }}).
 
 ## Checkliste für den Livegang
 
@@ -102,7 +107,9 @@ müssen. Siehe [Datenschutz und Recht]({{ '/de/guide/privacy/' | relative_url }}
 - [ ] `debug` ist `false`, `alert_email` ist gesetzt
 - [ ] Cronjob oder Web-Cron läuft (`bin/cron.php -v` gibt die Anzahlen aus)
 - [ ] Testbuchung mit E-Mail-Adresse: Die E-Mail kommt an und wird nicht als Spam markiert
-- [ ] Admin-Angaben, Impressum und Datenschutzerklärung vollständig in allen angebotenen Sprachen
-- [ ] Auftragsverarbeitungsvertrag (AVV) mit Ihrem Hoster
+- [ ] Admin-Angaben, Impressum und Datenschutzerklärung vollständig in allen angebotenen Sprachen (keine
+      Platzhalter in eckigen Klammern mehr; das Dashboard zeigt keinen Hinweis)
+- [ ] Auftragsverarbeitungsvertrag (AVV) mit Ihrem Hoster; betreibt nicht die Schule selbst den Server,
+      eine Vereinbarung nach Art. 28 DSGVO zwischen der Schule und der betreibenden Person
 - [ ] Einladung einer Lehrkraft getestet; eine Testrunde auf dem Handy gebucht, verschoben und
       storniert, danach gelöscht

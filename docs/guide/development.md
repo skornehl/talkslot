@@ -44,7 +44,12 @@ The browser test drives headless Chrome (Node 22+, no dependencies) through the 
 the slot preview (compared with the slots the server creates), date and break fields, double-submit and
 delete confirmations, copying links, the in-browser translation (with a simulated Translator API, including language-pack downloads,
 re-translating and error cases), "remember
-my appointment" including rejected foreign links, error focus and the light/dark switch.
+my appointment" including rejected foreign links, the language choice at phone width (Enter still books,
+switching keeps the input, the browser-language hint), error focus and the light/dark switch.
+
+The security invariants (roles in the route table, no data changes by GET, locking on every booking path,
+security headers on error pages, refused cross-site form posts) are in `tests/unit.d/security.php` and
+`tests/smoke.d/security.sh`; see [Security]({{ '/guide/security/' | relative_url }}).
 
 CI runs the unit tests on every push, and the smoke, browser and deployment tests against the Docker environment.
 
@@ -55,6 +60,10 @@ CI runs the unit tests on every push, and the smoke, browser and deployment test
 - **Commits:** [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `docs:`, …);
   releases are derived from them.
 - **Database:** only prepared statements; the unit test's SQL audit fails on concatenated variables.
+- **Admin routes:** add a route to `AdminController::ROUTES` with the role it needs as the fourth element
+  (`'teacher'` for every signed-in account, `'admin'` for admin accounts only). A route without a known role
+  is admin-only. GET routes must not change data; the smoke test opens every GET route of the table and
+  fails for a placeholder it cannot fill yet (extend the IDs in `tests/smoke.d/security.sh`).
 - **Migrations** (`app/src/Migrations.php`) only add columns with defaults and tables, so that a rollback
   to an older version keeps working. Raise `LATEST`, add the step, update `schema.sql`.
 - **Legal templates:** after changing `app/templates/pages/*.md`, update `CURRENT_PAGE_HASHES` and move

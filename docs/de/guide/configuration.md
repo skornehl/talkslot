@@ -23,6 +23,7 @@ Beim Deployment mit GitHub Actions wird die Datei aus Repository-Variablen und -
 Eine Änderung von `secret` betrifft nur Kurzlebiges: Formulare, die in diesem Moment geöffnet sind,
 Zugänge, die in den letzten Stunden per Rundencode freigeschaltet wurden, und das Web-Cron-Token.
 Buchungen, Änderungslinks, Einladungs- und Passwortlinks sind Zufallstokens und funktionieren weiter.
+Abgemeldet wird dadurch niemand; dafür gibt es *Benutzer → Alle Sitzungen beenden*.
 
 ## Datenbank
 
@@ -37,7 +38,7 @@ Buchungen, Änderungslinks, Einladungs- und Passwortlinks sind Zufallstokens und
 
 | Option | Standard | Bedeutung | Deployment |
 |---|---|---|---|
-| `languages` | `de, en, pl, ru, uk, tr` | Sprachen für Eltern, in der Reihenfolge der Flaggen | `LANGUAGES`, z. B. `de,en,tr` |
+| `languages` | `de, en, pl, ru, uk, tr` | Sprachen für Eltern, in der Reihenfolge der Sprachwahl oben auf der Seite | `LANGUAGES`, z. B. `de,en,tr` |
 | `default_language` | `de` | wird angezeigt, bis Besucher eine Sprache wählen; muss in `languages` enthalten sein | `DEFAULT_LANGUAGE` |
 
 Der Build bricht ab, wenn eine Sprache keine Datei in `app/lang/` hat oder die Standardsprache nicht
@@ -49,7 +50,9 @@ ohne eigene Wahl und für die Anmeldeseite, wenn der Browser keine der beiden Sp
 Protokoll werden in dieser Sprache geschrieben.
 
 **Sprache hinzufügen:** Kopieren Sie `app/lang/en.php` z. B. nach `app/lang/it.php` und übersetzen Sie
-die Datei, legen Sie eine Flagge `public/assets/flags/it.svg` an und tragen Sie den Code in `languages`
+die Datei (`lang.name` ist der Name der Sprache in ihr selbst, so steht er in der Sprachwahl), legen Sie
+eine Flagge `public/assets/flags/it.svg` an (für das Übersetzungsformular im Adminbereich) und tragen Sie
+den Code in `languages`
 ein. Optional ergänzen Sie `app/templates/pages/imprint.it.md` und `privacy.it.md`; ohne diese Dateien
 zeigen die Rechtsseiten die englische Fassung. Bitte lassen Sie Übersetzungen von Muttersprachlern
 prüfen.
@@ -104,6 +107,7 @@ womöglich eine Adresse (Mobilfunknetze, Schul-WLAN).
 | `login_user` | 20 pro Stunde | fehlgeschlagene Anmeldungen **pro Konto** von Geräten, die sich dort noch nie angemeldet haben |
 | `login_device` | 20 pro Stunde | fehlgeschlagene Anmeldungen **pro bekanntem Gerät** (statt `login_user`) |
 | `login_notice` | 1 pro Tag | E-Mails an ein Konto, dessen Limit `login_user` erreicht wurde |
+| `reauth` | 5 pro 15 Min. | falsche Passwörter beim Bestätigen einer Änderung von Admin-Rechten oder E-Mail-Adressen, beim Beenden aller Sitzungen und beim Ändern des eigenen Passworts (ein Zähler pro Anmeldung, nicht pro IP-Adresse) |
 
 `csrf_min_age_seconds` (Standard 2) ist die Mindestzeit zwischen dem Laden und dem Absenden eines
 öffentlichen Formulars, eine einfache Bremse für Bots.

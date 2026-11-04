@@ -35,7 +35,7 @@ final class PasswordRules
     ];
 
     /** On the list of common passwords, or a listed word with only digits/symbols around it? */
-    public static function isCommon(string $password): bool
+    public static function isCommon(#[\SensitiveParameter] string $password): bool
     {
         $lower = mb_strtolower($password);
         $list = self::commonList();
@@ -49,7 +49,7 @@ final class PasswordRules
     }
 
     /** Few different characters, a repeated part, or only runs of the alphabet, digits or the keyboard? */
-    public static function isPattern(string $password): bool
+    public static function isPattern(#[\SensitiveParameter] string $password): bool
     {
         $lower = mb_strtolower($password);
         if (count(array_unique(mb_str_split($lower))) < 5 || preg_match('/^(.+?)\1+$/su', $lower)) {
@@ -66,7 +66,7 @@ final class PasswordRules
      * but not "Hannah…"), shorter ones not at all.
      * @param list<string> $values
      */
-    public static function containsPersonal(string $password, array $values): bool
+    public static function containsPersonal(#[\SensitiveParameter] string $password, array $values): bool
     {
         $lower = mb_strtolower($password);
         $words = preg_split('/[^\p{L}]+/u', $lower, -1, PREG_SPLIT_NO_EMPTY) ?: [];

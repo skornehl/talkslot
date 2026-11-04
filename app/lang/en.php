@@ -14,7 +14,8 @@ return [
     'theme.auto' => 'Automatic',
     'theme.light' => 'Light',
     'theme.dark' => 'Dark',
-    'footer.language' => 'Language',
+    'lang.label' => 'Language',
+    'lang.suggest' => 'View this page in English',
 
     'home.title' => 'Appointments',
     'home.text' => 'Please use the link from your invitation, or enter the code from your invitation here.',
@@ -25,6 +26,8 @@ return [
     'notfound.text' => 'This page does not exist, or booking is no longer open.',
     'error.title' => 'Something went wrong',
     'error.text' => 'Please try again later.',
+    'crosssite.title' => 'Request refused',
+    'crosssite.text' => 'This form was sent from another website and was therefore not processed. Please open the page directly and try again there.',
     'privacy.controller.generic' => 'The details of the controller are currently being added. Until then, please contact the teacher with whom you booked an appointment.',
     'page.missing' => 'This text has not been added yet.',
 
