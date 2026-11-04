@@ -51,6 +51,7 @@ jobs:
       APP_DIR: ${{ vars.APP_DIR || 'talkslot-app' }}
       WEB_DIR: ${{ vars.WEB_DIR }}
       BASE_URL: ${{ vars.BASE_URL }}
+      CONFIG_MODE: ${{ vars.CONFIG_MODE }} # permissions of config.php after the upload (default 600)
     steps:
       # Code via git instead of actions/checkout: no third-party actions needed. As a called workflow,
       # the TalkSlot code in the given version (TALKSLOT_TOKEN only for a private repo). The token is only in
@@ -140,7 +141,8 @@ jobs:
         run: sudo apt-get install -y -qq lftp > /dev/null
 
       # Upload via FTPS into a new directory; the running version stays untouched. At the end it is
-      # verified that all files have arrived. Only main goes live.
+      # verified that all files have arrived; config.php is restricted to its owner (CONFIG_MODE, default 600).
+      # Only main goes live.
       - name: Upload (not active yet)
         id: upload
         if: github.ref == 'refs/heads/main' && steps.current.outputs.superseded != '1'

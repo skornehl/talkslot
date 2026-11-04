@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Test for the atomic deployment (bin/build.sh + bin/deploy.sh) without a real FTP server: lftp uploads via
 # file:// into a temp directory served by a PHP test server. Checks the first deployment, switching
-# under load, rollback (the "switch"), automatic switch-back, pointer emergencies and cleanup.
+# under load, rollback (the "switch"), automatic switch-back, pointer emergencies, cleanup, the
+# permissions of config.php and deleting old versions after changing secrets (prune).
 #
 # Usage: tests/deploy.sh   Requires: lftp, curl and the local database (like tests/smoke.sh);
 # the configuration is taken from config/config.php.
@@ -58,12 +59,16 @@ ok 'switch ok, only 200s under load' '[ $rc = 0 ] && only200' || cat "$T/out"
 ok 'pointer to A, A is served' '[ "$(cat "$BASE/current")" = $A ] && html /admin/login | grep -q "/v/$A/css/app.css" && [ "$(code /v/$A/css/app.css)" = 200 ] && html / | grep -q v1.9.0'
 ok 'app_root.php finds the app directory (from APP_DIR/WEB_DIR)' 'grep -qF "/../talkslot-app'"'"')" "$WEB/app_root.php" && [ ! -e "$WEB/assets" ]'
 ok 'app/var shared (sessions, logs), version without its own app/var' '[ -f "$BASE/app/var/.htaccess" ] && [ ! -e "$BASE/releases/$A/app/var" ]'
+mode() { stat -c %a "$BASE/releases/$1/$2"; }
+ok 'config.php only readable for its owner (600)' '[ "$(mode $A config/config.php)" = 600 ]'
 
 echo "Next version"
 B=20261102-110000-v1.9.1; build $B v1.9.1
-load_start; dep upload $B > "$T/out" 2>&1 && dep activate $B > "$T/out" 2>&1; rc=$?; load_stop
+ok 'invalid CONFIG_MODE rejected before the upload' '! CONFIG_MODE="600; rm -r x" dep upload $B > /dev/null 2>&1 && [ ! -e "$BASE/releases/$B" ]'
+load_start; CONFIG_MODE=640 dep upload $B > "$T/out" 2>&1 && dep activate $B > "$T/out" 2>&1; rc=$?; load_stop
 ok 'B active, only 200s under load' '[ $rc = 0 ] && [ "$(cat "$BASE/current")" = $B ] && html / | grep -q v1.9.1 && only200'
 ok 'A is kept for a rollback' '[ -d "$BASE/releases/$A" ] && [ -d "$WEB/v/$A" ]'
+ok 'CONFIG_MODE=640: group may read config.php (PHP via the group)' '[ "$(mode $B config/config.php)" = 640 ]'
 ok 'list marks the active one' 'dep list | grep -q "^\* $B" && dep list | grep -q "^  $A"'
 
 echo "Switch (rollback)"
@@ -80,7 +85,8 @@ echo '<?php throw new Error("broken");' > "$T/build/app/releases/$C/app/src/App.
 dep upload $C > /dev/null 2>&1; dep activate $C > "$T/out" 2>&1; rc=$?
 ok 'check fails → back to B' '[ $rc != 0 ] && grep -q "switched back to $B" "$T/out" && [ "$(cat "$BASE/current")" = $B ] && html / | grep -q v1.9.1'
 ok 'broken version deleted' '[ ! -e "$BASE/releases/$C" ] && [ ! -e "$WEB/v/$C" ]'
-D=20261102-123000-v1.9.2; build $D v1.9.2; dep upload $D > /dev/null 2>&1
+D=20261102-123000-v1.9.2; build $D v1.9.2; CONFIG_MODE=keep dep upload $D > "$T/out" 2>&1
+ok 'CONFIG_MODE=keep: permissions of config.php left to the server' '! grep -q "config.php: permissions" "$T/out" && [ "$(mode $D config/config.php)" = "$(mode $D app/bootstrap.php)" ]'
 ok 'discard deletes a never-activated version, never the active one' 'dep discard $D > /dev/null 2>&1 && [ ! -e "$BASE/releases/$D" ] && ! dep discard $B > /dev/null 2>&1 && [ -d "$BASE/releases/$B" ]'
 
 echo "Pointer emergencies (app_root.php)"
@@ -93,6 +99,13 @@ echo $B > "$BASE/current"
 echo "Cleanup"
 for n in 20261102-130000-v1.9.3 20261102-140000-v1.9.4; do build $n v0; KEEP=2 dep upload $n > /dev/null 2>&1; KEEP=2 dep activate $n > /dev/null 2>&1; done
 ok 'only the KEEP newest versions remain (code and assets)' '[ "$(ls "$BASE/releases" | tr "\n" " ")" = "20261102-130000-v1.9.3 20261102-140000-v1.9.4 " ] && [ "$(ls "$WEB/v" | tr "\n" " ")" = "20261102-130000-v1.9.3 20261102-140000-v1.9.4 " ]'
+
+echo "Prune (after changing secrets)"
+echo "../../etc" > "$BASE/current"
+ok 'active version unknown → nothing deleted' '! dep prune > /dev/null 2>&1 && [ "$(ls "$BASE/releases" | wc -l)" = 2 ]'
+echo 20261102-140000-v1.9.4 > "$BASE/current"
+ok 'prune deletes every version except the active one (code and assets), the site keeps running' 'dep prune > /dev/null 2>&1 && [ "$(ls "$BASE/releases")" = 20261102-140000-v1.9.4 ] && [ "$(ls "$WEB/v")" = 20261102-140000-v1.9.4 ] && [ "$(code /admin/login)" = 200 ]'
+ok 'prune with only the active version: nothing to do' 'dep prune 2>&1 | grep -q "Only the active version is left: 20261102-140000-v1.9.4"'
 
 echo
 [ $FAIL = 0 ] && echo "Deploy test: all ok" || echo "Deploy test: $FAIL failed"

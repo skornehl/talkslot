@@ -134,7 +134,8 @@ App: <http://localhost:8080>, admin: <http://localhost:8080/admin>. Mails end up
 ### Go-live checklist
 
 - [ ] HTTPS active, `http://` redirects
-- [ ] `install.php` no longer reachable (404); `config/config.php` not readable by others (600/640)
+- [ ] `install.php` no longer reachable (404); `config/config.php` not readable by others (600/640; the
+  dashboard warns admins otherwise)
 - [ ] `debug` is `false`; `alert_email` set
 - [ ] Test booking with e-mail: mail arrives (not in spam)
 - [ ] Admin contact details, imprint and privacy policy (all languages) complete
@@ -147,7 +148,9 @@ Optional, for shared hosting with FTPS. Every push to `main` runs the tests, upl
 switches over **atomically**:
 
 1. The new version is uploaded completely into its own directory (`<APP_DIR>/releases/<name>/`, assets to
-   `<WEB_DIR>/v/<name>/`) while the old one keeps running, and checked for completeness.
+   `<WEB_DIR>/v/<name>/`) while the old one keeps running, and checked for completeness. Its `config.php`
+   gets the permissions `600` (variable `CONFIG_MODE`: `640` or `keep` if PHP runs as a different user
+   than FTP; a server without `chmod` only causes a warning).
 2. A pointer file `<APP_DIR>/current` is replaced in one step. Old and new code never run side by side.
 3. The site is checked (login page, start page, CSS). On failure it switches straight back and the run
    fails.
@@ -170,7 +173,8 @@ bin/setup-secrets.sh    # asks for host, directories, FTP and DB credentials; ge
 This sets the variables `BASE_URL`, `FTP_HOST`, `WEB_DIR`, `APP_DIR`, `DB_HOST` and the secrets
 `FTP_USERNAME`, `FTP_PASSWORD`, `DB_USER`, `DB_PASS`, `DB_NAME`, `APP_SECRET`, `INSTALL_KEY`. Optional
 variables: `APP_NAME`, `HOSTING_DE`, `HOSTING_EN` (web host for the privacy policy), `LANGUAGES` (e.g. `de,en,tr`) and `DEFAULT_LANGUAGE` (e.g. `en`), `ALERT_EMAIL`, `MAIL_FROM`, `MAIL_FROM_NAME`, `MAIL_REPLY_TO`, `MAIL_TRANSPORT=smtp` with
-`SMTP_HOST`, `SMTP_PORT`, `SMTP_ENCRYPTION` and the secrets `SMTP_USER`, `SMTP_PASS`, `DB_PREFIX`.
+`SMTP_HOST`, `SMTP_PORT`, `SMTP_ENCRYPTION` and the secrets `SMTP_USER`, `SMTP_PASS`, `DB_PREFIX`; the
+variable `CONFIG_MODE` sets the permissions of `config.php` on the server (default `600`).
 Without `FTP_HOST` the deploy, cron and switch workflows do nothing.
 
 Recommended: put the secrets into an environment `production` that only `main` may use
@@ -182,7 +186,11 @@ Recommended: put the secrets into an environment `production` that only `main` m
 ```bash
 gh workflow run "Switch version"                         # one version back
 gh workflow run "Switch version" -f target=list          # show available versions
+gh workflow run "Switch version" -f target=prune         # delete all versions except the active one
 ```
+
+After changing secrets (database or SMTP password, `APP_SECRET`) run `prune`: older versions keep the old
+values in their `config.php`.
 
 The database is not rolled back. That is why migrations (`app/src/Migrations.php`) must only **add**
 columns with defaults and tables, so an older version keeps working with a newer schema.

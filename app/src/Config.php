@@ -24,4 +24,16 @@ final class Config
         }
         return $value;
     }
+
+    /**
+     * Permissions of the configuration file (e.g. "0644") if every user of the server may read it,
+     * otherwise null. config.php holds the database and mail passwords and the secret: on shared hosting
+     * other customers' scripts could read it. Admins see a warning (dashboard); bin/deploy.sh sets 600.
+     */
+    public static function exposedPermissions(?string $file = null): ?string
+    {
+        // false if the file is missing; Windows has no such permissions (fileperms() reports 0666 there)
+        $perms = @fileperms($file ?? APP_ROOT . '/config/config.php');
+        return $perms !== false && ($perms & 0004) && PHP_OS_FAMILY !== 'Windows' ? sprintf('%04o', $perms & 07777) : null;
+    }
 }

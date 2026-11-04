@@ -56,6 +56,26 @@ holds sessions, the alert counter and logs and does not need a backup.
 Keep in mind that bookings are personal data with a short life: restore a backup only as far as
 necessary and let the clean-up run afterwards.
 
+## Changing secrets {#changing-secrets}
+
+Change the passwords and the secret in `config.php` if they may have got out, for example when the
+dashboard warned that every user of the server could read the file, someone with FTP access has left,
+or an old backup is lost.
+
+1. **Set new values at the source:** a new database password at your web host, a new SMTP password at
+   your mail provider, a new `APP_SECRET` (`openssl rand -hex 32`). With GitHub Actions update the secrets
+   (`gh secret set DB_PASS`, `gh secret set SMTP_PASS`, `gh secret set APP_SECRET`) and deploy
+   (*Actions → Deploy → Run workflow*); otherwise edit `config/config.php`.
+2. **Delete the old versions.** With the atomic deployment every version on the server keeps its own
+   `config.php` with the old values. *Actions → Switch version* with the input `prune` (or
+   `bin/deploy.sh prune`) deletes all versions except the active one. A rollback to an older version is
+   no longer possible (with a changed database password it would not work anyway).
+3. **Check your backups** of `config.php` and replace or delete the old ones.
+
+A new `APP_SECRET` changes the web cron token (the included `cron.yml` derives it from the same secret),
+resets the rate limits, and parents have to reload an open booking form or enter a round code again.
+Admin sessions, change links and bookings stay valid.
+
 ## Clean-up schedule
 
 | What | When |

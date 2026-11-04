@@ -14,7 +14,8 @@ Variable `FTP_HOST` tun die Workflows für Deployment, Cronjob und Rollback nich
    Werte brechen den Lauf ab, bevor etwas hochgeladen wird.
 2. **Hochladen neben die laufende Version.** Die neue Version kommt in ein eigenes Verzeichnis
    (`<APP_DIR>/releases/<name>/`, Assets nach `<WEB_DIR>/v/<name>/`). Die Live-Seite bleibt unberührt.
-   Anschließend wird jede Datei auf dem Server geprüft.
+   Anschließend wird jede Datei auf dem Server geprüft, und `config.php` wird nur für den Eigentümer lesbar
+   gemacht ([Dateirechte](#permissions-of-configphp)).
 3. **Umschalten in einem Schritt.** Die Zeigerdatei `<APP_DIR>/current` wird ersetzt (als `current.new`
    hochgeladen, dann umbenannt). Ab diesem Moment beantwortet die neue Version jede Anfrage. Alter und neuer
    Code laufen nie gleichzeitig und können daher keine inkonsistenten Daten schreiben.
@@ -67,6 +68,22 @@ Die Sessions liegen im gemeinsamen `app/var/`, daher wird durch ein Deployment n
 | `MAIL_FROM`, `MAIL_FROM_NAME`, `MAIL_REPLY_TO`, `ALERT_EMAIL` | Variablen | | E-Mail-Einstellungen |
 | `MAIL_TRANSPORT`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_ENCRYPTION` | Variablen | | für SMTP |
 | `SMTP_USER`, `SMTP_PASS` | Secrets | | für SMTP |
+| `CONFIG_MODE` | Variable | | Dateirechte von `config.php` auf dem Server: `600` (Standard), `640` oder `keep`, siehe unten |
+
+### Dateirechte von config.php {#permissions-of-configphp}
+
+`config.php` enthält das Datenbank- und das SMTP-Passwort sowie `APP_SECRET`. Beim Hochladen per FTP
+bekommt jede Datei die Standardrechte des Servers, oft `644`: Auf einem geteilten Server könnte dann jeder
+andere Benutzer sie lesen. Nach dem Hochladen führt das Deployment deshalb `chmod 600` auf die Datei aus.
+
+- Unterstützt Ihr FTP-Server kein `chmod`, zeigt der Lauf eine Warnung und macht weiter. Setzen Sie die
+  Rechte dann im Dateimanager Ihres Hosters; die Übersicht von TalkSlot warnt die Admins, solange alle
+  Benutzer des Servers die Datei lesen können.
+- Läuft PHP unter einem anderen Benutzer als Ihr FTP-Zugang (bei Shared Hosting selten), kann PHP eine
+  Datei mit `600` nicht lesen. Die Prüfung nach dem Umschalten schlägt dann mit HTTP 500 fehl, und die
+  vorherige Version bleibt aktiv. Setzen Sie die Variable `CONFIG_MODE` auf `640` (PHP liest die Datei über
+  seine Gruppe) oder, falls auch das nicht reicht, auf `keep` (Rechte bestimmt der Server):
+  `gh variable set CONFIG_MODE --body 640`.
 
 ## Rollback
 
@@ -77,10 +94,12 @@ Die Sessions liegen im gemeinsamen `app/var/`, daher wird durch ein Deployment n
 | `previous` | eine Version zurück (Standard) |
 | `list` | nur die Versionen auf dem Server anzeigen |
 | ein Versionsname | genau diese Version, z. B. `20261102-153012-v1.1.0` |
+| `prune` | alle Versionen außer der aktiven löschen, z. B. nach dem [Austausch von Secrets]({{ '/de/guide/operations/' | relative_url }}#changing-secrets); danach ist kein Rollback mehr möglich |
 
 ```bash
 gh workflow run "Switch version"                      # eine Version zurück
 gh workflow run "Switch version" -f target=list       # verfügbare Versionen anzeigen
+gh workflow run "Switch version" -f target=prune      # nur die aktive Version behalten
 ```
 
 Auch nach dem Umschalten wird die Seite geprüft. Der nächste Push auf `main` spielt wieder den neuesten
@@ -118,7 +137,7 @@ on:
   workflow_dispatch:
     inputs:
       target:
-        description: 'previous, list or version name'
+        description: 'previous, list, prune or version name'
         required: true
         default: previous
 permissions:

@@ -26,6 +26,11 @@ des deutschen Admin-Bereichs; jedes Konto kann ihn unter *Mein Profil* auf Engli
 5. ***Vorlagen*** (optional): die üblichen Formate einmal anlegen, z. B. Ihren Elternsprechtag.
 6. **Lehrkräfte einladen** und bei Bedarf weitere Admins (*Benutzer*).
 
+Warnt die Übersicht, dass `config/config.php` für alle Benutzer des Servers lesbar ist, setzen Sie die
+Rechte auf `600` oder geben Sie die Warnung an die technische Betreuung weiter: Die Datei enthält die
+Passwörter für Datenbank und Mailversand. Könnten sie inzwischen in falsche Hände gelangt sein, siehe
+[Secrets austauschen]({{ '/de/guide/operations/' | relative_url }}#changing-secrets).
+
 ## Konten
 
 Unter *Benutzer* → *+ Neuer Benutzer* geben Sie **Name und E-Mail-Adresse** ein und wählen die **Rolle**:

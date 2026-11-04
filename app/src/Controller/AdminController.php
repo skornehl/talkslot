@@ -208,6 +208,8 @@ final class AdminController
             'title' => $all ? __('Alle Terminrunden') : __('Meine Terminrunden'),
             'rounds' => $rounds,
             'showOwner' => $all,
+            // config.php readable for every user of the server (only admins can have that fixed)
+            'configPermissions' => Auth::isAdmin() ? \App\Config::exposedPermissions() : null,
             'profileHints' => $this->profileHints(),
             'operatorMissing' => !Operator::ready(),
             'legalHints' => Auth::isAdmin() ? array_merge(self::operatorHints(), self::legalHints()) : [],

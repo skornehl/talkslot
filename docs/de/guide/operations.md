@@ -60,6 +60,26 @@ enthält nur Sessions, den Zähler für Fehlermeldungen und Logs und braucht kei
 Bedenken Sie, dass Buchungen personenbezogene Daten mit kurzer Lebensdauer sind: Spielen Sie ein Backup nur
 so weit wie nötig zurück und lassen Sie anschließend die Bereinigung laufen.
 
+## Secrets austauschen {#changing-secrets}
+
+Tauschen Sie die Passwörter und den geheimen Schlüssel aus `config.php` aus, wenn sie in falsche Hände
+gelangt sein könnten, etwa wenn die Übersicht gewarnt hat, dass alle Benutzer des Servers die Datei lesen
+können, wenn jemand mit FTP-Zugang ausgeschieden ist oder wenn ein altes Backup verloren gegangen ist.
+
+1. **Neue Werte an der Quelle setzen:** ein neues Datenbank-Passwort beim Hoster, ein neues SMTP-Passwort
+   beim Mail-Anbieter, ein neues `APP_SECRET` (`openssl rand -hex 32`). Mit GitHub Actions aktualisieren
+   Sie die Secrets (`gh secret set DB_PASS`, `gh secret set SMTP_PASS`, `gh secret set APP_SECRET`) und
+   spielen neu aus (*Actions → Deploy → Run workflow*); sonst bearbeiten Sie `config/config.php`.
+2. **Alte Versionen löschen.** Beim atomaren Deployment behält jede Version auf dem Server ihre eigene
+   `config.php` mit den alten Werten. *Actions → Switch version* mit der Eingabe `prune` (oder
+   `bin/deploy.sh prune`) löscht alle Versionen außer der aktiven. Ein Rollback auf eine ältere Version ist
+   danach nicht mehr möglich (mit geändertem Datenbank-Passwort würde sie ohnehin nicht laufen).
+3. **Backups prüfen:** Ersetzen oder löschen Sie alte Sicherungen von `config.php`.
+
+Ein neues `APP_SECRET` ändert das Token für den Web-Cron (das mitgelieferte `cron.yml` leitet es aus
+demselben Secret ab) und setzt die Rate-Limits zurück; Eltern müssen ein offenes Buchungsformular neu laden
+oder einen Rundencode erneut eingeben. Admin-Sitzungen, Änderungslinks und Buchungen bleiben gültig.
+
 ## Löschfristen
 
 | Was | Wann |

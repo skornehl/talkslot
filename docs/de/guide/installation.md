@@ -49,7 +49,9 @@ Kopieren Sie `config/config.sample.php` nach `config/config.php` und füllen Sie
 | `hosting` | Ihr Hoster für die Datenschutzerklärung, siehe [Datenschutz]({{ '/de/guide/privacy/' | relative_url }}) |
 
 Alle Optionen erklärt [Konfiguration]({{ '/de/guide/configuration/' | relative_url }}). Machen Sie
-`config.php` nur für den PHP-Benutzer lesbar (`chmod 600` oder `640`).
+`config.php` nur für den PHP-Benutzer lesbar (`chmod 600` oder `640`): Die Datei enthält die Passwörter für
+Datenbank und Mailversand und den geheimen Schlüssel. Solange alle Benutzer des Servers sie lesen können,
+warnt die Übersicht die Admins.
 
 ## 3. Installieren
 

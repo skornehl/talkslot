@@ -50,7 +50,10 @@ keine öffentlichen Issues.
 - Keine Fehlerdetails im Produktivbetrieb; `public/.user.ini` verbirgt auch Fehler, die vor dem Start der
   App auftreten. Die App schreibt ein eigenes Log, aus dem Werte, Anführungszeichen und E-Mail-Adressen
   entfernt sind.
-- `app/` und `config/` liegen außerhalb des Web-Roots und werden zusätzlich per `.htaccess` gesperrt.
+- `app/` und `config/` liegen außerhalb des Web-Roots und werden zusätzlich per `.htaccess` gesperrt. Das
+  Deployment beschränkt `config.php` auf den Eigentümer (`chmod 600`), und die Übersicht warnt die Admins,
+  solange alle Benutzer des Servers die Datei lesen können. Nach dem Austausch von Secrets löscht `prune`
+  die alten Versionen mit ihrer alten `config.php`.
 - Das Deployment prüft Konfigurationswerte gegen eine feste Auswahl (ein Tippfehler in `SMTP_ENCRYPTION`
   würde sonst Passwörter im Klartext bedeuten) und liefert den Installer nach der Installation nie aus.
 - CI und Deployment verwenden keine GitHub Actions von Drittanbietern; Code wird mit einfachem `git` geholt,
