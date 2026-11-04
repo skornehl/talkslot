@@ -49,8 +49,8 @@ $suggested = $multilingual ? I18n::suggested() : null;
 <body>
 <a class="skip-link" href="#main"><?= e(t('a11y.skip')) ?></a>
 <?php if ($multilingual && $switchForm !== ''):
-  // The language buttons above belong to the booking form too. Enter in a field submits with the form's
-  // first submit button, so this invisible one has to come first: it books instead of switching. ?>
+  // The language buttons in the header belong to the booking form too. Enter in a field submits with the
+  // form's first submit button in the page, so this invisible one has to come first: it books instead of switching. ?>
 <button type="submit" form="<?= e($switchForm) ?>" class="visually-hidden" tabindex="-1" aria-hidden="true" data-default-submit><?= e(t('form.submit')) ?></button>
 <?php endif; ?>
 <header class="site-header">

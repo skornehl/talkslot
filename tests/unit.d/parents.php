@@ -44,7 +44,7 @@ App\Config::load($cfg);
 check('text in a given language, also for the admin language; missing → default language → key',
     App\I18n::textIn('en', 'round.limit_round') === $parentText('en', 'round.limit_round')
     && App\I18n::textIn('xx', 'round.one_only') === $parentText('de', 'round.one_only')
-    && App\I18n::textIn('de', 'gibt.es.nicht') === 'gibt.es.nicht' && App\I18n::textIn('de', 'weekdays') === 'weekdays');
+    && App\I18n::textIn('de', 'gibt.es.nicht') === 'gibt.es.nicht' && App\I18n::textIn('de', 'weekdays') === 'weekdays' && t('weekdays') === 'weekdays');
 check('notice on multiple bookings follows booking_limit (round page and invitation)',
     App\BookingService::limitNotice(['booking_limit' => 'round']) === 'round.limit_round' && App\BookingService::limitNotice(['booking_limit' => 'day']) === 'round.limit_day'
     && App\BookingService::limitNotice(['booking_limit' => 'none']) === 'round.one_only' && App\BookingService::limitNotice([]) === 'round.one_only');
