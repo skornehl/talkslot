@@ -15,7 +15,8 @@ Praktikumsgespräche.
 
 ## Braucht es einen Cronjob?
 
-Empfohlen ist er, damit Buchungen rechtzeitig gelöscht und Zusammenfassungen verschickt werden. Ohne
+Empfohlen ist er, damit Buchungen rechtzeitig gelöscht sowie Zusammenfassungen und Erinnerungen verschickt
+werden. Ohne
 Shell-Zugang nutzen Sie den Web-Cron (der mitgelieferte GitHub-Workflow ruft ihn stündlich auf). Als
 Rückfallebene läuft das Aufräumen außerdem bei Seitenaufrufen, höchstens alle 15 Minuten.
 

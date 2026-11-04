@@ -10,7 +10,7 @@ namespace App;
  */
 final class Migrations
 {
-    public const LATEST = 13;
+    public const LATEST = 17;
 
     /** Version => SQL statements */
     private const STEPS = [
@@ -98,6 +98,35 @@ final class Migrations
             "INSERT IGNORE INTO settings (name, value) SELECT 'controller_contact', controller_contact FROM users
                WHERE role = 'admin' AND is_active = 1 AND COALESCE(controller_contact, '') <> '' ORDER BY id LIMIT 1",
         ],
+        // 14: location of the meetings (e.g. a room) per round, optionally different per day
+        14 => [
+            'ALTER TABLE rounds ADD COLUMN IF NOT EXISTS location VARCHAR(200) NULL AFTER description',
+            'ALTER TABLE round_days ADD COLUMN IF NOT EXISTS location VARCHAR(200) NULL AFTER slot_minutes',
+        ],
+        // 15: reminder mail to parents the evening before (per round, on by default)
+        15 => [
+            'ALTER TABLE rounds ADD COLUMN IF NOT EXISTS remind_parents TINYINT(1) NOT NULL DEFAULT 1 AFTER booking_limit',
+            'ALTER TABLE bookings ADD COLUMN IF NOT EXISTS reminded_at DATETIME NULL AFTER source,
+                ADD COLUMN IF NOT EXISTS reminder_token_hash CHAR(64) NULL AFTER reminded_at,
+                ADD UNIQUE KEY IF NOT EXISTS uq_bookings_reminder_token (reminder_token_hash)',
+        ],
+        // 16: log of the changes made by admins
+        16 => [
+            "CREATE TABLE IF NOT EXISTS audit_log (
+                id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, created_at DATETIME NOT NULL, user_id INT UNSIGNED NULL,
+                actor VARCHAR(254) NOT NULL, message VARCHAR(1000) NOT NULL,
+                KEY idx_audit_created (created_at),
+                CONSTRAINT fk_audit_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE SET NULL
+             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        ],
+        // 17: templates for new rounds
+        17 => [
+            "CREATE TABLE IF NOT EXISTS round_templates (
+                id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, name VARCHAR(100) NOT NULL, data TEXT NOT NULL,
+                created_at DATETIME NOT NULL, updated_at DATETIME NOT NULL,
+                UNIQUE KEY uq_templates_name (name)
+             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        ],
     ];
 
     /** SHA-256 of all previously shipped templates of legal notice/privacy policy (unedited). */
@@ -105,11 +134,14 @@ final class Migrations
     public const CURRENT_PAGE_HASHES = [
         'imprint.de' => '036e210b629357dfbf768868e3a5f249c888d3052f301170703b196336058f43',
         'imprint.en' => 'f15521ceaa18e97c98190e448cc95eb6130c4cf571164b09819bb40dd7af22c8',
-        'privacy.de' => '0cda1f6b2ca1ad90d1135a27b0087542862a700e0fbcefce7d448895f07a702a',
-        'privacy.en' => '7ab09658494d5af363ab22f52a13140952a72e83656280c26ba54e029b2a0d51',
+        'privacy.de' => '3885e997cd3bbf330158fdccc730f7fe1b93044379cc2df060ea5e0e7b6396ec',
+        'privacy.en' => 'ffbcc88fbd8b760efc7c4f173bb4e8850517392f88f9ffc0100da3aad921253f',
     ];
 
     private const OLD_PAGE_HASHES = [
+        // Privacy policy de/en without the reminder mail (up to version 14)
+        '0cda1f6b2ca1ad90d1135a27b0087542862a700e0fbcefce7d448895f07a702a',
+        '7ab09658494d5af363ab22f52a13140952a72e83656280c26ba54e029b2a0d51',
         // Privacy policy with hosting placeholder in square brackets (before [[HOSTER]])
         'ad6f6857bd256028a0bb977342079a12de3896553f38b6988bc90513dd38b3db',
         '144970362b39b145e5d4253ce311bfa38fa4c85a23ed090d14cb9f40340d28df',

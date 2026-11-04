@@ -30,7 +30,8 @@ final class BookingService
 
     /** SQL skeleton: booking with slot, day and round. */
     private const DETAIL_SQL = 'SELECT b.*, s.start_time, s.end_time, s.is_conflict, d.day_date, d.id AS day_id,
-                                       r.id AS round_id, r.title, r.description, r.source_lang, r.slug, r.is_active, r.cancel_deadline_hours,
+                                       r.id AS round_id, r.title, r.description, r.source_lang,
+                                       COALESCE(NULLIF(TRIM(d.location), \'\'), r.location) AS location, r.slug, r.is_active, r.cancel_deadline_hours,
                                        r.booking_deadline_hours, r.user_id,
                                        u.display_name AS teacher_name, u.email AS teacher_email, u.is_active AS teacher_active
                                   FROM bookings b
@@ -48,7 +49,7 @@ final class BookingService
     public static function freeSlots(array $round, ?int $exceptSlotId = null): array
     {
         $rows = Db::all(
-            'SELECT s.id, s.start_time, s.end_time, d.day_date, d.id AS day_id
+            'SELECT s.id, s.start_time, s.end_time, d.day_date, d.id AS day_id, d.location
                FROM slots s
                JOIN round_days d ON d.id = s.day_id
                LEFT JOIN bookings b ON b.slot_id = s.id
@@ -67,6 +68,7 @@ final class BookingService
         $days = [];
         foreach ($slots as $s) {
             $days[$s['day_date']]['date'] = $s['day_date'];
+            $days[$s['day_date']]['location'] = (string) ($s['location'] ?? '');
             $days[$s['day_date']]['slots'][] = $s;
         }
         return array_values($days);
@@ -136,7 +138,8 @@ final class BookingService
                 if ($limited && (string) $slot['day_date'] !== (string) $booking['day_date']) {
                     self::assertWithinLimit($round, (string) $slot['day_date'], (string) $booking['name'], $booking['email'], (int) $booking['id']);
                 }
-                Db::run('UPDATE bookings SET slot_id = ?, updated_at = ? WHERE id = ?', [$newSlotId, Time::nowSql(), $booking['id']]);
+                // New date: remind again (unless the move happens on the day of the reminder, see Reminders)
+                Db::run('UPDATE bookings SET slot_id = ?, reminded_at = NULL, updated_at = ? WHERE id = ?', [$newSlotId, Time::nowSql(), $booking['id']]);
             }));
         } catch (\PDOException $e) {
             if (Db::isDuplicate($e)) {
@@ -166,7 +169,10 @@ final class BookingService
         if (!Token::isWellFormed($plain)) {
             return null;
         }
-        return Db::one(self::DETAIL_SQL . ' WHERE b.token_hash = ?', [Token::hash($plain)]);
+        $hash = Token::hash($plain);
+        // The link in the reminder mail has its own token (the original one is only stored as a hash)
+        return Db::one(self::DETAIL_SQL . ' WHERE b.token_hash = ?', [$hash])
+            ?? Db::one(self::DETAIL_SQL . ' WHERE b.reminder_token_hash = ?', [$hash]);
     }
 
     public static function findById(int $id): ?array

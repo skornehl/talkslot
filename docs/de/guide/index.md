@@ -15,7 +15,7 @@ einer MariaDB-Datenbank geschrieben und läuft auf gewöhnlichem Shared Hosting 
 |---|---|---|
 | **Eltern** | öffentliche Seiten | Terminrunde öffnen, Termin buchen, ihn über den persönlichen Link verschieben oder stornieren |
 | **Lehrkräfte** | `/admin` | Terminrunden anlegen, Buchungen ihrer eigenen Runden verwalten |
-| **Admins** | `/admin` | ein oder mehrere Konten: laden Lehrkräfte ein, sehen und bearbeiten alle Runden, legen Runden für Lehrkräfte an, pflegen Impressum und Datenschutzerklärung für die Schule, die Verantwortliche im Sinne der DSGVO ist |
+| **Admins** | `/admin` | ein oder mehrere Konten: laden Lehrkräfte ein, sehen und bearbeiten alle Runden, legen Runden für Lehrkräfte an, pflegen Vorlagen, Impressum und Datenschutzerklärung für die Schule, die Verantwortliche im Sinne der DSGVO ist |
 | **Betreiber** | Server, GitHub | installiert, konfiguriert und aktualisiert TalkSlot (oft eine der Personen mit Admin-Konto) |
 
 Der Adminbereich ist deutschsprachig. Elternseiten und E-Mails gibt es auf Deutsch, Englisch, Polnisch,
@@ -25,7 +25,11 @@ Russisch, Ukrainisch und Türkisch; weitere Sprachen lassen sich ergänzen.
 
 Terminrunde (Runde)
 : Eine Reihe von Terminen, die eine Lehrkraft anbietet, z. B. „Elternsprechtag Klasse 7b“. Sie hat einen
-  lesbaren Link, einen Rundencode, eine Beschreibung, Fristen und ein Buchungslimit.
+  lesbaren Link, einen Rundencode, eine Beschreibung, optional einen Ort, Fristen und ein Buchungslimit.
+
+Vorlage
+: Zeiten, Pausen und Einstellungen, die Admins einmal vorbereiten (z. B. „Elternsprechtag, 08:00–16:00,
+  15 Minuten“); daraus kann jede und jeder eine neue Runde anlegen.
 
 Tag und Zeitfenster
 : Eine Terminrunde hat einen oder mehrere Tage. Jeder Tag hat einen Zeitraum, eine Termindauer und

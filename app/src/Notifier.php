@@ -25,6 +25,12 @@ final class Notifier
         return self::toParent($b, 'cancelled', null);
     }
 
+    /** Reminder the evening before (see Reminders), with the link of its own token. */
+    public static function parentReminder(array $b, string $token): bool
+    {
+        return self::toParent($b, 'reminder', $token);
+    }
+
     private static function toParent(array $b, string $type, ?string $token): bool
     {
         $email = (string) ($b['email'] ?? '');
@@ -36,7 +42,8 @@ final class Notifier
             $link = $token !== null ? abs_url('/b/' . $token, ['lang' => I18n::lang()]) : '';
             $vars = [
                 'title' => $b['title'],
-                'when' => fmt_slot($b['day_date'], $b['start_time'], $b['end_time']),
+                'when' => fmt_slot($b['day_date'], $b['start_time'], $b['end_time'])
+                    . (trim((string) ($b['location'] ?? '')) !== '' ? "\n" . t('round.location', ['location' => trim((string) $b['location'])]) : ''),
                 'name' => $b['name'],
                 'link' => $link !== '' ? $link : t('mail.link_unchanged'),
                 'app' => app_name(),
@@ -48,7 +55,7 @@ final class Notifier
                 $body .= "\n\n" . t('round.auto_translated', ['source' => I18n::name((string) $b['source_lang'])]);
             }
             $attachments = [];
-            if ($type !== 'cancelled') {
+            if ($type === 'booked' || $type === 'changed') {
                 // Appointment as calendar file; title = name of the round, description = personal link
                 $description = $link !== '' ? t('mail.ics.description', ['link' => $link]) : '';
                 $attachments[] = [

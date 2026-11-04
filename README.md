@@ -47,6 +47,8 @@ schools (GDPR/DSGVO, TDDDG) and multilingual families.
   same calendar entry when the booking is moved.
 - **Multiple bookings** per round configurable: one per person per round, one per person per day, or allowed.
   Same person = same name (case/spacing ignored) and, if both bookings have one, the same e-mail.
+- Location of the meeting (e.g. the room) on the booking page, in the confirmation and the calendar file;
+  optional reminder mail the evening before.
 - Optional **"round code required"**: the link alone shows nothing but a code prompt.
 - Optional "remember my appointment on this device" (opt-in, `localStorage` only).
 - Light/dark design following the device, switchable in the footer.
@@ -54,22 +56,28 @@ schools (GDPR/DSGVO, TDDDG) and multilingual families.
 **Teachers and admins (`/admin`, German user interface)**
 - Admins (one or more): invite teachers and further admins by e-mail (one-time link, no passwords in
   mails), change roles, deactivate, reset or delete accounts, see and edit all rounds, create rounds for a
-  teacher, maintain the details for the legal pages.
+  teacher, maintain templates and the details for the legal pages. A log (*Protokoll*) shows which admin
+  changed what (no data of parents, deleted after 90 days).
 - Teachers only see their own rounds (enforced centrally, foreign IDs return 404).
 - Rounds: several days, first/last slot, duration, any number of breaks, live preview; add days later;
-  block single slots; duplicate; deadlines for booking and changes; ready-to-copy invitation text.
+  location (per round, optionally per day); block single slots; duplicate with a new first day; templates
+  (e.g. "parent-teacher day, 08:00–16:00, 15 minutes"); deadlines for booking and changes; ready-to-copy
+  invitation text.
 - Bookings: overview, edit, move, delete, add manually (optionally with mail). Changed times never delete
   bookings, conflicts are flagged with ⚠. Print view per round or day.
 - Translation of title and description **in the teacher's browser** (Chrome/Edge Translator API with a
   local model, no text leaves the device), manually editable.
 - Summary mails: evening before a day and after the booking deadline (time and name only).
-- Imprint and privacy policy per language, editable (simple Markdown). The admin's contact details replace
+- Reminder to parents the evening before, with the link to cancel (only with an e-mail address; can be
+  turned off per round).
+- Imprint and privacy policy per language, editable (simple Markdown). The school's details replace
   `[[VERANTWORTLICHE]]` automatically; no round is public until they are filled in.
 
 **Automatic clean-up**
 - Bookings of a day are deleted from 0:00 the following day.
 - A round is deactivated after its last day and deleted 24 h later (configurable per round).
-- Rate-limit data after 24 h, inactive teacher accounts without rounds after 15 months.
+- Rate-limit data after 24 h, inactive teacher accounts without rounds after 15 months, admin log entries
+  after 90 days.
 - Runs hourly via cron (or the included GitHub workflow), plus as a fallback on page views.
 
 **Operations**

@@ -79,7 +79,8 @@ under Art. 28 GDPR. The servers are located in Germany.*
 | `access_link_hours` | `48` | validity of invitation and password links |
 | `cleanup_on_request` | `true` | also run the clean-up on page views … |
 | `cleanup_interval_minutes` | `15` | … at most this often |
-| `summary_evening_hour` | `18` | from this hour, teachers get the summary for the next day |
+| `summary_evening_hour` | `18` | from this hour, teachers get the summary for the next day and parents the reminder |
+| `audit_log_days` | `90` | entries of the admin log (*Protokoll*) are deleted after this many days |
 
 ## Rate limits
 

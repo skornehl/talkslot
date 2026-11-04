@@ -28,6 +28,8 @@ use App\Csrf;
       <?php if (Auth::isAdmin()): ?>
         <a href="<?= e(url('/admin/users')) ?>">Benutzer</a>
         <a href="<?= e(url('/admin/texts')) ?>">Texte</a>
+        <a href="<?= e(url('/admin/templates')) ?>">Vorlagen</a>
+        <a href="<?= e(url('/admin/log')) ?>">Protokoll</a>
       <?php endif; ?>
       <span class="nav-user" title="Angemeldet als"><?= e(Auth::user()['username']) ?></span>
       <form method="post" action="<?= e(url('/admin/logout')) ?>" class="inline">

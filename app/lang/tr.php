@@ -30,6 +30,7 @@ return [
     'page.missing' => 'Bu metin henüz eklenmedi.',
 
     'round.teacher' => 'Görüşme randevuları: {name}',
+    'round.location' => 'Yer: {location}',
     'round.one_only' => 'Lütfen yalnızca bir randevu alın.',
     'round.limit_round' => 'Kişi başına yalnızca bir randevu alınabilir. Kardeşler için lütfen her çocuğun adıyla ayrı randevu alın.',
     'round.limit_day' => 'Kişi başına günde yalnızca bir randevu alınabilir. Kardeşler için lütfen her çocuğun adıyla ayrı randevu alın.',
@@ -47,6 +48,7 @@ return [
     'form.name.hint' => 'Örneğin çocuğun adı ve soyadı.',
     'form.email' => 'E-posta adresi (isteğe bağlı)',
     'form.email.hint' => 'Yalnızca kişisel bağlantınızı içeren onayı göndermek için kullanılır. Adres vermezseniz bağlantıyı yalnızca bir sonraki sayfada görürsünüz.',
+    'form.email.hint_reminder' => 'Yalnızca kişisel bağlantınızı içeren onayı ve bir gün önce akşam bir hatırlatmayı göndermek için kullanılır. Adres vermezseniz bağlantıyı yalnızca bir sonraki sayfada görürsünüz.',
     'privacy.summary.title' => 'Kısaca veri koruma',
     'privacy.summary.items' => [
         'Yalnızca girdiğiniz ad, seçtiğiniz saat ve – isteğe bağlı olarak – e-posta adresiniz kaydedilir.',
@@ -96,6 +98,7 @@ return [
     'manage.round' => 'Randevu',
     'manage.teacher' => 'Görüşme yapılacak kişi',
     'manage.when' => 'Saat',
+    'manage.location' => 'Yer',
     'manage.name' => 'Ad',
     'manage.change' => 'Randevuyu değiştir',
     'manage.change.text' => 'Başka bir boş saat seçin. Mevcut saatiniz o zaman serbest bırakılır.',
@@ -120,6 +123,8 @@ return [
     'mail.changed.body' => "Merhaba,\n\nrandevunuz değiştirildi.\n\n{title}\nGörüşme yapılacak kişi: {teacher}\nYeni saat: {when}\nAd: {name}\n\nDeğiştir veya iptal et:\n{link}",
     'mail.cancelled.subject' => 'Randevu iptal edildi: {title}',
     'mail.cancelled.body' => "Merhaba,\n\nrandevunuz iptal edildi ve bilgileriniz randevu sisteminden silindi.\n\n{title}\nGörüşme yapılacak kişi: {teacher}\nİptal edilen saat: {when}",
+    'mail.reminder.subject' => 'Yarınki randevunuz için hatırlatma: {title}',
+    'mail.reminder.body' => "Merhaba,\n\nyarınki randevunuzu hatırlatmak isteriz.\n\n{title}\nGörüşme yapılacak kişi: {teacher}\nSaat: {when}\nAd: {name}\n\nGelemeyecekseniz lütfen randevuyu bu bağlantı üzerinden iptal edin (iptal süresi henüz dolmadıysa):\n{link}",
     'mail.ics.hint' => 'Randevu ekte takvim dosyası (termin.ics) olarak bulunmaktadır. Randevuyu takviminize eklemek için dosyayı açın.',
     'mail.ics.description' => 'Değiştir veya iptal et: {link}',
     'mail.link_unchanged' => 'Mevcut kişisel bağlantınız geçerliliğini korur.',

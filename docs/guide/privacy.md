@@ -11,10 +11,11 @@ This page explains the design decisions; it is not legal advice.
 | Data | Where | Deleted |
 |---|---|---|
 | Name and optional e-mail address of a booking | database | from 0:00 the day after the appointment, or immediately on cancellation |
-| Hash of the personal change link | database | with the booking |
+| Hash of the personal change link (and of the second link in the reminder mail) | database | with the booking |
 | Shortened, HMAC-hashed IP addresses | database (rate limiting) | after 24 hours at the latest |
 | Teacher accounts | database | by an admin; inactive accounts without rounds 15 months after the last login |
 | Summary mails to teachers (time and name, no e-mail addresses) | teacher's mailbox | the privacy policy promises at most 15 months |
+| Log of admin changes (who, when, what; no data of parents) | database | after 90 days (`audit_log_days`) |
 
 TalkSlot keeps **no** access logs of its own. The web server's logs are the web host's responsibility;
 ask how long they are kept and state it in the privacy policy.
@@ -22,6 +23,12 @@ ask how long they are kept and state it in the privacy policy.
 ## Design decisions
 
 - **Data minimisation:** a free-text name and an optional e-mail address, nothing else.
+- **E-mail address only for the appointment:** confirmation, changes, cancellation and, if the teacher
+  turned it on for the round, a reminder the evening before. The privacy template names all of these.
+- **Admin log without monitoring teachers:** only changes made by admin accounts are logged, so it shows
+  who among several admins did what. What teachers do in their own rounds is not recorded, and bookings
+  appear only as date and time. Depending on your state, a log of staff actions may still be a matter for
+  the staff council (*Personalrat*); you can shorten the retention with `audit_log_days`.
 - **No cookies on parent pages.** The language travels in the URL (`?lang=`), CSRF protection is
   stateless. No cookie banner is needed. Only the admin area uses a session cookie, limited to `/admin`.
 - **No third parties:** no CDNs, web fonts, analytics or external scripts. Translations of a round's title

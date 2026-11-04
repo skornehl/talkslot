@@ -29,6 +29,7 @@ $manageUrl = url('/b/' . $token);
     <dt><?= e(t('manage.round')) ?></dt><dd><?= e($booking['title']) ?><?php if (!empty($booking['auto_translated'])): ?><br><span class="small muted" data-auto-translated><?= e(t('round.auto_translated', ['source' => App\I18n::name($booking['source_lang'])])) ?></span><?php endif; ?></dd>
     <dt><?= e(t('manage.teacher')) ?></dt><dd><?= e($booking['teacher_name']) ?></dd>
     <dt><?= e(t('manage.when')) ?></dt><dd><strong><?= e($label) ?></strong></dd>
+    <?php if (trim((string) ($booking['location'] ?? '')) !== ''): ?><dt><?= e(t('manage.location')) ?></dt><dd><?= e(trim((string) $booking['location'])) ?></dd><?php endif; ?>
     <dt><?= e(t('manage.name')) ?></dt><dd><?= e($booking['name']) ?></dd>
   </dl>
 </div>

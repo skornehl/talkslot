@@ -15,7 +15,7 @@ MariaDB database and runs on ordinary shared hosting.
 |---|---|---|
 | **Parents** | public pages | open a round, book a slot, move or cancel it with their personal link |
 | **Teachers** | `/admin` | create rounds, manage bookings of their own rounds |
-| **Admins** | `/admin` | one or more accounts: invite teachers, see and edit all rounds, create rounds for teachers, maintain imprint and privacy policy on behalf of the school, which is the controller under the GDPR |
+| **Admins** | `/admin` | one or more accounts: invite teachers, see and edit all rounds, create rounds for teachers, maintain templates, imprint and privacy policy on behalf of the school, which is the controller under the GDPR |
 | **Operator** | server, GitHub | installs, configures and updates TalkSlot (often one of the admins) |
 
 The admin area is in German. Parent pages and mails are available in German, English, Polish,
@@ -25,7 +25,11 @@ Russian, Ukrainian and Turkish; more languages can be added.
 
 Round (*Terminrunde*)
 : A set of appointments offered by one teacher, e.g. "Parent-teacher conference class 7b". It has a
-  readable link, a round code, a description, deadlines and a booking limit.
+  readable link, a round code, a description, an optional location, deadlines and a booking limit.
+
+Template (*Vorlage*)
+: Times, breaks and settings that admins prepare once (e.g. "parent-teacher day, 08:00–16:00,
+  15 minutes"); anybody can start a new round from it.
 
 Day and slots
 : A round has one or more days. Each day has a time range, a slot length and optional breaks; the slots

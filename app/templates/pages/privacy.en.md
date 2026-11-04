@@ -19,7 +19,7 @@ Parents and guardians can use this page to book, change and cancel meetings (e.g
 **When you book:**
 
 - the **name(s)** you enter in the text field (required). Please only enter what is needed to identify the meeting (e.g. the child's name) and no other information.
-- your **e-mail address**, only if you choose to provide it. It is used solely for the booking confirmation and messages about your appointment (change, cancellation), never for advertising or newsletters.
+- your **e-mail address**, only if you choose to provide it. It is used solely for the booking confirmation and messages about your appointment (change, cancellation, a reminder the evening before if the teacher has turned it on for the round), never for advertising or newsletters.
 - the chosen **time slot**, the time of booking and the selected language.
 
 If you provide an e-mail address, you receive confirmations with your appointment as a calendar file (.ics). What you store in your own calendar is your own responsibility.

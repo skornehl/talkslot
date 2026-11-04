@@ -35,7 +35,8 @@ $csrf = Csrf::adminField();
     <summary>Einladungstext ansehen</summary>
     <pre class="invitation"><?= e($invitation) ?></pre>
   </details>
-  <p class="small muted"><?= ['round' => 'Ein Termin pro Person', 'day' => 'Ein Termin pro Person und Tag'][$round['booking_limit'] ?? 'none'] ?? 'Mehrfachbuchungen erlaubt' ?> · Buchungsschluss <?= (int) $round['booking_deadline_hours'] ?> h vorher · Ändern/Absagen bis <?= (int) $round['cancel_deadline_hours'] ?> h vorher ·
+  <?php if (trim((string) ($round['location'] ?? '')) !== ''): ?><p>Ort: <strong><?= e(trim((string) $round['location'])) ?></strong></p><?php endif; ?>
+  <p class="small muted"><?= ['round' => 'Ein Termin pro Person', 'day' => 'Ein Termin pro Person und Tag'][$round['booking_limit'] ?? 'none'] ?? 'Mehrfachbuchungen erlaubt' ?><?= !empty($round['remind_parents']) ? ' · Erinnerung am Vorabend' : '' ?> · Buchungsschluss <?= (int) $round['booking_deadline_hours'] ?> h vorher · Ändern/Absagen bis <?= (int) $round['cancel_deadline_hours'] ?> h vorher ·
     <?= $round['delete_after_hours'] === null ? 'Runde wird nicht automatisch gelöscht' : 'Runde wird ' . (int) $round['delete_after_hours'] . ' h nach Ablauf gelöscht' ?></p>
   <div class="actions">
     <a class="button" href="<?= e(url('/admin/round/' . $rid . '/edit')) ?>">Bearbeiten</a>
@@ -43,11 +44,25 @@ $csrf = Csrf::adminField();
     <form method="post" action="<?= e(url('/admin/round/' . $rid . '/toggle')) ?>" class="inline"><?= $csrf ?>
       <button type="submit" class="button"><?= $round['is_active'] ? 'Deaktivieren' : 'Aktivieren' ?></button></form>
     <a class="button" href="<?= e(url('/admin/round/' . $rid . '/print')) ?>" target="_blank" rel="noopener">Druckansicht / PDF</a>
-    <form method="post" action="<?= e(url('/admin/round/' . $rid . '/duplicate')) ?>" class="inline" data-once><?= $csrf ?>
-      <button type="submit" class="button">Duplizieren</button></form>
+    <a class="button" href="#duplicate" data-open-details="duplicate">Duplizieren …</a>
+    <?php if (App\Auth::isAdmin()): ?>
+    <form method="post" action="<?= e(url('/admin/templates/from-round/' . $rid)) ?>" class="inline" data-once><?= $csrf ?>
+      <button type="submit" class="button">Als Vorlage speichern</button></form>
+    <?php endif; ?>
     <form method="post" action="<?= e(url('/admin/round/' . $rid . '/delete')) ?>" class="inline" data-confirm="Runde „<?= e($round['title']) ?>“ mit allen Tagen und Buchungen endgültig löschen?"><?= $csrf ?>
       <button type="submit" class="button button-danger">Löschen</button></form>
   </div>
+  <details id="duplicate">
+    <summary>Runde duplizieren</summary>
+    <form method="post" action="<?= e(url('/admin/round/' . $rid . '/duplicate')) ?>" class="inline-form" data-once><?= $csrf ?>
+      <div>
+        <label for="first_date">Erster Tag der Kopie</label>
+        <input type="date" id="first_date" name="first_date" aria-describedby="dup-hint">
+      </div>
+      <button type="submit" class="button">Duplizieren</button>
+    </form>
+    <p class="hint" id="dup-hint">Übernimmt Tage, Zeiten, Pausen, gesperrte Termine, Einstellungen und Übersetzungen, aber keine Buchungen; die Kopie ist inaktiv. Mit Datum verschieben sich alle Tage um denselben Abstand (z. B. Tage am Di und Do → wieder Di und Do, wenn der erste Tag ein Dienstag ist). Ohne Datum behält die Kopie die bisherigen Daten.</p>
+  </details>
 </div>
 
 <?php if ($conflicts > 0): ?>
@@ -99,7 +114,7 @@ $csrf = Csrf::adminField();
 <section class="card day-card" id="day-<?= $did ?>">
   <div class="page-head">
     <h2><?= e(fmt_date($day['day_date'])) ?></h2>
-    <p class="muted"><?= e(fmt_range($day['start_time'], $day['end_time'])) ?> Uhr · <?= (int) $day['slot_minutes'] ?> Min. pro Termin</p>
+    <p class="muted"><?= e(fmt_range($day['start_time'], $day['end_time'])) ?> Uhr · <?= (int) $day['slot_minutes'] ?> Min. pro Termin<?php if (trim((string) ($day['location'] ?? '')) !== ''): ?> · Ort: <strong><?= e(trim((string) $day['location'])) ?></strong><?php endif; ?></p>
   </div>
   <div class="actions">
     <a class="button button-small" href="<?= e(url('/admin/day/' . $did . '/edit')) ?>">Tag bearbeiten</a>

@@ -16,7 +16,7 @@ Benutzerkonto brauchen Sie nicht.
 3. **Wählen Sie einen freien Termin.** Es werden nur freie Termine angezeigt, nach Tagen geordnet.
 4. **Geben Sie einen Namen ein**, meist den Vor- und Nachnamen Ihres Kindes. Die **E-Mail-Adresse ist
    freiwillig**: Wenn Sie eine angeben, erhalten Sie eine Bestätigung mit Ihrem persönlichen Link und
-   einer Kalenderdatei.
+   einer Kalenderdatei und meist am Vorabend eine Erinnerung.
 5. Bestätigen Sie mit einem Häkchen, dass Sie die **Datenschutzhinweise** gelesen haben, und buchen Sie.
 
 ![Buchungsseite auf dem Handy]({{ '/assets/img/parent-round-mobile-dark.webp' | relative_url }}){: style="max-width: 320px"}
@@ -26,8 +26,9 @@ Benutzerkonto brauchen Sie nicht.
 Nach der Buchung sehen Sie **Ihren persönlichen Link**. Bewahren Sie ihn gut auf, zum Beispiel als
 Lesezeichen: Damit können Sie den Termin auf einen anderen freien Termin verschieben oder absagen – bis zu
 der Frist, die die Lehrkraft festgelegt hat. Wenn Sie eine E-Mail-Adresse angegeben haben, steht der Link
-auch in der Bestätigungs-E-Mail, und der Kalendereintrag aktualisiert sich von selbst, wenn Sie den Termin
-verschieben.
+auch in der Bestätigungs-E-Mail und in der Erinnerung, und der Kalendereintrag aktualisiert sich von
+selbst, wenn Sie den Termin verschieben. Hat die Lehrkraft einen Ort angegeben, steht er auf der
+Buchungsseite, in der Bestätigung und in der Kalenderdatei.
 
 ![Bestätigungsseite mit dem persönlichen Link]({{ '/assets/img/booking-confirmed.webp' | relative_url }})
 

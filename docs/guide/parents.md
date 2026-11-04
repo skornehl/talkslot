@@ -13,7 +13,8 @@ You received a link or a **round code** from your child's teacher. You do not ne
    Russian, Ukrainian or Turkish (depending on the school).
 3. **Pick a free time slot.** Only free slots are shown, grouped by day.
 4. **Enter a name**, usually your child's first and last name. An **e-mail address is optional**: with it,
-   you get a confirmation with your personal link and a calendar file.
+   you get a confirmation with your personal link and a calendar file, and usually a reminder the
+   evening before.
 5. Tick that you have read the **privacy notice** and book.
 
 ![Booking page on a phone]({{ '/assets/img/parent-round-mobile-dark.webp' | relative_url }}){: style="max-width: 320px"}
@@ -22,8 +23,9 @@ You received a link or a **round code** from your child's teacher. You do not ne
 
 After booking you see your **personal link**. Keep it, for example as a bookmark: with it you can move the
 appointment to another free slot or cancel it, until the deadline set by the teacher. If you entered an
-e-mail address, the link is also in the confirmation mail, and the calendar entry updates itself when you
-move the appointment.
+e-mail address, the link is also in the confirmation mail and in the reminder, and the calendar entry
+updates itself when you move the appointment. The booking page, the confirmation and the calendar file
+also show where the meeting takes place, if the teacher entered a location.
 
 ![Confirmation page with the personal link]({{ '/assets/img/booking-confirmed.webp' | relative_url }})
 

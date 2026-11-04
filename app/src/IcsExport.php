@@ -40,11 +40,12 @@ final class IcsExport
             'date' => $booking['day_date'], 'start' => $booking['start_time'], 'end' => $booking['end_time'],
             'summary' => $booking['title'],
             'description' => $description,
+            'location' => trim((string) ($booking['location'] ?? '')),
             'sequence' => max(0, strtotime((string) ($booking['updated_at'] ?? 'now')) - strtotime((string) ($booking['created_at'] ?? 'now'))),
         ]]);
     }
 
-    /** @param list<array{uid:string,date:string,start:string,end:string,summary:string,description?:string,sequence?:int}> $events */
+    /** @param list<array{uid:string,date:string,start:string,end:string,summary:string,description?:string,location?:string,sequence?:int}> $events */
     private static function calendar(string $name, array $events): string
     {
         $host = (string) (parse_url((string) Config::get('base_url', ''), PHP_URL_HOST) ?: 'localhost');
@@ -67,6 +68,9 @@ final class IcsExport
             $lines[] = 'SUMMARY:' . self::text($ev['summary']);
             if (($ev['description'] ?? '') !== '') {
                 $lines[] = 'DESCRIPTION:' . self::text($ev['description']);
+            }
+            if (($ev['location'] ?? '') !== '') {
+                $lines[] = 'LOCATION:' . self::text($ev['location']);
             }
             $lines[] = 'TRANSP:OPAQUE';
             $lines[] = 'END:VEVENT';

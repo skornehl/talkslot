@@ -7,6 +7,22 @@ $action = $round ? url('/admin/round/' . (int) $round['id'] . '/edit') : url('/a
 <h1><?= e($title) ?></h1>
 <?php require __DIR__ . '/_errors.php'; ?>
 
+<?php if (!empty($templates)): ?>
+<form method="get" action="<?= e(url('/admin/round/new')) ?>" class="card inline-form" aria-label="Vorlage">
+  <div>
+    <label for="template">Vorlage</label>
+    <select id="template" name="template">
+      <option value="">– ohne Vorlage –</option>
+      <?php foreach ($templates as $tp): ?>
+        <option value="<?= (int) $tp['id'] ?>"<?= ($template ?? null) === $tp['name'] ? ' selected' : '' ?>><?= e($tp['name']) ?></option>
+      <?php endforeach; ?>
+    </select>
+  </div>
+  <button type="submit" class="button">Übernehmen</button>
+  <?php if (!empty($template)): ?><p class="hint">Zeiten, Pausen und Einstellungen aus „<?= e($template) ?>“ sind eingetragen. Fehlt nur noch Titel und Datum; alles lässt sich noch ändern.</p><?php endif; ?>
+</form>
+<?php endif; ?>
+
 <form method="post" action="<?= e($action) ?>" class="card form-grid" data-once>
   <?= Csrf::adminField() ?>
   <?php if (!empty($owners)): ?>
@@ -14,7 +30,7 @@ $action = $round ? url('/admin/round/' . (int) $round['id'] . '/edit') : url('/a
     <label for="user_id">Lehrkraft</label>
     <select id="user_id" name="user_id" aria-describedby="owner-hint">
       <?php foreach ($owners as $o): ?>
-        <option value="<?= (int) $o['id'] ?>"<?= (int) ($data['user_id'] ?? 0) === (int) $o['id'] ? ' selected' : '' ?>><?= e($o['display_name'] !== '' ? $o['display_name'] : $o['username']) ?><?= $o['role'] === 'admin' ? ' (Sie)' : '' ?><?= !$o['is_active'] ? ' (deaktiviert)' : '' ?></option>
+        <option value="<?= (int) $o['id'] ?>"<?= (int) ($data['user_id'] ?? 0) === (int) $o['id'] ? ' selected' : '' ?>><?= e($o['display_name'] !== '' ? $o['display_name'] : $o['username']) ?><?= (int) $o['id'] === App\Auth::id() ? ' (Sie)' : '' ?><?= !$o['is_active'] ? ' (deaktiviert)' : '' ?></option>
       <?php endforeach; ?>
     </select>
     <p class="hint" id="owner-hint">Die Runde erscheint bei dieser Lehrkraft, Eltern sehen ihren Namen und Zusammenfassungen gehen an sie.</p>
@@ -60,6 +76,13 @@ $action = $round ? url('/admin/round/' . (int) $round['id'] . '/edit') : url('/a
 
   <p class="hint" id="cr-hint">Ist das an, sieht wer nur den Link hat noch keine Termine: Er muss zusätzlich den Rundencode eingeben (steht im Einladungstext). Wer den Code auf der Startseite eingibt, ist direkt drin. Bestehende Buchungen bleiben über ihren persönlichen Link erreichbar.</p>
 
+  <input type="hidden" name="remind_parents_field" value="1">
+  <div class="check">
+    <input type="checkbox" id="remind_parents" name="remind_parents" value="1"<?= !empty($data['remind_parents']) ? ' checked' : '' ?> aria-describedby="rp-hint">
+    <label for="remind_parents">Eltern am Vorabend an ihren Termin erinnern</label>
+  </div>
+  <p class="hint" id="rp-hint">Per E-Mail, nur an Eltern, die bei der Buchung eine Adresse angegeben haben, mit dem Link zum Absagen. Wer erst am selben Tag gebucht hat, bekommt keine Erinnerung.</p>
+
   <?php if (!$round): ?>
     <?php require __DIR__ . '/_day_fields.php'; ?>
   <?php else: ?>
@@ -78,7 +101,13 @@ $action = $round ? url('/admin/round/' . (int) $round['id'] . '/edit') : url('/a
 
   <div class="field">
     <label for="description">Beschreibungstext (optional)</label>
-    <textarea id="description" name="description" rows="4" maxlength="5000" placeholder="z. B. Bitte nur einen Termin pro Kind buchen. Die Gespräche finden in Raum 1.12 statt."><?= e($data['description'] ?? '') ?></textarea>
+    <textarea id="description" name="description" rows="4" maxlength="5000" placeholder="z. B. Bitte nur einen Termin pro Kind buchen. Bringen Sie gern das letzte Zeugnis mit."><?= e($data['description'] ?? '') ?></textarea>
+  </div>
+
+  <div class="field">
+    <label for="location">Ort (optional)</label>
+    <input type="text" id="location" name="location" maxlength="200" value="<?= e($data['location'] ?? '') ?>" placeholder="z. B. Raum 1.12, Hauptgebäude" aria-describedby="loc-hint">
+    <p class="hint" id="loc-hint">Steht auf der Buchungsseite, in der Bestätigung, in der Kalenderdatei und im Einladungstext. Findet ein Tag woanders statt, ändern Sie das unter „Tag bearbeiten“.</p>
   </div>
 
   <div class="field-row">

@@ -1,7 +1,7 @@
 <?php
 /**
  * Cron job: deletes bookings of past days, deactivates/deletes expired rounds,
- * removes old rate-limit entries and sends summaries to teachers.
+ * removes old rate-limit entries, sends summaries to teachers and reminders to parents.
  *
  * Recommended: hourly, e.g. "5 * * * *"
  *   cd /path/to/talkslot-app && php releases/$(cat current)/bin/cron.php   (deployment with bin/deploy.sh)
@@ -21,7 +21,7 @@ if (!App\Installer::isInstalled()) {
     exit(0);
 }
 App\Migrations::run();
-$stats = App\Cleanup::run() + App\Summaries::run();
+$stats = App\Cleanup::run() + App\Summaries::run() + App\Reminders::run();
 if (in_array('-v', $argv, true)) {
     foreach ($stats as $k => $v) {
         echo str_pad($k, 24) . $v . "\n";

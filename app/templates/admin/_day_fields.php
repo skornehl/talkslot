@@ -1,7 +1,7 @@
 <?php
 /**
  * Input for appointment days: date(s), time range, slot length, breaks + live preview.
- * Used when creating a round and for "Add day".
+ * Used when creating a round, for "Add day" and (without dates, $withDates = false) for templates.
  * @var array $dayData ['dates' => list, 'start' => 'HH:MM', 'end' => ..., 'minutes' => int, 'breaks' => list<[start,end,label]>]
  */
 $dates = $dayData['dates'] ?: [''];
@@ -20,6 +20,7 @@ $breakRow = static function (string $bs, string $be, string $bl): void { ?>
 <div class="day-fields" data-day-fields>
   <fieldset class="field pin-fieldset">
     <legend>Wann?</legend>
+    <?php if ($withDates ?? true): ?>
     <div class="field" data-dates>
       <label>Datum <span class="muted small">(weitere Tage mit denselben Zeiten möglich)</span></label>
       <?php foreach ($dates as $i => $d): ?>
@@ -27,6 +28,7 @@ $breakRow = static function (string $bs, string $be, string $bl): void { ?>
       <?php endforeach; ?>
       <button type="button" class="button button-small" data-add-date>+ weiteren Tag</button>
     </div>
+    <?php endif; ?>
     <div class="field-row">
       <div class="field"><label for="start_time">Erster Termin ab</label><input type="text" inputmode="numeric" pattern="[0-9]{1,2}([:.][0-9]{2})?|[0-9]{3,4}" maxlength="5" placeholder="HH:MM" autocomplete="off" class="time-input" data-time id="start_time" name="start_time" required value="<?= e($dayData['start']) ?>"></div>
       <div class="field"><label for="end_time">Letzter Termin endet um</label><input type="text" inputmode="numeric" pattern="[0-9]{1,2}([:.][0-9]{2})?|[0-9]{3,4}" maxlength="5" placeholder="HH:MM" autocomplete="off" class="time-input" data-time id="end_time" name="end_time" required value="<?= e($dayData['end']) ?>"></div>

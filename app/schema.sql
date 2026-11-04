@@ -26,6 +26,7 @@ CREATE TABLE IF NOT EXISTS users (
   UNIQUE KEY uq_users_access_token (access_token_hash)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- location: where the meetings take place (e.g. a room); a day can override it.
 CREATE TABLE IF NOT EXISTS rounds (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   user_id INT UNSIGNED NOT NULL,
@@ -34,7 +35,9 @@ CREATE TABLE IF NOT EXISTS rounds (
   code CHAR(8) NULL,
   code_required TINYINT(1) NOT NULL DEFAULT 0,
   booking_limit VARCHAR(5) NOT NULL DEFAULT 'none',
+  remind_parents TINYINT(1) NOT NULL DEFAULT 1,
   description TEXT NULL,
+  location VARCHAR(200) NULL,
   source_lang VARCHAR(5) NOT NULL DEFAULT 'de',
   is_active TINYINT(1) NOT NULL DEFAULT 0,
   booking_deadline_hours INT UNSIGNED NOT NULL DEFAULT 24,
@@ -56,6 +59,7 @@ CREATE TABLE IF NOT EXISTS round_days (
   start_time TIME NOT NULL,
   end_time TIME NOT NULL,
   slot_minutes SMALLINT UNSIGNED NOT NULL,
+  location VARCHAR(200) NULL,
   KEY idx_days_round (round_id, day_date),
   CONSTRAINT fk_days_round FOREIGN KEY (round_id) REFERENCES rounds (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -85,6 +89,7 @@ CREATE TABLE IF NOT EXISTS slots (
 
 -- UNIQUE(slot_id) prevents double bookings at database level.
 -- token_hash: SHA-256 of the change token; the plain text is not stored.
+-- reminder_token_hash: a second change token, for the link in the reminder mail (see Reminders).
 CREATE TABLE IF NOT EXISTS bookings (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   slot_id INT UNSIGNED NOT NULL,
@@ -93,10 +98,13 @@ CREATE TABLE IF NOT EXISTS bookings (
   token_hash CHAR(64) NOT NULL,
   lang VARCHAR(5) NOT NULL DEFAULT 'de',
   source ENUM('parent','admin') NOT NULL DEFAULT 'parent',
+  reminded_at DATETIME NULL,
+  reminder_token_hash CHAR(64) NULL,
   created_at DATETIME NOT NULL,
   updated_at DATETIME NOT NULL,
   UNIQUE KEY uq_bookings_slot (slot_id),
   UNIQUE KEY uq_bookings_token (token_hash),
+  UNIQUE KEY uq_bookings_reminder_token (reminder_token_hash),
   CONSTRAINT fk_bookings_slot FOREIGN KEY (slot_id) REFERENCES slots (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -121,6 +129,28 @@ CREATE TABLE IF NOT EXISTS rate_limits (
 CREATE TABLE IF NOT EXISTS settings (
   name VARCHAR(64) NOT NULL PRIMARY KEY,
   value TEXT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Templates for new rounds (data: times, breaks and settings as JSON; not "settings", that is a table name), maintained by admins, usable by everybody.
+CREATE TABLE IF NOT EXISTS round_templates (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  data TEXT NOT NULL,
+  created_at DATETIME NOT NULL,
+  updated_at DATETIME NOT NULL,
+  UNIQUE KEY uq_templates_name (name)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Log of the changes made by admins (who, when, what), without data of parents.
+-- Deleted after audit_log_days (default 90). actor: name at the time of the change.
+CREATE TABLE IF NOT EXISTS audit_log (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  created_at DATETIME NOT NULL,
+  user_id INT UNSIGNED NULL,
+  actor VARCHAR(254) NOT NULL,
+  message VARCHAR(1000) NOT NULL,
+  KEY idx_audit_created (created_at),
+  CONSTRAINT fk_audit_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Delivery log of the summary emails (prevents duplicate sends), without content

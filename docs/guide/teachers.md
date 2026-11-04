@@ -10,7 +10,13 @@ Labels are those of the German admin area, with a translation in brackets.
 
 *+ Neue Runde* (new round) opens the form. The appointments are created together with the round:
 
+- **Template** (*Vorlage*, if your admins have set up any): *Übernehmen* fills in times, breaks and
+  settings, e.g. "parent-teacher day: 08:00–16:00, 15 minutes, lunch break". Everything stays editable;
+  only title and date are left to fill in.
 - **Title** and optional **description** (*Beschreibungstext*), shown to parents. Plain text.
+- **Location** (*Ort*, optional), e.g. "Room 1.12". Shown on the booking page, the confirmation page, in
+  the confirmation mail, the calendar file, the print view and the invitation text. If one day takes place
+  somewhere else, set it under *Tag bearbeiten* (edit day).
 - **Dates** (*Datum*): one or more days with the same times (*+ weiteren Tag*).
 - **First slot**, **last slot ends at** and **duration per slot** in minutes.
 - **Breaks** (*+ Pause hinzufügen*): any number per day; slots continue after the break.
@@ -23,6 +29,9 @@ Labels are those of the German admin area, with a translation in brackets.
   until *N* hours before (*Ändern/Absagen bis*).
 - **Delete after** (*Runde löschen nach Ablauf*): hours after the last day, 24 by default, empty = never.
   Bookings are deleted the day after the appointment either way.
+- **Reminder** (*Eltern am Vorabend an ihren Termin erinnern*, on by default): parents who gave an e-mail
+  address get a reminder the evening before, with the link to cancel. Who booked on that same day gets
+  none, as the confirmation has just been sent.
 - **Random part in the address** (recommended) so the round cannot be found by guessing, and optionally
   **round code required** (*Nur mit Rundencode*).
 - **Active**: parents can book. Inactive rounds take no bookings, but parents can still cancel.
@@ -53,14 +62,17 @@ Per day you see all slots with the bookings:
 - **Delete** (*Löschen*) a booking.
 - **Add** (*Eintragen*) an appointment yourself, e.g. after a phone call, optionally with a confirmation mail.
 - **Block** (*Sperren*) a slot so nobody can book it, and release it again.
-- **Days**: edit times (*Tag bearbeiten*), add breaks, print a day (*Tag drucken*), add more days
+- **Days**: edit times and the location of a single day (*Tag bearbeiten*), add breaks, print a day (*Tag drucken*), add more days
   (*+ Tag hinzufügen*) or delete a day.
 
 If you change times or breaks, **booked appointments are never deleted**; slots that no longer fit are
 marked with ⚠ so you can move them.
 
-Further actions on the round: edit, deactivate, **print view / PDF** (*Druckansicht / PDF*), duplicate
-(a copy with new link and code, including translations), delete.
+Further actions on the round: edit, deactivate, **print view / PDF** (*Druckansicht / PDF*), delete, and
+**duplicate** (*Duplizieren …*): a copy with new link and code, including times, breaks, blocked slots,
+settings and translations, but no bookings; the copy is inactive. Enter the **first day of the copy** and
+all days move by the same distance (days on Tuesday and Thursday stay on Tuesday and Thursday), handy for
+the next term. Without a date the copy keeps the old dates.
 
 ## Translations
 

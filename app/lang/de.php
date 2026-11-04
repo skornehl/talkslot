@@ -33,6 +33,7 @@ return [
     'page.missing' => 'Dieser Text wurde noch nicht hinterlegt.',
 
     'round.teacher' => 'Gesprächstermine bei {name}',
+    'round.location' => 'Ort: {location}',
     'round.one_only' => 'Bitte buchen Sie nur einen Termin.',
     'round.limit_round' => 'Pro Person ist nur ein Termin möglich. Für Geschwister buchen Sie bitte jeweils mit dem Namen des Kindes.',
     'round.limit_day' => 'Pro Person ist nur ein Termin pro Tag möglich. Für Geschwister buchen Sie bitte jeweils mit dem Namen des Kindes.',
@@ -50,6 +51,7 @@ return [
     'form.name.hint' => 'Zum Beispiel Vor- und Nachname des Kindes.',
     'form.email' => 'E-Mail-Adresse (freiwillig)',
     'form.email.hint' => 'Nur für die Terminbestätigung mit Änderungslink. Ohne Adresse erhalten Sie den Link nur auf der nächsten Seite.',
+    'form.email.hint_reminder' => 'Nur für die Terminbestätigung mit Änderungslink und eine Erinnerung am Vorabend. Ohne Adresse erhalten Sie den Link nur auf der nächsten Seite.',
     'privacy.summary.title' => 'Datenschutz auf einen Blick',
     'privacy.summary.items' => [
         'Gespeichert werden nur der eingetragene Name, der Termin und – freiwillig – Ihre E-Mail-Adresse.',
@@ -99,6 +101,7 @@ return [
     'manage.round' => 'Terminvergabe',
     'manage.teacher' => 'Gespräch mit',
     'manage.when' => 'Termin',
+    'manage.location' => 'Ort',
     'manage.name' => 'Name',
     'manage.change' => 'Termin ändern',
     'manage.change.text' => 'Wählen Sie einen anderen freien Termin. Ihr bisheriger Termin wird dann freigegeben.',
@@ -123,6 +126,8 @@ return [
     'mail.changed.body' => "Guten Tag,\n\nIhr Termin wurde geändert.\n\n{title}\nGespräch mit: {teacher}\nNeuer Termin: {when}\nName: {name}\n\nÄndern oder absagen:\n{link}",
     'mail.cancelled.subject' => 'Termin abgesagt: {title}',
     'mail.cancelled.body' => "Guten Tag,\n\nIhr Termin wurde abgesagt, und Ihre Angaben wurden aus der Terminvergabe gelöscht.\n\n{title}\nGespräch mit: {teacher}\nAbgesagter Termin: {when}",
+    'mail.reminder.subject' => 'Erinnerung an Ihren Termin morgen: {title}',
+    'mail.reminder.body' => "Guten Tag,\n\nwir möchten Sie an Ihren Termin morgen erinnern.\n\n{title}\nGespräch mit: {teacher}\nTermin: {when}\nName: {name}\n\nFalls Sie nicht kommen können, sagen Sie den Termin bitte über diesen Link ab (sofern die Frist noch nicht abgelaufen ist):\n{link}",
     'mail.ics.hint' => 'Im Anhang finden Sie den Termin als Kalenderdatei (termin.ics). Öffnen Sie die Datei, um ihn in Ihren Kalender zu übernehmen.',
     'mail.ics.description' => 'Termin ändern oder absagen: {link}',
     'mail.link_unchanged' => 'Ihr bisheriger persönlicher Link bleibt gültig.',
