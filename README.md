@@ -242,7 +242,9 @@ otherwise the legal pages fall back to English.
 - PDO prepared statements everywhere (no emulation, strict SQL mode). A unit test parses every database
   call and fails if a variable is concatenated into SQL; smoke tests send SQL-injection payloads to all inputs.
 - Consistent output escaping; Markdown is escaped first, links only http(s), mailto or relative.
-- CSRF: session token in the admin area, stateless HMAC token with minimum and maximum age on public pages.
+- CSRF: session token in the admin area, stateless HMAC token with minimum and maximum age on public pages;
+  form posts that the browser marks as cross-site (`Sec-Fetch-Site`) are refused up front (also against login CSRF).
+- Every admin route names its role in the route table; a route without a known role is admin-only.
 - Double bookings prevented twice: `SELECT … FOR UPDATE` in a transaction and `UNIQUE(slot_id)`.
 - Change links: 256-bit random tokens, only their SHA-256 hash is stored.
 - Admin session: cookie limited to `/admin`, `HttpOnly`, `Secure`, `SameSite=Strict`, idle and absolute
@@ -251,7 +253,7 @@ otherwise the legal pages fall back to English.
   passwords 12 characters up to 72 bytes (bcrypt).
 - Spam protection: honeypot, minimum fill-in time, rate limits on bookings, codes and change links.
 - Headers: CSP without `unsafe-inline`, `X-Frame-Options: DENY`, `nosniff`, `Referrer-Policy: no-referrer`,
-  HSTS, Permissions-Policy, `Cache-Control: no-store`.
+  HSTS, Permissions-Policy, `Cache-Control: no-store`, also on 404 and error pages.
 - CI and deployment use no third-party GitHub Actions (code is fetched with plain `git`, the token only in a request header).
 - No error details in production; the app logs itself with values, quotes and e-mail addresses stripped,
   rotating at 5 MB.
@@ -285,7 +287,10 @@ CI runs all four on every push: the unit tests on PHP 8.3–8.5, the others agai
 
 The smoke test covers login and lockout, account management, **data separation between teachers**,
 CSRF, honeypot, XSS escaping, SQL injection, **20 parallel bookings on one slot → exactly one succeeds**,
-moving, cancelling, booking limits, conflict detection, printing, clean-up and error alerts.
+moving, cancelling, booking limits, conflict detection, printing, clean-up and error alerts. Security
+invariants are tests too: teachers get 404 for every admin route, no GET route changes data (including
+opening a change link), every booking path waits for the lock on the day, and error pages carry the
+security headers.
 
 ## Project layout
 

@@ -78,6 +78,17 @@ final class Http
         return self::method() === 'POST';
     }
 
+    /**
+     * Form post that a browser sent from another site (Sec-Fetch-Site: cross-site), e.g. a foreign page
+     * submitting a login form. Requests without the header (older browsers, cron jobs, command-line
+     * clients) do not count. Origin is not used: with "Referrer-Policy: no-referrer" browsers send
+     * "Origin: null" on same-origin form posts as well.
+     */
+    public static function isCrossSitePost(): bool
+    {
+        return self::isPost() && strtolower(trim((string) ($_SERVER['HTTP_SEC_FETCH_SITE'] ?? ''))) === 'cross-site';
+    }
+
     /** POST value as trimmed string (arrays and invalid UTF-8 are ignored). */
     public static function post(string $key, string $default = ''): string
     {

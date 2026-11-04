@@ -437,6 +437,20 @@ try {
   await js(`document.querySelector('[data-remembered-forget]').click()`);
   check('"vergessen" removes the entry and shows the slot list again', await js(`document.getElementById('remembered').hidden && !document.getElementById('booking-area').hidden && localStorage.getItem('${KEY}') === null`));
 
+  section('Security: forms on other sites cannot post to TalkSlot');
+  // A page from another origin (here a data: URL) submits forms to the round page and the login. Chrome marks
+  // these requests "Sec-Fetch-Site: cross-site" and the front controller refuses them; the forms of TalkSlot
+  // itself (same origin, "Origin: null" because of no-referrer) work, as all other sections show.
+  for (const [what, path, fields] of [['booking', `/${slug}`, { name: 'Fremde Seite', privacy: '1', slot_id: '1' }], ['login', '/admin/login', { username: USER, password: PASS }]]) {
+    const inputs = Object.entries(fields).map(([k, v]) => `<input name="${k}" value="${v}">`).join('');
+    const loaded = cdp.once('Page.loadEventFired');
+    await cdp.send('Page.navigate', { url: 'data:text/html,' + encodeURIComponent(`<form method="post" action="${BASE}${path}">${inputs}</form>`) });
+    await loaded;
+    await navigating(`document.forms[0].submit()`);
+    check(`${what} form posted from another site is refused`, await js(`location.href === ${JSON.stringify(BASE + path)}
+      && /^(Anfrage abgelehnt|Request refused)$/.test(document.querySelector('h1')?.textContent || '')`), await js(`location.href + ' ' + document.title`));
+  }
+
   section('Parents: errors and appearance');
   await js(`localStorage.setItem('${KEY}', JSON.stringify({ ${JSON.stringify(roundId)}: { u: '/b/${fake}', l: 'x' } }))`);
   await goto(`/${slug}`);
