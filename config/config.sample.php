@@ -72,7 +72,7 @@ return [
     // Log of the changes made by admins (Protokoll): entries are deleted after this many days
     'audit_log_days' => 90,
 
-    // Rate limits: [max. count, time window in seconds] per truncated IP (IPv4 /24, IPv6 /48).
+    // Rate limits: [max. count, time window in seconds] per truncated IP (IPv4 /24, IPv6 /48), unless noted.
     // Generous, because many parents may share a truncated IP (mobile network, school Wi-Fi).
     'rate_limits' => [
         'code' => [30, 900], // failed round code entries on the home page (per truncated IP)
@@ -81,6 +81,9 @@ return [
         'manage' => [300, 3600],    // requests to change links
         'confirm' => [2, 86400],    // confirmation mails sent from the appointment page, per booking (at most 24 hours)
         'login' => [5, 900],        // failed admin logins
+        'login_user' => [20, 3600], // failed logins per account from devices that never signed in to it
+        'login_device' => [20, 3600], // failed logins per known device (instead of login_user)
+        'login_notice' => [1, 86400], // e-mails to an account whose login_user limit was reached
         'reauth' => [5, 900],       // wrong passwords when confirming admin rights, e-mail changes, ending all sessions and changing the own password (per sign-in)
     ],
     'csrf_min_age_seconds' => 2,    // form can be submitted after N seconds at the earliest (bot brake)

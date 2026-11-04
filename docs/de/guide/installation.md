@@ -56,7 +56,9 @@ warnt die Übersicht die Admins.
 ## 3. Installieren
 
 Öffnen Sie `https://your-site/install.php`, geben Sie den Installationsschlüssel ein und legen Sie das
-Admin-Konto an (Benutzername, Passwort mit mindestens 12 Zeichen, E-Mail-Adresse). Der Installer legt
+Admin-Konto an (Benutzername, Passwort mit 12 Zeichen bis 72 Byte, das nicht leicht zu erraten ist,
+E-Mail-Adresse; es gelten dieselben [Passwortregeln]({{ '/de/guide/security/' | relative_url }}) wie für
+alle Konten). Der Installer legt
 die Tabellen an, kopiert die Vorlagen für Impressum und Datenschutzerklärung in die Datenbank, sperrt
 sich selbst und versucht, sich zu löschen. Löschen Sie `public/install.php` selbst, falls die Datei noch
 vorhanden ist.

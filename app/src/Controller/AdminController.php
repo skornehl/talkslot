@@ -24,6 +24,7 @@ use App\SlotGenerator;
 use App\Slug;
 use App\Time;
 use App\Translator;
+use App\TrustedDevice;
 use App\View;
 
 /**
@@ -1353,7 +1354,7 @@ final class AdminController
         } elseif ($this->emailTaken($data['email'], $id ?? 0)) {
             $errors[] = __('Für diese E-Mail-Adresse bzw. diesen Benutzernamen gibt es bereits ein Konto.');
         }
-        if (!preg_match('/^[A-Za-z0-9._@+-]{3,254}$/', $data['username'])) {
+        if (!Auth::validUsername($data['username'])) {
             $errors[] = __('Benutzername: 3–254 Zeichen, nur Buchstaben, Ziffern und . _ @ + -');
         } elseif (Db::value('SELECT id FROM users WHERE username = ? AND id <> ?', [$data['username'], $id ?? 0]) !== null) {
             $errors[] = __('Für diese E-Mail-Adresse bzw. diesen Benutzernamen gibt es bereits ein Konto.');
@@ -1466,12 +1467,16 @@ final class AdminController
             return;
         }
         $new = Http::postRaw('new_password');
-        $error = Auth::passwordPolicy($new) ?? ($new !== Http::postRaw('new_password2') ? __('Die Passwörter stimmen nicht überein.') : null);
+        $error = Auth::passwordPolicy($new, (string) $user['username'], (string) $user['email'])
+            ?? ($new !== Http::postRaw('new_password2') ? __('Die Passwörter stimmen nicht überein.') : null);
         if ($error !== null) {
             $this->inviteForm($token, [$error]);
             return;
         }
         AccountLinks::consume((int) $user['id'], $new);
+        // Whoever can use the link may sign in on this device even while strangers have used up the
+        // account's login limit ("forgot password" would not help against a lockout otherwise)
+        TrustedDevice::remember((int) $user['id']);
         Auth::startSession(true);
         $this->flash('success', __('Ihr Passwort ist gespeichert. Bitte melden Sie sich jetzt an.'));
         $_SESSION['login_user'] = $user['username']; // not in the URL (access logs)

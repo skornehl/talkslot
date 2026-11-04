@@ -12,7 +12,8 @@ This page explains the design decisions; it is not legal advice.
 |---|---|---|
 | Name and optional e-mail address of a booking | database | from 0:00 the day after the appointment, or immediately on cancellation |
 | Hash of the personal change link (and of the second link in the reminder mail) | database | with the booking |
-| Shortened, HMAC-hashed IP addresses | database (rate limiting) | after 24 hours at the latest |
+| Shortened, HMAC-hashed IP addresses; HMAC hashes of account IDs and known-device cookies with failed logins | database (rate limiting) | after 24 hours at the latest |
+| Known-device cookie of an admin or teacher account (random number, time, signature) | that person's browser | after 365 days, renewed at every sign-in |
 | Teacher accounts | database | by an admin; inactive accounts without rounds 15 months after the last login |
 | Summary mails to teachers (time and name, no e-mail addresses) | teacher's mailbox | the privacy policy promises at most 15 months |
 | Log of admin changes (who, when, what; no data of parents) | database | after 90 days (`audit_log_days`) |
@@ -50,7 +51,12 @@ ask how long they are kept and state it in the privacy policy.
   ago*, so admins do not see when colleagues work. Security mails about account changes name the account
   concerned and who made the change, never data of parents.
 - **No cookies on parent pages.** The language travels in the URL (`?lang=`), CSRF protection is
-  stateless. No cookie banner is needed. Only the admin area uses a session cookie, limited to `/admin`.
+  stateless. No cookie banner is needed. Only the admin area uses cookies: the session cookie, limited to
+  `/admin`, and, after signing in, a known-device cookie limited to `/admin/login`. It keeps strangers from
+  locking a teacher out of their own devices with wrong passwords (see
+  [Security]({{ '/guide/security/' | relative_url }})). Both are strictly necessary for the sign-in the
+  teacher asked for, so no consent is needed (§ 25 (2) no. 2 TDDDG); mention them in the information for
+  teachers.
   The browser language (`Accept-Language`, sent by every browser anyway) only decides whether a link to
   that language is shown at the top; the page never switches by itself, and nothing is stored.
 - **No third parties:** no CDNs, web fonts, analytics or external scripts. Translations of a round's title

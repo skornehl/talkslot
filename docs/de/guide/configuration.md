@@ -94,8 +94,8 @@ Auftragsverarbeiter nach Art. 28 DSGVO. Die Server stehen in Deutschland.*
 ## Rate-Limits {#rate-limits}
 
 `rate_limits` enthält `[Maximum, Zeitfenster in Sekunden]` pro gekürzter IP-Adresse (IPv4 /24,
-IPv6 /48). Die Werte sind bewusst großzügig: Viele Eltern teilen sich womöglich eine Adresse
-(Mobilfunknetze, Schul-WLAN).
+IPv6 /48), soweit nicht anders angegeben. Die Werte sind bewusst großzügig: Viele Eltern teilen sich
+womöglich eine Adresse (Mobilfunknetze, Schul-WLAN).
 
 | Schlüssel | Standard | Zählt |
 |---|---|---|
@@ -104,7 +104,10 @@ IPv6 /48). Die Werte sind bewusst großzügig: Viele Eltern teilen sich womögli
 | `booking` | 30 pro Stunde | erfolgreiche Buchungen |
 | `manage` | 300 pro Stunde | Aufrufe von Änderungslinks |
 | `confirm` | 2 pro 24 Stunden | Bestätigungs-E-Mails, die Eltern sich auf der Seite ihres Termins schicken, pro Buchung statt pro IP-Adresse (das Zeitfenster kann nicht länger als 24 Stunden sein) |
-| `login` | 5 pro 15 Min. | fehlgeschlagene Admin-Anmeldungen (zusätzlich 20 pro Benutzername und Stunde) |
+| `login` | 5 pro 15 Min. | fehlgeschlagene Admin-Anmeldungen |
+| `login_user` | 20 pro Stunde | fehlgeschlagene Anmeldungen **pro Konto** von Geräten, die sich dort noch nie angemeldet haben |
+| `login_device` | 20 pro Stunde | fehlgeschlagene Anmeldungen **pro bekanntem Gerät** (statt `login_user`) |
+| `login_notice` | 1 pro Tag | E-Mails an ein Konto, dessen Limit `login_user` erreicht wurde |
 | `reauth` | 5 pro 15 Min. | falsche Passwörter beim Bestätigen einer Änderung von Admin-Rechten oder E-Mail-Adressen, beim Beenden aller Sitzungen und beim Ändern des eigenen Passworts (ein Zähler pro Anmeldung, nicht pro IP-Adresse) |
 
 `csrf_min_age_seconds` (Standard 2) ist die Mindestzeit zwischen dem Laden und dem Absenden eines
