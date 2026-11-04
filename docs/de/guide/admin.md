@@ -1,6 +1,6 @@
 ---
 title: Anleitung für Admins
-description: Admin-Konten richten die Plattform ein, laden Lehrkräfte ein, sehen alle Runden und pflegen die Rechtstexte.
+description: Admin-Konten richten die Plattform ein, laden Lehrkräfte ein, sehen alle Runden, pflegen Vorlagen und die Rechtstexte.
 ---
 
 Das erste **Admin-Konto** wird bei der Installation angelegt; es kann weitere Konten zu Admins machen.
@@ -23,7 +23,8 @@ des Admin-Bereichs.
 4. **E-Mail-Versand prüfen:** *Texte → E-Mail-Versand* zeigt Versandweg und Absender. Machen Sie eine
    Testbuchung mit Ihrer eigenen E-Mail-Adresse und prüfen Sie, ob die Bestätigung ankommt (und nicht als
    Spam markiert wird).
-5. **Lehrkräfte einladen** und bei Bedarf weitere Admins (*Benutzer*).
+5. ***Vorlagen*** (optional): die üblichen Formate einmal anlegen, z. B. Ihren Elternsprechtag.
+6. **Lehrkräfte einladen** und bei Bedarf weitere Admins (*Benutzer*).
 
 ## Konten
 
@@ -57,6 +58,30 @@ durchgesetzt und ist durch Tests abgesichert.
 
 Wie Runden funktionieren, steht in der [Anleitung für Lehrkräfte]({{ '/de/guide/teachers/' | relative_url }}).
 
+## Vorlagen
+
+Unter *Vorlagen* legen Admins Formate an, die alle beim Anlegen einer Runde auswählen können, z. B.
+„Elternsprechtag ganzer Tag: 08:00–16:00, 15 Minuten, Mittagspause 12:00–13:00, ein Termin pro Person“.
+Eine Vorlage enthält Zeiten, Dauer, Pausen, Fristen, Mehrfachbuchungen, *Nur mit Rundencode*, die
+Erinnerung, Ort und Beschreibung. Im Formular für eine neue Runde trägt *Vorlage* → *Übernehmen* das ein;
+Titel und Datum kommen von Hand dazu, alles bleibt änderbar.
+
+*Als Vorlage speichern* auf der Seite einer Runde macht aus ihr eine Vorlage: mit den Zeiten und Pausen
+ihres ersten Tages und den Einstellungen der Runde. Wird eine Vorlage geändert oder gelöscht, bleiben die
+damit angelegten Runden unverändert.
+
+## Protokoll
+
+Das *Protokoll* zeigt die Änderungen durch Admin-Konten, die neuesten zuerst: wer welche Runde angelegt,
+bearbeitet, (de)aktiviert, dupliziert, einer anderen Lehrkraft gegeben oder gelöscht hat, wer Tage,
+Pausen, gesperrte Termine oder Buchungen geändert, Konten und Rollen angelegt, geändert oder gelöscht,
+Links verschickt und Vorlagen oder Rechtstexte bearbeitet hat. Bei mehreren Admins lässt sich so
+nachvollziehen, wer was getan hat.
+
+Was Lehrkräfte in ihren eigenen Runden tun, erfasst das Protokoll **nicht**, und es enthält nie Daten von
+Eltern: Eine Buchung erscheint nur mit Datum und Uhrzeit (z. B. „Buchung 12.11.2026 14:00 gelöscht“).
+Einträge werden nach 90 Tagen gelöscht (einstellbar, `audit_log_days`). Nur Admins sehen das Protokoll.
+
 ## Rechtstexte
 
 Unter *Texte* stehen *Impressum* und Datenschutzerklärung (*Datenschutz*) je Sprache. Sie
@@ -77,3 +102,9 @@ Unter *Mein Profil* legt jedes Konto fest, welche ***Zusammenfassungen per E-Mai
 es erhält: abends eine Übersicht über den nächsten Tag (standardmäßig ab 18:00 Uhr) und eine Übersicht nach
 dem Buchungsschluss eines Tages. Sie enthalten nur Uhrzeit und Name, keine E-Mail-Adressen der Eltern,
 dazu eine Kalenderdatei.
+
+Eltern mit E-Mail-Adresse bekommen am Vorabend ihres Termins eine **Erinnerung** (zur selben Uhrzeit,
+standardmäßig ab 18:00 Uhr) mit einem Link zum Absagen. Sie lässt sich pro Runde abschalten (*Eltern am
+Vorabend an ihren Termin erinnern*). Die Vorlage der Datenschutzerklärung nennt die Erinnerung als Zweck der
+E-Mail-Adresse; haben Sie Ihre Datenschutzerklärung bearbeitet, bittet ein Hinweis in der Übersicht, das
+zu ergänzen.

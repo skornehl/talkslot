@@ -1,6 +1,6 @@
 ---
 title: Admin guide
-description: Admin accounts set up the platform, invite teachers, see all rounds and maintain the legal texts.
+description: Admin accounts set up the platform, invite teachers, see all rounds, maintain templates and the legal texts.
 ---
 
 The first **admin account** is created during installation; it can make further accounts admins. Admins
@@ -23,7 +23,8 @@ brackets.
    remaining `[PLACEHOLDERS]`. Details in [Privacy and legal]({{ '/guide/privacy/' | relative_url }}).
 4. **Mail check:** *Texte → E-Mail-Versand* shows the transport and sender. Make a test booking with your
    own e-mail address and check that the confirmation arrives (and is not marked as spam).
-5. **Invite teachers** and, if you like, further admins (*Benutzer*).
+5. **Templates** (*Vorlagen*, optional): set up the usual formats once, e.g. your parent-teacher day.
+6. **Invite teachers** and, if you like, further admins (*Benutzer*).
 
 ## Accounts
 
@@ -53,6 +54,29 @@ rounds; this is enforced centrally and covered by tests.
 
 How rounds work is described in the [Teacher guide]({{ '/guide/teachers/' | relative_url }}).
 
+## Templates
+
+Under *Vorlagen* (templates) admins set up formats that everybody can pick when creating a round, e.g.
+"Elternsprechtag ganzer Tag: 08:00–16:00, 15 minutes, lunch break 12:00–13:00, one appointment per person".
+A template holds times, duration, breaks, deadlines, multiple bookings, *Nur mit Rundencode*, the reminder,
+location and description. In the new round form, *Vorlage* → *Übernehmen* fills these in; title and date
+are entered by hand and everything stays editable.
+
+*Als Vorlage speichern* (save as template) on a round page creates a template from it: the times and
+breaks of its first day and the settings of the round. Changing or deleting a template does not affect
+rounds created with it.
+
+## Log
+
+*Protokoll* (log) lists the changes made by admin accounts, newest first: who created, edited,
+(de)activated, duplicated, moved to another teacher or deleted which round, changed days, breaks, blocked
+slots or bookings, created, changed or deleted accounts and roles, sent links, and edited templates or
+legal texts. With several admins this makes it traceable who did what.
+
+The log does **not** record what teachers do in their own rounds, and it never contains data of parents:
+a booking appears only as date and time (e.g. "Buchung 12.11.2026 14:00 gelöscht"). Entries are deleted
+after 90 days (configurable, `audit_log_days`). Only admins can see the log.
+
 ## Legal texts
 
 *Texte* lists imprint (*Impressum*) and privacy policy (*Datenschutz*) per language. They are written in
@@ -71,3 +95,8 @@ you when a text is missing a placeholder or is outdated.
 Under *Mein Profil* every account chooses its **summary mails** (*Zusammenfassungen per E-Mail*): an
 overview of the next day in the evening (from 18:00 by default) and an overview after the booking
 deadline of a day. They contain time and name only, no e-mail addresses of parents, plus a calendar file.
+
+Parents who gave an e-mail address get a **reminder** the evening before their appointment (at the same
+time, from 18:00 by default), with a link to cancel. It can be turned off per round (*Eltern am Vorabend an
+ihren Termin erinnern*). The privacy policy template names the reminder as a purpose of the e-mail
+address; if you have edited your privacy policy, a hint on the dashboard asks you to add it.

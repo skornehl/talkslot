@@ -80,7 +80,8 @@ Auftragsverarbeiter nach Art. 28 DSGVO. Die Server stehen in Deutschland.*
 | `access_link_hours` | `48` | Gültigkeit von Einladungs- und Passwortlinks |
 | `cleanup_on_request` | `true` | Aufräumen auch bei Seitenaufrufen ausführen … |
 | `cleanup_interval_minutes` | `15` | … höchstens so oft |
-| `summary_evening_hour` | `18` | ab dieser Stunde erhalten Lehrkräfte die Zusammenfassung für den nächsten Tag |
+| `summary_evening_hour` | `18` | ab dieser Stunde erhalten Lehrkräfte die Zusammenfassung für den nächsten Tag und Eltern die Erinnerung |
+| `audit_log_days` | `90` | Einträge im *Protokoll* der Admin-Änderungen werden nach so vielen Tagen gelöscht |
 
 ## Rate-Limits {#rate-limits}
 

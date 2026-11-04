@@ -14,7 +14,7 @@ slots and others book one works: consultation hours, school enrolment talks, int
 
 ## Does it need a cron job?
 
-It is recommended, so that bookings are deleted and summary mails are sent on time. Without shell access,
+It is recommended, so that bookings are deleted and summary mails and reminders are sent on time. Without shell access,
 use the web cron (the included GitHub workflow calls it hourly). As a fallback, clean-up also runs on page
 views at most every 15 minutes.
 

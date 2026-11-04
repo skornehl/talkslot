@@ -11,10 +11,11 @@ TDDDG. Diese Seite erläutert die Designentscheidungen; sie ist keine Rechtsbera
 | Daten | Wo | Gelöscht |
 |---|---|---|
 | Name und optionale E-Mail-Adresse einer Buchung | Datenbank | ab 0:00 Uhr am Tag nach dem Termin, bei einer Absage sofort |
-| Hash des persönlichen Änderungslinks | Datenbank | mit der Buchung |
+| Hash des persönlichen Änderungslinks (und des zweiten Links in der Erinnerungsmail) | Datenbank | mit der Buchung |
 | Gekürzte, per HMAC gehashte IP-Adressen | Datenbank (Rate Limiting) | spätestens nach 24 Stunden |
 | Konten der Lehrkräfte | Datenbank | durch einen Admin; inaktive Konten ohne Runden 15 Monate nach der letzten Anmeldung |
 | Zusammenfassungen per E-Mail an Lehrkräfte (Uhrzeit und Name, keine E-Mail-Adressen) | Postfach der Lehrkraft | die Datenschutzerklärung sagt höchstens 15 Monate zu |
+| Protokoll der Änderungen durch Admins (wer, wann, was; keine Daten von Eltern) | Datenbank | nach 90 Tagen (`audit_log_days`) |
 
 TalkSlot führt **keine** eigenen Zugriffsprotokolle. Für die Logs des Webservers ist der Hoster
 zuständig; fragen Sie nach, wie lange sie aufbewahrt werden, und nennen Sie die Dauer in der
@@ -23,6 +24,13 @@ Datenschutzerklärung.
 ## Designentscheidungen
 
 - **Datenminimierung:** ein frei eingegebener Name und eine optionale E-Mail-Adresse, sonst nichts.
+- **E-Mail-Adresse nur für den Termin:** Bestätigung, Änderung, Absage und, wenn die Lehrkraft sie für die
+  Runde vorgesehen hat, eine Erinnerung am Vorabend. Die Vorlage der Datenschutzerklärung nennt all das.
+- **Protokoll ohne Kontrolle der Lehrkräfte:** Erfasst werden nur Änderungen durch Admin-Konten, damit bei
+  mehreren Admins nachvollziehbar ist, wer was getan hat. Was Lehrkräfte in ihren eigenen Runden tun,
+  wird nicht aufgezeichnet, Buchungen erscheinen nur mit Datum und Uhrzeit. Je nach Bundesland kann ein
+  Protokoll von Handlungen der Beschäftigten trotzdem den Personalrat betreffen; die Aufbewahrung lässt
+  sich mit `audit_log_days` verkürzen.
 - **Keine Cookies auf den Elternseiten.** Die Sprache steht in der URL (`?lang=`), der CSRF-Schutz
   arbeitet zustandslos. Ein Cookie-Banner ist nicht nötig. Nur der Admin-Bereich verwendet ein
   Sitzungs-Cookie, beschränkt auf `/admin`.

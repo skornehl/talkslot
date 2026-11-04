@@ -68,8 +68,10 @@ so weit wie nötig zurück und lassen Sie anschließend die Bereinigung laufen.
 | Terminrunden | nach ihrem letzten Tag deaktiviert, standardmäßig 24 h später gelöscht (pro Runde einstellbar, leer = nie) |
 | Rate-Limit-Daten | spätestens nach 24 Stunden |
 | Inaktive Konten von Lehrkräften ohne Runden | 15 Monate nach dem letzten Login |
+| *Protokoll* der Admin-Änderungen | nach 90 Tagen (`audit_log_days`) |
 
-Die Bereinigung läuft im Cronjob und ersatzweise bei Seitenaufrufen, höchstens alle 15 Minuten.
+Die Bereinigung läuft im Cronjob und ersatzweise bei Seitenaufrufen, höchstens alle 15 Minuten. Dieselben
+Läufe verschicken die Zusammenfassungen an Lehrkräfte und die Erinnerungen an Eltern.
 
 ## Fehlersuche
 
