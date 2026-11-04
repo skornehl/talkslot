@@ -77,11 +77,7 @@ final class AccountSecurity
     /** Password changed (profile) or set (invitation/password link): to the account holder. */
     public static function passwordChanged(array $user): void
     {
-        self::send($user, static fn (): array => [__('Ihr Passwort wurde geändert'), [
-            __('für Ihr Konto „{username}“ bei {app} ({url}) wurde soeben ein neues Passwort festgelegt. Andere Anmeldungen des Kontos wurden dabei beendet.', self::vars(['username' => $user['username']])),
-            '',
-            __('Waren Sie das nicht, legen Sie bitte über „Passwort vergessen?“ auf der Anmeldeseite ein neues Passwort fest und wenden Sie sich umgehend an einen Admin.'),
-        ]]);
+        self::send($user, static fn (): array => self::passwordChangedText($user));
     }
 
     /**
@@ -90,43 +86,15 @@ final class AccountSecurity
      */
     public static function contactChanged(array $before, array $after, array $actor): void
     {
-        $emailChanged = mb_strtolower((string) $after['email']) !== mb_strtolower((string) $before['email']);
-        $usernameChanged = $after['username'] !== $before['username'];
-        if (!$emailChanged && !$usernameChanged) {
-            return;
+        if (mb_strtolower((string) $after['email']) !== mb_strtolower((string) $before['email']) || $after['username'] !== $before['username']) {
+            self::send($before, static fn (): array => self::contactChangedText($before, $after, $actor));
         }
-        $self = (int) $actor['id'] === (int) $before['id'];
-        self::send($before, static function () use ($after, $actor, $self, $emailChanged, $usernameChanged): array {
-            $vars = self::vars(['email' => (string) $after['email'], 'username' => $after['username'], 'actor' => self::name($actor)]);
-            if ($self && !$usernameChanged) {
-                // Own e-mail address (profile)
-                $lines = [(string) $after['email'] !== ''
-                    ? __('für Ihr Konto bei {app} ({url}) wurde die E-Mail-Adresse geändert auf {email}.', $vars)
-                    : __('für Ihr Konto bei {app} ({url}) wurde die E-Mail-Adresse geändert (keine Adresse mehr hinterlegt).', $vars)];
-            } else {
-                $lines = array_values(array_filter([
-                    $self
-                        ? __('für Ihr Konto bei {app} ({url}) wurde Folgendes geändert:', $vars)
-                        : __('für Ihr Konto bei {app} ({url}) hat {actor} (Admin) Folgendes geändert:', $vars),
-                    $emailChanged ? __('– E-Mail-Adresse jetzt: {email}', $vars) : '',
-                    $usernameChanged ? __('– Benutzername jetzt: {username}', $vars) : '',
-                ]));
-            }
-            if ($emailChanged) {
-                $lines[] = __('Links zum Festlegen eines neuen Passworts gehen ab jetzt an die neue Adresse.');
-            }
-            $lines[] = '';
-            $lines[] = $self
-                ? __('Waren Sie das nicht, wenden Sie sich bitte umgehend an einen Admin.')
-                : __('War das nicht abgesprochen, wenden Sie sich bitte umgehend an einen anderen Admin.');
-            return [$emailChanged ? __('Ihre E-Mail-Adresse wurde geändert') : __('Ihr Benutzername wurde geändert'), $lines];
-        });
     }
 
     /**
      * Admin rights changed ($event, see constants) or all sessions ended: to all active admins (the
      * acting one too – its session may be the one taken over) and to the account concerned, unless it
-     * is $account of an invitation (it gets the invitation instead).
+     * is $account of an invitation (it gets the invitation instead). One mail per address.
      */
     public static function adminChange(string $event, ?array $account, array $actor): void
     {
@@ -136,36 +104,79 @@ final class AccountSecurity
         } elseif ($account !== null) {
             $recipients[] = $account;
         }
-        $seen = [];
+        $byAddress = [];
         foreach ($recipients as $recipient) {
-            $key = mb_strtolower((string) $recipient['email']);
-            if (isset($seen[$key])) {
-                continue;
-            }
-            $seen[$key] = true;
-            self::send($recipient, static function () use ($event, $account, $actor): array {
-                $vars = self::vars($account ? ['account' => self::name($account), 'username' => $account['username']] : []);
-                $what = match ($event) {
-                    self::INVITED => __('„{account}“ ({username}) wurde als Admin eingeladen.', $vars),
-                    self::GRANTED => __('„{account}“ ({username}) hat Admin-Rechte erhalten.', $vars),
-                    self::REVOKED => __('„{account}“ ({username}) hat keine Admin-Rechte mehr.', $vars),
-                    self::DEACTIVATED => __('Das Admin-Konto „{account}“ ({username}) wurde deaktiviert.', $vars),
-                    self::REACTIVATED => __('Das Admin-Konto „{account}“ ({username}) wurde wieder aktiviert.', $vars),
-                    self::DELETED => __('Das Admin-Konto „{account}“ ({username}) wurde gelöscht.', $vars),
-                    default => __('Alle Sitzungen wurden beendet: Alle Konten müssen sich neu anmelden.'),
-                };
-                return [__('Sicherheitshinweis: Änderung im Verwaltungsbereich von {app}', $vars), [
-                    __('im Verwaltungsbereich von {app} ({url}) wurde gerade Folgendes geändert:', $vars),
-                    '',
-                    $what,
-                    __('Durch: {actor}', ['actor' => self::name($actor)]),
-                    '',
-                    $account
-                        ? __('Diese Nachricht geht an alle Admins und an das betroffene Konto. War das nicht abgesprochen, prüfen Sie bitte unter „Benutzer“ die Konten und unter „Protokoll“ die letzten Änderungen. Bei Verdacht auf Missbrauch beenden Sie unter „Benutzer“ alle Sitzungen und ändern Sie die Passwörter.')
-                        : __('Diese Nachricht geht an alle Admins. War das nicht abgesprochen, prüfen Sie bitte unter „Protokoll“ die letzten Änderungen und ändern Sie Ihr Passwort.'),
-                ]];
-            });
+            $byAddress[mb_strtolower((string) $recipient['email'])] ??= $recipient;
         }
+        foreach ($byAddress as $recipient) {
+            self::send($recipient, static fn (): array => self::adminChangeText($event, $account, $actor));
+        }
+    }
+
+    /** @return array{0:string,1:list<string>} [subject, lines] */
+    private static function passwordChangedText(array $user): array
+    {
+        return [__('Ihr Passwort wurde geändert'), [
+            __('für Ihr Konto „{username}“ bei {app} ({url}) wurde soeben ein neues Passwort festgelegt. Andere Anmeldungen des Kontos wurden dabei beendet.', self::vars(['username' => $user['username']])),
+            '',
+            __('Waren Sie das nicht, legen Sie bitte über „Passwort vergessen?“ auf der Anmeldeseite ein neues Passwort fest und wenden Sie sich umgehend an einen Admin.'),
+        ]];
+    }
+
+    /** @return array{0:string,1:list<string>} [subject, lines] */
+    private static function contactChangedText(array $before, array $after, array $actor): array
+    {
+        $emailChanged = mb_strtolower((string) $after['email']) !== mb_strtolower((string) $before['email']);
+        $usernameChanged = $after['username'] !== $before['username'];
+        $self = (int) $actor['id'] === (int) $before['id'];
+        $vars = self::vars(['email' => (string) $after['email'], 'username' => $after['username'], 'actor' => self::name($actor)]);
+        if ($self && !$usernameChanged) {
+            // Own e-mail address (profile)
+            $lines = [(string) $after['email'] !== ''
+                ? __('für Ihr Konto bei {app} ({url}) wurde die E-Mail-Adresse geändert auf {email}.', $vars)
+                : __('für Ihr Konto bei {app} ({url}) wurde die E-Mail-Adresse geändert (keine Adresse mehr hinterlegt).', $vars)];
+        } else {
+            $lines = array_values(array_filter([
+                $self
+                    ? __('für Ihr Konto bei {app} ({url}) wurde Folgendes geändert:', $vars)
+                    : __('für Ihr Konto bei {app} ({url}) hat {actor} (Admin) Folgendes geändert:', $vars),
+                $emailChanged ? __('– E-Mail-Adresse jetzt: {email}', $vars) : '',
+                $usernameChanged ? __('– Benutzername jetzt: {username}', $vars) : '',
+            ]));
+        }
+        if ($emailChanged) {
+            $lines[] = __('Links zum Festlegen eines neuen Passworts gehen ab jetzt an die neue Adresse.');
+        }
+        $lines[] = '';
+        $lines[] = $self
+            ? __('Waren Sie das nicht, wenden Sie sich bitte umgehend an einen Admin.')
+            : __('War das nicht abgesprochen, wenden Sie sich bitte umgehend an einen anderen Admin.');
+        return [$emailChanged ? __('Ihre E-Mail-Adresse wurde geändert') : __('Ihr Benutzername wurde geändert'), $lines];
+    }
+
+    /** @return array{0:string,1:list<string>} [subject, lines] */
+    private static function adminChangeText(string $event, ?array $account, array $actor): array
+    {
+        $vars = self::vars($account ? ['account' => self::name($account), 'username' => $account['username']] : []);
+        $what = match ($event) {
+            self::INVITED => __('„{account}“ ({username}) wurde als Admin eingeladen.', $vars),
+            self::GRANTED => __('„{account}“ ({username}) hat Admin-Rechte erhalten.', $vars),
+            self::REVOKED => __('„{account}“ ({username}) hat keine Admin-Rechte mehr.', $vars),
+            self::DEACTIVATED => __('Das Admin-Konto „{account}“ ({username}) wurde deaktiviert.', $vars),
+            self::REACTIVATED => __('Das Admin-Konto „{account}“ ({username}) wurde wieder aktiviert.', $vars),
+            self::DELETED => __('Das Admin-Konto „{account}“ ({username}) wurde gelöscht.', $vars),
+            default => __('Alle Sitzungen wurden beendet: Alle Konten müssen sich neu anmelden.'),
+        };
+        return [__('Sicherheitshinweis: Änderung im Verwaltungsbereich von {app}', $vars), [
+            __('im Verwaltungsbereich von {app} ({url}) wurde gerade Folgendes geändert:', $vars),
+            '',
+            $what,
+            __('Durch: {actor}', ['actor' => self::name($actor)]),
+            '',
+            $account
+                ? __('Diese Nachricht geht an alle Admins und an das betroffene Konto. War das nicht abgesprochen, prüfen Sie bitte unter „Benutzer“ die Konten und unter „Protokoll“ die letzten Änderungen. Bei Verdacht auf Missbrauch beenden Sie unter „Benutzer“ alle Sitzungen und ändern Sie die Passwörter.')
+                : __('Diese Nachricht geht an alle Admins. War das nicht abgesprochen, prüfen Sie bitte unter „Protokoll“ die letzten Änderungen und ändern Sie Ihr Passwort.'),
+        ]];
     }
 
     /** Sends to $user (if it has a valid address) in its language; $content returns [subject, lines]. */

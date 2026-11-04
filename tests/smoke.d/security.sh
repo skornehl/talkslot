@@ -65,14 +65,27 @@ curl -s -o /dev/null -c "$JZ" -b "$JZ" --data-urlencode "csrf=$(curl -s -c "$JZ"
 AS_LOGIN "$JZ" "as-admin-$AS@example.org" Sicher-Passwort-123
 # If the mail cannot be sent, the admin does not see the link either (it would open the account to them).
 # Sending fails here because the sender address is missing in the configuration of this one request.
-LF=$($DC exec -T app php -r 'require "/srv/app/app/bootstrap.php";
-  $c = require "/srv/app/config/config.php"; $c["mail"]["from_address"] = ""; App\Config::load($c);
-  session_save_path(sys_get_temp_dir()); session_start();
-  $u = App\Db::one("SELECT * FROM users WHERE id = ?", [(int) $argv[1]]);
-  $_SESSION = ["uid" => (int) $u["id"], "epoch" => (int) $u["session_epoch"], "global_epoch" => (int) App\Settings::get("global_session_epoch", "0"), "started" => time(), "last" => time(), "csrf" => "t"];
-  $_POST = ["csrf" => "t"];
-  register_shutdown_function(static function () { echo json_encode($_SESSION["flash"] ?? [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); session_destroy(); });
-  (new App\Controller\AdminController())->dispatch("/users/" . (int) $argv[2] . "/reset-password", "POST");' "$AID" "$UT" 2>&1)
+# (The code comes on standard input, not with -r, so that coverage measurement includes it.)
+LF=$($DC exec -T app php -- /srv/app "$AID" "$UT" 2>&1 <<'PHP'
+<?php
+[, $root, $admin, $teacher] = $argv;
+require $root . '/app/bootstrap.php';
+$c = require $root . '/config/config.php';
+$c['mail']['from_address'] = '';
+App\Config::load($c);
+session_save_path(sys_get_temp_dir());
+session_start();
+$u = App\Db::one('SELECT * FROM users WHERE id = ?', [(int) $admin]);
+$_SESSION = ['uid' => (int) $u['id'], 'epoch' => (int) $u['session_epoch'], 'global_epoch' => (int) App\Settings::get('global_session_epoch', '0'),
+    'started' => time(), 'last' => time(), 'csrf' => 't'];
+$_POST = ['csrf' => 't'];
+register_shutdown_function(static function (): void {
+    echo json_encode($_SESSION['flash'] ?? [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    session_destroy();
+});
+(new App\Controller\AdminController())->dispatch('/users/' . (int) $teacher . '/reset-password', 'POST');
+PHP
+)
 check "mail not sent: a hint, but no password link on the screen" 'echo "$LF" | has "konnte nicht an as-neu-$AS@example.org gesendet werden. Bitte prüfen Sie den Mailversand" && ! echo "$LF" | grep -q "/admin/invite/"'
 
 # Two admins demote (or delete) each other at the same moment: the rows of the active admins are locked,
