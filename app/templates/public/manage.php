@@ -11,14 +11,9 @@ $manageUrl = url('/b/' . $token);
 $link = abs_url('/b/' . $token);
 $open = (string) ($open ?? '');
 $doneText = ['booked' => 'manage.booked', 'changed' => 'manage.changed', 'sent' => 'manage.mail.sent'][$done] ?? null;
-// Remember-me entry in the browser: link, label and date of the appointment (removed after that day)
-$entry = 'data-remember-url="' . e($manageUrl) . '" data-remember-label="' . e($label) . '" data-remember-date="' . e($booking['day_date']) . '"';
 ?>
-<?php if ($remember): ?>
-  <div hidden data-remember-round="<?= (int) $booking['round_id'] ?>" <?= $entry ?>></div>
-<?php else: ?>
-  <div hidden data-update-round="<?= (int) $booking['round_id'] ?>" <?= $entry ?>></div>
-<?php endif; ?>
+<?php /* Remember-me entry in the browser: created after booking (with consent), otherwise only updated; link, label and date (removed after that day) */ ?>
+<div hidden <?= $remember ? 'data-remember-round' : 'data-update-round' ?>="<?= (int) $booking['round_id'] ?>" data-remember-url="<?= e($manageUrl) ?>" data-remember-label="<?= e($label) ?>" data-remember-date="<?= e($booking['day_date']) ?>"></div>
 
 <h1><?= e(t('manage.title')) ?></h1>
 
