@@ -74,14 +74,14 @@ $action = $round ? url('/admin/round/' . (int) $round['id'] . '/edit') : url('/a
     <p class="hint" id="bl-hint">Dieselbe Person = gleicher Name und, wenn angegeben, gleiche E-Mail-Adresse; ohne E-Mail zählt nur der Name. Geschwister buchen mit dem Namen des jeweiligen Kindes. Ihre eigenen Einträge sind nicht begrenzt.</p>
   </div>
 
+  <p class="hint" id="cr-hint">Ist das an, sieht wer nur den Link hat noch keine Termine: Er muss zusätzlich den Rundencode eingeben (steht im Einladungstext). Wer den Code auf der Startseite eingibt, ist direkt drin. Bestehende Buchungen bleiben über ihren persönlichen Link erreichbar.</p>
+
   <input type="hidden" name="remind_parents_field" value="1">
   <div class="check">
     <input type="checkbox" id="remind_parents" name="remind_parents" value="1"<?= !empty($data['remind_parents']) ? ' checked' : '' ?> aria-describedby="rp-hint">
     <label for="remind_parents">Eltern am Vorabend an ihren Termin erinnern</label>
   </div>
   <p class="hint" id="rp-hint">Per E-Mail, nur an Eltern, die bei der Buchung eine Adresse angegeben haben, mit dem Link zum Absagen. Wer erst am selben Tag gebucht hat, bekommt keine Erinnerung.</p>
-
-  <p class="hint" id="cr-hint">Ist das an, sieht wer nur den Link hat noch keine Termine: Er muss zusätzlich den Rundencode eingeben (steht im Einladungstext). Wer den Code auf der Startseite eingibt, ist direkt drin. Bestehende Buchungen bleiben über ihren persönlichen Link erreichbar.</p>
 
   <?php if (!$round): ?>
     <?php require __DIR__ . '/_day_fields.php'; ?>
