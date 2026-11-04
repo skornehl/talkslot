@@ -52,13 +52,14 @@ check "delete round: number of bookings, parents NOT notified" 'echo "$PG" | has
 check "edit day: notice with the number of bookings, location hint" 'P=$(curl -s -b "$J" "$B/admin/day/${PDAYS[0]}/edit"); echo "$P" | has "An diesem Tag sind 2 Termin(e) gebucht. Die Eltern werden über Änderungen an Datum, Zeiten oder Ort NICHT automatisch benachrichtigt" && echo "$P" | has "Nur ausfüllen, wenn der Tag nicht am Ort der Runde stattfindet. Bereits gebuchte Eltern werden bei einer Änderung NICHT automatisch benachrichtigt."'
 check "edit round: location hint about booked parents (not for a new round)" 'curl -s -b "$J" "$B/admin/round/$RN/edit" | has "Bereits gebuchte Eltern werden bei einer Änderung NICHT automatisch benachrichtigt." && ! curl -s -b "$J" "$B/admin/round/new" | has "Bereits gebuchte Eltern"'
 pday() { curl -s -L -b "$J" -d "csrf=$T&day_date=$2&start_time=${4:-14:00}&end_time=15:00&slot_minutes=15" --data-urlencode "location=$3" "$B/admin/day/$1/edit"; }
-check "day saved unchanged: no message about parents" 'R=$(pday "${PDAYS[0]}" "$PD1" ""); echo "$R" | has "Tag gespeichert." && ! echo "$R" | has "NICHT automatisch"'
-check "day gets the location of the round as its own: same place, no message" '! pday "${PDAYS[0]}" "$PD1" "Raum 1" | has "NICHT automatisch"'
+# The round page shows the delete dialogs ("werden NICHT …"); the message after saving says "wurden NICHT …"
+check "day saved unchanged: no message about parents" 'R=$(pday "${PDAYS[0]}" "$PD1" ""); echo "$R" | has "Tag gespeichert." && ! echo "$R" | has "wurden NICHT automatisch"'
+check "day gets the location of the round as its own: same place, no message" 'R=$(pday "${PDAYS[0]}" "$PD1" "Raum 1"); echo "$R" | has "Tag gespeichert." && ! echo "$R" | has "wurden NICHT automatisch"'
 check "new location of a day: parents of its bookings NOT notified" 'pday "${PDAYS[0]}" "$PD1" "Raum 2" | has "Die Eltern von 2 Buchung(en) wurden NICHT automatisch benachrichtigt – bitte selbst informieren."'
 check "new date of a day: parents NOT notified" 'pday "${PDAYS[1]}" "$PD3" "" | has "Die Eltern von 1 Buchung(en) wurden NICHT automatisch benachrichtigt"'
 pround() { curl -s -L -b "$J" --data-urlencode "csrf=$T" -d "title=Hinweistest&booking_deadline_hours=0&cancel_deadline_hours=0" --data-urlencode "location=$1" "$B/admin/round/$RN/edit"; }
 check "new location of the round: only bookings on days without their own location count" 'pround "Aula" | has "Die Eltern von 1 Buchung(en) wurden NICHT automatisch benachrichtigt"'
-check "round saved with the same location: no message" 'R=$(pround "Aula"); echo "$R" | has "Runde gespeichert." && ! echo "$R" | has "NICHT automatisch"'
+check "round saved with the same location: no message" 'R=$(pround "Aula"); echo "$R" | has "Runde gespeichert." && ! echo "$R" | has "wurden NICHT automatisch"'
 check "conflict after a change: rebooking does not inform parents by itself" 'pday "${PDAYS[1]}" "$PD3" "" 14:30 | has "als Konflikt markiert. Bitte umbuchen oder löschen. Die Eltern werden dabei NICHT automatisch benachrichtigt: Beim Umbuchen „Änderung per E-Mail mitteilen“ angehakt lassen" && curl -s -b "$J" "$B/admin/round/$RN" | has "Bitte umbuchen oder löschen. Die Eltern werden dabei NICHT automatisch benachrichtigt"'
 
 # After deleting: message with the name (the dialog needs JavaScript)
