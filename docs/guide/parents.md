@@ -24,7 +24,7 @@ You received a link or a **round code** from your child's teacher. You do not ne
 ## Change or cancel
 
 After booking you see your **personal link**. It is the only key to your appointment: with it you can move
-the appointment to another free slot or cancel it, until the deadline set by the teacher. Keep it safe, the
+the appointment to another free slot or cancel it, until the deadline set by the teacher. Keep it safe; the
 page helps you with that:
 
 - **Copy link** puts it on the clipboard, for example to paste it into your notes.

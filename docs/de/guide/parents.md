@@ -27,7 +27,7 @@ Benutzerkonto brauchen Sie nicht.
 
 Nach der Buchung sehen Sie **Ihren persönlichen Link**. Er ist der einzige Schlüssel zu Ihrem Termin: Damit
 können Sie den Termin auf einen anderen freien Termin verschieben oder absagen – bis zu der Frist, die die
-Lehrkraft festgelegt hat. Bewahren Sie ihn gut auf, die Seite hilft dabei:
+Lehrkraft festgelegt hat. Bewahren Sie ihn gut auf; die Seite hilft dabei:
 
 - **Link kopieren** legt ihn in die Zwischenablage, zum Beispiel für Ihre Notizen.
 - **In Kalender eintragen** lädt den Termin als Kalenderdatei herunter. Der persönliche Link steht in der
