@@ -15,8 +15,12 @@ final class App
         Http::sendSecurityHeaders();
         header('Content-Type: text/html; charset=utf-8');
 
+        $path = Http::path();
+        // The web cron and the health check migrate only after checking their key and report a failed
+        // migration instead of swallowing it; neither needs the clean-up fallback (the cron runs it in full)
+        $probe = $path === '/cron' || $path === '/health';
         try {
-            if (Installer::isInstalled()) {
+            if (!$probe && Installer::isInstalled()) {
                 Migrations::run();
                 Cleanup::maybeRun();
             }
@@ -24,7 +28,6 @@ final class App
             Alert::exception($e, 'Migration/Bereinigung'); // must not block the page
         }
 
-        $path = Http::path();
         $admin = $path === '/admin' || str_starts_with($path, '/admin/');
         // Form posts from other sites are refused before anything is processed (login CSRF; a second
         // layer next to the CSRF tokens)
@@ -34,6 +37,10 @@ final class App
         }
         if ($path === '/cron') {
             self::webCron();
+            return;
+        }
+        if ($path === '/health') {
+            self::health();
             return;
         }
         if ($admin) {
@@ -83,11 +90,7 @@ final class App
      */
     private static function webCron(): void
     {
-        $given = (string) ($_SERVER['HTTP_X_CRON_TOKEN'] ?? '');
-        if (Http::method() !== 'POST' || strlen((string) Config::get('secret', '')) < 32 || !hash_equals(self::cronToken(), $given)) {
-            http_response_code(404);
-            I18n::init(null);
-            View::render('public/notfound', ['title' => t('notfound.title'), 'text' => t('notfound.text')]);
+        if (!self::keyGiven((string) ($_SERVER['HTTP_X_CRON_TOKEN'] ?? ''), self::cronToken())) {
             return;
         }
         header('Content-Type: application/json; charset=utf-8');
@@ -97,5 +100,36 @@ final class App
         }
         Migrations::run();
         echo json_encode(['status' => 'ok'] + Cleanup::run() + Summaries::run() + Reminders::run());
+    }
+
+    /**
+     * Health check for the deployment (bin/deploy.sh): POST /health with header "X-Health-Token" (App\Health).
+     * Response: only a status word, 200 if the version works with the database, otherwise 503.
+     */
+    private static function health(): void
+    {
+        if (!self::keyGiven((string) ($_SERVER['HTTP_X_HEALTH_TOKEN'] ?? ''), Health::token())) {
+            return;
+        }
+        [$code, $status] = Health::check();
+        http_response_code($code);
+        header('Content-Type: application/json; charset=utf-8');
+        header('Cache-Control: no-store');
+        if ($status === 'schema_outdated') {
+            header('Retry-After: 30'); // another request is still migrating
+        }
+        echo json_encode(['status' => $status]);
+    }
+
+    /** POST with the right key; otherwise a plain 404 page (the endpoint does not reveal itself). */
+    private static function keyGiven(#[\SensitiveParameter] string $given, #[\SensitiveParameter] string $expected): bool
+    {
+        if (Http::method() === 'POST' && strlen((string) Config::get('secret', '')) >= 32 && hash_equals($expected, $given)) {
+            return true;
+        }
+        http_response_code(404);
+        I18n::init(null);
+        View::render('public/notfound', ['title' => t('notfound.title'), 'text' => t('notfound.text')]);
+        return false;
     }
 }

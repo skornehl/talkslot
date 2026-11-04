@@ -15,7 +15,8 @@
 #   bin/deploy.sh list                   existing versions, the active one marked with *
 #
 # Environment: FTP_URL (e.g. ftp://ftp.example.org), APP_DIR, WEB_DIR (relative to the FTP root;
-# APP_DIR outside the web root), FTP_USER and LFTP_PASSWORD, BASE_URL (for the check), KEEP (versions kept, default 5),
+# APP_DIR outside the web root), FTP_USER and LFTP_PASSWORD, BASE_URL (for the check), APP_SECRET (optional:
+# with it the check also asks the health check about database and migrations; needs openssl), KEEP (versions kept, default 5),
 # BUILD_DIR (default build), CONFIG_MODE (permissions of config.php after the upload, default 600;
 # 640 if PHP reads it through the group, keep = leave them to the server; never readable for others).
 # Server layout: README, section "Deployment".
@@ -39,6 +40,8 @@ for v in "$FTP_URL" "$APP_DIR" "$WEB_DIR" "$BUILD_DIR"; do [[ $v =~ $SAFE_RX ]] 
 # deliberate exception, the admin area then warns if needed)
 [[ $CONFIG_MODE =~ ^(0?[4-7][0-7]0|keep)$ ]] || die "CONFIG_MODE must be 600, 640 (owner may read, others may not) or keep"
 FTP_USER=$(printf '%s' "${FTP_USER:-}" | tr -d '\r\n')
+# For the health check (like build-config.php: without line breaks and surrounding spaces)
+SECRET=$(printf '%s' "${APP_SECRET:-}" | tr -d '\r\n' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
 [[ $FTP_USER != *"'"* ]] || die "Invalid FTP user name"
 TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT
@@ -90,21 +93,70 @@ set_current() {
   put_atomic "$TMP/pointer" "$APP_DIR/current"
 }
 
-# After switching, checks that the site responds, really serves the new version
-# (asset path in the HTML) and that its CSS is reachable
+# Health check of the active version (POST /health, App\Health): database reachable, MariaDB in the minimum
+# version, every migration applied. The key is derived from APP_SECRET like the web cron's and sent in a
+# header (not in the URL, so it never reaches an access log; read by curl from a file, so it is not on its
+# command line either). Prints the status word, or http_<code> (404: this version has no health check, or
+# its config.php has another APP_SECRET).
+health() {
+  local base=$1 code
+  printf 'X-Health-Token: %s\n' "$(printf health | openssl dgst -sha256 -hmac "$SECRET" | sed 's/.*= //')" > "$TMP/health.h"
+  code=$(curl -sS -m 60 -o "$TMP/health" -w '%{http_code}' -d '' -H @"$TMP/health.h" "$base/health") || code=000
+  rm -f "$TMP/health.h"
+  case "$code" in
+    200 | 503) sed -n 's/^{"status":"\([a-z_]*\)"}$/\1/p' "$TMP/health" | grep . || echo "http_$code" ;;
+    *) echo "http_$code" ;;
+  esac
+}
+
+# What a failed health check means, for the log of the run
+health_hint() {
+  case "$1" in
+    db_unreachable) echo "the version cannot connect to the database (check DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS)" ;;
+    db_unsupported) echo "the database is not MariaDB 10.6 or newer (MySQL is not supported)" ;;
+    migration_failed) echo "a database migration failed (details in the alert mail and in app/var/php-error.log)" ;;
+    schema_outdated) echo "the database migrations did not finish during the check (another request may still be running them)" ;;
+    http_404) echo "the new version does not answer the health check: is APP_SECRET the one its config.php was built with?" ;;
+    *) echo "unexpected answer of the health check ($1)" ;;
+  esac
+}
+
+# After switching, checks that the site responds, really serves the new version (asset path in the HTML),
+# that its CSS is reachable and, with APP_SECRET, that it works with the database (health check).
+# strict: the version must have the health check (activate: it was built from this code). Otherwise
+# (switch) an older version without it, or one with an older APP_SECRET, gets the page checks only.
 check() {
-  local name=$1 base=${BASE_URL:-} html i
+  local name=$1 strict=${2:-} base=${BASE_URL:-} html i
+  CHECK_STATUS='' # empty: the pages failed; otherwise the answer of the health check
   base=${base%/}
   if [ -z "$base" ]; then echo "::warning::BASE_URL missing – check skipped"; return 0; fi
+  if [ -z "$SECRET" ]; then
+    echo "::warning::APP_SECRET missing – database and migrations are not checked, only the pages"
+  elif ! command -v openssl > /dev/null; then
+    echo "::warning::openssl missing – database and migrations are not checked, only the pages"; SECRET=''
+  fi
   for i in 1 2 3 4 5 6; do
     if html=$(curl -fsS -m 30 "$base/admin/login") && grep -qF "/v/$name/css/app.css" <<< "$html" \
       && curl -fsS -m 30 -o /dev/null "$base/v/$name/css/app.css" \
       && curl -fsS -m 30 -o /dev/null "$base/"; then
-      echo "Check ok: $base serves $name"
-      return 0
+      CHECK_STATUS=ok
+      [ -z "$SECRET" ] || CHECK_STATUS=$(health "$base")
+      case "$CHECK_STATUS" in
+        ok | not_installed)
+          echo "Check ok: $base serves $name$([ -z "$SECRET" ] || echo " (database: $CHECK_STATUS)")"
+          return 0 ;;
+        http_404)
+          if [ -z "$strict" ]; then
+            echo "::warning::$name has no health check (older version) or another APP_SECRET – only the pages were checked"
+            echo "Check ok: $base serves $name"
+            return 0
+          fi
+          break ;; # the same answer on every try
+      esac
     fi
     sleep 5
   done
+  echo "::error::Check of $name failed: $(if [ -n "$CHECK_STATUS" ]; then health_hint "$CHECK_STATUS"; else echo "login page, start page or CSS of this version not served"; fi)"
   return 1
 }
 
@@ -193,9 +245,9 @@ case "$cmd" in
     # (rarely change; on the first deployment index.php already needs app_root.php)
     put_atomic "$BUILD_DIR/web/app_root.php" "$WEB_DIR/app_root.php"
     ftp "mirror -R --no-perms --verbose=1 -x '^v/' -x '^app_root\\.php\$' $BUILD_DIR/web $WEB_DIR"
-    if ! check "$name"; then
+    if ! check "$name" strict; then
       revert "$prev" "$name"
-      [ "$CONFIG_MODE" = keep ] || echo "If the new version failed with HTTP 500, PHP may run as a different user than FTP and cannot read config.php with permissions $CONFIG_MODE: then set CONFIG_MODE to 640 or keep (see the deployment guide)."
+      [ "$CONFIG_MODE" = keep ] || [ -n "$CHECK_STATUS" ] || echo "If the new version failed with HTTP 500, PHP may run as a different user than FTP and cannot read config.php with permissions $CONFIG_MODE: then set CONFIG_MODE to 640 or keep (see the deployment guide)."
       exit 1
     fi
     cleanup "$name"

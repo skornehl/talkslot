@@ -20,6 +20,11 @@ There is nothing to run by hand. On the first request after an update TalkSlot r
 by step (`app/src/Migrations.php`). A database lock makes sure only one request migrates; the others wait
 briefly. Fresh installations get the newest schema directly from `app/schema.sql`.
 
+A migration that fails is reported by alert mail; pages keep being served. With the atomic deployment the
+[health check]({{ '/guide/deployment/' | relative_url }}#health-check) after switching runs the migrations
+first and switches back to the previous version if one fails, if the database cannot be reached or if it
+is not MariaDB 10.6 or newer.
+
 Migrations only add columns (with defaults) and tables, so a rollback to an older version keeps working.
 Imprint and privacy texts that were never edited are replaced by newer templates automatically; edited
 texts stay untouched and admins see a hint under *Texte* when something needs attention. If a new template
@@ -53,7 +58,9 @@ writing. The log is rotated at 5 MB (one previous file `php-error.log.1`).
 ## Backups
 
 Back up the **database** (e.g. `mysqldump --single-transaction`) and `config/config.php`. `app/var/` only
-holds sessions, the alert counter and logs and does not need a backup.
+holds sessions, the alert counter and logs and does not need a backup. Take a fresh database backup
+before an update whose release notes mention a database migration: a rollback switches the code, not the
+database.
 
 Keep in mind that bookings are personal data with a short life: restore a backup only as far as
 necessary and let the clean-up run afterwards.

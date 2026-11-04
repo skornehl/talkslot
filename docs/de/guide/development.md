@@ -32,7 +32,7 @@ tests/            unit.php, smoke.sh, browser.mjs, deploy.sh
 php tests/unit.php      # Unit-Tests, keine Datenbank nötig; die CI führt sie unter PHP 8.3, 8.4 und 8.5 aus
 tests/smoke.sh          # ~300 End-to-End-Prüfungen gegen das Docker-Setup (vorher dev/reset.sh)
 node tests/browser.mjs  # das JavaScript in Headless-Chrome (vorher dev/reset.sh && dev/demo.sh)
-tests/deploy.sh         # das atomare Deployment über lftp file:// unter Last (braucht lftp und die Datenbank)
+tests/deploy.sh         # das atomare Deployment über lftp file:// unter Last, Zurückschalten bei Fehlern (braucht lftp, openssl und die Datenbank)
 ```
 
 Der Smoke-Test deckt ab: Login und Sperre, Kontoverwaltung, Datentrennung zwischen Lehrkräften, CSRF,
