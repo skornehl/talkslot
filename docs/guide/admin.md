@@ -19,8 +19,10 @@ the platform on its behalf. The admin area is available in German and English (*
    the school, who represents it, full address and e-mail address. This text replaces
    `[[VERANTWORTLICHE]]` in both legal pages and is shared by all admins. Without it **no round is
    publicly reachable**.
-3. **Legal texts** (*Texte*): review the imprint and privacy policy for every language and replace the
-   remaining `[PLACEHOLDERS]`. Details in [Privacy and legal]({{ '/guide/privacy/' | relative_url }}).
+3. **Legal texts** (*Texte*): for the privacy policy, load the template that fits (*Öffentliche Schule* /
+   *Public school* or *Privater Träger* / *Private operator*), review imprint and privacy policy for every
+   language and replace the remaining `[PLACEHOLDERS]`. Until then no round can be activated. Details in
+   [Privacy and legal]({{ '/guide/privacy/' | relative_url }}).
 4. **Mail check:** *Texte → E-Mail-Versand* shows the transport and sender. Make a test booking with your
    own e-mail address and check that the confirmation arrives (and is not marked as spam).
 5. **Templates** (*Vorlagen*, optional): set up the usual formats once, e.g. your parent-teacher day.
@@ -87,8 +89,14 @@ simple Markdown (headings with `#`, lists, bold, links). Two placeholders are fi
 | `[[VERANTWORTLICHE]]` | the details for imprint and privacy policy (*Angaben für Impressum und Datenschutz*, at the top of *Texte*) |
 | `[[HOSTER]]` | the web host from the configuration (`hosting`) |
 
-Languages without their own version fall back to English. Hints on the dashboard and under *Texte* tell
-you when a text is missing a placeholder or is outdated.
+Languages without their own version fall back to English. *Vorlage laden* (*Load template*) on the text
+form puts a template into the form, for the privacy policy either *Öffentliche Schule* (*Public school*,
+installed) or *Privater Träger* (*Private operator*); the stored text only changes when you save.
+
+Details only you can provide are `[PLACEHOLDERS]` in square brackets. As long as a text of an offered
+language still contains one, no round can be activated; rounds that are already active stay online. Hints
+on the dashboard and under *Texte* list the open placeholders per text and tell you when a text is missing
+a placeholder or is outdated.
 
 ## Notifications
 

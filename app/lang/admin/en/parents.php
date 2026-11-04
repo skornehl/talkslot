@@ -1,0 +1,18 @@
+<?php
+/** English texts of the admin area: German original => English (see App\AdminI18n). Parents, texts and privacy. */
+return [
+    // Legal texts: open placeholders block the activation of rounds
+    'Bevor Runden aktiviert werden können, ersetzen Sie bitte unter „Texte“ die offenen Platzhalter in eckigen Klammern: {texts}.' => 'Before rounds can be activated, please replace the open placeholders in square brackets under “Texts”: {texts}.',
+    'Runden können erst aktiviert werden, wenn ein Admin die offenen Platzhalter in Impressum bzw. Datenschutzerklärung ausgefüllt hat.' => 'Rounds can only be activated once an admin has filled in the open placeholders in the imprint and privacy policy.',
+    'Impressum bzw. Datenschutzerklärung enthalten noch offene Platzhalter in eckigen Klammern – {texts}. Solange sie nicht ersetzt sind, lassen sich keine Runden aktivieren; bereits aktive Runden bleiben erreichbar.' => 'The imprint or privacy policy still contains open placeholders in square brackets – {texts}. Until they are replaced, no rounds can be activated; rounds that are already active stay reachable.',
+    'Impressum bzw. Datenschutzerklärung enthalten noch offene Platzhalter (Aufgabe der Admins). Bis sie ausgefüllt sind, lassen sich keine Runden aktivieren; bereits aktive Runden bleiben erreichbar.' => 'The imprint or privacy policy still contains open placeholders (a task for the admins). Until they are filled in, no rounds can be activated; rounds that are already active stay reachable.',
+    'Impressum bzw. Datenschutzerklärung ({languages}) folgen noch der alten Vorlage („privates Angebot“ ohne Datenschutzbeauftragte, Termin „jederzeit“ absagen). Für eine öffentliche Schule sind darin Rechtsgrundlagen, Datenschutzbeauftragte und Rechte falsch angegeben – bitte mit der passenden neuen Vorlage abgleichen („Vorlage laden“ beim jeweiligen Text).' => 'The imprint or privacy policy ({languages}) still follows the old template (“private service” without a data protection officer, cancel “at any time”). For a public school, the legal bases, the data protection officer and the rights stated there are wrong – please compare it with the matching new template (“Load template” on the text).',
+    // Template variants on the text form
+    'Vorlage' => 'Template',
+    'Öffentliche Schule' => 'Public school',
+    'Privater Träger' => 'Private operator',
+    'Vorlage laden:' => 'Load template:',
+    'Vorlage „{name}“ geladen. Sie ersetzt den gespeicherten Text erst, wenn Sie speichern. Ersetzen Sie danach alle Platzhalter in eckigen Klammern.' => 'Template “{name}” loaded. It only replaces the stored text when you save. Then replace all placeholders in square brackets.',
+    'Öffentliche Schule: Rechtsgrundlage Art. 6 Abs. 1 lit. e DSGVO in Verbindung mit dem Schulgesetz des Landes. Privater Träger (z. B. Schule in freier Trägerschaft, Förderverein): Art. 6 Abs. 1 lit. b und f DSGVO.' => 'Public school: legal basis Art. 6(1)(e) GDPR in conjunction with the state school act. Private operator (e.g. an independent school or a parents’ association): Art. 6(1)(b) and (f) GDPR.',
+    'Die Datenschutzerklärung gibt es als Vorlage für öffentliche Schulen (installiert) und für private Träger; die passende laden Sie beim jeweiligen Text über „Vorlage laden“. Angaben in eckigen Klammern wie {example} müssen Sie selbst ersetzen – vorher lässt sich keine Runde aktivieren.' => 'The privacy policy comes as a template for public schools (installed) and for private operators; load the matching one with “Load template” on the text. You need to replace details in square brackets such as {example} yourself – until then no round can be activated.',
+];

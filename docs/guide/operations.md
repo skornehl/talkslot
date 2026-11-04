@@ -22,7 +22,9 @@ briefly. Fresh installations get the newest schema directly from `app/schema.sql
 
 Migrations only add columns (with defaults) and tables, so a rollback to an older version keeps working.
 Imprint and privacy texts that were never edited are replaced by newer templates automatically; edited
-texts stay untouched and admins see a hint under *Texte* when something needs attention.
+texts stay untouched and admins see a hint under *Texte* when something needs attention. If a new template
+brings new `[PLACEHOLDERS]`, rounds that are already active stay online; the dashboard lists the
+placeholders, and the next round can only be activated once they are filled in.
 
 ## Error alerts
 

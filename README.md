@@ -128,7 +128,9 @@ App: <http://localhost:8080>, admin: <http://localhost:8080/admin>. Mails end up
    `POST /cron` with header `X-Cron-Token: <HMAC-SHA256 of "cron" with your secret>`; the included
    workflow `.github/workflows/cron.yml` does exactly that.
 5. **Legal texts:** log in as admin, fill in *Texte → Angaben für Impressum und Datenschutz*, then
-   check *Texte*: replace the remaining `[PLACEHOLDERS]` (server log retention, supervisory authority).
+   check *Texte*: the privacy policy is installed for a public school (a template for private operators can
+   be loaded on the text form). Replace the remaining `[PLACEHOLDERS]` (data protection officer, provisions
+   of your state, server log retention, supervisory authority); until then no round can be activated.
    The web host comes from `hosting` in `config.php`. The templates cover Art. 13 GDPR but do not replace legal advice.
 
 ### Go-live checklist
@@ -137,7 +139,7 @@ App: <http://localhost:8080>, admin: <http://localhost:8080/admin>. Mails end up
 - [ ] `install.php` no longer reachable (404); `config/config.php` not readable by others (600/640)
 - [ ] `debug` is `false`; `alert_email` set
 - [ ] Test booking with e-mail: mail arrives (not in spam)
-- [ ] Admin contact details, imprint and privacy policy (all languages) complete
+- [ ] Admin contact details, imprint and privacy policy (all languages) complete, no `[PLACEHOLDERS]` left
 - [ ] Data processing agreement (DPA/AVV) with your web host
 - [ ] Teacher invitation tested; test round booked, moved and cancelled on a phone, then deleted
 

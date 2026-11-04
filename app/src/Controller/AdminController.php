@@ -13,6 +13,7 @@ use App\Csrf;
 use App\Db;
 use App\Http;
 use App\I18n;
+use App\LegalTexts;
 use App\Mailer;
 use App\Notifier;
 use App\Operator;
@@ -210,6 +211,7 @@ final class AdminController
             'showOwner' => $all,
             'profileHints' => $this->profileHints(),
             'operatorMissing' => !Operator::ready(),
+            'textsOpen' => !Auth::isAdmin() && Operator::ready() && LegalTexts::open() !== [],
             'legalHints' => Auth::isAdmin() ? array_merge(self::operatorHints(), self::legalHints()) : [],
         ]);
     }
@@ -1123,8 +1125,9 @@ final class AdminController
 
     /**
      * Why a round of this teacher may not be activated (yet), or null.
-     * Required: the teacher's display name (parents see it) and the operator's details for
-     * legal notice and privacy policy (the operator is the controller for all rounds).
+     * Required: the teacher's display name (parents see it), the operator's details for legal notice and
+     * privacy policy (the operator is the controller for all rounds) and both texts without open
+     * [PLACEHOLDERS]. Only checked when a round goes public: rounds already active stay online.
      */
     private function publishBlocker(array $owner): ?string
     {
@@ -1132,6 +1135,11 @@ final class AdminController
             return Auth::isAdmin()
                 ? __('Bevor Runden aktiviert werden können, tragen Sie bitte unter „Texte“ die Angaben für Impressum und Datenschutz ein (die Schule bzw. der Betreiber ist für alle Runden datenschutzrechtlich verantwortlich).')
                 : __('Runden können erst aktiviert werden, wenn ein Admin die Angaben für Impressum und Datenschutz hinterlegt hat.');
+        }
+        if (($open = LegalTexts::open()) !== []) {
+            return Auth::isAdmin()
+                ? __('Bevor Runden aktiviert werden können, ersetzen Sie bitte unter „Texte“ die offenen Platzhalter in eckigen Klammern: {texts}.', ['texts' => self::openTexts($open, false)])
+                : __('Runden können erst aktiviert werden, wenn ein Admin die offenen Platzhalter in Impressum bzw. Datenschutzerklärung ausgefüllt hat.');
         }
         if (!$owner['is_active']) {
             return __('Das Konto dieser Lehrkraft ist deaktiviert – die Runde wäre öffentlich nicht erreichbar. Bitte die Runde einer aktiven Lehrkraft zuordnen oder das Konto wieder aktivieren.');
@@ -1563,6 +1571,17 @@ final class AdminController
         if ($old) {
             $hints[] = __('Die Datenschutzerklärung ({languages}) beschreibt noch das alte Modell (Lehrkräfte verantwortlich, Betreiberin als Auftragsverarbeiterin). Verantwortlich ist jetzt der Betreiber (die Angaben für Impressum und Datenschutz) – bitte Abschnitt 1, 6 und 9 an die Vorlage anpassen.', ['languages' => $list($old)]);
         }
+        // Template up to v1.5: "private service" without a data protection officer, legal bases for private
+        // operators only, "cancel at any time"
+        $private = Db::all(
+            "SELECT lang FROM pages WHERE page_key IN ('imprint', 'privacy') AND (content LIKE '%für dieses private Angebot nicht bestellt%'
+                OR content LIKE '%appointed for this private service%' OR content LIKE '%privates, nicht kommerzielles Angebot%'
+                OR content LIKE '%private, non-commercial service%' OR content LIKE '%jederzeit selbst über Ihren persönlichen Link absagen%'
+                OR content LIKE '%cancel your appointment yourself at any time%') GROUP BY lang ORDER BY lang"
+        );
+        if ($private) {
+            $hints[] = __('Impressum bzw. Datenschutzerklärung ({languages}) folgen noch der alten Vorlage („privates Angebot“ ohne Datenschutzbeauftragte, Termin „jederzeit“ absagen). Für eine öffentliche Schule sind darin Rechtsgrundlagen, Datenschutzbeauftragte und Rechte falsch angegeben – bitte mit der passenden neuen Vorlage abgleichen („Vorlage laden“ beim jeweiligen Text).', ['languages' => $list($private)]);
+        }
         $noPlaceholder = Db::all("SELECT lang FROM pages WHERE page_key IN ('imprint', 'privacy') AND content NOT LIKE '%[[VERANTWORTLICHE]]%' GROUP BY lang ORDER BY lang");
         if ($noPlaceholder) {
             $hints[] = __('Impressum bzw. Datenschutzerklärung ({languages}) enthalten den Platzhalter [[VERANTWORTLICHE]] nicht – die Angaben für Impressum und Datenschutz erscheinen dort nicht automatisch.', ['languages' => $list($noPlaceholder)]);
@@ -1585,16 +1604,41 @@ final class AdminController
         return $hints;
     }
 
-    /** What is missing in the operator's details (shown to admins on the dashboard and the texts page). */
+    /**
+     * What is missing before rounds can go public: the operator's details and the open placeholders in the
+     * texts (shown to admins on the dashboard and the texts page).
+     * @return list<string>
+     */
     private static function operatorHints(): array
     {
+        $hints = [];
         if (!Operator::ready()) {
-            return [__('Die Angaben für Impressum und Datenschutz fehlen – ohne sie ist keine Runde öffentlich erreichbar.')];
+            $hints[] = __('Die Angaben für Impressum und Datenschutz fehlen – ohne sie ist keine Runde öffentlich erreichbar.');
+        } elseif (!str_contains(Operator::contact(), '@')) {
+            $hints[] = __('In den Angaben für Impressum und Datenschutz fehlt eine E-Mail-Adresse (für das Impressum vorgeschrieben).');
         }
-        if (!str_contains(Operator::contact(), '@')) {
-            return [__('In den Angaben für Impressum und Datenschutz fehlt eine E-Mail-Adresse (für das Impressum vorgeschrieben).')];
+        if (($open = LegalTexts::open()) !== []) {
+            $hints[] = __('Impressum bzw. Datenschutzerklärung enthalten noch offene Platzhalter in eckigen Klammern – {texts}. Solange sie nicht ersetzt sind, lassen sich keine Runden aktivieren; bereits aktive Runden bleiben erreichbar.', ['texts' => self::openTexts($open, true)]);
         }
-        return [];
+        return $hints;
+    }
+
+    /**
+     * The texts with open placeholders: "Datenschutzerklärung (DE, EN)", or with $details
+     * "Datenschutzerklärung (DE): [LAND], [ZUSTÄNDIGE …]; …" (long placeholders shortened).
+     * @param list<array{key: string, lang: string, placeholders: list<string>}> $open
+     */
+    private static function openTexts(array $open, bool $details): string
+    {
+        if ($details) {
+            return implode('; ', array_map(static fn (array $t): string => self::pageLabel($t['key']) . ' (' . strtoupper($t['lang']) . '): '
+                . implode(', ', array_map(static fn (string $p): string => mb_strlen($p) > 40 ? mb_substr($p, 0, 38) . '…]' : $p, $t['placeholders'])), $open));
+        }
+        $langs = [];
+        foreach ($open as $t) {
+            $langs[$t['key']][] = strtoupper($t['lang']);
+        }
+        return implode(', ', array_map(static fn (string $key, array $l): string => self::pageLabel($key) . ' (' . implode(', ', $l) . ')', array_keys($langs), $langs));
     }
 
     private function operatorSave(): void
@@ -1626,11 +1670,17 @@ final class AdminController
     private function pageForm(string $key, string $lang): void
     {
         $this->assertLang($lang);
+        // Templates for this language; ?template=<variant> puts one into the form (saved only with "Speichern")
+        $variants = array_values(array_filter(array_keys(LegalTexts::VARIANTS[$key]), static fn (string $v): bool => LegalTexts::template($key, $v, $lang) !== null));
+        $loaded = in_array(Http::query('template'), $variants, true) ? Http::query('template') : null;
         $this->render('admin/page_form', [
             'title' => self::pageLabel($key) . ' (' . strtoupper($lang) . ')',
             'key' => $key,
             'lang' => $lang,
-            'content' => (string) Db::value('SELECT content FROM pages WHERE page_key = ? AND lang = ?', [$key, $lang]),
+            'content' => $loaded !== null ? (string) LegalTexts::template($key, $loaded, $lang)
+                : (string) Db::value('SELECT content FROM pages WHERE page_key = ? AND lang = ?', [$key, $lang]),
+            'variants' => $variants,
+            'loaded' => $loaded,
         ]);
     }
 

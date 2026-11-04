@@ -33,7 +33,9 @@ dev/demo.sh        # optional: three demo rounds with bookings
 ## A first tour
 
 1. **Log in** as `sabrina`. She is an admin. Open *Texte* and look at *Angaben für Impressum und
-   Datenschutz*: without these details no round is public (`dev/demo.sh` filled them in).
+   Datenschutz*: without these details no round is public, and no round can be activated while the privacy
+   policy still contains `[PLACEHOLDERS]` (`dev/demo.sh` filled in both with example values; after
+   `dev/reset.sh` alone, do that under *Texte* first).
 2. **Open a round** on the dashboard (*Alle Runden*). You see the link for parents, the round code, the
    invitation text and the bookings of each day.
 3. **Book as a parent:** click *Öffnen* next to the link, choose a slot, enter a name and tick the

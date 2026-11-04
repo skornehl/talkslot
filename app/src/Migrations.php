@@ -133,16 +133,31 @@ final class Migrations
         ],
     ];
 
-    /** SHA-256 of all previously shipped templates of legal notice/privacy policy (unedited). */
-    /** SHA-256 of the current templates app/templates/pages/*.md (checked by tests/unit.php) */
+    /**
+     * SHA-256 of the current templates app/templates/pages/*.md (checked by tests/unit.php). The variants
+     * (privacy-private.*) are not installed; admins load them into the text form (LegalTexts::VARIANTS).
+     */
     public const CURRENT_PAGE_HASHES = [
-        'imprint.de' => '036e210b629357dfbf768868e3a5f249c888d3052f301170703b196336058f43',
-        'imprint.en' => 'f15521ceaa18e97c98190e448cc95eb6130c4cf571164b09819bb40dd7af22c8',
-        'privacy.de' => '3885e997cd3bbf330158fdccc730f7fe1b93044379cc2df060ea5e0e7b6396ec',
-        'privacy.en' => 'ffbcc88fbd8b760efc7c4f173bb4e8850517392f88f9ffc0100da3aad921253f',
+        'imprint.de' => '557dbb64b5ab373144a29e23a36056355fe02bdc7ff70a43d690d6acb8a74672',
+        'imprint.en' => '0692f22c0bb7dd3c6f76c96c51f3dc78e25af54f97b4c556fb7268b8e372fa3f',
+        'privacy.de' => 'ac8cf4d882a13a6e127476ab13de02524316d343a746b4b8ff055c3aa0d09347',
+        'privacy.en' => '320c437da7fbf0e1ab24328e555348c160b1ac8bc551dfcb7229ae0593de2683',
+        'privacy-private.de' => '8e63fee7c9e729b8faf94be1e0ed98291a59170a51b768b4c8ac9a75b2226693',
+        'privacy-private.en' => '91d703acbd4ef5aa44d3c0527bffac75ccb3bf5376643e4b0605c1bef1a5cc47',
     ];
 
+    /**
+     * SHA-256 of all previously shipped default templates of legal notice/privacy policy: stored texts that
+     * still match one exactly (never edited) are replaced by the current default template. Never add
+     * hashes of a variant (privacy-private.*) here – an unedited variant would become the default.
+     */
     private const OLD_PAGE_HASHES = [
+        // Up to v1.5.0: "private service" without a data protection officer, legal bases (b) and (f) only,
+        // "cancel at any time"; legal notice of a "private, non-commercial service"
+        '036e210b629357dfbf768868e3a5f249c888d3052f301170703b196336058f43',
+        'f15521ceaa18e97c98190e448cc95eb6130c4cf571164b09819bb40dd7af22c8',
+        '3885e997cd3bbf330158fdccc730f7fe1b93044379cc2df060ea5e0e7b6396ec',
+        'ffbcc88fbd8b760efc7c4f173bb4e8850517392f88f9ffc0100da3aad921253f',
         // Privacy policy de/en without the reminder mail (up to version 14)
         '0cda1f6b2ca1ad90d1135a27b0087542862a700e0fbcefce7d448895f07a702a',
         '7ab09658494d5af363ab22f52a13140952a72e83656280c26ba54e029b2a0d51',

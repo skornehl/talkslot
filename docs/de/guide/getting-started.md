@@ -34,8 +34,10 @@ Stand möchten.
 ## Ein erster Rundgang
 
 1. **Melden Sie sich** als `sabrina` an. Sie ist Admin. Öffnen Sie *Texte* und sehen Sie sich
-   *Angaben für Impressum und Datenschutz* an: Ohne diese Angaben ist keine Terminrunde öffentlich
-   (`dev/demo.sh` hat sie bereits ausgefüllt).
+   *Angaben für Impressum und Datenschutz* an: Ohne diese Angaben ist keine Terminrunde öffentlich, und
+   solange die Datenschutzerklärung noch Platzhalter in eckigen Klammern enthält, lässt sich keine Runde
+   aktivieren (`dev/demo.sh` hat beides mit Beispielwerten ausgefüllt; nach `dev/reset.sh` allein
+   erledigen Sie das zuerst unter *Texte*).
 2. **Öffnen Sie eine Terminrunde** auf dem Dashboard (*Alle Runden*). Sie sehen den Link für Eltern, den
    Rundencode, den Einladungstext und die Buchungen jedes Tages.
 3. **Buchen Sie als Elternteil:** Klicken Sie neben dem Link auf *Öffnen*, wählen Sie einen Termin, geben
