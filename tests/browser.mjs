@@ -51,7 +51,9 @@ const chrome = spawn(findChrome(), [
 
 async function connect() {
   const portFile = join(profile, 'DevToolsActivePort');
-  for (let i = 0; i < 100 && !existsSync(portFile); i++) await sleep(100);
+  // Chrome can take a while to start on a busy CI runner
+  for (let i = 0; i < 300 && !existsSync(portFile); i++) await sleep(100);
+  if (!existsSync(portFile)) throw new Error('Chrome did not start within 30 s (no DevToolsActivePort)');
   const port = readFileSync(portFile, 'utf8').split('\n')[0];
   for (let i = 0; i < 50; i++) {
     try {
