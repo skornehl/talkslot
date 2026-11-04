@@ -193,19 +193,30 @@ check "calendar file in the language of the page" 'curl -s --data-urlencode "csr
 check "calendar file only with a valid form token, otherwise the page with the error" 'X=$(curl -s -D - -d "csrf=1700000000.x&action=ics" "$B/b/$KT"); echo "$X" | grep -qi "^content-type: text/html" && echo "$X" | has "Das Formular ist abgelaufen" && ! echo "$X" | has "BEGIN:VCALENDAR" && curl -s --data-urlencode "csrf=$KMC" -d "action=ics" "$B/b/$KT" | has "BEGIN:VCALENDAR"'
 # With the usual minimum time of a form (bot brake), the calendar file still comes right after loading the page.
 # Without a sender address no mail goes out: the page says so (the attempt counts against the limit).
-KF=$(ALERTS 'require "/srv/app/app/bootstrap.php";
-  App\Config::load(["csrf_min_age_seconds" => 30] + (require "/srv/app/config/config.php"));
-  $id = (int) App\Db::value("SELECT id FROM bookings WHERE name = ?", ["Link Behalten"]);
-  App\I18n::set("de");
-  $_SERVER["REMOTE_ADDR"] = "198.51.100.30"; $_SERVER["REQUEST_METHOD"] = "POST"; $_SERVER["REQUEST_URI"] = "/b/'"$KT"'";
-  $send = static function (array $post): string { $_POST = $post; ob_start(); (new App\Controller\PublicController())->dispatch("/b/'"$KT"'", "POST"); return (string) ob_get_clean(); };
-  $ics = $send(["csrf" => App\Csrf::publicToken("manage:" . $id), "action" => "ics"]);
-  $cancel = $send(["csrf" => App\Csrf::publicToken("manage:" . $id), "action" => "cancel", "confirm" => "1"]);
-  App\Config::load(["mail" => ["transport" => "smtp", "from_address" => ""]] + (require "/srv/app/config/config.php"));
-  $mail = $send(["csrf" => App\Csrf::publicToken("manage:" . $id), "action" => "mail", "email" => "ohne-absender@example.org"]);
-  echo (str_starts_with($ics, "BEGIN:VCALENDAR") ? "ics" : "no-ics") . "|" . (str_contains($cancel, "Das ging zu schnell") ? "too-fast" : "?")
+# Script on stdin (not php -r), so that a coverage run sees these lines; arguments: app root, token
+KF=$($DC exec -T app php -- /srv/app "$KT" 2>&1 <<'PHP'
+<?php
+[, $root, $token] = $argv;
+require "$root/app/bootstrap.php";
+App\Config::load(["csrf_min_age_seconds" => 30] + (require "$root/config/config.php"));
+$id = (int) App\Db::value("SELECT id FROM bookings WHERE name = ?", ["Link Behalten"]);
+App\I18n::set("de");
+$_SERVER["REMOTE_ADDR"] = "198.51.100.30"; $_SERVER["REQUEST_METHOD"] = "POST"; $_SERVER["REQUEST_URI"] = "/b/$token";
+$send = static function (array $post) use ($token): string {
+    $_POST = $post;
+    ob_start();
+    (new App\Controller\PublicController())->dispatch("/b/$token", "POST");
+    return (string) ob_get_clean();
+};
+$ics = $send(["csrf" => App\Csrf::publicToken("manage:" . $id), "action" => "ics"]);
+$cancel = $send(["csrf" => App\Csrf::publicToken("manage:" . $id), "action" => "cancel", "confirm" => "1"]);
+App\Config::load(["mail" => ["transport" => "smtp", "from_address" => ""]] + (require "$root/config/config.php"));
+$mail = $send(["csrf" => App\Csrf::publicToken("manage:" . $id), "action" => "mail", "email" => "ohne-absender@example.org"]);
+echo (str_starts_with($ics, "BEGIN:VCALENDAR") ? "ics" : "no-ics") . "|" . (str_contains($cancel, "Das ging zu schnell") ? "too-fast" : "?")
     . "|" . (str_contains($mail, "Die E-Mail konnte nicht gesendet werden.") ? "mail-failed" : "?");
-  App\Db::run("DELETE FROM rate_limits WHERE bucket IN (?, ?)", ["manage", "confirm"]);' 2>&1)
+App\Db::run("DELETE FROM rate_limits WHERE bucket IN (?, ?)", ["manage", "confirm"]);
+PHP
+)
 check "calendar file without the minimum time of a form, cancelling still with it; a mail that cannot be sent is reported ($KF)" '[ "$KF" = "ics|too-fast|mail-failed" ]'
 
 # Confirmation by mail afterwards: to an address entered on the page, not stored, at most twice
@@ -231,6 +242,7 @@ DBQ "UPDATE tp_rounds SET cancel_deadline_hours = 0 WHERE id = $KL; DELETE FROM 
 # Round page: one item per remembered booking, "book another" keeps the entries; the form stays open after a submission
 KP2=$(curl -s "$B/$KLS")
 check "round page: list for remembered bookings and the sibling button; the form stays open after a language switch" 'echo "$KP2" | has "<ul class=\"remembered-list\" data-remembered-list></ul>" && echo "$KP2" | has "hidden data-remembered-another>Weiteren Termin buchen" && echo "$KP2" | has "<div id=\"booking-area\">" && curl -s --data-urlencode "csrf=$(echo "$KP2" | csrf)" -d "lang=de&switch_lang=en&name=Geschwister" "$B/$KLS" | has "<div id=\"booking-area\" data-keep-open>"'
+check "unknown action: the page again, the booking unchanged" 'X=$(curl -s -w "\n%{http_code}" --data-urlencode "csrf=$KMC" -d "action=gibts-nicht" "$B/b/$KT"); [ "$(echo "$X" | tail -1)" = 200 ] && echo "$X" | has "value=\"$B/b/$KT\"" && ! echo "$X" | has "form-errors" && [ "$(DBQ "SELECT COUNT(*) FROM tp_bookings WHERE name = \"Link Behalten\"")" = 1 ]'
 KC=$(curl -s --data-urlencode "csrf=$KMC" -d "action=cancel&confirm=1" "$B/b/$KT")
 X=$(curl -s -w '\n%{http_code}' "$B/b/$KT")
 check "cancelled, and the link leading nowhere afterwards: both remove the remembered entry of this link" 'echo "$KC" | has "<div hidden data-forget-url=\"/b/$KT\"></div>" && [ "$(echo "$X" | tail -1)" = 404 ] && echo "$X" | has "<div hidden data-forget-url=\"/b/$KT\"></div>" && ! curl -s "$B/gibt-es-nicht" | has "data-forget-url"'

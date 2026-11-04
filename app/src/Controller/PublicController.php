@@ -430,11 +430,10 @@ final class PublicController
             $this->manage($token, [t('manage.mail.limit')]);
             return;
         }
-        if (!Notifier::parentConfirmation($booking, $token, $email)) {
-            $this->manage($token, [t('manage.mail.failed')]);
-            return;
+        if (Notifier::parentConfirmation($booking, $token, $email)) {
+            Http::redirect('/b/' . $token, ['done' => 'sent']);
         }
-        Http::redirect('/b/' . $token, ['done' => 'sent']);
+        $this->manage($token, [t('manage.mail.failed')]);
     }
 
     /** Shared validation for name/email/slot (also used by the admin). */
