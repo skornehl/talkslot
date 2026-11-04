@@ -55,10 +55,12 @@ final class Cleanup
               WHERE s.is_conflict = 1 AND b.id IS NULL'
         );
 
-        // 3. Deactivate rounds whose last day is over and mark them as expired
+        // 3. Deactivate rounds whose last day is over and mark them as expired. Only rounds that were in
+        //    use (active, or was_used: activated before or booked by the teacher): a draft that was never
+        //    used, e.g. a copy that still has the old dates, stays until somebody uses or deletes it
         $stats['rounds_expired'] = Db::exec(
             'UPDATE rounds r SET r.is_active = 0, r.expired_at = ?
-              WHERE r.expired_at IS NULL
+              WHERE r.expired_at IS NULL AND (r.is_active = 1 OR r.was_used = 1)
                 AND EXISTS (SELECT 1 FROM round_days d WHERE d.round_id = r.id)
                 AND NOT EXISTS (SELECT 1 FROM round_days d WHERE d.round_id = r.id AND d.day_date >= ?)',
             [$now, $today]
@@ -93,5 +95,24 @@ final class Cleanup
 
         Settings::set('last_cleanup', (string) time());
         return $stats;
+    }
+
+    /**
+     * When steps 3 and 4 delete a round, for the admin pages: from 0:00 after its last day plus
+     * delete_after_hours (from expired_at once it has expired), never while a day is still ahead.
+     * null = not automatically: no deletion period, no days, or a draft that was never used.
+     *
+     * @param array{is_active:int,was_used:int,expired_at:?string,delete_after_hours:?int} $round
+     * @param ?string $lastDay date of its last day (Y-m-d)
+     */
+    public static function deletionAt(array $round, ?string $lastDay): ?\DateTimeImmutable
+    {
+        if ($round['delete_after_hours'] === null || $lastDay === null
+            || ($round['expired_at'] === null && !$round['is_active'] && !$round['was_used'])) {
+            return null;
+        }
+        $over = (new \DateTimeImmutable($lastDay))->modify('+1 day');
+        $from = $round['expired_at'] !== null ? new \DateTimeImmutable((string) $round['expired_at']) : $over;
+        return max($from->modify('+' . (int) $round['delete_after_hours'] . ' hours'), $over);
     }
 }

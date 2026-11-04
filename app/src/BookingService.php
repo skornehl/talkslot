@@ -271,6 +271,12 @@ final class BookingService
         }
     }
 
+    /**
+     * Locks the slot and, through the join, its day row. SlotGenerator::sync holds that day row while it
+     * rebuilds the slots of the day, so a booking and a sync of the same day do not interleave (where
+     * they lock in opposite order, InnoDB ends one as a deadlock; bookings retry, see retryOnDeadlock).
+     * Keep the join when changing this; sync's DELETE also checks for a booking itself.
+     */
     private static function lockSlot(int $slotId, int $roundId): array
     {
         $slot = Db::one(

@@ -249,14 +249,36 @@ try {
   await goto(roundPath);
   cdp.dialogs = [];
   cdp.acceptDialogs = false;
-  await js(`document.querySelector('form[data-confirm][action$="/delete"]').requestSubmit()`);
+  // The round is deleted in its own section after the days (expert review P0-6)
+  const roundDelete = `document.querySelector('#delete-round form[data-confirm][action$="/delete"]')`;
+  await js(`${roundDelete}.requestSubmit()`);
   await sleep(300);
   check('"Abbrechen" in the dialog keeps the round', cdp.dialogs.length === 1 && cdp.dialogs[0].type === 'confirm'
     && cdp.dialogs[0].message.includes(title) && await js('location.pathname') === roundPath);
   cdp.acceptDialogs = true;
-  await navigating(`document.querySelector('form[data-confirm][action$="/delete"]').requestSubmit()`);
+  await navigating(`${roundDelete}.requestSubmit()`);
   await goto('/admin');
   check('"OK" deletes it', await js(`![...document.querySelectorAll('a')].some(a => a.textContent.trim() === ${JSON.stringify(title)})`));
+
+  section('Admin: deleting a round with bookings needs the box');
+  await goto(demoRound);
+  check('the action row only links to the section at the end, after the days',
+    await js(`!!document.querySelector('.actions a[href="#delete-round"]')
+      && [...document.querySelectorAll('form[action$="/delete"]')].filter(f => f.action.endsWith(location.pathname + '/delete')).every(f => f.closest('#delete-round'))
+      && !!([...document.querySelectorAll('.day-card')].pop().compareDocumentPosition(document.getElementById('delete-round')) & Node.DOCUMENT_POSITION_FOLLOWING)`));
+  cdp.dialogs = [];
+  cdp.acceptDialogs = false;
+  await js(`${roundDelete}.requestSubmit()`);
+  await sleep(300);
+  check('box not ticked: no dialog, nothing sent', cdp.dialogs.length === 0 && await js('location.pathname') === demoRound
+    && await js(`!${roundDelete}.checkValidity()`));
+  await js(`${roundDelete}.querySelector('[name=confirm]').checked = true`);
+  await js(`${roundDelete}.requestSubmit()`);
+  await sleep(300);
+  check('box ticked: the dialog names the bookings, "Abbrechen" keeps the round', cdp.dialogs.length === 1
+    && /\d+ Buchung\(en\)/.test(cdp.dialogs[0].message) && await js('location.pathname') === demoRound, JSON.stringify(cdp.dialogs));
+  await js(`${roundDelete}.querySelector('[name=confirm]').checked = false`);
+  cdp.acceptDialogs = true;
 
   await goto(demoRound);
   const slug = (await js(`document.querySelector('[data-copy]').getAttribute('data-copy')`)).replace(/.*\//, '');
