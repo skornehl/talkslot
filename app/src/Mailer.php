@@ -59,7 +59,7 @@ final class Mailer
             $headers['Reply-To'] = $replyTo;
         }
         // Only real line breaks: '/\R/' without /u would also split at the byte 0x85, which is part of
-        // many UTF-8 characters (х, ą, Ї …); with /u, invalid UTF-8 would lose the whole body
+        // many UTF-8 characters (х, ą, Å …); with /u, invalid UTF-8 would lose the whole body
         $lines = preg_split('/\r\n|\r|\n/', $body) ?: [];
         $encoded = implode("\n", array_map(
             static fn (string $l) => str_replace("=\r\n", "=\n", quoted_printable_encode($l)),

@@ -217,8 +217,8 @@ App\Config::load($cfg);
 check('quote (>) as blockquote, also after a paragraph and before a list',
     Markdown::toHtml("Text\n> Zitat\n> zwei\n- Punkt\n> neu") === "<p>Text</p>\n<blockquote>Zitat<br>zwei</blockquote>\n<ul><li>Punkt</li></ul>\n<blockquote>neu</blockquote>");
 check('paragraph after quote is separated', Markdown::toHtml("> Zitat\nText") === "<blockquote>Zitat</blockquote>\n<p>Text</p>");
-check('Markdown: letters containing the byte 0x85 stay intact (х, ą, Ї)',
-    Markdown::toHtml("Хабибуллина\nDąbrowska Їжак") === "<p>Хабибуллина<br>Dąbrowska Їжак</p>");
+check('Markdown: letters containing the byte 0x85 stay intact (х, ą, Å)',
+    Markdown::toHtml("Хабибуллина\nDąbrowska Ångström") === "<p>Хабибуллина<br>Dąbrowska Ångström</p>");
 check('Markdown: invalid UTF-8 does not empty the text', str_contains(Markdown::toHtml("A\xC3\nB"), 'B'));
 App\Config::load(['csrf_min_age_seconds' => 2, 'csrf_max_age_seconds' => 4 * 3600] + $cfg);
 $tok = App\Csrf::publicToken('x');
@@ -307,7 +307,7 @@ check('sending via mail(): sender, Reply-To, attachment, umlauts', $rc === 0 && 
 check('sending via mail(): no header injection via the subject', $mail !== '' && !preg_match('/^Bcc:/mi', $mail));
 
 // Every parent language through mail(): the text must arrive unchanged. '/\R/' without /u used to split
-// lines at the byte 0x85, which is part of х, ą, Ї … (Russian, Polish and Ukrainian mails were broken)
+// lines at the byte 0x85, which is part of х, ą, Å … (Russian, Ukrainian and Polish mails were broken)
 foreach (App\I18n::languages() as $lang) {
     $mailFile = tempnam(sys_get_temp_dir(), 'mail');
     file_put_contents($sendmail = tempnam(sys_get_temp_dir(), 'sendmail'), "#!/bin/sh\ncat > " . escapeshellarg($mailFile) . "\n");
