@@ -8,6 +8,7 @@ USER=sabrina
 PASS=Sehr-Sicheres-Dev-Pw1
 J=$(mktemp)
 trap 'rm -f "$J"' EXIT
+ROOT=$(cd "$(dirname "$0")/.." && pwd)
 csrf() { grep -o 'name="csrf" value="[^"]*"' | head -1 | sed 's/.*value="//;s/"$//'; }
 day() { date -d "+$1 day" +%F; }
 
@@ -22,6 +23,24 @@ curl -s -o /dev/null -b "$J" --data-urlencode "csrf=$T" --data-urlencode "displa
 curl -s -o /dev/null -b "$J" --data-urlencode "csrf=$T" \
   --data-urlencode $'controller_contact=Gesamtschule am See\nVertreten durch die Schulleitung\nSeeweg 12\n12345 Seestadt\nE-Mail: sekretariat@example.org' \
   "$B/admin/texts/operator"
+
+# Privacy policy: the details in [SQUARE BRACKETS] that only the school can provide, and the web host (not
+# configured locally). Rounds can only be activated once no placeholder is left.
+legal() { # legal <lang>: the template with example details
+  perl -CSD -Mutf8 -pe '
+    s/\[\[HOSTER\]\]/Beispiel Hosting GmbH, Serverweg 1, 12345 Serverstadt/g;
+    s/\[KONTAKTDATEN[^\]]*\]/Datenschutzbeauftragte des Schulamts Seestadt, datenschutz\@example.org/g;
+    s/\[CONTACT DETAILS[^\]]*\]/data protection officer of the Seestadt school office, datenschutz\@example.org/g;
+    s/\[SPEICHERDAUER[^\]]*\]/Diese werden nach 7 Tagen gelöscht./g;
+    s/\[ASK THE HOST[^\]]*\]/They are deleted after 7 days./g;
+    s/\[(VORSCHRIFT IM SCHULGESETZ|PROVISION OF THE STATE SCHOOL)[^\]]*\]/§ 120 SchulG NRW/g;
+    s/\[(VORSCHRIFT IM DATENSCHUTZGESETZ|PROVISION OF THE STATE DATA)[^\]]*\]/§ 3 DSG NRW/g;
+    s/(?<!\[)\[\p{Lu}[^\[\]\p{Ll}\n]{3,}\](?![\](])/Landesbeauftragte für Datenschutz (Beispiel), Musterstraße 1, 12345 Musterstadt/g;
+  ' "$ROOT/app/templates/pages/privacy.$1.md"
+}
+for l in de en; do
+  curl -s -o /dev/null -b "$J" --data-urlencode "csrf=$T" --data-urlencode "content=$(legal "$l")" "$B/admin/page/privacy/$l"
+done
 
 # Template for the usual parent-teacher day (shown in the new round form)
 curl -s -o /dev/null -b "$J" --data-urlencode "csrf=$T" --data-urlencode "name=Elternsprechtag ganzer Tag" \

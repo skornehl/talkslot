@@ -93,22 +93,67 @@ Datenschutzerklärung.
 Vorlagen für Impressum und Datenschutzerklärung auf Deutsch und Englisch werden bei der Installation in
 die Datenbank kopiert und können von Admins unter *Texte* bearbeitet werden. Die Vorlage für die
 Datenschutzerklärung deckt die nach Art. 13 DSGVO erforderlichen Informationen ab: Verantwortlicher,
-Zwecke, Rechtsgrundlagen einschließlich berechtigter Interessen, Empfänger, Drittländer, Speicherdauer,
-Betroffenenrechte einschließlich des Widerspruchsrechts, Beschwerderecht bei einer Aufsichtsbehörde, ob
-die Bereitstellung der Daten erforderlich ist, sowie automatisierte Entscheidungsfindung.
+Datenschutzbeauftragte, Zwecke, Rechtsgrundlagen, Empfänger, Drittländer, Speicherdauer, Betroffenenrechte
+einschließlich des Widerspruchsrechts, Beschwerderecht bei einer Aufsichtsbehörde, ob die Bereitstellung
+der Daten erforderlich ist, sowie automatisierte Entscheidungsfindung.
+
+Die Datenschutzerklärung gibt es in zwei Varianten. Im Formular des Textes setzt *Vorlage laden* die
+passende ein; den gespeicherten Text ersetzt sie erst beim Speichern.
+
+| Variante | Für | Rechtsgrundlagen |
+|---|---|---|
+| *Öffentliche Schule* (installiert) | eine staatliche Schule als Verantwortliche | Art. 6 Abs. 1 lit. e, Abs. 3 DSGVO in Verbindung mit dem Schulgesetz Ihres Landes (Buchung, E-Mails, Zusammenfassungen) und dem Landesdatenschutzgesetz (Missbrauchsschutz, Server-Protokolle); Widerspruchsrecht nach Art. 21, kein Recht auf Datenübertragbarkeit (Art. 20 Abs. 3) |
+| *Privater Träger* | z. B. Schule in freier Trägerschaft, Förderverein | Art. 6 Abs. 1 lit. b und f DSGVO; Widerspruchsrecht für lit. f, Recht auf Datenübertragbarkeit |
+
+Behörden können sich bei der Erfüllung ihrer Aufgaben nicht auf berechtigte Interessen stützen (Art. 6
+Abs. 1 Unterabs. 2 DSGVO), und Gespräche an einer staatlichen Schule gehören zu ihren gesetzlichen Aufgaben,
+nicht zu einem Vertrag. Deshalb nennt die Variante für öffentliche Schulen das Landesrecht. Welche
+Vorschriften gelten, ist von Land zu Land verschieden; die Vorlage lässt sie deshalb als Platzhalter offen.
 
 Vor dem Start:
 
-1. **Verantwortlicher:** Füllen Sie *Texte → Angaben für Impressum und Datenschutz* aus. Diese
+1. **Wer verantwortlich ist:** An einer staatlichen Schule ist die Schule Verantwortliche, und die
+   Schulleitung beschließt den Einsatz. Betreibt jemand anderes den Server für die Schule (z. B. eine
+   ehrenamtliche Person mit eigenem Hostingvertrag), braucht die Schule mit dieser Person eine Vereinbarung
+   nach Art. 28 DSGVO (Weisungen, Vertraulichkeit, Hoster als Unterauftragsverarbeiter, Übergabe aller
+   Zugänge, Löschung bei Betriebsende), oder die Schule bzw. der Schulträger schließt den Hostingvertrag
+   selbst ab.
+2. **Verantwortlicher:** Füllen Sie *Texte → Angaben für Impressum und Datenschutz* aus. Diese
    Angaben ersetzen `[[VERANTWORTLICHE]]`; ohne sie ist keine Runde öffentlich.
-2. **Hoster:** Setzen Sie `hosting` in der Konfiguration (bzw. `HOSTING_DE`/`HOSTING_EN` beim Deployment).
-   Der Wert ersetzt `[[HOSTER]]`. Ist er nicht gesetzt, zeigt die Seite einen sichtbaren Platzhalter, und
-   Admins erhalten einen Hinweis.
-3. **Verbleibende Platzhalter** in eckigen Klammern: Speicherdauer der Webserver-Logs (fragen Sie Ihren
-   Hoster) und die zuständige Datenschutz-Aufsichtsbehörde.
-4. **Auftragsverarbeitungsvertrag** (AVV) mit Ihrem Hoster.
-5. Wenn Lehrkräfte die Plattform nutzen: Der Betreiber (meist die Schule) ist für alle Runden
-   verantwortlich, die Lehrkräfte handeln in seinem Auftrag und nach seinen Weisungen.
+3. **Hoster:** Setzen Sie `hosting` in der Konfiguration (bzw. `HOSTING_DE`/`HOSTING_EN` beim Deployment).
+   Der Wert ersetzt `[[HOSTER]]`. Ist er nicht gesetzt, zeigt die Seite die Platzhalter
+   `[HOSTER MIT ANSCHRIFT]` und `[LAND]` (englisch `[WEB HOST WITH ADDRESS]`, `[COUNTRY]`), und Admins
+   erhalten einen Hinweis.
+4. **Verbleibende Platzhalter** in eckigen Klammern, in jeder Sprache, für die es einen Text gibt:
+   Kontaktdaten der oder des Datenschutzbeauftragten, die Vorschriften Ihres Landes (Schulgesetz,
+   Landesdatenschutzgesetz), die Speicherdauer der Webserver-Logs (fragen Sie Ihren Hoster) und die
+   zuständige Aufsichtsbehörde. Die Vorschriften nennt Ihnen die oder der Datenschutzbeauftragte der Schule.
+5. **Auftragsverarbeitungsvertrag** (AVV) mit Ihrem Hoster.
+6. **Admin-Konten** nur für Personal der Schule oder für schriftlich zur Vertraulichkeit verpflichtete
+   Personen: Die Datenschutzerklärung sagt Eltern zu, dass außer der Lehrkraft nur solche Personen ihre
+   Buchungen sehen.
 
-Lassen Sie die Texte von jemandem prüfen, der Ihre Situation kennt; die Vorlagen ersetzen keine
-Rechtsberatung.
+### Keine Aktivierung bei offenen Platzhaltern
+
+TalkSlot prüft Impressum und Datenschutzerklärung aller angebotenen Sprachen so, wie Eltern sie sehen,
+also mit eingesetzten Angaben zur verantwortlichen Stelle und zum Hoster. Ein offener Platzhalter ist Text
+in eckigen Klammern ohne Kleinbuchstaben und mit mindestens vier Zeichen, etwa `[LAND]`. Ein
+Markdown-Link wie `[PDF](https://…)` oder Text in gemischter Schreibung wie `[Hinweis]` zählt nicht.
+Solange einer übrig ist:
+
+- **Keine Runde lässt sich aktivieren:** weder eine neue aktive Runde noch über *Aktivieren* noch durch
+  Zuordnen einer aktiven Runde zu einer anderen Lehrkraft. Die Meldung nennt die betroffenen Texte.
+- **Admins** sehen im Dashboard und unter *Texte*, welche Platzhalter in welchem Text und welcher Sprache
+  offen sind. **Lehrkräfte** sehen, dass die Admins die Texte noch ausfüllen müssen.
+- **Bereits aktive Runden bleiben erreichbar**, und Eltern können ihre Änderungslinks weiter nutzen. Eine
+  bestehende Installation geht nach einem Update also nicht offline: Das Dashboard kündigt die offenen
+  Platzhalter an, und erst die nächste Aktivierung wartet darauf.
+
+Bei einem Update werden nie bearbeitete Texte durch die neuen Vorlagen ersetzt (siehe
+[Betrieb]({{ '/de/guide/operations/' | relative_url }})), einschließlich neuer Platzhalter. Bearbeitete
+Texte bleiben, wie sie sind. Enthalten sie noch die alten Sätze zum „privaten Angebot“ ohne
+Datenschutzbeauftragte oder zum Absagen „jederzeit“, bittet ein Hinweis, sie mit der neuen Vorlage
+abzugleichen.
+
+Lassen Sie die Texte von jemandem prüfen, der Ihre Situation kennt, am besten von der oder dem
+Datenschutzbeauftragten der Schule; die Vorlagen ersetzen keine Rechtsberatung.

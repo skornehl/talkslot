@@ -2,17 +2,17 @@ Mit diesen Hinweisen informieren wir Sie nach Art. 13 der Datenschutz-Grundveror
 
 # 1. Verantwortliche
 
-Verantwortlich im Sinne der DSGVO für diese Terminvergabe und alle darüber gebuchten Termine ist:
+Verantwortlich im Sinne der DSGVO für diese Terminvergabe und alle darüber gebuchten Termine ist die Schule:
 
 [[VERANTWORTLICHE]]
 
-Die Lehrkräfte, die über diese Plattform Gesprächstermine anbieten, nutzen sie im Auftrag und nach Weisung der verantwortlichen Stelle.
+Die Lehrkräfte, die über diese Plattform Gesprächstermine anbieten, nutzen sie im Rahmen ihrer dienstlichen Aufgaben für die Schule.
 
-Eine Datenschutzbeauftragte bzw. ein Datenschutzbeauftragter ist für dieses private Angebot nicht bestellt.
+**Datenschutzbeauftragte bzw. Datenschutzbeauftragter der Schule:** [KONTAKTDATEN DER/DES DATENSCHUTZBEAUFTRAGTEN DER SCHULE]
 
 # 2. Zweck der Verarbeitung
 
-Über diese Seite können Erziehungsberechtigte Gesprächstermine (z. B. zum Elternsprechtag) mit der auf der Buchungsseite genannten Lehrkraft vereinbaren, ändern und absagen. Die Daten werden ausschließlich zur Organisation und Durchführung dieser Termine sowie – nur Termin und Name – zum Nachweis der geführten Gespräche in E-Mail-Zusammenfassungen an die Lehrkraft (höchstens 15 Monate) verarbeitet und nicht für andere Zwecke genutzt.
+Über diese Seite können Erziehungsberechtigte Gesprächstermine (z. B. zum Elternsprechtag) mit der auf der Buchungsseite genannten Lehrkraft vereinbaren, ändern und absagen. Solche Gespräche gehören zum Bildungs- und Erziehungsauftrag der Schule. Die Daten werden ausschließlich zur Organisation und Durchführung dieser Termine sowie – nur Termin und Name – zum Nachweis der geführten Gespräche in E-Mail-Zusammenfassungen an die Lehrkraft (höchstens 15 Monate) verarbeitet und nicht für andere Zwecke genutzt.
 
 # 3. Welche Daten verarbeitet werden
 
@@ -33,10 +33,8 @@ Es gibt keine Benutzerkonten, keine Werbung, kein Tracking und keine Analyse des
 
 # 4. Rechtsgrundlagen
 
-- **Terminbuchung, -änderung und -absage:** Art. 6 Abs. 1 lit. b DSGVO – die Verarbeitung ist zur Durchführung der von Ihnen angefragten Terminvereinbarung erforderlich.
-- **E-Mail-Bestätigung:** Art. 6 Abs. 1 lit. b DSGVO, auf Ihren Wunsch durch freiwillige Angabe der Adresse.
-- **Missbrauchsschutz und Server-Protokolle:** Art. 6 Abs. 1 lit. f DSGVO. Das berechtigte Interesse liegt im sicheren und störungsfreien Betrieb der Terminvergabe sowie im Schutz vor Spam, Mehrfach- und Fremdbuchungen.
-- **Zusammenfassungs-E-Mails an die Lehrkraft und deren Aufbewahrung:** Art. 6 Abs. 1 lit. b DSGVO (Durchführung des vereinbarten Termins) und Art. 6 Abs. 1 lit. f DSGVO. Das berechtigte Interesse liegt in einer zuverlässigen Terminplanung sowie darin, im laufenden Schuljahr nachvollziehen zu können, mit wem wann ein Elterngespräch stattgefunden hat.
+- **Terminbuchung, -änderung und -absage, E-Mails zu Ihrem Termin sowie die Zusammenfassungen an die Lehrkraft und deren Aufbewahrung:** Art. 6 Abs. 1 lit. e, Abs. 3 DSGVO in Verbindung mit [VORSCHRIFT IM SCHULGESETZ DES LANDES, Z. B. § 120 SCHULG NRW ODER ART. 85 BAYEUG]. Die Verarbeitung ist zur Erfüllung der gesetzlichen Aufgaben der Schule erforderlich, zu denen Gespräche mit Erziehungsberechtigten gehören. Ob Sie eine E-Mail-Adresse angeben, entscheiden Sie selbst.
+- **Missbrauchsschutz und Server-Protokolle:** Art. 6 Abs. 1 lit. e, Abs. 3 DSGVO in Verbindung mit [VORSCHRIFT IM DATENSCHUTZGESETZ DES LANDES]. Beides dient dem sicheren und störungsfreien Betrieb der Terminvergabe (Art. 32 DSGVO) sowie dem Schutz vor Spam, Mehrfach- und Fremdbuchungen.
 - **Speicherung im Browser („Termin merken“):** § 25 Abs. 1 TDDDG und Art. 6 Abs. 1 lit. a DSGVO (Ihre Einwilligung durch Ankreuzen), siehe Abschnitt 7.
 
 Mit dem Pflicht-Häkchen im Buchungsformular bestätigen Sie nur, dass Sie diese Hinweise zur Kenntnis genommen haben. Es handelt sich nicht um eine Einwilligung; die Verarbeitung Ihrer Buchungsdaten beruht auf den oben genannten Rechtsgrundlagen.
@@ -48,12 +46,12 @@ Mit dem Pflicht-Häkchen im Buchungsformular bestätigen Sie nur, dass Sie diese
 - Wird eine Terminrunde gelöscht, werden alle zugehörigen Buchungen sofort gelöscht.
 - Gekürzte und gehashte IP-Adressen werden spätestens nach 24 Stunden gelöscht.
 - **Zusammenfassungs-E-Mails an die Lehrkraft** (siehe Abschnitt 6) enthalten Termin und Namen – ohne E-Mail-Adresse – und werden als Nachweis der Gespräche **spätestens 15 Monate nach dem Termin** gelöscht. In der Regel geschieht das gesammelt nach dem Ende des Schuljahres; die Frist von 15 Monaten stellt sicher, dass auch Termine vom Schuljahresbeginn dabei fristgerecht gelöscht werden.
-- Möchten Sie, dass auch diese Einträge früher gelöscht werden, genügt eine kurze Nachricht an die verantwortliche Stelle (Abschnitt 1) oder an die Lehrkraft (Art. 17 DSGVO).
+- Möchten Sie, dass auch diese Einträge früher gelöscht werden, genügt eine kurze Nachricht an die Schule (Abschnitt 1) oder an die Lehrkraft (Art. 17 DSGVO).
 - Ausdrucke der Terminliste werden nach dem Termin vernichtet.
 
 # 6. Empfänger
 
-Inhaltlich haben nur die Lehrkraft der Terminrunde, in der Sie gebucht haben, und die verantwortliche Stelle (Abschnitt 1), die die Plattform verwaltet, Zugriff auf Ihre Angaben; andere Lehrkräfte auf der Plattform sehen sie nicht. Ordnet die verantwortliche Stelle eine Terminrunde einer anderen Lehrkraft zu (z. B. bei Vertretung), sieht diese die bestehenden Buchungen. Eine Weitergabe an Dritte zu anderen Zwecken findet nicht statt. Technisch beteiligt sind:
+Inhaltlich haben nur die Lehrkraft der Terminrunde, in der Sie gebucht haben, und die Personen Zugriff auf Ihre Angaben, die die Schule (Abschnitt 1) mit der Verwaltung dieser Plattform beauftragt und zur Vertraulichkeit verpflichtet hat (Administration); andere Lehrkräfte auf der Plattform sehen sie nicht. Wird eine Terminrunde einer anderen Lehrkraft zugeordnet (z. B. bei Vertretung), sieht diese die bestehenden Buchungen. Eine Weitergabe an Dritte zu anderen Zwecken findet nicht statt. Technisch beteiligt sind:
 
 - **Hosting:** [[HOSTER]]
 - **E-Mail-Versand:** über den Mailserver des Hosters (siehe oben).
@@ -80,20 +78,21 @@ Die Verbindung zu dieser Seite ist per TLS (HTTPS) verschlüsselt. Ihr persönli
 
 # 9. Ihre Rechte
 
-Sie haben gegenüber der verantwortlichen Stelle folgende Rechte hinsichtlich Ihrer personenbezogenen Daten:
+Sie haben gegenüber der Schule folgende Rechte hinsichtlich Ihrer personenbezogenen Daten:
 
 - Recht auf **Auskunft** (Art. 15 DSGVO)
 - Recht auf **Berichtigung** (Art. 16 DSGVO)
 - Recht auf **Löschung** (Art. 17 DSGVO)
 - Recht auf **Einschränkung der Verarbeitung** (Art. 18 DSGVO)
-- Recht auf **Datenübertragbarkeit** (Art. 20 DSGVO)
 - Recht auf **Widerruf** einer Einwilligung mit Wirkung für die Zukunft (Art. 7 Abs. 3 DSGVO)
 
-**Widerspruchsrecht (Art. 21 DSGVO):** Soweit die Verarbeitung auf Art. 6 Abs. 1 lit. f DSGVO beruht, können Sie aus Gründen, die sich aus Ihrer besonderen Situation ergeben, jederzeit Widerspruch einlegen.
+Ein Recht auf Datenübertragbarkeit (Art. 20 DSGVO) besteht für Ihre Buchungsdaten nicht, weil die Schule sie zur Wahrnehmung einer Aufgabe im öffentlichen Interesse verarbeitet (Art. 20 Abs. 3 Satz 2 DSGVO).
 
-Wenden Sie sich dazu formlos an die in Abschnitt 1 genannte verantwortliche Stelle oder an die Lehrkraft, bei der Sie gebucht haben. Ihren Termin können Sie außerdem jederzeit selbst über Ihren persönlichen Link absagen; damit werden Ihre Angaben in der Terminvergabe sofort gelöscht.
+**Widerspruchsrecht (Art. 21 DSGVO):** Soweit die Verarbeitung auf Art. 6 Abs. 1 lit. e DSGVO beruht, können Sie aus Gründen, die sich aus Ihrer besonderen Situation ergeben, jederzeit Widerspruch einlegen.
 
-Sie haben zudem das Recht, sich bei einer Datenschutz-Aufsichtsbehörde zu beschweren (Art. 77 DSGVO), z. B. bei [ZUSTÄNDIGE LANDESDATENSCHUTZBEHÖRDE MIT ADRESSE].
+Wenden Sie sich dazu formlos an die in Abschnitt 1 genannte Schule, an ihre Datenschutzbeauftragte bzw. ihren Datenschutzbeauftragten oder an die Lehrkraft, bei der Sie gebucht haben. Bis zur Änderungsfrist, die die Lehrkraft für die Terminrunde festgelegt hat, können Sie Ihren Termin außerdem selbst über Ihren persönlichen Link absagen; damit werden Ihre Angaben in der Terminvergabe sofort gelöscht. Ist die Frist abgelaufen, zeigt Ihr Link einen Hinweis; wenden Sie sich dann bitte an die Lehrkraft.
+
+Sie haben zudem das Recht, sich bei einer Datenschutz-Aufsichtsbehörde zu beschweren (Art. 77 DSGVO), insbesondere bei der für die Schule zuständigen: [ZUSTÄNDIGE LANDESDATENSCHUTZBEHÖRDE MIT ADRESSE].
 
 # 10. Pflicht zur Bereitstellung, keine automatisierte Entscheidung
 

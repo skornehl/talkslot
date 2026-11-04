@@ -133,16 +133,31 @@ final class Migrations
         ],
     ];
 
-    /** SHA-256 of all previously shipped templates of legal notice/privacy policy (unedited). */
-    /** SHA-256 of the current templates app/templates/pages/*.md (checked by tests/unit.php) */
+    /**
+     * SHA-256 of the current templates app/templates/pages/*.md (checked by tests/unit.php). The variants
+     * (privacy-private.*) are not installed; admins load them into the text form (LegalTexts::VARIANTS).
+     */
     public const CURRENT_PAGE_HASHES = [
-        'imprint.de' => '036e210b629357dfbf768868e3a5f249c888d3052f301170703b196336058f43',
-        'imprint.en' => 'f15521ceaa18e97c98190e448cc95eb6130c4cf571164b09819bb40dd7af22c8',
-        'privacy.de' => '0a06e2bed6e43f5b202366f4a814c2d01e6fc1b37854454fdf33d06063d546d5',
-        'privacy.en' => '73b42ce744345e3fe37504dcd898e50cba9b6ae19bbf30a14fcf37e1f876d96d',
+        'imprint.de' => '557dbb64b5ab373144a29e23a36056355fe02bdc7ff70a43d690d6acb8a74672',
+        'imprint.en' => '0692f22c0bb7dd3c6f76c96c51f3dc78e25af54f97b4c556fb7268b8e372fa3f',
+        'privacy.de' => '12d249130ce60c94e7cd8f430e6cea2809d121351ab59090db0e0cc014eb4afe',
+        'privacy.en' => '53be37d7c9c6697144d9400fe8a4536dee767f9ee22fe2636224d2484d04390a',
+        'privacy-private.de' => 'de4289fa6a99be078922c0d4f2a945805de5fe1398b6e682f256f99cf9a8dabd',
+        'privacy-private.en' => '05bcdc8ab770ab9e17046b5b89e2d9bc9bbbe7a39a66e4fa6c777950c345995b',
     ];
 
+    /**
+     * SHA-256 of all previously shipped default templates of legal notice/privacy policy: stored texts that
+     * still match one exactly (never edited) are replaced by the current default template. Never add
+     * hashes of a variant (privacy-private.*) here – an unedited variant would become the default.
+     */
     private const OLD_PAGE_HASHES = [
+        // Up to v1.5.0: "private service" without a data protection officer, legal bases (b) and (f) only,
+        // "cancel at any time"; legal notice of a "private, non-commercial service"
+        '036e210b629357dfbf768868e3a5f249c888d3052f301170703b196336058f43',
+        'f15521ceaa18e97c98190e448cc95eb6130c4cf571164b09819bb40dd7af22c8',
+        '3885e997cd3bbf330158fdccc730f7fe1b93044379cc2df060ea5e0e7b6396ec',
+        'ffbcc88fbd8b760efc7c4f173bb4e8850517392f88f9ffc0100da3aad921253f',
         // Privacy policy de/en without the reminder mail (up to version 14)
         '0cda1f6b2ca1ad90d1135a27b0087542862a700e0fbcefce7d448895f07a702a',
         '7ab09658494d5af363ab22f52a13140952a72e83656280c26ba54e029b2a0d51',
@@ -196,10 +211,10 @@ final class Migrations
         'c503bcd0596bc7bc45098fedc8f2b910f452909701ba9e28fc247dd9854fcc94',
         'd71943ef603c979ebf3bda10357c80b6395568f07d1690798db8b52dfd016a5c',
         'f1ac0f64ece1e1ce11b4322831f8d121b6d5a3ea450183d6a277cf26d9c0f3b1',
-        // Privacy policy de/en without the calendar download, the later confirmation mail and the
-        // expiry of the remember-me entry (up to v1.5.0)
-        '3885e997cd3bbf330158fdccc730f7fe1b93044379cc2df060ea5e0e7b6396ec',
-        'ffbcc88fbd8b760efc7c4f173bb4e8850517392f88f9ffc0100da3aad921253f',
+        // Privacy policy de/en for public schools without the calendar download, the later confirmation mail
+        // and the expiry of the remember-me entry (interim state on main after v1.5.0)
+        'ac8cf4d882a13a6e127476ab13de02524316d343a746b4b8ff055c3aa0d09347',
+        '320c437da7fbf0e1ab24328e555348c160b1ac8bc551dfcb7229ae0593de2683',
     ];
 
     public static function run(): void

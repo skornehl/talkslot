@@ -2,17 +2,17 @@ This notice informs you, in accordance with Art. 13 of the General Data Protecti
 
 # 1. Controller
 
-The controller within the meaning of the GDPR for this booking service and all appointments booked through it is:
+The controller within the meaning of the GDPR for this booking service and all appointments booked through it is the school:
 
 [[VERANTWORTLICHE]]
 
-The teachers who offer appointments on this platform use it on behalf of and under the instructions of the controller.
+The teachers who offer appointments on this platform use it as part of their official duties for the school.
 
-No data protection officer has been appointed for this private service.
+**The school's data protection officer:** [CONTACT DETAILS OF THE SCHOOL'S DATA PROTECTION OFFICER]
 
 # 2. Purpose
 
-Parents and guardians can use this page to book, change and cancel meetings (e.g. parent-teacher conferences) with the teacher named on the booking page. The data is used solely to organise and hold these meetings and – appointment and name only – as a record of the meetings held in summary e-mails to the teacher (for at most 15 months), and for no other purpose.
+Parents and guardians can use this page to book, change and cancel meetings (e.g. parent-teacher conferences) with the teacher named on the booking page. Such meetings are part of the school's educational mandate. The data is used solely to organise and hold these meetings and – appointment and name only – as a record of the meetings held in summary e-mails to the teacher (for at most 15 months), and for no other purpose.
 
 # 3. Data processed
 
@@ -33,10 +33,8 @@ There are no user accounts, no advertising, no tracking and no usage analytics. 
 
 # 4. Legal basis
 
-- **Booking, changing and cancelling:** Art. 6(1)(b) GDPR – processing is necessary to carry out the appointment you requested.
-- **E-mail confirmation:** Art. 6(1)(b) GDPR, at your request by voluntarily providing the address.
-- **Abuse protection and server logs:** Art. 6(1)(f) GDPR. The legitimate interest is the secure and reliable operation of the booking service and protection against spam, multiple and unauthorised bookings.
-- **Summary e-mails to the teacher and their retention:** Art. 6(1)(b) GDPR (carrying out the agreed appointment) and Art. 6(1)(f) GDPR. The legitimate interest is reliable appointment planning and being able to trace, during the current school year, with whom a parent meeting took place and when.
+- **Booking, changing and cancelling, e-mails about your appointment, and the summaries to the teacher and their retention:** Art. 6(1)(e) and (3) GDPR in conjunction with [PROVISION OF THE STATE SCHOOL ACT, E.G. SECTION 120 SCHULG NRW OR ART. 85 BAYEUG]. The processing is necessary for the school to perform its statutory tasks, which include meetings with parents and guardians. Whether you provide an e-mail address is up to you.
+- **Abuse protection and server logs:** Art. 6(1)(e) and (3) GDPR in conjunction with [PROVISION OF THE STATE DATA PROTECTION ACT]. Both serve the secure and reliable operation of the booking service (Art. 32 GDPR) and protection against spam, multiple and unauthorised bookings.
 - **Browser storage (“Remember my appointment”):** Section 25(1) TDDDG and Art. 6(1)(a) GDPR (your consent by ticking the box), see section 7.
 
 By ticking the required box in the booking form you only confirm that you have read this notice. This is not consent; the processing of your booking data is based on the legal grounds stated above.
@@ -48,12 +46,12 @@ By ticking the required box in the booking form you only confirm that you have r
 - If a booking round is deleted, all its bookings are deleted immediately.
 - Shortened and hashed IP addresses are deleted after 24 hours at the latest.
 - **Summary e-mails to the teacher** (see section 6) contain the appointment and name – without e-mail address – and are deleted, as a record of the meetings, **at the latest 15 months after the appointment**. This is usually done in one batch after the end of the school year; the 15-month period ensures that appointments from the start of the school year are also deleted in time.
-- If you would like these entries deleted earlier, a short message to the controller (section 1) or to the teacher is sufficient (Art. 17 GDPR).
+- If you would like these entries deleted earlier, a short message to the school (section 1) or to the teacher is sufficient (Art. 17 GDPR).
 - Printed appointment lists are destroyed after the meeting day.
 
 # 6. Recipients
 
-Only the teacher of the booking round in which you booked and the controller (section 1), who administers the platform, have access to the content of your details; other teachers on the platform cannot see them. If the controller assigns a booking round to another teacher (e.g. as a substitute), that teacher can see the existing bookings. They are not passed on to third parties for other purposes. Technically involved are:
+Only the teacher of the booking round in which you booked and the persons whom the school (section 1) has entrusted with administering this platform and bound to confidentiality (administrators) have access to the content of your details; other teachers on the platform cannot see them. If a booking round is assigned to another teacher (e.g. as a substitute), that teacher can see the existing bookings. They are not passed on to third parties for other purposes. Technically involved are:
 
 - **Hosting:** [[HOSTER]]
 - **E-mail:** via the web host's mail server (see above).
@@ -80,20 +78,21 @@ The connection to this site is encrypted using TLS (HTTPS). Your personal link c
 
 # 9. Your rights
 
-You have the following rights regarding your personal data:
+You have the following rights towards the school regarding your personal data:
 
 - right of **access** (Art. 15 GDPR)
 - right to **rectification** (Art. 16 GDPR)
 - right to **erasure** (Art. 17 GDPR)
 - right to **restriction of processing** (Art. 18 GDPR)
-- right to **data portability** (Art. 20 GDPR)
 - right to **withdraw consent** with effect for the future (Art. 7(3) GDPR)
 
-**Right to object (Art. 21 GDPR):** where processing is based on Art. 6(1)(f) GDPR, you may object at any time on grounds relating to your particular situation.
+There is no right to data portability (Art. 20 GDPR) for your booking data, because the school processes it to perform a task carried out in the public interest (Art. 20(3), second sentence, GDPR).
 
-Please contact the controller named in section 1 or the teacher with whom you booked. You can also cancel your appointment yourself at any time via your personal link, which deletes your details from the booking service immediately.
+**Right to object (Art. 21 GDPR):** where processing is based on Art. 6(1)(e) GDPR, you may object at any time on grounds relating to your particular situation.
 
-You also have the right to lodge a complaint with a data protection supervisory authority (Art. 77 GDPR), e.g. [COMPETENT STATE DATA PROTECTION AUTHORITY].
+Please contact the school named in section 1, its data protection officer or the teacher with whom you booked. Until the deadline the teacher has set for the booking round, you can also cancel your appointment yourself via your personal link, which deletes your details from the booking service immediately. Once the deadline has passed, your link shows a notice; please contact the teacher then.
+
+You also have the right to lodge a complaint with a data protection supervisory authority (Art. 77 GDPR), in particular the one responsible for the school: [COMPETENT STATE DATA PROTECTION AUTHORITY WITH ADDRESS].
 
 # 10. Obligation to provide data, no automated decisions
 

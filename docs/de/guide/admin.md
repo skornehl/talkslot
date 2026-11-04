@@ -18,8 +18,10 @@ des deutschen Admin-Bereichs; jedes Konto kann ihn unter *Mein Profil* auf Engli
 2. **Angaben für Impressum und Datenschutz** (*Texte*): Name der Schule, Vertretung, vollständige Anschrift
    und E-Mail-Adresse. Dieser Text ersetzt `[[VERANTWORTLICHE]]` in beiden Rechtstexten und gilt für alle
    Admins gemeinsam. Ohne diese Angaben ist **keine Runde öffentlich erreichbar**.
-3. **Rechtstexte** (*Texte*): Prüfen Sie Impressum und Datenschutzerklärung für jede Sprache und ersetzen
-   Sie die verbleibenden Platzhalter in eckigen Klammern. Details unter [Datenschutz und Recht]({{ '/de/guide/privacy/' | relative_url }}).
+3. **Rechtstexte** (*Texte*): Laden Sie für die Datenschutzerklärung die passende Vorlage (*Öffentliche
+   Schule* oder *Privater Träger*), prüfen Sie Impressum und Datenschutzerklärung für jede Sprache und
+   ersetzen Sie die verbleibenden Platzhalter in eckigen Klammern. Vorher lässt sich keine Runde
+   aktivieren. Details unter [Datenschutz und Recht]({{ '/de/guide/privacy/' | relative_url }}).
 4. **E-Mail-Versand prüfen:** *Texte → E-Mail-Versand* zeigt Versandweg und Absender. Machen Sie eine
    Testbuchung mit Ihrer eigenen E-Mail-Adresse und prüfen Sie, ob die Bestätigung ankommt (und nicht als
    Spam markiert wird).
@@ -141,8 +143,14 @@ Platzhalter werden automatisch gefüllt:
 | `[[VERANTWORTLICHE]]` | die *Angaben für Impressum und Datenschutz* (oben unter *Texte*) |
 | `[[HOSTER]]` | den Hoster aus der Konfiguration (`hosting`) |
 
-Für Sprachen ohne eigene Fassung wird die englische verwendet. Hinweise im Dashboard und unter *Texte*
-zeigen an, wenn einem Text ein Platzhalter fehlt oder er veraltet ist.
+Für Sprachen ohne eigene Fassung wird die englische verwendet. *Vorlage laden* im Formular eines Textes
+setzt eine Vorlage ein, bei der Datenschutzerklärung wahlweise *Öffentliche Schule* (installiert) oder
+*Privater Träger*; der gespeicherte Text ändert sich erst beim Speichern.
+
+Angaben, die nur Sie kennen, stehen als Platzhalter in eckigen Klammern im Text. Solange ein Text einer
+angebotenen Sprache noch einen enthält, lässt sich keine Runde aktivieren; bereits aktive Runden bleiben
+erreichbar. Hinweise im Dashboard und unter *Texte* nennen die offenen Platzhalter je Text und zeigen an,
+wenn einem Text ein Platzhalter fehlt oder er veraltet ist.
 
 ## Benachrichtigungen
 
