@@ -109,11 +109,13 @@ runs queue the teachers' summary mails and the parents' reminders; the cron job 
 
 ## Mail queue
 
-No visitor waits for the mail server: page views only run the database steps of the clean-up, and
-reminders, summaries and mails that failed go to a **mail queue** (outbox) that the **cron job** sends
-(`bin/cron.php` or the web cron). Per run it sends at most 100 mails within about 20 seconds over one SMTP
+Apart from the confirmations sent right away (below), no visitor waits for the mail server: page views
+only run the database steps of the clean-up, and reminders, summaries and mails that failed go to a
+**mail queue** (outbox) that the **cron job** sends (`bin/cron.php` or the web cron). Per run it sends at most 100 mails within about 20 seconds over one SMTP
 connection; confirmations and change notices to parents go first, then summaries, then reminders
 (see [configuration]({{ '/guide/configuration/' | relative_url }}#mail-queue), also for an hourly limit).
+Only one run sends at a time, per database, so installations sharing a database server do not hold each
+other up; the cron job waits up to 15 seconds for a run in progress.
 
 - **Confirmations stay immediate.** When parents book or move an appointment, or a teacher saves an entry
   with a mail, the mail is sent right away. If the mail server refuses it, it goes to the queue, and the
@@ -128,7 +130,8 @@ connection; confirmations and change notices to parents go first, then summaries
   keeps refusing.
 - **Without a cron job** mails can only go out on page views if PHP runs as PHP-FPM or LiteSpeed: the page
   is delivered first, then up to 10 due mails are sent (`mail_queue.after_response`). With Apache's
-  mod_php that is not possible, so set up the cron job; the included `cron.yml` runs it hourly.
+  mod_php that is not possible, so set up the cron job; the included `cron.yml` runs it hourly. Without it,
+  reminders and summaries are not sent there, and queued mails are given up after 48 hours.
 
 ## Troubleshooting
 

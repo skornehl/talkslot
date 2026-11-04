@@ -117,13 +117,16 @@ Cronjob verschickt sie.
 
 ## Mail-Warteschlange
 
-Niemand wartet beim Seitenaufruf auf den Mailserver: Seitenaufrufe führen nur die Datenbankschritte der
-Bereinigung aus, und Erinnerungen, Zusammenfassungen und fehlgeschlagene E-Mails kommen in eine
-**Mail-Warteschlange** (Outbox), die der **Cronjob** verschickt (`bin/cron.php` oder der Web-Cron). Pro Lauf
+Außer bei den sofort verschickten Bestätigungen (unten) wartet niemand beim Seitenaufruf auf den
+Mailserver: Seitenaufrufe führen nur die Datenbankschritte der Bereinigung aus, und Erinnerungen,
+Zusammenfassungen und fehlgeschlagene E-Mails kommen in eine **Mail-Warteschlange** (Outbox), die der
+**Cronjob** verschickt (`bin/cron.php` oder der Web-Cron). Pro Lauf
 sind das höchstens 100 E-Mails in etwa 20 Sekunden über eine SMTP-Verbindung; Bestätigungen und
 Änderungsmitteilungen an Eltern gehen vor, dann Zusammenfassungen, dann Erinnerungen
 (siehe [Konfiguration]({{ '/de/guide/configuration/' | relative_url }}#mail-warteschlange), auch für eine
-Grenze pro Stunde).
+Grenze pro Stunde). Es verschickt immer nur ein Lauf, und zwar je Datenbank: Installationen auf demselben
+Datenbankserver halten sich nicht gegenseitig auf. Der Cronjob wartet bis zu 15 Sekunden auf einen
+laufenden Lauf.
 
 - **Bestätigungen bleiben sofort.** Buchen oder verschieben Eltern einen Termin oder speichert eine Lehrkraft
   einen Eintrag mit E-Mail, geht die E-Mail sofort hinaus. Lehnt der Mailserver sie ab, kommt sie in die
@@ -141,7 +144,8 @@ Grenze pro Stunde).
 - **Ohne Cronjob** können E-Mails nur bei Seitenaufrufen hinausgehen, wenn PHP als PHP-FPM oder LiteSpeed
   läuft: Die Seite wird zuerst ausgeliefert, danach gehen bis zu 10 fällige E-Mails hinaus
   (`mail_queue.after_response`). Mit Apaches mod_php geht das nicht; richten Sie deshalb den Cronjob ein,
-  das mitgelieferte `cron.yml` startet ihn stündlich.
+  das mitgelieferte `cron.yml` startet ihn stündlich. Ohne ihn gehen dort keine Erinnerungen und
+  Zusammenfassungen hinaus, und wartende E-Mails werden nach 48 Stunden verworfen.
 
 ## Fehlersuche
 

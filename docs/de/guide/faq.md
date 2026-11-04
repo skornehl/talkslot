@@ -18,7 +18,8 @@ Praktikumsgespräche.
 ## Braucht es einen Cronjob?
 
 Ja, damit Buchungen rechtzeitig gelöscht sowie Zusammenfassungen, Erinnerungen und erneut versuchte
-Bestätigungen verschickt werden: Während ein Besucher wartet, werden nie E-Mails verschickt. Ohne
+Bestätigungen verschickt werden: Außer den sofort verschickten Bestätigungen geht keine E-Mail hinaus, während ein
+Besucher wartet. Ohne
 Shell-Zugang nutzen Sie den Web-Cron (der mitgelieferte GitHub-Workflow ruft ihn stündlich auf). Als
 Rückfallebene läuft das Aufräumen außerdem bei Seitenaufrufen, höchstens alle 15 Minuten, und mit PHP-FPM
 oder LiteSpeed verschickt ein Seitenaufruf nach seiner Antwort bis zu 10 wartende E-Mails.

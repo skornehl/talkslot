@@ -81,8 +81,10 @@ Pro Tag sehen Sie alle Termine mit den Buchungen:
   dem Eintrag.
 - ***E-Mail nicht zugestellt*** neben einem Eintrag: Die E-Mail an die Eltern konnte nicht verschickt
   werden. Steht dort *neuer Versuch folgt*, wird sie automatisch wiederholt; sonst informieren Sie die
-  Eltern bitte persönlich oder prüfen die Adresse (unter *Bearbeiten* korrigieren und mit angehakter
-  E-Mail speichern).
+  Eltern bitte persönlich oder prüfen die Adresse: unter *Bearbeiten* korrigieren und mit angehakter
+  E-Mail speichern. Diese E-Mail enthält keinen Änderungslink; kam die Bestätigung eines selbst
+  angelegten Eintrags nie an, löschen Sie den Eintrag stattdessen und tragen ihn mit der richtigen Adresse
+  neu ein, damit die Eltern den Link bekommen.
 - ***Sperren***: einen Termin sperren, damit niemand ihn buchen kann, und wieder freigeben.
 - **Tage**: Zeiten und den Ort eines einzelnen Tages bearbeiten (*Tag bearbeiten*), Pausen hinzufügen,
   einen Tag drucken (*Tag drucken*), weitere Tage hinzufügen (*+ Tag hinzufügen*) oder einen Tag löschen.

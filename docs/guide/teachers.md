@@ -76,7 +76,9 @@ Per day you see all slots with the bookings:
   the entry.
 - ***E-Mail nicht zugestellt*** next to an entry: the mail to the parents could not be sent. While it says
   *neuer Versuch folgt*, it is retried automatically; otherwise please inform the parents in person or
-  check the address (correct it under *Bearbeiten* and save with the mail ticked).
+  check the address: correct it under *Bearbeiten* and save with the mail ticked. That mail carries no
+  change link; if the confirmation of an entry you added yourself never arrived, delete the entry and add
+  it again with the right address instead, so that the parents get the link.
 - **Block** (*Sperren*) a slot so nobody can book it, and release it again.
 - **Days**: edit times and the location of a single day (*Tag bearbeiten*), add breaks, print a day (*Tag drucken*), add more days
   (*+ Tag hinzufügen*) or delete a day.
