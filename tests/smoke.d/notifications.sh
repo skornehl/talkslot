@@ -125,6 +125,11 @@ App\Outbox::queueBooking($id("Outbox Eintrag"), "changed");
 $out[] = App\Outbox::process()["mails_sent"] . "/" . $kinds($id("Outbox Warteschlange")) . "/" . (int) (App\Settings::get("mail_hour") === App\Time::now()->format("Y-m-d H") . "|2");
 App\Db::run("DELETE FROM mail_outbox WHERE booking_id = ?", [$id("Outbox Warteschlange")]);
 App\Config::load($cfg);
+// At most that many mails per run, the rest waits for the next one
+App\Outbox::queueBooking($id("Outbox Eltern"), "changed");
+App\Outbox::queueBooking($id("Outbox Nachtrag Neu"), "changed");
+$out[] = App\Outbox::process(1)["mails_sent"] . "/" . App\Db::value("SELECT COUNT(*) FROM mail_outbox WHERE booking_id IN (?, ?)", [$id("Outbox Eltern"), $id("Outbox Nachtrag Neu")]);
+App\Outbox::process();
 // Only one run at a time: while another connection holds the lock, a run sends nothing
 $db = $cfg["db"];
 $other = new PDO("mysql:host={$db["host"]};port={$db["port"]};dbname={$db["name"]}", $db["user"], $db["pass"]);
@@ -137,10 +142,17 @@ $out[] = App\Outbox::afterResponse(static fn (): bool => false) . "/" . (App\Out
 App\Config::load(["mail_queue" => ["after_response" => false] + $cfg["mail_queue"]] + $cfg);
 $out[] = App\Outbox::afterResponse(static fn (): bool => true);
 App\Config::load($cfg);
-$out[] = App\Outbox::afterResponse(static fn (): bool => true) . "/" . (App\Outbox::due() ? "due" : "-");
-// A kind this version does not know (queued by a newer one before a rollback) is dropped
+session_save_path(sys_get_temp_dir()); // an admin's session is closed first: the next page does not wait
+session_start();
+$out[] = App\Outbox::afterResponse(static fn (): bool => true) . "/" . (App\Outbox::due() ? "due" : "-") . "/" . (session_status() === PHP_SESSION_NONE ? "closed" : "open");
+// Dropped: a kind this version does not know (queued by a newer one before a rollback), a booking whose
+// address was removed in the meantime
 App\Db::run("INSERT INTO mail_outbox (kind, booking_id, priority, next_attempt_at, created_at) VALUES ('unbekannt', ?, 1, NOW(), NOW())", [$id("Outbox Eintrag")]);
-$out[] = App\Outbox::process()["mails_dropped"];
+$address = App\Db::value("SELECT email FROM bookings WHERE id = ?", [$id("Outbox Ohne Mail")]);
+App\Db::run("UPDATE bookings SET email = NULL WHERE id = ?", [$id("Outbox Ohne Mail")]);
+App\Outbox::queueBooking($id("Outbox Ohne Mail"), "changed");
+$out[] = json_encode(App\Outbox::process());
+App\Db::run("UPDATE bookings SET email = ? WHERE id = ?", [$address, $id("Outbox Ohne Mail")]);
 // Summaries from the outbox: only while they are still right
 $uid = (int) App\Db::value("SELECT user_id FROM rounds WHERE title = 'Outbox Test'");
 $day = (int) App\Db::value("SELECT d.id FROM round_days d JOIN rounds r ON r.id = d.round_id WHERE r.title = 'Outbox Test'");
@@ -154,8 +166,8 @@ $out[] = implode(",", array_map(static fn ($r) => var_export($r, true), [
 echo implode("|", $out);
 PHP
 )
-check "outbox: a reminder no longer due is dropped; the hourly limit holds back reminders, not single mails; one run at a time; after a page request only once the response is out; unknown kinds dropped; summaries only while right ($NK)" \
-  '[ "$NK" = "reminder/1/1/1|1/reminder/1|{\"mails_sent\":0,\"mails_failed\":0,\"mails_dropped\":0}|0/due|0|1/-|1|NULL,NULL,NULL,true,true" ]'
+check "outbox: a reminder no longer due is dropped; the hourly limit holds back reminders, not single mails; a limit per run; one run at a time; after a page request only once the response is out; obsolete mails dropped; summaries only while right ($NK)" \
+  '[ "$NK" = "reminder/1/1/1|1/reminder/1|1/1|{\"mails_sent\":0,\"mails_failed\":0,\"mails_dropped\":0}|0/due|0|1/-/closed|{\"mails_sent\":0,\"mails_failed\":0,\"mails_dropped\":2}|NULL,NULL,NULL,true,true" ]'
 
 # Given up after 48 hours (also when no attempt was made, e.g. without a cron job)
 DBQ "INSERT INTO tp_mail_outbox (kind, booking_id, priority, next_attempt_at, created_at) VALUES ('changed', $(n_id "Outbox Ohne Mail"), 1, NOW() - INTERVAL 49 HOUR, NOW() - INTERVAL 49 HOUR)"

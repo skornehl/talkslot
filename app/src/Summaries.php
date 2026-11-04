@@ -91,10 +91,11 @@ final class Summaries
         if ($kind === 'summary_evening' && $user && $user['summary_evening'] && $ref > Time::today()) {
             return self::sendEvening($user, $ref);
         }
-        $day = $kind === 'summary_deadline' && $user && $user['summary_deadline'] ? Db::one(
-            'SELECT d.id, d.day_date, r.title FROM round_days d JOIN rounds r ON r.id = d.round_id WHERE d.id = ? AND r.user_id = ? AND d.day_date >= ?',
-            [(int) substr($ref, 4), $userId, Time::today()]
-        ) : null;
+        if ($kind !== 'summary_deadline' || !$user || !$user['summary_deadline']) {
+            return null;
+        }
+        $day = Db::one('SELECT d.id, d.day_date, r.title FROM round_days d JOIN rounds r ON r.id = d.round_id WHERE d.id = ? AND r.user_id = ? AND d.day_date >= ?',
+            [(int) substr($ref, 4), $userId, Time::today()]);
         return $day ? self::sendDeadline($user, $day) : null;
     }
 

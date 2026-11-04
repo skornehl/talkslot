@@ -37,11 +37,11 @@ final class Reminders
         foreach ($ids as $row) {
             // Claimed and queued together: a run in parallel (cron job and page request) skips it
             $queued += (int) Db::transaction(static function () use ($row): bool {
-                if (Db::exec('UPDATE bookings SET reminded_at = ? WHERE id = ? AND reminded_at IS NULL', [Time::nowSql(), $row['id']]) !== 1) {
-                    return false;
+                $claimed = Db::exec('UPDATE bookings SET reminded_at = ? WHERE id = ? AND reminded_at IS NULL', [Time::nowSql(), $row['id']]) === 1;
+                if ($claimed) {
+                    Outbox::queueBooking((int) $row['id'], 'reminder');
                 }
-                Outbox::queueBooking((int) $row['id'], 'reminder');
-                return true;
+                return $claimed;
             });
         }
         return ['reminders_queued' => $queued];

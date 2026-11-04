@@ -1023,7 +1023,7 @@ final class AdminController
         $msg = __('Eintrag angelegt. Änderungslink für die Eltern (wird nur jetzt angezeigt): {link}', ['link' => abs_url('/b/' . $token, ['lang' => $old['lang']])]);
         if ($old['send_mail'] && $old['email'] !== '' && $this->teacherMailAllowed($msg)) {
             $mail = $this->withoutSession(static fn () => Notifier::sendOrQueue((array) BookingService::findById($id), 'booked', $token));
-            $msg .= ' – ' . ($mail === Notifier::SENT ? __('Bestätigung per E-Mail gesendet.') : self::mailQueuedText());
+            $msg .= ' – ' . self::mailMessage($mail, __('Bestätigung per E-Mail gesendet.'));
         }
         $this->flash('success', $msg);
         Http::redirect('/admin/round/' . $round['id'], [], 'slot-' . $slotId);
@@ -1081,7 +1081,7 @@ final class AdminController
         // appointment after the day or the round was changed (the mail carries the current details)
         if ($old['send_mail'] && $old['email'] !== '' && $this->teacherMailAllowed($msg)) {
             $mail = $this->withoutSession(static fn () => Notifier::sendOrQueue((array) BookingService::findById($id), 'changed', null));
-            $msg .= ' ' . ($mail === Notifier::SENT ? __('Änderung per E-Mail mitgeteilt.') : self::mailQueuedText());
+            $msg .= ' ' . self::mailMessage($mail, __('Änderung per E-Mail mitgeteilt.'));
         }
         $this->flash('success', $msg);
         Http::redirect('/admin/round/' . $booking['round_id'], [], 'day-' . (BookingService::findById($id)['day_id'] ?? ''));
@@ -1100,9 +1100,10 @@ final class AdminController
         Http::redirect('/admin/round/' . $booking['round_id'], [], 'day-' . $booking['day_id']);
     }
 
-    private static function mailQueuedText(): string
+    /** Message about a mail to the parents: $sent, or that it failed and is retried (Notifier::sendOrQueue()). */
+    private static function mailMessage(?string $mail, string $sent): string
     {
-        return __('Die E-Mail konnte gerade nicht gesendet werden. Sie wird automatisch erneut versucht; bis dahin steht beim Eintrag „E-Mail nicht zugestellt“.');
+        return $mail === Notifier::SENT ? $sent : __('Die E-Mail konnte gerade nicht gesendet werden. Sie wird automatisch erneut versucht; bis dahin steht beim Eintrag „E-Mail nicht zugestellt“.');
     }
 
     /**

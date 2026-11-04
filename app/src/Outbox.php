@@ -55,10 +55,8 @@ final class Outbox
     /** Queues a mail to an account (summaries; $ref: the day it is about). */
     public static function queueAccount(int $userId, string $kind, string $ref): void
     {
-        Db::run(
-            'INSERT IGNORE INTO mail_outbox (kind, user_id, ref, priority, next_attempt_at, created_at) VALUES (?, ?, ?, ?, ?, ?)',
-            [$kind, $userId, $ref, self::KINDS[$kind], Time::nowSql(), Time::nowSql()]
-        );
+        Db::run('INSERT IGNORE INTO mail_outbox (kind, user_id, ref, priority, next_attempt_at, created_at) VALUES (?, ?, ?, ?, ?, ?)',
+            [$kind, $userId, $ref, self::KINDS[$kind], Time::nowSql(), Time::nowSql()]);
     }
 
     /** When the next attempt is due after $failures failed ones. */
