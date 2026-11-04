@@ -19,7 +19,7 @@ Eine Datenschutzbeauftragte bzw. ein Datenschutzbeauftragter ist für dieses pri
 **Bei einer Terminbuchung:**
 
 - **Name(n)**, die Sie in das Freitextfeld eintragen (Pflichtangabe). Bitte geben Sie nur an, was zur Zuordnung des Gesprächs nötig ist (z. B. Name des Kindes), und keine weiteren Informationen.
-- **E-Mail-Adresse** – nur wenn Sie diese freiwillig angeben. Sie wird ausschließlich für die Terminbestätigung und Mitteilungen zu Ihrem Termin (Änderung, Absage) genutzt, nicht für Werbung oder Newsletter.
+- **E-Mail-Adresse** – nur wenn Sie diese freiwillig angeben. Sie wird ausschließlich für die Terminbestätigung und Mitteilungen zu Ihrem Termin (Änderung, Absage, Erinnerung am Vorabend, sofern die Lehrkraft sie für die Terminrunde vorgesehen hat) genutzt, nicht für Werbung oder Newsletter.
 - der gewählte **Termin**, der Zeitpunkt der Buchung und die gewählte Sprache.
 
 Wenn Sie eine E-Mail-Adresse angeben, erhalten Sie Bestätigungen mit Ihrem Termin als Kalenderdatei (.ics). Was Sie damit in Ihrem eigenen Kalender speichern, liegt in Ihrer Verantwortung.

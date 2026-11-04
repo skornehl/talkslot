@@ -30,6 +30,7 @@ final class Cleanup
         }
         self::run();
         Summaries::run();
+        Reminders::run();
     }
 
     /** @return array<string,int> number of deleted/changed records per step */

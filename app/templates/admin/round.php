@@ -36,7 +36,7 @@ $csrf = Csrf::adminField();
     <pre class="invitation"><?= e($invitation) ?></pre>
   </details>
   <?php if (trim((string) ($round['location'] ?? '')) !== ''): ?><p>Ort: <strong><?= e(trim((string) $round['location'])) ?></strong></p><?php endif; ?>
-  <p class="small muted"><?= ['round' => 'Ein Termin pro Person', 'day' => 'Ein Termin pro Person und Tag'][$round['booking_limit'] ?? 'none'] ?? 'Mehrfachbuchungen erlaubt' ?> · Buchungsschluss <?= (int) $round['booking_deadline_hours'] ?> h vorher · Ändern/Absagen bis <?= (int) $round['cancel_deadline_hours'] ?> h vorher ·
+  <p class="small muted"><?= ['round' => 'Ein Termin pro Person', 'day' => 'Ein Termin pro Person und Tag'][$round['booking_limit'] ?? 'none'] ?? 'Mehrfachbuchungen erlaubt' ?><?= !empty($round['remind_parents']) ? ' · Erinnerung am Vorabend' : '' ?> · Buchungsschluss <?= (int) $round['booking_deadline_hours'] ?> h vorher · Ändern/Absagen bis <?= (int) $round['cancel_deadline_hours'] ?> h vorher ·
     <?= $round['delete_after_hours'] === null ? 'Runde wird nicht automatisch gelöscht' : 'Runde wird ' . (int) $round['delete_after_hours'] . ' h nach Ablauf gelöscht' ?></p>
   <div class="actions">
     <a class="button" href="<?= e(url('/admin/round/' . $rid . '/edit')) ?>">Bearbeiten</a>

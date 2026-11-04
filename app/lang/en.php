@@ -48,6 +48,7 @@ return [
     'form.name.hint' => 'For example the child’s first and last name.',
     'form.email' => 'E-mail address (optional)',
     'form.email.hint' => 'Only used to send you a confirmation with your personal link. Without an address you will only see the link on the next page.',
+    'form.email.hint_reminder' => 'Only used for a confirmation with your personal link and a reminder the evening before. Without an address you will only see the link on the next page.',
     'privacy.summary.title' => 'Privacy at a glance',
     'privacy.summary.items' => [
         'Only the name you enter, the time slot and – optionally – your e-mail address are stored.',
@@ -122,6 +123,8 @@ return [
     'mail.changed.body' => "Hello,\n\nyour appointment has been changed.\n\n{title}\nMeeting with: {teacher}\nNew appointment: {when}\nName: {name}\n\nChange or cancel:\n{link}",
     'mail.cancelled.subject' => 'Appointment cancelled: {title}',
     'mail.cancelled.body' => "Hello,\n\nyour appointment has been cancelled and your details deleted from the booking service.\n\n{title}\nMeeting with: {teacher}\nCancelled appointment: {when}",
+    'mail.reminder.subject' => 'Reminder of your appointment tomorrow: {title}',
+    'mail.reminder.body' => "Hello,\n\nthis is a reminder of your appointment tomorrow.\n\n{title}\nMeeting with: {teacher}\nAppointment: {when}\nName: {name}\n\nIf you cannot come, please cancel the appointment using this link (as long as the deadline has not passed):\n{link}",
     'mail.ics.hint' => 'The appointment is attached as a calendar file (termin.ics). Open it to add the appointment to your calendar.',
     'mail.ics.description' => 'Change or cancel: {link}',
     'mail.link_unchanged' => 'Your existing personal link remains valid.',

@@ -41,7 +41,7 @@
       <div class="field">
         <label for="email"><?= e(t('form.email')) ?></label>
         <input type="email" id="email" name="email" maxlength="254" autocomplete="email" inputmode="email" aria-describedby="email-hint" value="<?= e($old['email'] ?? '') ?>">
-        <p class="hint" id="email-hint"><?= e(t('form.email.hint')) ?></p>
+        <p class="hint" id="email-hint"><?= e(t(!empty($round['remind_parents']) ? 'form.email.hint_reminder' : 'form.email.hint')) ?></p>
       </div>
 
       <div class="hp" aria-hidden="true">

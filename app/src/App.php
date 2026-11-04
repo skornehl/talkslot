@@ -67,6 +67,6 @@ final class App
             return;
         }
         Migrations::run();
-        echo json_encode(['status' => 'ok'] + Cleanup::run() + Summaries::run());
+        echo json_encode(['status' => 'ok'] + Cleanup::run() + Summaries::run() + Reminders::run());
     }
 }

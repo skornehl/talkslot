@@ -209,7 +209,7 @@ final class AdminController
             'title' => '', 'slug' => '', 'description' => '', 'location' => '', 'source_lang' => I18n::defaultLanguage(), 'is_active' => 1,
             'booking_deadline_hours' => 24, 'cancel_deadline_hours' => 12,
             'delete_after_hours' => 24, 'random_suffix' => 1,
-            'code_required' => 0, 'booking_limit' => 'round', 'user_id' => Auth::id(),
+            'code_required' => 0, 'booking_limit' => 'round', 'remind_parents' => 1, 'user_id' => Auth::id(),
         ];
         $this->render('admin/round_form', [
             'title' => $round ? 'Runde bearbeiten' : 'Neue Runde',
@@ -246,6 +246,10 @@ final class AdminController
             // Multiple bookings; if the field is missing (form from before the update), the previous value stays
             'booking_limit' => in_array(Http::post('booking_limit'), BookingService::LIMITS, true)
                 ? Http::post('booking_limit') : (string) ($round['booking_limit'] ?? 'round'),
+            // Reminder to parents; if the form does not know the field yet, the previous value stays
+            'remind_parents' => !$round || Http::post('remind_parents_field') === '1'
+                ? (Http::post('remind_parents') === '1' ? 1 : 0)
+                : (int) $round['remind_parents'],
             // Teacher of the round: only the admin chooses; otherwise whoever creates it or the previous teacher
             'user_id' => Auth::isAdmin() && ctype_digit(Http::post('user_id')) ? (int) Http::post('user_id') : (int) ($round['user_id'] ?? Auth::id()),
         ];
@@ -310,13 +314,13 @@ final class AdminController
         $values = [
             $data['title'], $slug, $data['description'] !== '' ? $data['description'] : null,
             $data['location'] !== '' ? $data['location'] : null, $data['source_lang'],
-            $data['code_required'], $data['booking_limit'], $data['is_active'],
+            $data['code_required'], $data['booking_limit'], $data['remind_parents'], $data['is_active'],
             (int) $data['booking_deadline_hours'], (int) $data['cancel_deadline_hours'],
             $deleteAfter === '' ? null : (int) $deleteAfter, $now,
         ];
         if ($round) {
             Db::run(
-                'UPDATE rounds SET title = ?, slug = ?, description = ?, location = ?, source_lang = ?, code_required = ?, booking_limit = ?, is_active = ?, booking_deadline_hours = ?,
+                'UPDATE rounds SET title = ?, slug = ?, description = ?, location = ?, source_lang = ?, code_required = ?, booking_limit = ?, remind_parents = ?, is_active = ?, booking_deadline_hours = ?,
                         cancel_deadline_hours = ?, delete_after_hours = ?, updated_at = ?,
                         expired_at = IF(? = 1, NULL, expired_at), user_id = ?
                   WHERE id = ? AND user_id = ?',
@@ -338,9 +342,9 @@ final class AdminController
             $ownerId = (int) $owner['id'];
             [$id, $count] = Db::transaction(function () use ($values, $now, $dayData, $ownerId): array {
                 $id = Db::insert(
-                    'INSERT INTO rounds (title, slug, description, location, source_lang, code_required, booking_limit, is_active, booking_deadline_hours,
-                                         cancel_deadline_hours, delete_after_hours, updated_at, created_at, user_id, code)
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                    'INSERT INTO rounds (title, slug, description, location, source_lang, code_required, booking_limit, remind_parents, is_active,
+                                         booking_deadline_hours, cancel_deadline_hours, delete_after_hours, updated_at, created_at, user_id, code)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                     [...$values, $now, $ownerId, RoundCode::unique()]
                 );
                 return [$id, $this->createDays($id, $dayData)];
@@ -587,11 +591,11 @@ final class AdminController
             $now = Time::nowSql();
             $title = rtrim(mb_substr($round['title'] . ' (Kopie)', 0, 200));
             $newId = Db::insert(
-                'INSERT INTO rounds (title, slug, description, location, source_lang, code_required, booking_limit, is_active, booking_deadline_hours,
-                                     cancel_deadline_hours, delete_after_hours, created_at, updated_at, user_id, code)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?)',
+                'INSERT INTO rounds (title, slug, description, location, source_lang, code_required, booking_limit, remind_parents, is_active,
+                                     booking_deadline_hours, cancel_deadline_hours, delete_after_hours, created_at, updated_at, user_id, code)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?)',
                 [$title, Slug::unique(Slug::withSuffix(Slug::fromText($title))), $round['description'], $round['location'], $round['source_lang'],
-                 (int) $round['code_required'], (string) $round['booking_limit'],
+                 (int) $round['code_required'], (string) $round['booking_limit'], (int) $round['remind_parents'],
                  $round['booking_deadline_hours'], $round['cancel_deadline_hours'],
                  $round['delete_after_hours'], $now, $now, (int) $round['user_id'], RoundCode::unique()]
             );
@@ -1452,6 +1456,15 @@ final class AdminController
         if ($noPlaceholder) {
             $hints[] = 'Impressum bzw. Datenschutzerklärung (' . $list($noPlaceholder) . ') enthalten den Platzhalter [[VERANTWORTLICHE]] nicht – '
                 . 'die Angaben für Impressum und Datenschutz erscheinen dort nicht automatisch.';
+        }
+        // Reminder mails to parents: the privacy policy should name them as a purpose of the address
+        $noReminder = Db::value('SELECT 1 FROM rounds WHERE remind_parents = 1 LIMIT 1') !== null
+            ? Db::all("SELECT lang FROM pages WHERE page_key = 'privacy' AND lang IN ('de', 'en')
+                         AND content NOT LIKE '%Erinnerung%' AND content NOT LIKE '%reminder%' ORDER BY lang")
+            : [];
+        if ($noReminder) {
+            $hints[] = 'Die Datenschutzerklärung (' . $list($noReminder) . ') erwähnt die Erinnerung an Eltern am Vortag noch nicht – '
+                . 'bitte den Punkt „E-Mail-Adresse“ in Abschnitt 2 an die Vorlage anpassen (oder die Erinnerung in den Runden abschalten).';
         }
         $hosting = array_values(array_filter(
             array_column(Db::all("SELECT DISTINCT lang FROM pages WHERE page_key = 'privacy' AND content LIKE '%[[HOSTER]]%' ORDER BY lang"), 'lang'),

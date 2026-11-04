@@ -48,6 +48,7 @@ return [
     'form.name.hint' => 'Na przykład imię i nazwisko dziecka.',
     'form.email' => 'Adres e-mail (opcjonalnie)',
     'form.email.hint' => 'Służy wyłącznie do wysłania potwierdzenia z osobistym linkiem. Bez adresu link zobaczą Państwo tylko na następnej stronie.',
+    'form.email.hint_reminder' => 'Służy wyłącznie do wysłania potwierdzenia z osobistym linkiem oraz przypomnienia w przeddzień wieczorem. Bez adresu link zobaczą Państwo tylko na następnej stronie.',
     'privacy.summary.title' => 'Ochrona danych w skrócie',
     'privacy.summary.items' => [
         'Zapisywane są wyłącznie podane imię i nazwisko, termin oraz – dobrowolnie – adres e-mail.',
@@ -122,6 +123,8 @@ return [
     'mail.changed.body' => "Dzień dobry,\n\ntermin został zmieniony.\n\n{title}\nRozmowa z: {teacher}\nNowy termin: {when}\nImię i nazwisko: {name}\n\nZmiana lub odwołanie:\n{link}",
     'mail.cancelled.subject' => 'Termin odwołany: {title}',
     'mail.cancelled.body' => "Dzień dobry,\n\ntermin został odwołany, a Państwa dane usunięte z systemu rezerwacji.\n\n{title}\nRozmowa z: {teacher}\nOdwołany termin: {when}",
+    'mail.reminder.subject' => 'Przypomnienie o jutrzejszym terminie: {title}',
+    'mail.reminder.body' => "Dzień dobry,\n\nprzypominamy o jutrzejszym terminie.\n\n{title}\nRozmowa z: {teacher}\nTermin: {when}\nImię i nazwisko: {name}\n\nJeśli nie mogą Państwo przyjść, prosimy odwołać termin przez ten link (o ile termin na odwołanie jeszcze nie minął):\n{link}",
     'mail.ics.hint' => 'W załączniku znajduje się termin jako plik kalendarza (termin.ics). Otwórz plik, aby dodać termin do swojego kalendarza.',
     'mail.ics.description' => 'Zmiana lub odwołanie: {link}',
     'mail.link_unchanged' => 'Dotychczasowy osobisty link pozostaje ważny.',

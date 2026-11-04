@@ -138,7 +138,8 @@ final class BookingService
                 if ($limited && (string) $slot['day_date'] !== (string) $booking['day_date']) {
                     self::assertWithinLimit($round, (string) $slot['day_date'], (string) $booking['name'], $booking['email'], (int) $booking['id']);
                 }
-                Db::run('UPDATE bookings SET slot_id = ?, updated_at = ? WHERE id = ?', [$newSlotId, Time::nowSql(), $booking['id']]);
+                // New date: remind again (unless the move happens on the day of the reminder, see Reminders)
+                Db::run('UPDATE bookings SET slot_id = ?, reminded_at = NULL, updated_at = ? WHERE id = ?', [$newSlotId, Time::nowSql(), $booking['id']]);
             }));
         } catch (\PDOException $e) {
             if (Db::isDuplicate($e)) {
@@ -168,7 +169,10 @@ final class BookingService
         if (!Token::isWellFormed($plain)) {
             return null;
         }
-        return Db::one(self::DETAIL_SQL . ' WHERE b.token_hash = ?', [Token::hash($plain)]);
+        $hash = Token::hash($plain);
+        // The link in the reminder mail has its own token (the original one is only stored as a hash)
+        return Db::one(self::DETAIL_SQL . ' WHERE b.token_hash = ?', [$hash])
+            ?? Db::one(self::DETAIL_SQL . ' WHERE b.reminder_token_hash = ?', [$hash]);
     }
 
     public static function findById(int $id): ?array

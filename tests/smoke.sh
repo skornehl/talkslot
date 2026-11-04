@@ -572,6 +572,9 @@ check "saving the details also updates the admin's profile (read by older versio
 DBQ "ALTER TABLE tp_rounds DROP COLUMN location; ALTER TABLE tp_round_days DROP COLUMN location; UPDATE tp_settings SET value = '13' WHERE name = 'schema_version'"
 curl -s -o /dev/null "$B/"
 check "migration 14: location columns added, rounds still reachable" '[ "$(DBQ "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND COLUMN_NAME=\"location\" AND TABLE_NAME IN (\"tp_rounds\",\"tp_round_days\")")" = 2 ] && [ "$(DBQ "SELECT value FROM tp_settings WHERE name=\"schema_version\"")" = "$LATEST" ] && [ "$(curl -s -o /dev/null -w "%{http_code}" -b "$J" "$B/admin/round/$RID")" = 200 ]'
+DBQ "ALTER TABLE tp_rounds DROP COLUMN remind_parents; ALTER TABLE tp_bookings DROP INDEX uq_bookings_reminder_token, DROP COLUMN reminded_at, DROP COLUMN reminder_token_hash; UPDATE tp_settings SET value = '14' WHERE name = 'schema_version'"
+curl -s -o /dev/null "$B/"
+check "migration 15: reminder columns added, existing rounds remind" '[ "$(DBQ "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND ((TABLE_NAME=\"tp_rounds\" AND COLUMN_NAME=\"remind_parents\") OR (TABLE_NAME=\"tp_bookings\" AND COLUMN_NAME IN (\"reminded_at\",\"reminder_token_hash\")))")" = 3 ] && [ "$(DBQ "SELECT MIN(remind_parents) FROM tp_rounds")" = 1 ] && [ "$(DBQ "SELECT value FROM tp_settings WHERE name=\"schema_version\"")" = "$LATEST" ]'
 
 echo "Web cron"
 CTOK=$(printf 'cron' | openssl dgst -sha256 -hmac "$(printf 'd%.0s' {1..64})" | sed 's/.*= //')
@@ -941,6 +944,39 @@ check "location longer than 200 characters rejected" 'echo "$X" | grep -q "Ort: 
 curl -s -o /dev/null -b "$J" -d "csrf=$T" -d "title=Ortstest&booking_limit=none&is_active=1&booking_deadline_hours=0&cancel_deadline_hours=0&user_id=$(DBQ "SELECT user_id FROM tp_rounds WHERE id=$RO")" "$B/admin/round/$RO/edit"
 check "form without the field (opened before the update) keeps the location" '[ "$(DBQ "SELECT location FROM tp_rounds WHERE id=$RO")" = "Raum 1.12" ]'
 curl -s -o /dev/null -b "$J" -d "csrf=$T&confirm=1" "$B/admin/round/$RO/delete"
+
+echo "Reminders to parents"
+T=$(curl -s -b "$J" "$B/admin" | csrf)
+TMW=$(date -d '+1 day' +%F)
+RUN=$(date +%s)   # mailpit keeps the mails of earlier runs
+mkrem() { curl -s -o /dev/null -w '%{redirect_url}' -b "$J" --data-urlencode "csrf=$T" -d "title=$1&remind_parents_field=1&remind_parents=$2&booking_limit=none&is_active=1&booking_deadline_hours=0&cancel_deadline_hours=0&day_dates%5B%5D=$TMW&start_time=09:00&end_time=11:00&slot_minutes=30" "$B/admin/round/new" | grep -o '[0-9]*$'; }
+RR=$(mkrem Vorabend+an 1); RRS=$(slugof "$RR")
+RN=$(mkrem Vorabend+aus 0); RNS=$(slugof "$RN")
+check "reminder setting: shown in the round and in the parents' email hint" 'curl -s -b "$J" "$B/admin/round/$RR" | grep -q "Erinnerung am Vorabend" && ! curl -s -b "$J" "$B/admin/round/$RN" | grep -q "Erinnerung am Vorabend" && curl -s "$B/$RRS" | grep -q "und eine Erinnerung am Vorabend" && ! curl -s "$B/$RNS" | grep -q "Erinnerung am Vorabend"'
+RA=$(book "$RRS" "Rem A" "rem-a-$RUN@example.org"); RB=$(book "$RRS" "Rem B" ""); RD=$(book "$RRS" "Rem D" "rem-d-$RUN@example.org"); RC=$(book "$RNS" "Rem C" "rem-c-$RUN@example.org")
+RAL=${RA#* }; RAL=${RAL%%\?*}
+DBQ "UPDATE tp_bookings SET created_at = NOW() - INTERVAL 2 DAY, updated_at = NOW() - INTERVAL 2 DAY WHERE name IN ('Rem A', 'Rem B', 'Rem C')"
+$DC exec -T app php /srv/app/bin/cron.php >/dev/null
+remmail() { $DC exec -T app php -r '$r=json_decode(file_get_contents("http://mail:8025/api/v1/search?query=to:'"$1"'%20subject:Erinnerung"),true); echo count($r["messages"] ?? []), "\n"; if (!empty($r["messages"])) echo json_decode(file_get_contents("http://mail:8025/api/v1/message/".$r["messages"][0]["ID"]),true)["Text"];'; }
+REMA=$(remmail rem-a-$RUN@example.org)
+RLINK=$(echo "$REMA" | grep -o 'http[^ ]*/b/[A-Za-z0-9_-]\{43\}' | head -1)
+check "reminder sent the evening before, with the details and its own cancel link" '[ "$(echo "$REMA" | head -1)" = 1 ] && echo "$REMA" | grep -q "an Ihren Termin morgen erinnern" && echo "$REMA" | grep -q "^Name: Rem A" && [ -n "$RLINK" ] && [ "${RLINK##*/}" != "${RAL##*/}" ] && [ -n "$(DBQ "SELECT reminded_at FROM tp_bookings WHERE name=\"Rem A\"")" ] && ! echo "$REMA" | grep -q "termin.ics"'
+check "no reminder: round with reminders off, booked on the same day, or without email" '[ "$(remmail rem-c-$RUN@example.org | head -1)" = 0 ] && [ "$(remmail rem-d-$RUN@example.org | head -1)" = 0 ] && [ "$(DBQ "SELECT COUNT(*) FROM tp_bookings WHERE reminded_at IS NOT NULL AND name IN (\"Rem B\", \"Rem C\", \"Rem D\")")" = 0 ]'
+$DC exec -T app php /srv/app/bin/cron.php >/dev/null
+check "reminder only once" '[ "$(remmail rem-a-$RUN@example.org | head -1)" = 1 ]'
+check "both links open the booking (confirmation and reminder)" 'curl -s "${RLINK%%\?*}" | grep -q "<dd>Rem A</dd>" && curl -s "$RAL" | grep -q "<dd>Rem A</dd>"'
+RMP=$(curl -s "${RLINK%%\?*}")
+curl -s -o /dev/null --data-urlencode "csrf=$(echo "$RMP" | csrf)" -d "action=move&slot_id=$(echo "$RMP" | grep -o 'value="[0-9]*" required' | head -1 | grep -o '[0-9]*')" "${RLINK%%\?*}"
+check "moving the booking resets the reminder (sent again for the new date)" '[ "$(DBQ "SELECT reminded_at IS NULL FROM tp_bookings WHERE name=\"Rem A\"")" = 1 ]'
+RMP=$(curl -s "${RLINK%%\?*}")
+curl -s -o /dev/null --data-urlencode "csrf=$(echo "$RMP" | csrf)" -d "action=cancel&confirm=1" "${RLINK%%\?*}"
+check "cancelling via the reminder link" '[ "$(DBQ "SELECT COUNT(*) FROM tp_bookings WHERE name=\"Rem A\"")" = 0 ]'
+DBQ "UPDATE tp_pages SET content = REPLACE(content, 'Erinnerung am Vorabend', 'Hinweis am Vorabend') WHERE page_key='privacy' AND lang='de'"
+check "admin notice: privacy policy without the reminder" 'curl -s -b "$J" "$B/admin" | grep -q "(DE) erwähnt die Erinnerung an Eltern am Vortag noch nicht"'
+DBQ "UPDATE tp_pages SET content = REPLACE(content, 'Hinweis am Vorabend', 'Erinnerung am Vorabend') WHERE page_key='privacy' AND lang='de'"
+check "notice gone with the current template" '! curl -s -b "$J" "$B/admin" | grep -q "erwähnt die Erinnerung"'
+curl -s -o /dev/null -b "$J" -d "csrf=$T&confirm=1" "$B/admin/round/$RR/delete"
+curl -s -o /dev/null -b "$J" -d "csrf=$T&confirm=1" "$B/admin/round/$RN/delete"
 
 echo "Several admins"
 T=$(curl -s -b "$J" "$B/admin/users" | csrf)

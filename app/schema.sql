@@ -35,6 +35,7 @@ CREATE TABLE IF NOT EXISTS rounds (
   code CHAR(8) NULL,
   code_required TINYINT(1) NOT NULL DEFAULT 0,
   booking_limit VARCHAR(5) NOT NULL DEFAULT 'none',
+  remind_parents TINYINT(1) NOT NULL DEFAULT 1,
   description TEXT NULL,
   location VARCHAR(200) NULL,
   source_lang VARCHAR(5) NOT NULL DEFAULT 'de',
@@ -88,6 +89,7 @@ CREATE TABLE IF NOT EXISTS slots (
 
 -- UNIQUE(slot_id) prevents double bookings at database level.
 -- token_hash: SHA-256 of the change token; the plain text is not stored.
+-- reminder_token_hash: a second change token, for the link in the reminder mail (see Reminders).
 CREATE TABLE IF NOT EXISTS bookings (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   slot_id INT UNSIGNED NOT NULL,
@@ -96,10 +98,13 @@ CREATE TABLE IF NOT EXISTS bookings (
   token_hash CHAR(64) NOT NULL,
   lang VARCHAR(5) NOT NULL DEFAULT 'de',
   source ENUM('parent','admin') NOT NULL DEFAULT 'parent',
+  reminded_at DATETIME NULL,
+  reminder_token_hash CHAR(64) NULL,
   created_at DATETIME NOT NULL,
   updated_at DATETIME NOT NULL,
   UNIQUE KEY uq_bookings_slot (slot_id),
   UNIQUE KEY uq_bookings_token (token_hash),
+  UNIQUE KEY uq_bookings_reminder_token (reminder_token_hash),
   CONSTRAINT fk_bookings_slot FOREIGN KEY (slot_id) REFERENCES slots (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
