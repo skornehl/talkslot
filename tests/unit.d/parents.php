@@ -254,8 +254,8 @@ check('remember-me entry carries the date of the appointment (after booking and 
     && str_contains($mp, '<div hidden data-update-round="7" data-remember-url="/b/' . $mToken . '" data-remember-label="') && str_contains($mp, 'data-remember-date="2030-01-07"></div>'));
 check('cancelled booking and a link that leads nowhere: the browser drops the entry of that link',
     str_contains(App\View::capture('public/cancelled', ['booking' => $mBooking + ['is_active' => 1, 'slug' => 'runde-7b'], 'forgetUrl' => '/b/' . $mToken]), '<div hidden data-forget-url="/b/' . $mToken . '"></div>')
-    && str_contains(App\View::capture('public/notfound', ['text' => 'weg', 'forgetUrl' => '/b/' . $mToken]), '<div hidden data-forget-url="/b/' . $mToken . '"></div>')
-    && !str_contains(App\View::capture('public/notfound', ['text' => 'weg']), 'data-forget-url'));
+    && str_contains(App\View::capture('public/notfound', ['title' => 'Nicht gefunden', 'text' => 'weg', 'forgetUrl' => '/b/' . $mToken]), '<div hidden data-forget-url="/b/' . $mToken . '"></div>')
+    && !str_contains(App\View::capture('public/notfound', ['title' => 'Nicht gefunden', 'text' => 'weg']), 'data-forget-url'));
 // Round page: one item per remembered booking (template), "book another" without deleting anything
 $roundPage = static fn (array $old): string => App\View::capture('public/round', [
     'round' => ['id' => 7, 'slug' => 'runde-7b', 'title' => 'Elternsprechtag 7b', 'teacher_name' => 'Frau Berger', 'booking_limit' => 'round'],

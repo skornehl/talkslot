@@ -26,6 +26,8 @@ return [
     'notfound.text' => 'Bu sayfa mevcut değil veya randevu alma artık açık değil.',
     'error.title' => 'Bir hata oluştu',
     'error.text' => 'Lütfen daha sonra tekrar deneyin.',
+    'crosssite.title' => 'İstek reddedildi',
+    'crosssite.text' => 'Bu form başka bir web sitesinden gönderildiği için işlenmedi. Lütfen sayfayı doğrudan açın ve tekrar deneyin.',
     'privacy.controller.generic' => 'Veri sorumlusuna ilişkin bilgiler şu anda tamamlanmaktadır. O zamana kadar lütfen randevu aldığınız öğretmenle iletişime geçin.',
     'page.missing' => 'Bu metin henüz eklenmedi.',
 

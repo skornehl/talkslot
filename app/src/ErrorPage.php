@@ -54,6 +54,8 @@ final class ErrorPage
     public static function show(?\Throwable $e = null): void
     {
         if (!headers_sent()) {
+            // Also when the error happens before the front controller has sent them
+            Http::sendSecurityHeaders();
             // Database gone: temporarily unavailable (503), otherwise internal error (500)
             http_response_code(Db::isUnavailable() ? 503 : 500);
             if (Db::isUnavailable()) {

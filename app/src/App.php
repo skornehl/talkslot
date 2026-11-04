@@ -25,20 +25,49 @@ final class App
         }
 
         $path = Http::path();
+        $admin = $path === '/admin' || str_starts_with($path, '/admin/');
+        // Form posts from other sites are refused before anything is processed (login CSRF; a second
+        // layer next to the CSRF tokens)
+        if (Http::isCrossSitePost()) {
+            self::refuseCrossSite($admin);
+            return;
+        }
         if ($path === '/cron') {
             self::webCron();
             return;
         }
-        if ($path === '/admin' || str_starts_with($path, '/admin/')) {
+        if ($admin) {
             (new AdminController())->dispatch(substr($path, 6) ?: '/', Http::method());
             return;
         }
 
+        self::initPublicLanguage();
+        header('Vary: Accept-Language'); // the browser language decides whether a link to it is offered
+        (new PublicController())->dispatch($path, Http::method());
+    }
+
+    private static function initPublicLanguage(): void
+    {
         // switch_lang: language button that submits the booking form including its input
         $lang = $_POST['switch_lang'] ?? $_GET['lang'] ?? $_POST['lang'] ?? null;
         I18n::init(is_string($lang) ? $lang : null);
-        header('Vary: Accept-Language'); // the browser language decides whether a link to it is offered
-        (new PublicController())->dispatch($path, Http::method());
+    }
+
+    /** 403 for a cross-site form post, in the language of the area; no session is started. */
+    private static function refuseCrossSite(bool $admin): void
+    {
+        http_response_code(403);
+        if ($admin) {
+            header('X-Robots-Tag: noindex, nofollow');
+            AdminI18n::set(AdminI18n::forRequest(null));
+            View::render('admin/message', [
+                'title' => __('Anfrage abgelehnt'),
+                'text' => __('Das Formular wurde von einer anderen Website aus abgeschickt und deshalb nicht verarbeitet. Bitte öffnen Sie die Seite direkt und versuchen Sie es dort erneut.'),
+            ], 'admin/layout');
+            return;
+        }
+        self::initPublicLanguage();
+        View::render('public/notfound', ['title' => t('crosssite.title'), 'text' => t('crosssite.text')]);
     }
 
     /** Key for the web cron, derived from the app secret (no separate secret needed). */
