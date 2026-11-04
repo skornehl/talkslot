@@ -103,6 +103,7 @@ IPv6 /48). Die Werte sind bewusst großzügig: Viele Eltern teilen sich womögli
 | `attempt` | 150 pro Stunde | alle Buchungsversuche, auch mit Eingabefehlern |
 | `booking` | 30 pro Stunde | erfolgreiche Buchungen |
 | `manage` | 300 pro Stunde | Aufrufe von Änderungslinks |
+| `confirm` | 2 pro 24 Stunden | Bestätigungs-E-Mails, die Eltern sich auf der Seite ihres Termins schicken, pro Buchung statt pro IP-Adresse (das Zeitfenster kann nicht länger als 24 Stunden sein) |
 | `login` | 5 pro 15 Min. | fehlgeschlagene Admin-Anmeldungen (zusätzlich 20 pro Benutzername und Stunde) |
 | `reauth` | 5 pro 15 Min. | falsche Passwörter beim Bestätigen einer Änderung von Admin-Rechten oder E-Mail-Adressen, beim Beenden aller Sitzungen und beim Ändern des eigenen Passworts (ein Zähler pro Anmeldung, nicht pro IP-Adresse) |
 

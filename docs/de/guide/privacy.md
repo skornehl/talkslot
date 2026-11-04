@@ -26,6 +26,11 @@ Datenschutzerklärung.
 - **Datenminimierung:** ein frei eingegebener Name und eine optionale E-Mail-Adresse, sonst nichts.
 - **E-Mail-Adresse nur für den Termin:** Bestätigung, Änderung, Absage und, wenn die Lehrkraft sie für die
   Runde vorgesehen hat, eine Erinnerung am Vorabend. Die Vorlage der Datenschutzerklärung nennt all das.
+- **Bestätigung nachträglich per E-Mail:** Eltern ohne Adresse bei der Buchung können sich die Bestätigung
+  auf der Seite ihres Termins an eine dort eingegebene Adresse schicken lassen. Diese Adresse dient nur
+  dieser einen E-Mail und wird nicht gespeichert; die Fußzeile der E-Mail sagt das. Höchstens zweimal pro
+  Buchung innerhalb von 24 Stunden (Rate-Limit `confirm`, gezählt pro Buchung), damit ein Änderungslink
+  die Absenderadresse der Schule nicht zum Mail-Relay macht.
 - **Einträge durch die Lehrkraft:** Die Bestätigungs-E-Mail mit Änderungslink ist standardmäßig angehakt,
   sobald eine Adresse eingetragen ist. So erfahren Eltern, die das Buchungsformular nie gesehen haben, von
   dem Eintrag, wer verantwortlich ist und wo die Datenschutzhinweise stehen (Art. 14 DSGVO).
@@ -66,8 +71,14 @@ Datenschutzerklärung.
   erlaubt, wenn es für einen vom Nutzer ausdrücklich gewünschten Dienst unbedingt erforderlich ist.
   Doppelbuchungen zu verhindern, liegt im Interesse der Lehrkraft, nicht der Eltern, und würde diese
   Voraussetzung daher nicht erfüllen. Deshalb ist die Funktion „Meinen Termin auf diesem Gerät merken“ ein **nicht
-  vorausgewähltes Kontrollkästchen**. Nur wenn es angehakt ist, speichert der Browser Link und Bezeichnung
-  des Termins im `localStorage`. An den Server wird nichts übertragen.
+  vorausgewähltes Kontrollkästchen**. Nur wenn es angehakt ist, speichert der Browser Link, Bezeichnung und
+  Datum des Termins im `localStorage`, einen Eintrag pro Buchung (Geschwister). An den Server wird nichts
+  übertragen. Einträge verschwinden nach einer Absage, wenn ihr Link keine Buchung mehr findet, und beim
+  ersten Seitenaufruf nach dem Tag des Termins – dem Tag, an dem auch die Buchung gelöscht wird.
+- **Änderungslink aufbewahren:** Die Seite des Termins bietet *Link kopieren* und *In Kalender eintragen*
+  (die Kalenderdatei kommt als Antwort auf einen POST-Button, es gibt also keine zweite Adresse mit dem
+  Token, die Browser oder Kalender von sich aus abrufen könnten) und, wo das Gerät es kann, *Teilen …* mit
+  dem Hinweis, dass jeder mit dem Link den Termin ändern kann.
 - **Hell/Dunkel-Auswahl:** wird nur gespeichert, wenn ausdrücklich gewählt (`light` oder `dark`); für
   diese Funktion unbedingt erforderlich, daher ist keine Einwilligung nötig. „Automatisch“ entfernt den
   Eintrag.

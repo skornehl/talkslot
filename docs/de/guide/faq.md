@@ -4,8 +4,10 @@ title: FAQ
 
 ## Können Eltern ohne E-Mail-Adresse buchen?
 
-Ja. Die E-Mail-Adresse ist optional. Ohne sie erhalten Eltern ihren persönlichen Änderungslink nur auf
-der Bestätigungsseite und sollten ihn als Lesezeichen speichern.
+Ja. Die E-Mail-Adresse ist optional. Ohne sie erhalten Eltern ihren persönlichen Änderungslink auf der
+Bestätigungsseite. Dort können sie ihn kopieren, den Termin in ihren Kalender eintragen (der Link steht im
+Kalendereintrag) oder sich die Bestätigung doch noch an eine E-Mail-Adresse schicken lassen; diese Adresse
+wird nicht gespeichert.
 
 ## Kann ich TalkSlot auch für etwas anderes als Elternsprechtage nutzen?
 

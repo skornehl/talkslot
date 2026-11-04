@@ -1,23 +1,30 @@
 <?php
 /**
  * Confirmation and change page (reachable only via the secret link).
- * @var array $booking @var string $token @var bool $canChange @var array $days
+ * @var array $booking @var string $token @var bool $canChange @var bool $canMove @var array $days
  * @var string $csrf @var string $done @var bool $mailed @var bool $remember @var array $errors
+ * @var string $open section whose form was sent with an error (move, cancel, mail): shown opened
+ * @var string $mailTo address entered for the confirmation mail (only after an error)
  */
 $label = fmt_slot($booking['day_date'], $booking['start_time'], $booking['end_time']);
 $manageUrl = url('/b/' . $token);
+$link = abs_url('/b/' . $token);
+$open = (string) ($open ?? '');
+$doneText = ['booked' => 'manage.booked', 'changed' => 'manage.changed', 'sent' => 'manage.mail.sent'][$done] ?? null;
+// Remember-me entry in the browser: link, label and date of the appointment (removed after that day)
+$entry = 'data-remember-url="' . e($manageUrl) . '" data-remember-label="' . e($label) . '" data-remember-date="' . e($booking['day_date']) . '"';
 ?>
 <?php if ($remember): ?>
-  <div hidden data-remember-round="<?= (int) $booking['round_id'] ?>" data-remember-url="<?= e($manageUrl) ?>" data-remember-label="<?= e($label) ?>"></div>
+  <div hidden data-remember-round="<?= (int) $booking['round_id'] ?>" <?= $entry ?>></div>
 <?php else: ?>
-  <div hidden data-update-round="<?= (int) $booking['round_id'] ?>" data-remember-url="<?= e($manageUrl) ?>" data-remember-label="<?= e($label) ?>"></div>
+  <div hidden data-update-round="<?= (int) $booking['round_id'] ?>" <?= $entry ?>></div>
 <?php endif; ?>
 
 <h1><?= e(t('manage.title')) ?></h1>
 
-<?php if ($done === 'booked' || $done === 'changed'): ?>
+<?php if ($doneText !== null): ?>
   <div class="alert alert-success" role="status">
-    <p><strong><?= e(t($done === 'booked' ? 'manage.booked' : 'manage.changed')) ?></strong></p>
+    <p><strong><?= e(t($doneText)) ?></strong></p>
     <?php if ($mailed): ?><p><?= e(t('manage.mail_sent')) ?></p><?php endif; ?>
   </div>
 <?php endif; ?>
@@ -34,19 +41,45 @@ $manageUrl = url('/b/' . $token);
   </dl>
 </div>
 
-<div class="alert alert-warning">
+<?php /* Keeping the link: copy and share need JavaScript (hidden without it), the calendar file is a POST button */ ?>
+<div class="alert alert-warning manage-link">
   <p><?= e(t('manage.save_link')) ?></p>
   <p><label for="manage-link" class="small"><?= e(t('manage.link_label')) ?></label>
-  <input id="manage-link" class="link-field" type="text" readonly value="<?= e(abs_url('/b/' . $token)) ?>"></p>
+  <input id="manage-link" class="link-field" type="text" readonly value="<?= e($link) ?>"></p>
+  <div class="actions">
+    <button type="button" class="button" hidden data-copy="<?= e($link) ?>" data-copy-done="<?= e(t('manage.copied')) ?>" data-copy-prompt="<?= e(t('manage.copy.prompt')) ?>"><?= e(t('manage.copy')) ?></button>
+    <form method="post" action="<?= e($manageUrl) ?>" class="inline" data-calendar>
+      <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
+      <input type="hidden" name="action" value="ics">
+      <button type="submit" class="button"><?= e(t('manage.calendar')) ?></button>
+    </form>
+    <button type="button" class="button" hidden data-share="<?= e($link) ?>" data-share-title="<?= e($booking['title']) ?>" data-share-text="<?= e($label) ?>" aria-describedby="share-hint"><?= e(t('manage.share')) ?></button>
+  </div>
+  <p class="small" id="share-hint"><?= e(t('manage.share.hint')) ?></p>
 </div>
+
+<details class="card" id="confirm-mail"<?= $open === 'mail' ? ' open' : '' ?>>
+  <summary><h2><?= e(t('manage.mail')) ?></h2></summary>
+  <p><?= e(t('manage.mail.text')) ?></p>
+  <form method="post" action="<?= e($manageUrl) ?>">
+    <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
+    <input type="hidden" name="action" value="mail">
+    <div class="field">
+      <label for="confirm-email"><?= e(t('manage.mail.label')) ?></label>
+      <input type="email" id="confirm-email" name="email" required maxlength="254" autocomplete="email" inputmode="email" value="<?= e($mailTo ?? '') ?>">
+    </div>
+    <button type="submit" class="button"><?= e(t('manage.mail.submit')) ?></button>
+  </form>
+</details>
 <p class="hint"><?= e(t('manage.deletion')) ?></p>
 
 <?php if (!$canChange): ?>
   <p class="alert"><?= e(t('manage.locked', ['hours' => (int) $booking['cancel_deadline_hours']])) ?></p>
 <?php else: ?>
+  <?php /* Moving and cancelling folded away: right after booking, the slot list would be the first thing to see */ ?>
   <?php if ($canMove): ?>
-  <section class="card">
-    <h2><?= e(t('manage.change')) ?></h2>
+  <details class="card" id="change"<?= $open === 'move' ? ' open' : '' ?>>
+    <summary><h2><?= e(t('manage.change')) ?></h2></summary>
     <?php if (!$days): ?>
       <p><?= e(t('manage.change.none')) ?></p>
     <?php else: ?>
@@ -58,11 +91,11 @@ $manageUrl = url('/b/' . $token);
         <button type="submit" class="button button-primary"><?= e(t('manage.change.submit')) ?></button>
       </form>
     <?php endif; ?>
-  </section>
+  </details>
   <?php endif; ?>
 
-  <section class="card">
-    <h2><?= e(t('manage.cancel')) ?></h2>
+  <details class="card" id="cancel"<?= $open === 'cancel' ? ' open' : '' ?>>
+    <summary><h2><?= e(t('manage.cancel')) ?></h2></summary>
     <p><?= e(t('manage.cancel.text')) ?></p>
     <form method="post" action="<?= e($manageUrl) ?>">
       <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
@@ -73,5 +106,5 @@ $manageUrl = url('/b/' . $token);
       </div>
       <button type="submit" class="button button-danger"><?= e(t('manage.cancel.submit')) ?></button>
     </form>
-  </section>
+  </details>
 <?php endif; ?>

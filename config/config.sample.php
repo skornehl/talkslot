@@ -79,6 +79,7 @@ return [
         'attempt' => [150, 3600],   // all booking attempts (incl. input errors)
         'booking' => [30, 3600],    // successful bookings
         'manage' => [300, 3600],    // requests to change links
+        'confirm' => [2, 86400],    // confirmation mails sent from the appointment page, per booking (at most 24 hours)
         'login' => [5, 900],        // failed admin logins
         'reauth' => [5, 900],       // wrong passwords when confirming admin rights, e-mail changes, ending all sessions and changing the own password (per sign-in)
     ],

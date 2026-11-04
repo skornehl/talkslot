@@ -99,6 +99,7 @@ generous on purpose: many parents may share one address (mobile networks, school
 | `attempt` | 150 per hour | all booking attempts, including input errors |
 | `booking` | 30 per hour | successful bookings |
 | `manage` | 300 per hour | requests to change links |
+| `confirm` | 2 per 24 hours | confirmation mails parents send to themselves from the appointment page, per booking, not per IP address (the window cannot be longer than 24 hours) |
 | `login` | 5 per 15 min | failed admin logins (additionally 20 per user name and hour) |
 | `reauth` | 5 per 15 min | wrong passwords when confirming a change of admin rights, an e-mail address or ending all sessions, and when changing the own password (one counter per sign-in, not per IP address) |
 

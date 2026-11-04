@@ -138,7 +138,7 @@ loc=$(curl -s -o /dev/null -w '%{redirect_url}' --data-urlencode "csrf=$MC" -d "
 check "moving to a free slot" 'echo "$loc" | grep -q "done=changed"'
 check "old slot free again" 'curl -s "$B/$SLUG" | grep -q "id=\"slot-$SLOT2\""'
 C=$(curl -s --data-urlencode "csrf=$MC" -d "action=cancel&confirm=1" "$B/b/$TOKEN")
-check "cancellation + marker is removed" 'echo "$C" | grep -q "data-forget-round"'
+check "cancellation + marker is removed" 'echo "$C" | grep -q "data-forget-url=\"/b/$TOKEN\""'
 code=$(curl -s -o /dev/null -w '%{http_code}' "$B/b/$TOKEN")
 check "link invalid after cancellation (404)" '[ "$code" = 404 ]'
 
@@ -316,7 +316,7 @@ curl -s -o /dev/null -b "$J" -d "csrf=$T" "$B/admin/round/$R2/toggle"
 MP=$(curl -s "$L2")
 check "deactivated round: cancellation possible, moving hidden" 'echo "$MP" | grep -q "name=\"action\" value=\"cancel\"" && ! echo "$MP" | grep -q "value=\"move\""'
 C2=$(curl -s --data-urlencode "csrf=$(echo "$MP" | csrf)" -d "action=cancel&confirm=1" "$L2")
-check "deactivated round: cancellation done" 'echo "$C2" | grep -q "data-forget-round"'
+check "deactivated round: cancellation done" 'echo "$C2" | grep -q "data-forget-url"'
 
 echo "Protection with the round code"
 loc=$(curl -s -o /dev/null -w '%{redirect_url}' -b "$J" --data-urlencode "csrf=$T" -d "title=Geschuetzte+Runde&code_required=1&random_suffix=1&is_active=1&booking_deadline_hours=0&cancel_deadline_hours=0&delete_after_hours=24&day_dates%5B%5D=$TOMORROW&start_time=10:00&end_time=11:00&slot_minutes=20" "$B/admin/round/new")

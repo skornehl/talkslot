@@ -4,8 +4,9 @@ title: FAQ
 
 ## Can parents book without an e-mail address?
 
-Yes. The e-mail address is optional. Without it, parents get their personal change link only on the
-confirmation page and should bookmark it.
+Yes. The e-mail address is optional. Without it, parents get their personal change link on the
+confirmation page. There they can copy it, add the appointment to their calendar (the link is in the
+calendar entry) or have the confirmation sent to an e-mail address after all; that address is not stored.
 
 ## Can I use TalkSlot for something other than parent-teacher conferences?
 

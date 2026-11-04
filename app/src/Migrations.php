@@ -138,8 +138,8 @@ final class Migrations
     public const CURRENT_PAGE_HASHES = [
         'imprint.de' => '036e210b629357dfbf768868e3a5f249c888d3052f301170703b196336058f43',
         'imprint.en' => 'f15521ceaa18e97c98190e448cc95eb6130c4cf571164b09819bb40dd7af22c8',
-        'privacy.de' => '3885e997cd3bbf330158fdccc730f7fe1b93044379cc2df060ea5e0e7b6396ec',
-        'privacy.en' => 'ffbcc88fbd8b760efc7c4f173bb4e8850517392f88f9ffc0100da3aad921253f',
+        'privacy.de' => '0a06e2bed6e43f5b202366f4a814c2d01e6fc1b37854454fdf33d06063d546d5',
+        'privacy.en' => '73b42ce744345e3fe37504dcd898e50cba9b6ae19bbf30a14fcf37e1f876d96d',
     ];
 
     private const OLD_PAGE_HASHES = [
@@ -196,6 +196,10 @@ final class Migrations
         'c503bcd0596bc7bc45098fedc8f2b910f452909701ba9e28fc247dd9854fcc94',
         'd71943ef603c979ebf3bda10357c80b6395568f07d1690798db8b52dfd016a5c',
         'f1ac0f64ece1e1ce11b4322831f8d121b6d5a3ea450183d6a277cf26d9c0f3b1',
+        // Privacy policy de/en without the calendar download, the later confirmation mail and the
+        // expiry of the remember-me entry (up to v1.5.0)
+        '3885e997cd3bbf330158fdccc730f7fe1b93044379cc2df060ea5e0e7b6396ec',
+        'ffbcc88fbd8b760efc7c4f173bb4e8850517392f88f9ffc0100da3aad921253f',
     ];
 
     public static function run(): void

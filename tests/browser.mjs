@@ -441,21 +441,63 @@ try {
   await goto(`/${slug}`);
   await js(`localStorage.clear()`);
   const roundId = await js(`document.querySelector('[data-round-id]').getAttribute('data-round-id')`);
+  const entries = async () => (await stored())[roundId] || [];
+  const pathOf = (u) => String(u).split('?')[0];
   const managePath = await book('Browser Remember', { remember: true });
-  const entry = (await stored())[roundId];
-  check('booking with consent stores link and appointment', /^\/b\/[A-Za-z0-9_-]{43}$/.test(managePath) && entry?.u?.split('?')[0] === managePath && entry?.l?.length > 0, JSON.stringify(entry));
+  const entry = (await entries())[0];
+  check('booking with consent stores link, appointment and its date', /^\/b\/[A-Za-z0-9_-]{43}$/.test(managePath) && (await entries()).length === 1
+    && pathOf(entry?.u) === managePath && entry?.l?.length > 0 && /^\d{4}-\d{2}-\d{2}$/.test(entry?.d || ''), JSON.stringify(entry));
 
+  section('Parents: keeping the personal link (copy, share, calendar)');
+  const personalLink = await js(`document.getElementById('manage-link').value`);
+  check('appointment page: "Link kopieren" shown with JavaScript, moving and cancelling folded away',
+    await js(`!document.querySelector('[data-copy]').hidden && !document.getElementById('change').open && !document.getElementById('cancel').open`));
+  await js(`document.querySelector('[data-copy]').click()`, { gesture: true });
+  const linkCopied = await until(`document.querySelector('[data-copy]').textContent === 'Kopiert ✓'`);
+  const linkClip = await js(`navigator.clipboard.readText().catch(e => 'ERR ' + e.message)`);
+  check('"Link kopieren" copies the personal link and confirms', linkCopied && linkClip === personalLink && pathOf(linkClip).endsWith(managePath), linkClip);
+  check('"Teilen" only where the browser can share', await js(`document.querySelector('[data-share]').hidden === (typeof navigator.share !== 'function')`));
+  // getAttribute: the field named "action" hides the form's action property
+  const ics = await js(`(f => fetch(f.getAttribute('action'), { method: 'POST', body: new URLSearchParams(new FormData(f)) })
+    .then(r => r.headers.get('Content-Type') + '|' + r.headers.get('Content-Disposition')))(document.querySelector('form[data-calendar]'))`);
+  check('"In Kalender eintragen" sends its form and gets the calendar file', ics === 'text/calendar; charset=utf-8|attachment; filename="termin.ics"', ics);
+  const fakeShare = await cdp.send('Page.addScriptToEvaluateOnNewDocument', { source: `
+    Object.defineProperty(navigator, 'share', { configurable: true, value: (d) => { window.__shared = d; return Promise.resolve(); } });
+    Object.defineProperty(navigator, 'clipboard', { value: undefined });` });
+  await goto(managePath + '?lang=en');
+  cdp.dialogs = [];
+  await js(`document.querySelector('[data-copy]').click()`, { gesture: true });
+  check('without clipboard access the link is offered in a dialog, in the language of the page', cdp.dialogs.length === 1 && cdp.dialogs[0].type === 'prompt'
+    && cdp.dialogs[0].message === 'Copy link:', JSON.stringify(cdp.dialogs));
+  await js(`document.querySelector('[data-share]').click()`, { gesture: true });
+  const shared = await js(`window.__shared || null`);
+  check('"Share" hands over the personal link with the appointment; the hint about the link belongs to it',
+    await js(`!document.querySelector('[data-share]').hidden && document.getElementById(document.querySelector('[data-share]').getAttribute('aria-describedby')).textContent.startsWith('Anyone who has this link')`)
+    && pathOf(shared?.url) === pathOf(personalLink) && shared?.text === await js(`document.querySelector('[data-share]').getAttribute('data-share-text')`), JSON.stringify(shared));
+  await cdp.send('Page.removeScriptToEvaluateOnNewDocument', { identifier: fakeShare.identifier });
+
+  section('Parents: several appointments on one device (siblings)');
+  const siblingPath = await book('Browser Geschwister', { remember: true });
+  const both = await entries();
+  check('a sibling booked on the same device gets its own entry, the first one stays', both.length === 2 && pathOf(both[0].u) === managePath && pathOf(both[1].u) === siblingPath, JSON.stringify(both));
   await goto(`/${slug}`);
-  check('round page shows the own appointment instead of the slot list', await js(`!document.getElementById('remembered').hidden && document.getElementById('booking-area').hidden`)
-    && await js(`document.querySelector('[data-remembered-link]').getAttribute('href')`) === entry.u
-    && await js(`document.querySelector('[data-remembered-label]').textContent`) === entry.l);
+  check('round page lists both appointments instead of the slot list, with a button for another one',
+    await js(`!document.getElementById('remembered').hidden && document.getElementById('booking-area').hidden
+      && document.querySelectorAll('[data-remembered-list] li').length === 2 && !document.querySelector('[data-remembered-another]').hidden`)
+    && await js(`[...document.querySelectorAll('[data-remembered-link]')].map(a => a.getAttribute('href')).join(' ')`) === both.map((e) => e.u).join(' '));
+  await js(`document.querySelector('[data-remembered-another]').click()`);
+  check('"Weiteren Termin buchen" shows the form without deleting anything', await js(`!document.getElementById('booking-area').hidden
+    && document.querySelector('[data-remembered-another]').hidden && document.activeElement.name === 'slot_id'`) && (await entries()).length === 2);
+  await goto(`/${slug}`);
+  await js(`document.querySelectorAll('[data-remembered-forget]')[1].click()`);
+  check('"Merker löschen" removes only that entry, the other appointment stays listed', (await entries()).length === 1 && pathOf((await entries())[0].u) === managePath
+    && await js(`document.querySelectorAll('[data-remembered-list] li').length === 1 && document.getElementById('booking-area').hidden`));
 
   await goto(managePath);
-  const oldLabel = entry.l;
   await js(`(f => { f.querySelector('[name=slot_id]').checked = true; })(document.querySelector('input[name=action][value=move]').form)`);
   await navigating(`document.querySelector('input[name=action][value=move]').form.requestSubmit()`);
-  const moved = (await stored())[roundId];
-  check('moving updates the stored appointment', moved && moved.l !== oldLabel && moved.u.split('?')[0] === managePath, JSON.stringify(moved));
+  const moved = (await entries())[0];
+  check('moving updates the stored appointment', (await entries()).length === 1 && moved.l !== entry.l && pathOf(moved.u) === managePath && /^\d{4}-\d{2}-\d{2}$/.test(moved.d), JSON.stringify(moved));
 
   await js(`(f => { const c = f.querySelector('[name=confirm]'); if (c) c.checked = true; })(document.querySelector('input[name=action][value=cancel]').form)`);
   await navigating(`document.querySelector('input[name=action][value=cancel]').form.requestSubmit()`);
@@ -464,16 +506,23 @@ try {
   await book('Browser Ohne Merken', { remember: false });
   check('without consent nothing is stored', (await stored())[roundId] === undefined && await js(`localStorage.getItem('${KEY}')`) === null);
 
-  section('Parents: stored entries are not trusted blindly');
+  section('Parents: stored entries are not trusted blindly, and expire');
   const fake = 'A'.repeat(43);
   for (const [what, u] of [['other site', `https://evil.example/b/${fake}`], ['javascript: link', 'javascript:alert(1)//b/' + fake]]) {
+    // earlier format: one entry per round
     await js(`localStorage.setItem('${KEY}', JSON.stringify({ ${JSON.stringify(roundId)}: { u: ${JSON.stringify(u)}, l: '<img src=x onerror=alert(1)>' } }))`);
     await goto(`/${slug}`);
     check(`link to ${what} is not shown, label only as text`, await js(`document.querySelector('[data-remembered-link]').hidden
       && document.querySelector('[data-remembered-label]').textContent === '<img src=x onerror=alert(1)>' && !document.querySelector('[data-remembered-label] img')`));
   }
   await js(`document.querySelector('[data-remembered-forget]').click()`);
-  check('"vergessen" removes the entry and shows the slot list again', await js(`document.getElementById('remembered').hidden && !document.getElementById('booking-area').hidden && localStorage.getItem('${KEY}') === null`));
+  check('"vergessen" removes the last entry and shows the slot list again', await js(`document.getElementById('remembered').hidden && !document.getElementById('booking-area').hidden && localStorage.getItem('${KEY}') === null`));
+  const kept = { u: '/b/' + 'B'.repeat(43), l: 'neu', d: day(30) };
+  await js(`localStorage.setItem('${KEY}', JSON.stringify({ ${JSON.stringify(roundId)}: [{ u: '/b/${fake}', l: 'alt', d: '${day(-1)}' }, ${JSON.stringify(kept)}], 999999: [{ u: '/b/${'C'.repeat(43)}', l: 'x', d: '${day(-2)}' }] }))`);
+  await goto('/');
+  check('entries of past days are removed on the next page view, also those of other rounds', JSON.stringify(await stored()) === JSON.stringify({ [roundId]: [kept] }), JSON.stringify(await stored()));
+  await goto(`/b/${'B'.repeat(43)}`);
+  check('a link that leads nowhere any more (booking deleted) removes its entry', await js(`localStorage.getItem('${KEY}')`) === null);
 
   section('Parents: language choice at the top (phone width)');
   await cdp.send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
@@ -506,14 +555,14 @@ try {
   await cdp.send('Emulation.clearDeviceMetricsOverride');
 
   section('Parents: errors and appearance');
-  await js(`localStorage.setItem('${KEY}', JSON.stringify({ ${JSON.stringify(roundId)}: { u: '/b/${fake}', l: 'x' } }))`);
+  await js(`localStorage.setItem('${KEY}', JSON.stringify({ ${JSON.stringify(roundId)}: [{ u: '/b/${fake}', l: 'x' }] }))`);
   await goto(`/${slug}`);
-  await js(`document.querySelector('[data-remembered-forget]').click()`); // back to the form without deleting test data
-  await js(`localStorage.setItem('${KEY}', JSON.stringify({ ${JSON.stringify(roundId)}: { u: '/b/${fake}', l: 'x' } }))`);
+  await js(`document.querySelector('[data-remembered-another]').click()`); // to the form, the entry stays
   await js(`${firstFree}.checked = true; document.querySelector('#name').value = 'www.example.org'; document.querySelector('#privacy').checked = true;`);
   await navigating(`document.querySelector('#name').form.requestSubmit()`);
   check('error box gets the focus (screen readers)', await js(`document.activeElement && document.activeElement.id === 'form-errors'`));
-  check('with errors the form stays visible despite a stored appointment', await js(`document.getElementById('remembered').hidden && !document.getElementById('booking-area').hidden`));
+  check('with errors the form stays visible, the stored appointment is listed above it', await js(`!document.getElementById('booking-area').hidden
+    && !document.getElementById('remembered').hidden && document.querySelector('[data-remembered-another]').hidden`));
   await js(`localStorage.removeItem('${KEY}')`);
 
   check('appearance switch is shown', await js(`!document.querySelector('[data-theme-switch]').hidden`));

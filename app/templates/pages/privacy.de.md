@@ -22,7 +22,7 @@ Eine Datenschutzbeauftragte bzw. ein Datenschutzbeauftragter ist für dieses pri
 - **E-Mail-Adresse** – nur wenn Sie diese freiwillig angeben. Sie wird ausschließlich für die Terminbestätigung und Mitteilungen zu Ihrem Termin (Änderung, Absage, Erinnerung am Vorabend, sofern die Lehrkraft sie für die Terminrunde vorgesehen hat) genutzt, nicht für Werbung oder Newsletter.
 - der gewählte **Termin**, der Zeitpunkt der Buchung und die gewählte Sprache.
 
-Wenn Sie eine E-Mail-Adresse angeben, erhalten Sie Bestätigungen mit Ihrem Termin als Kalenderdatei (.ics). Was Sie damit in Ihrem eigenen Kalender speichern, liegt in Ihrer Verantwortung.
+Wenn Sie eine E-Mail-Adresse angeben, erhalten Sie Bestätigungen mit Ihrem Termin als Kalenderdatei (.ics). Auf der Seite Ihres Termins können Sie die Kalenderdatei auch herunterladen und sich die Bestätigung nachträglich an eine E-Mail-Adresse senden lassen (höchstens zweimal innerhalb von 24 Stunden). Diese Adresse wird nur für den Versand dieser E-Mail verwendet und nicht in der Terminvergabe gespeichert. Was Sie in Ihrem eigenen Kalender speichern, liegt in Ihrer Verantwortung.
 
 **Beim Aufruf der Seite:**
 
@@ -66,9 +66,9 @@ Eine Übermittlung in Länder außerhalb der EU bzw. des EWR (Drittländer) find
 
 ## Termin merken
 
-Nur wenn Sie beim Buchen das Kästchen „Meinen Termin auf diesem Gerät merken“ ankreuzen (es ist nicht vorausgewählt), speichert Ihr Browser im lokalen Speicher (localStorage) den Link zu Ihrem Termin und die Terminbezeichnung. So sehen Sie bei einem erneuten Aufruf Ihren Termin statt der Terminliste. Diese Daten verbleiben auf Ihrem Gerät und werden nicht an den Server übertragen.
+Nur wenn Sie beim Buchen das Kästchen „Meinen Termin auf diesem Gerät merken“ ankreuzen (es ist nicht vorausgewählt), speichert Ihr Browser im lokalen Speicher (localStorage) den Link zu Ihrem Termin, die Terminbezeichnung und das Datum des Termins. So sehen Sie bei einem erneuten Aufruf Ihre Termine statt der Terminliste; buchen Sie mehrere Termine (z. B. für Geschwister), wird jeder einzeln gemerkt. Diese Daten verbleiben auf Ihrem Gerät und werden nicht an den Server übertragen.
 
-Sie können die Einwilligung jederzeit widerrufen, indem Sie auf der Terminseite „Merker auf diesem Gerät löschen“ wählen oder die Websitedaten in Ihrem Browser löschen. Nach einer Absage wird der Eintrag automatisch entfernt.
+Sie können die Einwilligung jederzeit widerrufen, indem Sie auf der Terminseite „Merker auf diesem Gerät löschen“ wählen oder die Websitedaten in Ihrem Browser löschen. Nach einer Absage wird der Eintrag automatisch entfernt, ebenso nach dem Tag des Termins (beim nächsten Aufruf dieser Seiten auf Ihrem Gerät).
 
 ## Darstellung (hell/dunkel)
 

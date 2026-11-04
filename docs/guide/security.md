@@ -28,6 +28,9 @@ not public issues.
 
 **Tokens**
 - Change links, invitation and password links are 256-bit random tokens; only their SHA-256 hash is stored.
+- The appointment page hands out the change link only as a copy, a calendar file answered to a POST button
+  (no extra GET address with the token) and, where the device offers it, a share dialog with a warning. A
+  confirmation mail to an address entered there is limited to two per booking within 24 hours.
 - Round codes: 8 characters from 31 symbols (31⁸ combinations), wrong attempts limited to 30 per 15 minutes
   and shortened IP address.
 

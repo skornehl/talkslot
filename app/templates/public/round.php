@@ -18,7 +18,8 @@
 
   <?php require __DIR__ . '/_remembered.php'; ?>
 
-  <div id="booking-area">
+  <?php /* data-keep-open: the form was sent (error, language switch) – it stays visible next to remembered appointments */ ?>
+  <div id="booking-area"<?= $old ? ' data-keep-open' : '' ?>>
     <?php require __DIR__ . '/_errors.php'; ?>
 
     <?php if (!$days): ?>

@@ -119,3 +119,64 @@ curl -s -o /dev/null -b "$J" -d "csrf=$T&name=Hinweis+Konto&lang=de" "$B$(curl -
 check "round with a booking handed to another teacher: parents NOT notified" 'curl -s -L -b "$J" --data-urlencode "csrf=$T" -d "title=Hinweis+Konto&user_id=$PU&booking_deadline_hours=0&cancel_deadline_hours=0" "$B/admin/round/$RK/edit" | has "Die Eltern von 1 Buchung(en) wurden NICHT automatisch benachrichtigt – bitte selbst informieren. Eltern mit E-Mail-Adresse erhalten die neuen Daten" && [ "$(DBQ "SELECT user_id FROM tp_rounds WHERE id=$RK")" = "$PU" ]'
 check "account with bookings: delete dialog says parents are NOT notified" 'curl -s -b "$J" "$B/admin/users/$PU/edit" | oneline | has "mit allen Runden und Buchungen endgültig löschen?~~Die Eltern von 1 Buchung(en) werden NICHT automatisch benachrichtigt – bitte selbst informieren.\""'
 check "account deleted: parents NOT notified" 'curl -s -L -b "$J" -d "csrf=$T&confirm=1" "$B/admin/users/$PU/delete" | has "Die Eltern von 1 Buchung(en) wurden NICHT automatisch benachrichtigt" && [ -z "$(DBQ "SELECT id FROM tp_users WHERE id=$PU")" ]'
+
+echo "Appointment page: keeping the link (copy, calendar file, confirmation by mail)"
+# Booking without an e-mail address, remembered on this device; own round, removed again at the end
+T=$(curl -s -b "$J" "$B/admin" | csrf)
+KL=$(mkround Link+behalten none); KLS=$(slugof "$KL")
+KP=$(curl -s "$B/$KLS")
+KLOC=$(curl -s -o /dev/null -w '%{redirect_url}' --data-urlencode "csrf=$(echo "$KP" | csrf)" -d "slot_id=$(echo "$KP" | grep -o 'value="[0-9]*" required' | head -1 | grep -o '[0-9]*')&name=Link+Behalten&privacy=1&remember=1" "$B/$KLS")
+KT=$(echo "$KLOC" | grep -o '/b/[A-Za-z0-9_-]\{43\}' | cut -c4-)
+KM=$(curl -s "$KLOC"); KMC=$(echo "$KM" | csrf)
+KD=$(DBQ "SELECT d.day_date FROM tp_bookings b JOIN tp_slots s ON s.id = b.slot_id JOIN tp_round_days d ON d.id = s.day_id WHERE b.name = 'Link Behalten'")
+check "booked without e-mail: copy and calendar buttons, change and cancel folded away, remembered with the date" '[ ${#KT} = 43 ] && echo "$KM" | has "hidden data-copy=\"$B/b/$KT\" data-copy-done=\"Kopiert ✓\"" && echo "$KM" | has "<input type=\"hidden\" name=\"action\" value=\"ics\">" && echo "$KM" | has "<details class=\"card\" id=\"cancel\">" && echo "$KM" | has "<details class=\"card\" id=\"change\">" && echo "$KM" | has "data-remember-round=\"$KL\"" && echo "$KM" | has "data-remember-date=\"$KD\""'
+unfold() { tr -d '\r' | sed -e ':a' -e 'N' -e '$!ba' -e 's/\n //g'; }   # iCalendar continuation lines
+KI=$(curl -s -D - --data-urlencode "csrf=$KMC" -d "action=ics" "$B/b/$KT" | unfold)
+check "calendar file by POST: download with the appointment and the personal link, no cookie" 'echo "$KI" | grep -qi "^content-type: text/calendar; charset=utf-8" && echo "$KI" | grep -qi "^content-disposition: attachment; filename=\"termin.ics\"" && echo "$KI" | has "BEGIN:VCALENDAR" && echo "$KI" | has "SUMMARY:Link behalten" && echo "$KI" | has "DESCRIPTION:Termin ändern oder absagen: $B/b/$KT?lang=de" && ! echo "$KI" | grep -qi "^set-cookie"'
+check "calendar file in the language of the page" 'curl -s --data-urlencode "csrf=$KMC" -d "action=ics" "$B/b/$KT?lang=en" | unfold | has "DESCRIPTION:Change or cancel: $B/b/$KT?lang=en"'
+check "calendar file only with a valid form token, otherwise the page with the error" 'X=$(curl -s -D - -d "csrf=1700000000.x&action=ics" "$B/b/$KT"); echo "$X" | grep -qi "^content-type: text/html" && echo "$X" | has "Das Formular ist abgelaufen" && ! echo "$X" | has "BEGIN:VCALENDAR" && curl -s --data-urlencode "csrf=$KMC" -d "action=ics" "$B/b/$KT" | has "BEGIN:VCALENDAR"'
+# With the usual minimum time of a form (bot brake), the calendar file still comes right after loading the page.
+# Without a sender address no mail goes out: the page says so (the attempt counts against the limit).
+KF=$(ALERTS 'require "/srv/app/app/bootstrap.php";
+  App\Config::load(["csrf_min_age_seconds" => 30] + (require "/srv/app/config/config.php"));
+  $id = (int) App\Db::value("SELECT id FROM bookings WHERE name = ?", ["Link Behalten"]);
+  App\I18n::set("de");
+  $_SERVER["REMOTE_ADDR"] = "198.51.100.30"; $_SERVER["REQUEST_METHOD"] = "POST"; $_SERVER["REQUEST_URI"] = "/b/'"$KT"'";
+  $send = static function (array $post): string { $_POST = $post; ob_start(); (new App\Controller\PublicController())->dispatch("/b/'"$KT"'", "POST"); return (string) ob_get_clean(); };
+  $ics = $send(["csrf" => App\Csrf::publicToken("manage:" . $id), "action" => "ics"]);
+  $cancel = $send(["csrf" => App\Csrf::publicToken("manage:" . $id), "action" => "cancel", "confirm" => "1"]);
+  App\Config::load(["mail" => ["transport" => "smtp", "from_address" => ""]] + (require "/srv/app/config/config.php"));
+  $mail = $send(["csrf" => App\Csrf::publicToken("manage:" . $id), "action" => "mail", "email" => "ohne-absender@example.org"]);
+  echo (str_starts_with($ics, "BEGIN:VCALENDAR") ? "ics" : "no-ics") . "|" . (str_contains($cancel, "Das ging zu schnell") ? "too-fast" : "?")
+    . "|" . (str_contains($mail, "Die E-Mail konnte nicht gesendet werden.") ? "mail-failed" : "?");
+  App\Db::run("DELETE FROM rate_limits WHERE bucket IN (?, ?)", ["manage", "confirm"]);' 2>&1)
+check "calendar file without the minimum time of a form, cancelling still with it; a mail that cannot be sent is reported ($KF)" '[ "$KF" = "ics|too-fast|mail-failed" ]'
+
+# Confirmation by mail afterwards: to an address entered on the page, not stored, at most twice
+KMAIL="kopie-$(date +%s)@example.org"
+X=$(curl -s --data-urlencode "csrf=$KMC" -d "action=mail&email=kaputt" "$B/b/$KT")
+check "confirmation by mail: invalid address → message, the form stays open with the input" 'echo "$X" | has "Die E-Mail-Adresse ist ungültig." && echo "$X" | has "<details class=\"card\" id=\"confirm-mail\" open>" && echo "$X" | has "value=\"kaputt\"" && [ "$(pmails "$KMAIL")" = 0 ]'
+KR=$(curl -s -o /dev/null -w '%{http_code} %{redirect_url}' --data-urlencode "csrf=$KMC" --data-urlencode "email=$KMAIL" -d "action=mail" "$B/b/$KT")
+check "confirmation by mail: sent, back on the page with a message" '[ "$KR" = "303 $B/b/$KT?done=sent" ] && curl -s "${KR#* }" | has "Die Bestätigung wurde an die angegebene E-Mail-Adresse gesendet." && [ "$(pmails "$KMAIL")" = 1 ]'
+KTXT=$(pmailtext "$KMAIL")
+check "the mail: confirmation with the personal link and calendar file, the footer says where the address came from" 'echo "$KTXT" | has "Ihr Termin wurde gebucht." && echo "$KTXT" | has "$B/b/$KT?lang=de" && echo "$KTXT" | has "weil diese Adresse auf der Seite Ihres Termins eingegeben wurde. Die Adresse wird in der Terminvergabe nicht gespeichert." && $DC exec -T app php -r "echo file_get_contents(\"http://mail:8025/api/v1/search?query=to:$KMAIL\");" | has "\"Attachments\":1"'
+check "… and the address is not stored with the booking" 'echo "$KTXT" | has "Ihr Termin wurde gebucht." && [ "$(DBQ "SELECT COALESCE(email, \"-\") FROM tp_bookings WHERE name = \"Link Behalten\"")" = - ] && [ "$(DBQ "SELECT COUNT(*) FROM tp_bookings WHERE email = \"$KMAIL\"")" = 0 ]'
+KR=$(curl -s -o /dev/null -w '%{http_code}' --data-urlencode "csrf=$KMC" --data-urlencode "email=$KMAIL" -d "action=mail" "$B/b/$KT?lang=en")
+check "second time from the English page: the mail in English" '[ "$KR" = 303 ] && [ "$(pmails "$KMAIL")" = 2 ] && pmailtext "$KMAIL" | has "your appointment has been booked" && pmailtext "$KMAIL" | has "because this address was entered on the page of your appointment"'
+X=$(curl -s -w '\n%{http_code}' --data-urlencode "csrf=$KMC" --data-urlencode "email=$KMAIL" -d "action=mail" "$B/b/$KT")
+check "at most twice per booking within 24 hours (no mail relay): the third one is refused" '[ "$(echo "$X" | tail -1)" = 429 ] && echo "$X" | has "schon zu oft gesendet" && [ "$(pmails "$KMAIL")" = 2 ]'
+
+# After the deadline for changes: calendar file and confirmation still work, cancelling does not
+DBQ "UPDATE tp_rounds SET cancel_deadline_hours = 10000 WHERE id = $KL; DELETE FROM tp_rate_limits WHERE bucket = 'confirm'"
+KM2=$(curl -s "$B/b/$KT")
+check "after the deadline: calendar file and confirmation mail are still offered and work" 'echo "$KM2" | has "Änderungen und Absagen sind online nur bis" && ! echo "$KM2" | has "value=\"cancel\"" && echo "$KM2" | has "value=\"ics\"" && echo "$KM2" | has "id=\"confirm-mail\"" && curl -s --data-urlencode "csrf=$KMC" -d "action=ics" "$B/b/$KT" | has "BEGIN:VCALENDAR" && [ "$(curl -s -o /dev/null -w "%{http_code}" --data-urlencode "csrf=$KMC" --data-urlencode "email=$KMAIL" -d "action=mail" "$B/b/$KT")" = 303 ] && [ "$(pmails "$KMAIL")" = 3 ]'
+DBQ "UPDATE tp_rounds SET cancel_deadline_hours = 0 WHERE id = $KL; DELETE FROM tp_rate_limits WHERE bucket = 'confirm'"
+
+# Round page: one item per remembered booking, "book another" keeps the entries; the form stays open after a submission
+KP2=$(curl -s "$B/$KLS")
+check "round page: list for remembered bookings and the sibling button; the form stays open after a language switch" 'echo "$KP2" | has "<ul class=\"remembered-list\" data-remembered-list></ul>" && echo "$KP2" | has "hidden data-remembered-another>Weiteren Termin buchen" && echo "$KP2" | has "<div id=\"booking-area\">" && curl -s --data-urlencode "csrf=$(echo "$KP2" | csrf)" -d "lang=de&switch_lang=en&name=Geschwister" "$B/$KLS" | has "<div id=\"booking-area\" data-keep-open>"'
+KC=$(curl -s --data-urlencode "csrf=$KMC" -d "action=cancel&confirm=1" "$B/b/$KT")
+X=$(curl -s -w '\n%{http_code}' "$B/b/$KT")
+check "cancelled, and the link leading nowhere afterwards: both remove the remembered entry of this link" 'echo "$KC" | has "<div hidden data-forget-url=\"/b/$KT\"></div>" && [ "$(echo "$X" | tail -1)" = 404 ] && echo "$X" | has "<div hidden data-forget-url=\"/b/$KT\"></div>" && ! curl -s "$B/gibt-es-nicht" | has "data-forget-url"'
+curl -s -o /dev/null -b "$J" -d "csrf=$T&confirm=1" "$B/admin/round/$KL/delete"
+check "test round of the appointment page removed" '[ "$(DBQ "SELECT COUNT(*) FROM tp_rounds WHERE id = $KL")" = 0 ]'
