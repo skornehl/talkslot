@@ -4,7 +4,8 @@ description: Create rounds, invite parents and manage bookings.
 ---
 
 Teachers log in at `/admin` with their e-mail address. They see and change only their own rounds.
-Labels are those of the German admin area, with a translation in brackets.
+The admin area is available in German and English (*Mein Profil* → *Sprache / Language*). Labels below are
+the German ones, with the English label in brackets.
 
 ## Create a round
 

@@ -61,7 +61,7 @@ Sessions live in the shared `app/var/`, so nobody is logged out by a deployment.
 | `APP_SECRET` | secret | yes | at least 32 characters |
 | `INSTALL_KEY` | secret | for installing | together with variable `ALLOW_INSTALL=1` |
 | `APP_NAME` | variable | | name shown to parents and in mails |
-| `LANGUAGES`, `DEFAULT_LANGUAGE` | variables | | see [Configuration]({{ '/guide/configuration/' | relative_url }}) |
+| `LANGUAGES`, `DEFAULT_LANGUAGE`, `ADMIN_LANGUAGE` | variables | | see [Configuration]({{ '/guide/configuration/' | relative_url }}) |
 | `HOSTING_DE`, `HOSTING_EN` | variables | | web host for the privacy policy |
 | `MAIL_FROM`, `MAIL_FROM_NAME`, `MAIL_REPLY_TO`, `ALERT_EMAIL` | variables | | mail settings |
 | `MAIL_TRANSPORT`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_ENCRYPTION` | variables | | for SMTP |

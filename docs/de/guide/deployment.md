@@ -62,7 +62,7 @@ Die Sessions liegen im gemeinsamen `app/var/`, daher wird durch ein Deployment n
 | `APP_SECRET` | Secret | ja | mindestens 32 Zeichen |
 | `INSTALL_KEY` | Secret | zur Installation | zusammen mit der Variable `ALLOW_INSTALL=1` |
 | `APP_NAME` | Variable | | Name, der Eltern und in E-Mails angezeigt wird |
-| `LANGUAGES`, `DEFAULT_LANGUAGE` | Variablen | | siehe [Konfiguration]({{ '/de/guide/configuration/' | relative_url }}) |
+| `LANGUAGES`, `DEFAULT_LANGUAGE`, `ADMIN_LANGUAGE` | Variablen | | siehe [Konfiguration]({{ '/de/guide/configuration/' | relative_url }}) |
 | `HOSTING_DE`, `HOSTING_EN` | Variablen | | Hoster für die Datenschutzerklärung |
 | `MAIL_FROM`, `MAIL_FROM_NAME`, `MAIL_REPLY_TO`, `ALERT_EMAIL` | Variablen | | E-Mail-Einstellungen |
 | `MAIL_TRANSPORT`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_ENCRYPTION` | Variablen | | für SMTP |

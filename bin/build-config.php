@@ -73,6 +73,13 @@ if ($languages === [] || !in_array($default, $languages, true)) {
     fwrite(STDERR, "DEFAULT_LANGUAGE must be one of LANGUAGES (" . implode(', ', $languages) . ")\n");
     exit(1);
 }
+// Language of the admin area for accounts without their own choice (ADMIN_LANGUAGE: de or en)
+$adminLanguage = strtolower($env('ADMIN_LANGUAGE', (string) ($config['admin_language'] ?? 'de')));
+if (!in_array($adminLanguage, ['de', 'en'], true)) {
+    fwrite(STDERR, "ADMIN_LANGUAGE must be de or en\n");
+    exit(1);
+}
+$config['admin_language'] = $adminLanguage;
 $config['base_url'] = rtrim($env('BASE_URL'), '/');
 $config['secret'] = $env('APP_SECRET');
 $config['install_key'] = $allowInstall ? $env('INSTALL_KEY') : '';

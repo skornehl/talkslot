@@ -40,8 +40,12 @@ links are random tokens and keep working.
 | `languages` | `de, en, pl, ru, uk, tr` | parent-facing languages, in the order of the flags | `LANGUAGES`, e.g. `de,en,tr` |
 | `default_language` | `de` | shown until the visitor picks a language; must be in `languages` | `DEFAULT_LANGUAGE` |
 
-The build aborts if a language has no file in `app/lang/` or the default is not offered. The admin
-area is always German.
+The build aborts if a language has no file in `app/lang/` or the default is not offered.
+
+The admin area is in German or English, chosen per account under *Mein Profil*. `admin_language`
+(`de` or `en`, variable `ADMIN_LANGUAGE` when deploying) is the default for accounts that have not chosen
+and for the login page when the browser asks for neither language. Entries in the admin log are written in
+this language.
 
 **Adding a language:** copy `app/lang/en.php` to e.g. `app/lang/it.php` and translate it, add a flag
 `public/assets/flags/it.svg` and the code to `languages`. Optionally add

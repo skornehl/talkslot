@@ -51,7 +51,9 @@ const chrome = spawn(findChrome(), [
 
 async function connect() {
   const portFile = join(profile, 'DevToolsActivePort');
-  for (let i = 0; i < 100 && !existsSync(portFile); i++) await sleep(100);
+  // Chrome can take a while to start on a busy CI runner
+  for (let i = 0; i < 300 && !existsSync(portFile); i++) await sleep(100);
+  if (!existsSync(portFile)) throw new Error('Chrome did not start within 30 s (no DevToolsActivePort)');
   const port = readFileSync(portFile, 'utf8').split('\n')[0];
   for (let i = 0; i < 50; i++) {
     try {
@@ -353,6 +355,23 @@ try {
   await js(`document.querySelector('[data-print]').click()`);
   check('"Drucken" opens the print dialog', await js('window.__printed === true'));
   await cdp.send('Page.removeScriptToEvaluateOnNewDocument', { identifier: printStub.identifier });
+
+  section('Admin: JavaScript texts in English');
+  const setLang = async (lang) => {
+    await goto('/admin/profile');
+    await navigating(`(s => { s.value = '${lang}'; s.form.requestSubmit(); })(document.querySelector('#lang'))`);
+  };
+  await setLang('en');
+  await goto('/admin/round/new');
+  await type('#start_time', '14:00', { blur: true });
+  await type('#end_time', '14:30', { blur: true });
+  await js(`(e => { e.value = '15'; e.dispatchEvent(new Event('input', { bubbles: true })); })(document.querySelector('#slot_minutes'))`);
+  check('preview in English', (await preview()) === 'Preview: 2 slots per day: 14:00–14:15, 14:15–14:30', await preview());
+  await js(`(e => { e.value = '2030-01-01'; e.dispatchEvent(new Event('input', { bubbles: true })); })(document.querySelector('[name="day_dates[]"]'))`);
+  check('weekday next to the date in English', await js(`document.querySelector('[name="day_dates[]"]').nextElementSibling.textContent`) === 'Tue, 01/01/2030');
+  await setLang('de');
+  await goto('/admin/round/new');
+  check('back in German', await js('document.documentElement.lang') === 'de' && !(await js(`!!document.getElementById('tp-i18n')`)));
 
   // --- Parent pages ----------------------------------------------------------------------------
   const KEY = 'tp_bookings';

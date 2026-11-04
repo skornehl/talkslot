@@ -8,7 +8,24 @@
  *
  * Admin area (teacher): translation in the browser via the Translator API; sessionStorage
  * only as loop protection for the automatic translation and for an error notice.
+ *
+ * Texts of the admin area: L(germanText, {placeholder: value}). In English the admin layout
+ * provides the translations as JSON (#tp-i18n, from app/lang/admin/en/js.php).
  */
+var L = (function () {
+  'use strict';
+  var map = null;
+  return function (de, vars) {
+    if (map === null) {
+      var el = document.getElementById('tp-i18n');
+      try { map = el ? JSON.parse(el.textContent) : {}; } catch (e) { map = {}; }
+    }
+    var text = Object.prototype.hasOwnProperty.call(map, de) ? map[de] : de;
+    Object.keys(vars || {}).forEach(function (k) { text = text.split('{' + k + '}').join(String(vars[k])); });
+    return text;
+  };
+})();
+
 (function () {
   'use strict';
 
@@ -104,13 +121,13 @@
       var text = btn.getAttribute('data-copy');
       var original = btn.textContent;
       var done = function () {
-        btn.textContent = 'Kopiert ✓';
+        btn.textContent = L('Kopiert ✓');
         setTimeout(function () { btn.textContent = original; }, 2000);
       };
       if (navigator.clipboard && window.isSecureContext) {
-        navigator.clipboard.writeText(text).then(done, function () { window.prompt('Link kopieren:', text); });
+        navigator.clipboard.writeText(text).then(done, function () { window.prompt(L('Link kopieren:'), text); });
       } else {
-        window.prompt('Link kopieren:', text);
+        window.prompt(L('Link kopieren:'), text);
       }
     });
   });
@@ -220,7 +237,7 @@
         monitor: function (m) {
           m.addEventListener('downloadprogress', function (e) {
             var pct = Math.round((e.loaded || 0) * 100);
-            if (pct - shown >= 10 || pct === 100) { shown = pct; say('Lade Sprachpaket ' + lang.toUpperCase() + ' … ' + pct + ' %'); }
+            if (pct - shown >= 10 || pct === 100) { shown = pct; say(L('Lade Sprachpaket {lang} … {pct} %', { lang: lang.toUpperCase(), pct: pct })); }
           });
         }
       };
@@ -242,14 +259,14 @@
       set(fs.querySelector('[name="t_description[' + lang + ']"]'), row.description);
       set(fs.querySelector('[name="t_seen[' + lang + ']"]'), row.seen);
       var badge = fs.querySelector('legend .status');
-      if (badge) { badge.textContent = 'automatisch'; badge.className = 'status status-on'; }
+      if (badge) { badge.textContent = L('automatisch'); badge.className = 'status status-on'; }
       var confirmBox = fs.querySelector('[name="t_confirm[' + lang + ']"]');
       if (confirmBox && confirmBox.parentNode) { confirmBox.parentNode.remove(); }
       fs.classList.add('bt-updated');
       var all = document.querySelectorAll('fieldset[lang] legend .status');
       var ok = document.querySelectorAll('fieldset[lang] legend .status.status-on');
       var counter = document.querySelector('[data-bt-counter]');
-      if (counter) { counter.textContent = '(' + ok.length + ' von ' + all.length + ' aktuell)'; }
+      if (counter) { counter.textContent = L('({ok} von {all} aktuell)', { ok: ok.length, all: all.length }); }
     }
 
     function saveOne(r, force) {
@@ -275,8 +292,8 @@
       lock(false);
       if (btnNext) { btnNext.hidden = true; }
       var parts = [];
-      if (saved.length) { parts.push('Fertig: ' + upper(saved) + ' im Browser übersetzt und gespeichert – unten prüfen und bei Bedarf korrigieren.'); }
-      if (failed.length) { parts.push('Nicht im Browser übersetzbar: ' + upper(failed) + ' – bitte unten von Hand eintragen.'); }
+      if (saved.length) { parts.push(L('Fertig: {langs} im Browser übersetzt und gespeichert – unten prüfen und bei Bedarf korrigieren.', { langs: upper(saved) })); }
+      if (failed.length) { parts.push(L('Nicht im Browser übersetzbar: {langs} – bitte unten von Hand eintragen.', { langs: upper(failed) })); }
       if (saved.length && btnPending && pending.every(function (l) { return state[l] === 'done' || failed.indexOf(l) >= 0; })) {
         btnPending.hidden = true;
       }
@@ -296,13 +313,13 @@
       busy = true;
       lock(true);
       if (btnNext) { btnNext.hidden = true; }
-      say('Übersetze im Browser …');
+      say(L('Übersetze im Browser …'));
       var outdated = false;
       var waitClick = [];
       var jobs = run.map(function (job) {
         return translateOne(job.lang, job.download)
           .then(function (r) { return saveOne(r, force); })
-          .then(function () { state[job.lang] = 'done'; saved.push(job.lang); say('Übersetzt und gespeichert: ' + upper(saved) + ' …'); })
+          .then(function () { state[job.lang] = 'done'; saved.push(job.lang); say(L('Übersetzt und gespeichert: {langs} …', { langs: upper(saved) })); })
           .catch(function (err) {
             if (err && err.message === 'outdated') { outdated = true; return; }
             if (err && err.name === 'NotAllowedError') { waitClick.push(job.lang); return; } // needs its own click
@@ -314,7 +331,7 @@
         if (outdated) {
           busy = false;
           lock(false);
-          say('Titel oder Beschreibung wurden inzwischen geändert. Bitte die Seite neu laden.', 'warning');
+          say(L('Titel oder Beschreibung wurden inzwischen geändert. Bitte die Seite neu laden.'), 'warning');
           return;
         }
         var left = queue.filter(function (l) { return state[l] !== 'done' && failed.indexOf(l) < 0 && state[l] !== 'unavailable'; });
@@ -323,10 +340,12 @@
           lock(false);
           btnNext.hidden = false;
           if (btnPending) { btnPending.hidden = true; } // only one button left to continue
-          btnNext.textContent = 'Nächste Sprache laden: ' + left[0].toUpperCase() + (left.length > 1 ? ' (noch ' + left.length + ')' : '');
+          btnNext.textContent = left.length > 1
+            ? L('Nächste Sprache laden: {lang} (noch {count})', { lang: left[0].toUpperCase(), count: left.length })
+            : L('Nächste Sprache laden: {lang}', { lang: left[0].toUpperCase() });
           btnNext.onclick = function () { step(queue, force, true); };
-          say((saved.length ? 'Übersetzt und gespeichert: ' + upper(saved) + '. ' : '') +
-            'Für jedes weitere Sprachpaket einmal auf „' + btnNext.textContent + '“ klicken (der Browser lädt es nur nach einem Klick).');
+          say((saved.length ? L('Übersetzt und gespeichert: {langs}.', { langs: upper(saved) }) + ' ' : '') +
+            L('Für jedes weitere Sprachpaket einmal auf „{button}“ klicken (der Browser lädt es nur nach einem Klick).', { button: btnNext.textContent }));
           return;
         }
         busy = false;
@@ -334,7 +353,7 @@
       }).catch(function () {
         busy = false;
         lock(false);
-        say('Die Übersetzungen konnten nicht gespeichert werden. Bitte die Seite neu laden und erneut versuchen.', 'error');
+        say(L('Die Übersetzungen konnten nicht gespeichert werden. Bitte die Seite neu laden und erneut versuchen.'), 'error');
       });
     }
 
@@ -372,7 +391,7 @@
       if (ready.length && load(key) !== '1' && store(key, '1')) {
         step(pending, false, false);
       } else if (pending.length && !ready.length && btnPending) {
-        say('Zum Übersetzen auf „Im Browser übersetzen“ klicken. Beim ersten Mal lädt der Browser je Sprache ein Sprachpaket (je ein Klick).');
+        say(L('Zum Übersetzen auf „Im Browser übersetzen“ klicken. Beim ersten Mal lädt der Browser je Sprache ein Sprachpaket (je ein Klick).'));
       }
     });
   });
@@ -422,8 +441,10 @@
       }
       var days = Array.prototype.filter.call(box.querySelectorAll('[name="day_dates[]"]'), function (d) { return d.value; }).length || 1;
       preview.textContent = slots.length
-        ? 'Vorschau: ' + slots.length + ' Termine pro Tag' + (days > 1 ? ' (' + days * slots.length + ' insgesamt an ' + days + ' Tagen)' : '') + ': ' + slots.join(', ')
-        : 'Mit diesen Zeiten entsteht kein Termin.';
+        ? (days > 1
+          ? L('Vorschau: {count} Termine pro Tag ({total} insgesamt an {days} Tagen): {slots}', { count: slots.length, total: days * slots.length, days: days, slots: slots.join(', ') })
+          : L('Vorschau: {count} Termine pro Tag: {slots}', { count: slots.length, slots: slots.join(', ') }))
+        : L('Mit diesen Zeiten entsteht kein Termin.');
       preview.hidden = false;
     }
     box.addEventListener('input', update);
@@ -432,7 +453,7 @@
     addDate.addEventListener('click', function () {
       var inputs = box.querySelectorAll('[name="day_dates[]"]');
       var n = inputs[inputs.length - 1].cloneNode();
-      n.value = ''; n.required = false; n.setAttribute('aria-label', 'Datum ' + (inputs.length + 1));
+      n.value = ''; n.required = false; n.setAttribute('aria-label', L('Datum {n}', { n: inputs.length + 1 }));
       addDate.parentNode.insertBefore(n, addDate);
       n.focus();
     });
@@ -495,7 +516,7 @@
  */
 (function () {
   'use strict';
-  var days = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+  var days = [L('So'), L('Mo'), L('Di'), L('Mi'), L('Do'), L('Fr'), L('Sa')];
   function update(input) {
     var label = input.nextElementSibling;
     if (!label || !label.classList.contains('date-de')) {
@@ -504,7 +525,7 @@
       input.insertAdjacentElement('afterend', label);
     }
     var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(input.value);
-    label.textContent = m ? days[new Date(+m[1], m[2] - 1, +m[3]).getDay()] + ', ' + m[3] + '.' + m[2] + '.' + m[1] : '';
+    label.textContent = m ? L('{weekday}, {d}.{m}.{y}', { weekday: days[new Date(+m[1], m[2] - 1, +m[3]).getDay()], d: m[3], m: m[2], y: m[1] }) : '';
   }
   Array.prototype.forEach.call(document.querySelectorAll('input[data-de-date]'), update);
   ['input', 'change'].forEach(function (t) {

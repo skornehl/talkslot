@@ -30,7 +30,6 @@ final class App
             return;
         }
         if ($path === '/admin' || str_starts_with($path, '/admin/')) {
-            I18n::set('de');
             (new AdminController())->dispatch(substr($path, 6) ?: '/', Http::method());
             return;
         }

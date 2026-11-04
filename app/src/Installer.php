@@ -44,16 +44,16 @@ final class Installer
     {
         $errors = [];
         if (!preg_match('/^[A-Za-z0-9._@+-]{3,254}$/', $username)) {
-            $errors[] = 'Benutzername: 3–254 Zeichen, nur Buchstaben, Ziffern und . _ @ + - (z. B. Ihre E-Mail-Adresse).';
+            $errors[] = __('Benutzername: 3–254 Zeichen, nur Buchstaben, Ziffern und . _ @ + - (z. B. Ihre E-Mail-Adresse).');
         }
         if (mb_strlen($password) < 12) {
-            $errors[] = 'Das Passwort muss mindestens 12 Zeichen lang sein.';
+            $errors[] = __('Das Passwort muss mindestens 12 Zeichen lang sein.');
         }
         if ($password !== $password2) {
-            $errors[] = 'Die Passwörter stimmen nicht überein.';
+            $errors[] = __('Die Passwörter stimmen nicht überein.');
         }
         if ($email !== '' && !is_valid_email($email)) {
-            $errors[] = 'Die E-Mail-Adresse ist ungültig.';
+            $errors[] = __('Die E-Mail-Adresse ist ungültig.');
         }
         return $errors;
     }

@@ -20,6 +20,21 @@ function t(string $key, array $vars = []): string
     return I18n::t($key, $vars);
 }
 
+/** Admin area: German text, in English if the admin language is English (see AdminI18n). */
+function __(string $de, array $vars = []): string
+{
+    return \App\AdminI18n::translate($de, $vars);
+}
+
+/**
+ * Like __(), escaped for HTML; the values of $html are inserted unescaped (e.g. a link that the
+ * caller has built and escaped itself): __h('Bitte {link} prüfen.', ['link' => '<a …>…</a>']).
+ */
+function __h(string $de, array $html = []): string
+{
+    return \App\AdminI18n::fill(e(\App\AdminI18n::translate($de)), $html);
+}
+
 /**
  * Relative URL within the application. Appends the language if it
  * was chosen explicitly (public pages do not set cookies).

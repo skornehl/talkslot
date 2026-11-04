@@ -6,8 +6,8 @@ description: Admin accounts set up the platform, invite teachers, see all rounds
 The first **admin account** is created during installation; it can make further accounts admins. Admins
 see and edit all rounds, create rounds for teachers, manage the accounts and maintain the legal texts. The
 operator of the platform (usually the school) is the controller under the GDPR for all rounds; teachers use
-the platform on its behalf. Labels below are those of the German admin area, with a translation in
-brackets.
+the platform on its behalf. The admin area is available in German and English (*Mein Profil* →
+*Sprache / Language*); labels below are the German ones, with the English label in brackets.
 
 ![Admin overview of all rounds]({{ '/assets/img/admin-dashboard.webp' | relative_url }})
 

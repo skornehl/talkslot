@@ -20,11 +20,12 @@ werden. Ohne
 Shell-Zugang nutzen Sie den Web-Cron (der mitgelieferte GitHub-Workflow ruft ihn stündlich auf). Als
 Rückfallebene läuft das Aufräumen außerdem bei Seitenaufrufen, höchstens alle 15 Minuten.
 
-## Warum ist der Adminbereich nur auf Deutsch?
+## In welchen Sprachen gibt es den Adminbereich?
 
-TalkSlot ist an einer deutschen Schule entstanden. Elternseiten und E-Mails sind in sechs Sprachen
-übersetzt, weil Eltern ganz unterschiedlicher Herkunft sind. Eine Übersetzung des Adminbereichs ist als Beitrag
-willkommen.
+Auf Deutsch und Englisch. Jedes Konto wählt seine Sprache unter *Mein Profil* (*Sprache / Language*);
+E-Mails an Lehrkräfte (Einladung, Passwort-Link, Zusammenfassungen) folgen ihr. Vor der Anmeldung
+entscheidet die Sprache des Browsers, `admin_language` legt den Standard fest. Elternseiten und E-Mails an
+Eltern sind in sechs Sprachen übersetzt, weil Eltern ganz unterschiedlicher Herkunft sind.
 
 ## Wie füge ich eine Sprache für Eltern hinzu?
 
