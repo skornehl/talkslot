@@ -8,7 +8,6 @@ return [
     'Impressum bzw. Datenschutzerklärung enthalten noch offene Platzhalter (Aufgabe der Admins). Bis sie ausgefüllt sind, lassen sich keine Runden aktivieren; bereits aktive Runden bleiben erreichbar.' => 'The imprint or privacy policy still contains open placeholders (a task for the admins). Until they are filled in, no rounds can be activated; rounds that are already active stay reachable.',
     'Impressum bzw. Datenschutzerklärung ({languages}) folgen noch der alten Vorlage („privates Angebot“ ohne Datenschutzbeauftragte, Termin „jederzeit“ absagen). Für eine öffentliche Schule sind darin Rechtsgrundlagen, Datenschutzbeauftragte und Rechte falsch angegeben – bitte mit der passenden neuen Vorlage abgleichen („Vorlage laden“ beim jeweiligen Text).' => 'The imprint or privacy policy ({languages}) still follows the old template (“private service” without a data protection officer, cancel “at any time”). For a public school, the legal bases, the data protection officer and the rights stated there are wrong – please compare it with the matching new template (“Load template” on the text).',
     // Template variants on the text form
-    'Vorlage' => 'Template',
     'Öffentliche Schule' => 'Public school',
     'Privater Träger' => 'Private operator',
     'Vorlage laden:' => 'Load template:',
