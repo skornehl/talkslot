@@ -3,6 +3,10 @@
 use App\Csrf;
 $rid = (int) $round['id'];
 $csrf = Csrf::adminField();
+// Delete dialogs: parents are not informed by the system, so they say so (and where to see who booked)
+$notNotified = "\n\n" . __('Die Eltern werden NICHT automatisch benachrichtigt – bitte selbst informieren.');
+$whoBooked = ' ' . __('Wer gebucht hat, steht vorher in der Druckansicht – nach dem Löschen nicht mehr.');
+$roundBookings = array_sum(array_map(static fn ($d) => count(array_filter($d['slots'], static fn ($s) => $s['booking_id'] !== null)), $days));
 ?>
 <p class="breadcrumb"><a href="<?= e(url('/admin')) ?>"><?= e(__('Runden')) ?></a> › <?= e($round['title']) ?></p>
 <div class="page-head">
@@ -49,7 +53,7 @@ $csrf = Csrf::adminField();
     <form method="post" action="<?= e(url('/admin/templates/from-round/' . $rid)) ?>" class="inline" data-once><?= $csrf ?>
       <button type="submit" class="button"><?= e(__('Als Vorlage speichern')) ?></button></form>
     <?php endif; ?>
-    <form method="post" action="<?= e(url('/admin/round/' . $rid . '/delete')) ?>" class="inline" data-confirm="<?= e(__('Runde „{title}“ mit allen Tagen und Buchungen endgültig löschen?', ['title' => $round['title']])) ?>"><?= $csrf ?>
+    <form method="post" action="<?= e(url('/admin/round/' . $rid . '/delete')) ?>" class="inline" data-confirm="<?= e($roundBookings ? __('Runde „{title}“ mit allen Tagen und {count} Buchung(en) endgültig löschen?', ['title' => $round['title'], 'count' => $roundBookings]) . $notNotified . $whoBooked : __('Runde „{title}“ mit allen Tagen und Buchungen endgültig löschen?', ['title' => $round['title']])) ?>"><?= $csrf ?>
       <button type="submit" class="button button-danger"><?= e(__('Löschen')) ?></button></form>
   </div>
   <details id="duplicate">
@@ -66,7 +70,7 @@ $csrf = Csrf::adminField();
 </div>
 
 <?php if ($conflicts > 0): ?>
-  <div class="alert alert-warning" role="alert"><p><strong><?= e(__('{count} Konflikt(e):', ['count' => $conflicts])) ?></strong> <?= e(__('Gebuchte Termine passen nicht mehr zum Zeitplan (markiert mit ⚠). Bitte umbuchen oder löschen.')) ?></p></div>
+  <div class="alert alert-warning" role="alert"><p><strong><?= e(__('{count} Konflikt(e):', ['count' => $conflicts])) ?></strong> <?= e(__('Gebuchte Termine passen nicht mehr zum Zeitplan (markiert mit ⚠). Bitte umbuchen oder löschen.')) ?> <?= e(__('Die Eltern werden dabei NICHT automatisch benachrichtigt: Beim Umbuchen „Änderung per E-Mail mitteilen“ angehakt lassen, ohne E-Mail-Adresse bitte persönlich informieren.')) ?></p></div>
 <?php endif; ?>
 
 <details class="card" id="translations"<?= array_filter($translations, static fn ($t) => !in_array($t['status'], ['auto', 'manual', 'none'], true)) ? ' open' : '' ?>>
@@ -120,7 +124,7 @@ $csrf = Csrf::adminField();
     <a class="button button-small" href="<?= e(url('/admin/day/' . $did . '/edit')) ?>"><?= e(__('Tag bearbeiten')) ?></a>
     <a class="button button-small" href="<?= e(url('/admin/round/' . $rid . '/print', ['day' => $did])) ?>" target="_blank" rel="noopener"><?= e(__('Tag drucken')) ?></a>
     <?php $dayBookings = count(array_filter($day['slots'], static fn ($s) => $s['booking_id'] !== null)); ?>
-    <form method="post" action="<?= e(url('/admin/day/' . $did . '/delete')) ?>" class="inline-delete" data-confirm="<?= e($dayBookings ? __('Diesen Tag mit allen Slots und {count} Buchung(en) löschen?', ['count' => $dayBookings]) : __('Diesen Tag mit allen Slots löschen?')) ?>"><?= $csrf ?>
+    <form method="post" action="<?= e(url('/admin/day/' . $did . '/delete')) ?>" class="inline-delete" data-confirm="<?= e($dayBookings ? __('Diesen Tag mit allen Slots und {count} Buchung(en) löschen?', ['count' => $dayBookings]) . $notNotified . $whoBooked : __('Diesen Tag mit allen Slots löschen?')) ?>"><?= $csrf ?>
       <?php if ($dayBookings): ?>
         <label class="small"><input type="checkbox" name="confirm" value="1" required> <?= e(__('inkl. {count} Buchung(en)', ['count' => $dayBookings])) ?></label>
       <?php endif; ?>
@@ -163,7 +167,7 @@ $csrf = Csrf::adminField();
         <td class="row-actions">
           <?php if ($s['booking_id']): ?>
             <a class="button button-small" href="<?= e(url('/admin/booking/' . (int) $s['booking_id'] . '/edit')) ?>"><?= e(__('Bearbeiten')) ?></a>
-            <form method="post" action="<?= e(url('/admin/booking/' . (int) $s['booking_id'] . '/delete')) ?>" class="inline" data-confirm="<?= e(__('Eintrag von „{name}“ löschen? Der Slot wird wieder frei.', ['name' => $s['name']])) ?>"><?= $csrf ?>
+            <form method="post" action="<?= e(url('/admin/booking/' . (int) $s['booking_id'] . '/delete')) ?>" class="inline" data-confirm="<?= e(__('Eintrag von „{name}“ löschen? Der Slot wird wieder frei.', ['name' => $s['name']]) . ((string) $s['email'] !== '' ? $notNotified : "\n\n" . __('Die Eltern werden NICHT automatisch benachrichtigt. Für diesen Eintrag ist keine E-Mail-Adresse hinterlegt – bitte persönlich informieren.'))) ?>"><?= $csrf ?>
               <button type="submit" class="button button-small button-danger"><?= e(__('Löschen')) ?></button></form>
           <?php else: ?>
             <a class="button button-small" href="<?= e(url('/admin/slot/' . $sid . '/book')) ?>"><?= e(__('Eintragen')) ?></a>

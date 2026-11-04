@@ -25,6 +25,11 @@ ask how long they are kept and state it in the privacy policy.
 - **Data minimisation:** a free-text name and an optional e-mail address, nothing else.
 - **E-mail address only for the appointment:** confirmation, changes, cancellation and, if the teacher
   turned it on for the round, a reminder the evening before. The privacy template names all of these.
+- **Entries made by the teacher:** the confirmation mail with the change link is ticked by default as soon
+  as an address is entered. It is how parents who never saw the booking form learn about the entry, who is
+  responsible and where to find the privacy notice (Art. 14 GDPR). Deleting or changing bookings sends no
+  mail yet; the admin area says so in every dialog. A `mailto:` link to the parents was deliberately left
+  out, so that their addresses do not end up in private mailboxes through the browser's mail program.
 - **Admin log without monitoring teachers:** only changes made by admin accounts are logged, so it shows
   who among several admins did what. What teachers do in their own rounds is not recorded, and bookings
   appear only as date and time. Depending on your state, a log of staff actions may still be a matter for

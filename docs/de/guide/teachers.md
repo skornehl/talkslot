@@ -62,16 +62,26 @@ verborgen. Ein neuer Code (beim Bearbeiten) macht den alten sofort ungültig; be
 Pro Tag sehen Sie alle Termine mit den Buchungen:
 
 - ***Bearbeiten***: Name oder E-Mail-Adresse ändern oder die Buchung auf einen anderen
-  Termin **verschieben**, optional mit einer E-Mail an die Eltern.
+  Termin **verschieben**, mit einer E-Mail an die Eltern (*Änderung per E-Mail mitteilen*, standardmäßig
+  angehakt; Speichern ohne Änderung verschickt keine).
 - ***Löschen***: eine Buchung entfernen.
-- ***Eintragen***: selbst einen Termin eintragen, z. B. nach einem Telefonat, optional mit
-  Bestätigungs-E-Mail.
+- ***Eintragen***: selbst einen Termin eintragen, z. B. nach einem Telefonat. Die Bestätigungs-E-Mail mit
+  Änderungslink ist angehakt, sobald Sie eine E-Mail-Adresse eintragen; nur so erfahren die Eltern von
+  dem Eintrag.
 - ***Sperren***: einen Termin sperren, damit niemand ihn buchen kann, und wieder freigeben.
 - **Tage**: Zeiten und den Ort eines einzelnen Tages bearbeiten (*Tag bearbeiten*), Pausen hinzufügen,
   einen Tag drucken (*Tag drucken*), weitere Tage hinzufügen (*+ Tag hinzufügen*) oder einen Tag löschen.
 
 Wenn Sie Zeiten oder Pausen ändern, werden **gebuchte Termine nie gelöscht**; Termine, die nicht mehr
 passen, werden mit ⚠ markiert, damit Sie sie verschieben können.
+
+**Die Eltern werden nicht automatisch benachrichtigt**, wenn Sie eine Buchung, einen Tag, eine Runde oder
+ein Konto löschen, einem Tag oder der Runde ein anderes Datum oder einen anderen Ort geben oder wenn eine
+Buchung zum Konflikt wird. Darauf weisen die Bestätigungsdialoge, die Hinweise in den Formularen und die
+Meldung danach hin, jeweils mit der Zahl der betroffenen Buchungen. Bitte informieren Sie die Eltern
+selbst, persönlich, wenn keine E-Mail-Adresse hinterlegt ist. Öffnen Sie vor dem Löschen eines Tages oder
+einer Runde die Druckansicht: Danach ist nicht mehr zu sehen, wer gebucht hatte. Um einen Konflikt
+umzubuchen, bearbeiten Sie die Buchung und lassen *Änderung per E-Mail mitteilen* angehakt.
 
 Weitere Aktionen für die Runde: bearbeiten, deaktivieren, ***Druckansicht / PDF***, löschen und
 ***Duplizieren …***: eine Kopie mit neuem Link und Code, mit Zeiten, Pausen, gesperrten Terminen,

@@ -40,8 +40,9 @@ $action = $booking ? url('/admin/booking/' . (int) $booking['id'] . '/edit') : u
   </div>
   <?php endif; ?>
 
+  <?php // Ticked by default, and as long as no address is entered (the script then follows the e-mail field) ?>
   <div class="check">
-    <input type="checkbox" id="send_mail" name="send_mail" value="1"<?= !empty($old['send_mail']) ? ' checked' : '' ?>>
+    <input type="checkbox" id="send_mail" name="send_mail" value="1" data-mail-for="email"<?= !empty($old['send_mail']) || trim((string) $old['email']) === '' ? ' checked' : '' ?>>
     <label for="send_mail"><?= e($booking ? __('Änderung per E-Mail mitteilen (nur wenn eine Adresse eingetragen ist)') : __('Bestätigung mit Änderungslink per E-Mail senden (nur wenn eine Adresse eingetragen ist)')) ?></label>
   </div>
 

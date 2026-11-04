@@ -26,6 +26,12 @@ Datenschutzerklärung.
 - **Datenminimierung:** ein frei eingegebener Name und eine optionale E-Mail-Adresse, sonst nichts.
 - **E-Mail-Adresse nur für den Termin:** Bestätigung, Änderung, Absage und, wenn die Lehrkraft sie für die
   Runde vorgesehen hat, eine Erinnerung am Vorabend. Die Vorlage der Datenschutzerklärung nennt all das.
+- **Einträge durch die Lehrkraft:** Die Bestätigungs-E-Mail mit Änderungslink ist standardmäßig angehakt,
+  sobald eine Adresse eingetragen ist. So erfahren Eltern, die das Buchungsformular nie gesehen haben, von
+  dem Eintrag, wer verantwortlich ist und wo die Datenschutzhinweise stehen (Art. 14 DSGVO). Beim Löschen
+  oder Ändern von Buchungen geht noch keine E-Mail hinaus; der Admin-Bereich sagt das in jedem Dialog.
+  Auf einen `mailto:`-Link an die Eltern wurde bewusst verzichtet, damit ihre Adressen nicht über das
+  Mailprogramm des Browsers in private Postfächer gelangen.
 - **Protokoll ohne Kontrolle der Lehrkräfte:** Erfasst werden nur Änderungen durch Admin-Konten, damit bei
   mehreren Admins nachvollziehbar ist, wer was getan hat. Was Lehrkräfte in ihren eigenen Runden tun,
   wird nicht aufgezeichnet, Buchungen erscheinen nur mit Datum und Uhrzeit. Je nach Bundesland kann ein
