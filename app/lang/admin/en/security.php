@@ -1,5 +1,5 @@
 <?php
-/** English texts of the admin area: German original => English (see App\AdminI18n). Account security: confirming the password, security notices, ending all sessions, configuration warnings. */
+/** English texts of the admin area: German original => English (see App\AdminI18n). Account security: confirming the password, security notices, ending all sessions, configuration warnings, form posts from other websites. */
 return [
     // Confirming the password (Auth::confirmPassword) and the account forms
     'Zu viele falsche Passwörter. Bitte versuchen Sie es in {minutes} Minuten erneut oder melden Sie sich ab und wieder an.' => 'Too many wrong passwords. Please try again in {minutes} minutes or sign out and in again.',
@@ -50,4 +50,8 @@ return [
     // Dashboard (admins): config.php readable for every user of the server ({files}: paths relative to the
     // installation with their permissions, e.g. "releases/<version>/config/config.php (0644)")
     'Die Konfiguration ist für alle Benutzer des Servers lesbar: {files}. Sie enthält die Passwörter für Datenbank und Mailversand sowie den geheimen Schlüssel. Bitte setzen Sie die Rechte auf 600 (oder 640), z. B. im FTP-Programm, oder geben Sie diesen Hinweis an die technische Betreuung weiter.' => 'The configuration can be read by every user of the server: {files}. It contains the passwords for the database and for sending mail as well as the secret key. Please set the permissions to 600 (or 640), e.g. in your FTP program, or pass this notice on to whoever looks after the server.',
+    // Form posts from other websites (App::run)
+    'Anfrage abgelehnt' => 'Request refused',
+    'Das Formular wurde von einer anderen Website aus abgeschickt und deshalb nicht verarbeitet. Bitte öffnen Sie die Seite direkt und versuchen Sie es dort erneut.'
+        => 'The form was sent from another website and was therefore not processed. Please open the page directly and try again there.',
 ];

@@ -23,9 +23,15 @@ keine öffentlichen Issues.
   Pfade.
 - Strikte Content Security Policy ohne `unsafe-inline`, `X-Frame-Options: DENY`, `nosniff`,
   `Referrer-Policy: no-referrer` (persönliche Änderungslinks gelangen nicht über den Referrer nach außen),
-  HSTS, Permissions-Policy und `Cache-Control: no-store`.
+  HSTS, Permissions-Policy und `Cache-Control: no-store`. Sie gehen mit jeder Antwort hinaus, auch mit 404-
+  und Fehlerseiten und den 403-Seiten, die Apache selbst erzeugt.
 - CSRF-Schutz: Session-Token im Admin-Bereich; auf öffentlichen Seiten ein zustandsloses HMAC-Token mit
   Mindest- und Höchstalter.
+- Formulare, die der Browser als von einer anderen Website abgeschickt kennzeichnet
+  (`Sec-Fetch-Site: cross-site`), werden abgelehnt, bevor irgendetwas verarbeitet wird. Das verhindert auch
+  Login-CSRF (eine fremde Seite meldet Sie in einem Konto des Angreifers an). `Origin` wird bewusst nicht
+  geprüft: Wegen `Referrer-Policy: no-referrer` senden Browser auch bei den Formularen von TalkSlot selbst
+  `Origin: null`. Browser ohne diesen Header schützen weiterhin die Tokens.
 - Spamschutz: Honeypot-Feld, Mindestzeit zum Ausfüllen eines Formulars, Rate-Limits.
 
 **Tokens**
@@ -43,6 +49,9 @@ keine öffentlichen Issues.
 - Brute-Force-Schutz: höchstens 5 fehlgeschlagene Logins pro gekürzter IP-Adresse in 15 Minuten und 20 pro
   Benutzername und Stunde. Antworten und Antwortzeiten verraten nicht, ob ein Konto existiert.
 - Passwörter ab 12 Zeichen bis 72 Byte (die Grenze von bcrypt).
+- Jede Admin-Route nennt in der Routentabelle des `AdminController` die Rolle, die sie braucht (`teacher`
+  für jedes Konto oder `admin`). Eine Route ohne bekannte Rolle ist nur für Admins erreichbar; eine
+  vergessene Rolle sperrt also, statt zu öffnen.
 - Einen Admin einladen, Admin-Rechte vergeben oder entziehen, ein Admin-Konto deaktivieren, wieder
   aktivieren oder löschen, eine E-Mail-Adresse ändern (eigene oder fremde) und alle Sitzungen beenden
   fragen das Passwort des handelnden Kontos erneut ab. Fehleingaben dort und beim Ändern des eigenen
@@ -75,6 +84,22 @@ keine öffentlichen Issues.
   würde sonst Passwörter im Klartext bedeuten) und liefert den Installer nach der Installation nie aus.
 - CI und Deployment verwenden keine GitHub Actions von Drittanbietern; Code wird mit einfachem `git` geholt,
   und das Token wird nur in einem Request-Header gesendet.
+
+**Getestete Invarianten**
+
+Tests sichern die Regeln ab, die eine Erweiterung sonst unbemerkt brechen könnte:
+- Jede Admin-Route hat eine Rolle, und Lehrkräfte erhalten für jede Admin-Route 404 (auch mit gültigem
+  Formular-Token).
+- Keine GET-Route verändert Daten: Der Smoke-Test ruft jede Admin-GET-Route der Routentabelle und die
+  öffentlichen Seiten auf, auch mit Formularfeldern in der Adresse, und danach müssen Datenbank und
+  E-Mail-Ausgang unverändert sein. Eine neue Route mit unbekanntem Platzhalter lässt den Test fehlschlagen,
+  bis sie abgedeckt ist.
+- Das Öffnen eines Änderungslinks (`GET /b/…`, wie es Mail-Scanner und Linkvorschauen tun) sagt nie ab,
+  verschiebt nie und verschickt keine E-Mail.
+- Jeder Weg, einen Termin zu buchen oder zu verschieben, durch Eltern wie durch die Lehrkraft, wartet auf
+  die Sperre des Tages, die das Neuberechnen der Termine hält, und nur `BookingService` schreibt Buchungen.
+- 404-, 403- und Fehlerseiten tragen die Sicherheits-Header, und die `.htaccess` sendet dieselben Werte
+  wie PHP.
 
 ## Bei Verdacht auf Missbrauch
 

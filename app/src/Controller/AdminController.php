@@ -34,62 +34,64 @@ use App\View;
  */
 final class AdminController
 {
+    /**
+     * Routes after signing in: method, path pattern, action and the role the route needs ('teacher' = every
+     * signed-in account, 'admin' = admin accounts only). dispatch() checks the role of the matching route;
+     * a route without a known role is admin-only, so a forgotten role fails closed. Login, "forgot
+     * password" and invitation links work without an account and are handled in dispatch() before this table.
+     */
     private const ROUTES = [
-        ['GET', '#^/$#', 'dashboard'],
-        ['POST', '#^/logout$#', 'logout'],
-        ['GET', '#^/round/new$#', 'roundForm'],
-        ['POST', '#^/round/new$#', 'roundSave'],
-        ['GET', '#^/round/(\d+)$#', 'roundShow'],
-        ['GET', '#^/round/(\d+)/edit$#', 'roundForm'],
-        ['POST', '#^/round/(\d+)/edit$#', 'roundSave'],
-        ['POST', '#^/round/(\d+)/toggle$#', 'roundToggle'],
-        ['POST', '#^/round/(\d+)/duplicate$#', 'roundDuplicate'],
-        ['POST', '#^/round/(\d+)/delete$#', 'roundDelete'],
-        ['POST', '#^/round/(\d+)/day$#', 'dayAdd'],
-        ['GET', '#^/round/(\d+)/print$#', 'printView'],
-        ['POST', '#^/round/(\d+)/translations$#', 'translationsSave'],
-        ['POST', '#^/round/(\d+)/translations/auto$#', 'translationsAuto'],
-        ['GET', '#^/day/(\d+)/edit$#', 'dayForm'],
-        ['POST', '#^/day/(\d+)/edit$#', 'daySave'],
-        ['POST', '#^/day/(\d+)/delete$#', 'dayDelete'],
-        ['POST', '#^/day/(\d+)/break$#', 'breakAdd'],
-        ['POST', '#^/break/(\d+)/delete$#', 'breakDelete'],
-        ['POST', '#^/slot/(\d+)/block$#', 'slotToggleBlock'],
-        ['GET', '#^/slot/(\d+)/book$#', 'bookingNew'],
-        ['POST', '#^/slot/(\d+)/book$#', 'bookingCreate'],
-        ['GET', '#^/booking/(\d+)/edit$#', 'bookingEdit'],
-        ['POST', '#^/booking/(\d+)/edit$#', 'bookingUpdate'],
-        ['POST', '#^/booking/(\d+)/delete$#', 'bookingDelete'],
-        ['GET', '#^/profile$#', 'profile'],
-        ['POST', '#^/profile$#', 'profileSave'],
-        ['POST', '#^/password$#', 'passwordSave'],
-        ['GET', '#^/password-change$#', 'passwordChangeForm'],
-        ['POST', '#^/password-change$#', 'passwordChangeSave'],
-        // admin role only (see ADMIN_ONLY)
-        ['GET', '#^/users$#', 'users'],
-        ['GET', '#^/users/new$#', 'userForm'],
-        ['POST', '#^/users/new$#', 'userSave'],
-        ['GET', '#^/users/(\d+)/edit$#', 'userForm'],
-        ['POST', '#^/users/(\d+)/edit$#', 'userSave'],
-        ['POST', '#^/users/(\d+)/reset-password$#', 'userResetPassword'],
-        ['POST', '#^/users/(\d+)/delete$#', 'userDelete'],
-        ['POST', '#^/users/end-sessions$#', 'endAllSessions'],
-        ['GET', '#^/texts$#', 'texts'],
-        ['POST', '#^/texts/operator$#', 'operatorSave'],
-        ['GET', '#^/page/(imprint|privacy)/([a-z]{2})$#', 'pageForm'],
-        ['POST', '#^/page/(imprint|privacy)/([a-z]{2})$#', 'pageSave'],
-        ['GET', '#^/log$#', 'auditLog'],
-        ['GET', '#^/templates$#', 'templates'],
-        ['GET', '#^/templates/new$#', 'templateForm'],
-        ['POST', '#^/templates/new$#', 'templateSave'],
-        ['GET', '#^/templates/(\d+)/edit$#', 'templateForm'],
-        ['POST', '#^/templates/(\d+)/edit$#', 'templateSave'],
-        ['POST', '#^/templates/(\d+)/delete$#', 'templateDelete'],
-        ['POST', '#^/templates/from-round/(\d+)$#', 'templateFromRound'],
+        ['GET', '#^/$#', 'dashboard', 'teacher'],
+        ['POST', '#^/logout$#', 'logout', 'teacher'],
+        ['GET', '#^/round/new$#', 'roundForm', 'teacher'],
+        ['POST', '#^/round/new$#', 'roundSave', 'teacher'],
+        ['GET', '#^/round/(\d+)$#', 'roundShow', 'teacher'],
+        ['GET', '#^/round/(\d+)/edit$#', 'roundForm', 'teacher'],
+        ['POST', '#^/round/(\d+)/edit$#', 'roundSave', 'teacher'],
+        ['POST', '#^/round/(\d+)/toggle$#', 'roundToggle', 'teacher'],
+        ['POST', '#^/round/(\d+)/duplicate$#', 'roundDuplicate', 'teacher'],
+        ['POST', '#^/round/(\d+)/delete$#', 'roundDelete', 'teacher'],
+        ['POST', '#^/round/(\d+)/day$#', 'dayAdd', 'teacher'],
+        ['GET', '#^/round/(\d+)/print$#', 'printView', 'teacher'],
+        ['POST', '#^/round/(\d+)/translations$#', 'translationsSave', 'teacher'],
+        ['POST', '#^/round/(\d+)/translations/auto$#', 'translationsAuto', 'teacher'],
+        ['GET', '#^/day/(\d+)/edit$#', 'dayForm', 'teacher'],
+        ['POST', '#^/day/(\d+)/edit$#', 'daySave', 'teacher'],
+        ['POST', '#^/day/(\d+)/delete$#', 'dayDelete', 'teacher'],
+        ['POST', '#^/day/(\d+)/break$#', 'breakAdd', 'teacher'],
+        ['POST', '#^/break/(\d+)/delete$#', 'breakDelete', 'teacher'],
+        ['POST', '#^/slot/(\d+)/block$#', 'slotToggleBlock', 'teacher'],
+        ['GET', '#^/slot/(\d+)/book$#', 'bookingNew', 'teacher'],
+        ['POST', '#^/slot/(\d+)/book$#', 'bookingCreate', 'teacher'],
+        ['GET', '#^/booking/(\d+)/edit$#', 'bookingEdit', 'teacher'],
+        ['POST', '#^/booking/(\d+)/edit$#', 'bookingUpdate', 'teacher'],
+        ['POST', '#^/booking/(\d+)/delete$#', 'bookingDelete', 'teacher'],
+        ['GET', '#^/profile$#', 'profile', 'teacher'],
+        ['POST', '#^/profile$#', 'profileSave', 'teacher'],
+        ['POST', '#^/password$#', 'passwordSave', 'teacher'],
+        ['GET', '#^/password-change$#', 'passwordChangeForm', 'teacher'],
+        ['POST', '#^/password-change$#', 'passwordChangeSave', 'teacher'],
+        ['GET', '#^/users$#', 'users', 'admin'],
+        ['GET', '#^/users/new$#', 'userForm', 'admin'],
+        ['POST', '#^/users/new$#', 'userSave', 'admin'],
+        ['GET', '#^/users/(\d+)/edit$#', 'userForm', 'admin'],
+        ['POST', '#^/users/(\d+)/edit$#', 'userSave', 'admin'],
+        ['POST', '#^/users/(\d+)/reset-password$#', 'userResetPassword', 'admin'],
+        ['POST', '#^/users/(\d+)/delete$#', 'userDelete', 'admin'],
+        ['POST', '#^/users/end-sessions$#', 'endAllSessions', 'admin'],
+        ['GET', '#^/texts$#', 'texts', 'admin'],
+        ['POST', '#^/texts/operator$#', 'operatorSave', 'admin'],
+        ['GET', '#^/page/(imprint|privacy)/([a-z]{2})$#', 'pageForm', 'admin'],
+        ['POST', '#^/page/(imprint|privacy)/([a-z]{2})$#', 'pageSave', 'admin'],
+        ['GET', '#^/log$#', 'auditLog', 'admin'],
+        ['GET', '#^/templates$#', 'templates', 'admin'],
+        ['GET', '#^/templates/new$#', 'templateForm', 'admin'],
+        ['POST', '#^/templates/new$#', 'templateSave', 'admin'],
+        ['GET', '#^/templates/(\d+)/edit$#', 'templateForm', 'admin'],
+        ['POST', '#^/templates/(\d+)/edit$#', 'templateSave', 'admin'],
+        ['POST', '#^/templates/(\d+)/delete$#', 'templateDelete', 'admin'],
+        ['POST', '#^/templates/from-round/(\d+)$#', 'templateFromRound', 'admin'],
     ];
-
-    /** Paths that only the admin role may access */
-    private const ADMIN_ONLY = '#^/(users|texts|page|log|templates)(/|$)#';
 
     public function dispatch(string $path, string $method): void
     {
@@ -131,17 +133,24 @@ final class AdminController
         if (Auth::user()['must_change_password'] && !in_array($path, ['/password-change', '/logout'], true)) {
             Http::redirect('/admin/password-change');
         }
-        if (preg_match(self::ADMIN_ONLY, $path) && !Auth::isAdmin()) {
-            $this->notFound();
-        }
-        foreach (self::ROUTES as [$verb, $pattern, $action]) {
+        foreach (self::ROUTES as $route) {
+            [$verb, $pattern, $action] = $route;
             if ($verb === $method && preg_match($pattern, $path, $m)) {
-                $this->$action(...array_map(__NAMESPACE__ . '\intval_or_string',array_slice($m, 1)));
+                if (!self::allows($route, Auth::isAdmin())) {
+                    $this->notFound();
+                }
+                $this->$action(...array_map(__NAMESPACE__ . '\intval_or_string', array_slice($m, 1)));
                 return;
             }
         }
         http_response_code(404);
         $this->render('admin/message', ['title' => __('Nicht gefunden'), 'text' => __('Diese Seite gibt es nicht.')]);
+    }
+
+    /** May the signed-in account use this route? Only 'teacher' routes are open to teachers (fails closed). */
+    private static function allows(array $route, bool $isAdmin): bool
+    {
+        return $isAdmin || ($route[3] ?? null) === 'teacher';
     }
 
     // ---------------------------------------------------------------- Login

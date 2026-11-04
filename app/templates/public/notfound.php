@@ -1,2 +1,2 @@
-<h1><?= e(t('notfound.title')) ?></h1>
+<h1><?= e($title) ?></h1>
 <p><?= e($text) ?></p>

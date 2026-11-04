@@ -21,9 +21,15 @@ not public issues.
 - Every output is escaped. Markdown is escaped first; links only allow http(s), mailto and relative paths.
 - Strict Content Security Policy without `unsafe-inline`, `X-Frame-Options: DENY`, `nosniff`,
   `Referrer-Policy: no-referrer` (change links do not leak via the referrer), HSTS, Permissions-Policy and
-  `Cache-Control: no-store`.
+  `Cache-Control: no-store`. They are sent on every answer, including 404 and error pages and the 403 pages
+  Apache creates itself.
 - CSRF protection: session token in the admin area; a stateless HMAC token with minimum and maximum age on
   public pages.
+- Form posts that the browser marks as coming from another website (`Sec-Fetch-Site: cross-site`) are
+  refused before anything is processed. This also stops login CSRF (a foreign page signing you in to an
+  account of the attacker). `Origin` is deliberately not checked: with `Referrer-Policy: no-referrer`
+  browsers send `Origin: null` on TalkSlot's own forms too. Browsers without the header are still
+  protected by the tokens.
 - Spam protection: honeypot field, minimum time to fill in a form, rate limits.
 
 **Tokens**
@@ -40,6 +46,8 @@ not public issues.
 - Brute-force protection: at most 5 failed logins per shortened IP address in 15 minutes and 20 per
   username and hour. Responses and timing do not reveal whether an account exists.
 - Passwords from 12 characters up to 72 bytes (the bcrypt limit).
+- Every admin route names the role it needs (`teacher` for every account, or `admin`) in the route table of
+  `AdminController`. A route without a known role is admin-only, so a forgotten role fails closed.
 - Inviting an admin, giving or taking away admin rights, deactivating, reactivating or deleting an admin
   account, changing an e-mail address (own or somebody else's) and ending all sessions ask for the
   password of the acting account again. Wrong entries there and when changing the own password count
@@ -70,6 +78,19 @@ not public issues.
   would otherwise mean plain-text passwords) and never ships the installer after installation.
 - CI and deployment use no third-party GitHub Actions; code is fetched with plain `git` and the token is
   only sent in a request header.
+
+**Tested invariants**
+
+Tests guard the rules an extension could break without anybody noticing:
+- Every admin route has a role, and teachers get 404 for every admin route (with a valid form token).
+- No GET route changes data: the smoke test opens every admin GET route of the route table and the public
+  pages, also with form fields in the query string, and the database and the outgoing mail must be unchanged
+  afterwards. A new route with an unknown placeholder makes the test fail until it is covered.
+- Opening a change link (`GET /b/…`, which mail scanners and link previews do) never cancels, moves or
+  sends mail.
+- Every way of booking or moving an appointment, by parents and by the teacher, waits for the lock on the
+  day that recalculating the slots holds, and only `BookingService` writes bookings.
+- 404, 403 and error pages carry the security headers, and `.htaccess` sends the same values as PHP.
 
 ## If you suspect misuse
 
