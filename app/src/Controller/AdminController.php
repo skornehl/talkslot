@@ -366,25 +366,27 @@ final class AdminController
                 Db::run('UPDATE rounds SET code = ? WHERE id = ?', [RoundCode::unique(), $id]);
             }
             $this->flash('success', $newCode ? __('Runde gespeichert, neuer Rundencode erzeugt (der bisherige gilt nicht mehr).') : __('Runde gespeichert.'));
-            if ($data['location'] !== trim((string) ($round['location'] ?? ''))) {
-                // Days with their own location keep it; the parents of the others are not informed
-                $this->parentsNotNotified((int) Db::value(
-                    "SELECT COUNT(*) FROM bookings b JOIN slots s ON s.id = b.slot_id JOIN round_days d ON d.id = s.day_id
-                      WHERE d.round_id = ? AND COALESCE(d.location, '') = ''",
-                    [$id]
-                ));
-            }
             $ownerChanged = (int) $owner['id'] !== (int) $round['user_id'];
             $this->audit(fn () => __('bearbeitet')
                 . ($round['title'] !== $data['title'] ? ' (' . __('bisher „{title}“', ['title' => $round['title']]) . ')' : '')
                 . ((int) $round['is_active'] !== $data['is_active'] ? ', ' . ($data['is_active'] ? __('aktiviert') : __('deaktiviert')) : '')
                 . ($ownerChanged ? ', ' . __('Lehrkraft bisher {account}', ['account' => self::accountLabel($this->userById((int) $round['user_id']))]) : '')
                 . ($newCode ? ', ' . __('neuer Rundencode') : ''), $id);
+            $booked = 0;
             if ($ownerChanged) {
+                // The mails to the parents name the teacher: all bookings are concerned
                 $booked = (int) Db::value('SELECT COUNT(*) FROM bookings b JOIN slots s ON s.id = b.slot_id JOIN round_days d ON d.id = s.day_id WHERE d.round_id = ?', [$id]);
                 $this->flash('info', __('Die Runde gehört jetzt {name}.', ['name' => $owner['display_name'] ?: $owner['username']])
                     . ($booked ? ' ' . __('Die {count} bestehende(n) Buchung(en) sieht ab jetzt diese Lehrkraft; Zusammenfassungen gehen an sie.', ['count' => $booked]) : ''));
+            } elseif ($data['location'] !== trim((string) ($round['location'] ?? ''))) {
+                // Days with their own location keep it (same rule as BookingService::DETAIL_SQL)
+                $booked = (int) Db::value(
+                    "SELECT COUNT(*) FROM bookings b JOIN slots s ON s.id = b.slot_id JOIN round_days d ON d.id = s.day_id
+                      WHERE d.round_id = ? AND COALESCE(TRIM(d.location), '') = ''",
+                    [$id]
+                );
             }
+            $this->parentsNotNotified($booked, true);
         } else {
             // Round and days together: if creating the days fails, no empty round is left behind
             $ownerId = (int) $owner['id'];
@@ -958,7 +960,7 @@ final class AdminController
         } else {
             $this->flash('success', $message . ' ' . __('Slots wurden aktualisiert.'));
         }
-        $this->parentsNotNotified($moved);
+        $this->parentsNotNotified($moved, true);
         Http::redirect('/admin/round/' . $roundId, [], 'day-' . $dayId);
     }
 
@@ -1074,18 +1076,15 @@ final class AdminController
                 return;
             }
         }
-        $name = PublicController::cleanName($old['name']);
-        // The mail is ticked by default: saving without any change does not send a "changed" mail
-        $changed = $moved || $name !== $booking['name'] || $old['email'] !== (string) $booking['email'] || $old['lang'] !== $booking['lang'];
-        BookingService::update($id, $name, $old['email'] ?: null, $old['lang']);
+        BookingService::update($id, PublicController::cleanName($old['name']), $old['email'] ?: null, $old['lang']);
         $target = $moved ? BookingService::findById($id) : null;
         $this->audit(fn () => $target
             ? __('Buchung {slot} geändert, umgebucht auf {target}', ['slot' => self::when($booking['day_date'], $booking['start_time']), 'target' => self::when($target['day_date'], $target['start_time'])])
             : __('Buchung {slot} geändert', ['slot' => self::when($booking['day_date'], $booking['start_time'])]), (int) $booking['round_id']);
         $msg = $moved ? __('Eintrag gespeichert und umgebucht.') : __('Eintrag gespeichert.');
-        if ($old['send_mail'] && $old['email'] !== '' && !$changed) {
-            $msg .= ' ' . __('Nichts geändert – keine E-Mail gesendet.');
-        } elseif ($old['send_mail'] && $old['email'] !== '' && $this->teacherMailAllowed($msg)) {
+        // Also without a change here: this is how parents learn the new date, location or teacher of their
+        // appointment after the day or the round was changed (the mail carries the current details)
+        if ($old['send_mail'] && $old['email'] !== '' && $this->teacherMailAllowed($msg)) {
             $updated = BookingService::findById($id);
             $msg .= ' ' . ($updated && Notifier::parentChanged($updated, null) ? __('Änderung per E-Mail mitgeteilt.') : __('E-Mail konnte nicht gesendet werden.'));
         }
@@ -1950,11 +1949,13 @@ final class AdminController
     /**
      * Changes and deletions by the teacher do not reach the parents (no mail yet): say so after the
      * action, so nobody relies on the system having informed them. Nothing if no booking is affected.
+     * $resend: the bookings still exist, so their parents can be sent the new details from the entry.
      */
-    private function parentsNotNotified(int $bookings): void
+    private function parentsNotNotified(int $bookings, bool $resend = false): void
     {
         if ($bookings > 0) {
-            $this->flash('warning', __('Die Eltern von {count} Buchung(en) wurden NICHT automatisch benachrichtigt – bitte selbst informieren.', ['count' => $bookings]));
+            $this->flash('warning', __('Die Eltern von {count} Buchung(en) wurden NICHT automatisch benachrichtigt – bitte selbst informieren.', ['count' => $bookings])
+                . ($resend ? ' ' . __('Eltern mit E-Mail-Adresse erhalten die neuen Daten in ihrer Sprache, wenn Sie ihren Eintrag bearbeiten und mit „Änderung per E-Mail mitteilen“ speichern.') : ''));
         }
     }
 

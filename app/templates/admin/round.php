@@ -5,7 +5,7 @@ $rid = (int) $round['id'];
 $csrf = Csrf::adminField();
 // Delete dialogs: parents are not informed by the system, so they say so (and where to see who booked)
 $notNotified = "\n\n" . __('Die Eltern werden NICHT automatisch benachrichtigt – bitte selbst informieren.');
-$whoBooked = ' ' . __('Wer gebucht hat, steht vorher in der Druckansicht – nach dem Löschen nicht mehr.');
+$whoBooked = ' ' . __('Vorher in der Druckansicht nachsehen, wer gebucht hat – nach dem Löschen ist das nicht mehr möglich.');
 $roundBookings = array_sum(array_map(static fn ($d) => count(array_filter($d['slots'], static fn ($s) => $s['booking_id'] !== null)), $days));
 ?>
 <p class="breadcrumb"><a href="<?= e(url('/admin')) ?>"><?= e(__('Runden')) ?></a> › <?= e($round['title']) ?></p>

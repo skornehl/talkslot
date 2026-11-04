@@ -63,7 +63,9 @@ Pro Tag sehen Sie alle Termine mit den Buchungen:
 
 - ***Bearbeiten***: Name oder E-Mail-Adresse ändern oder die Buchung auf einen anderen
   Termin **verschieben**, mit einer E-Mail an die Eltern (*Änderung per E-Mail mitteilen*, standardmäßig
-  angehakt; Speichern ohne Änderung verschickt keine).
+  angehakt). Die E-Mail nennt Datum, Uhrzeit und Ort in der Sprache der Eltern und geht deshalb auch
+  hinaus, wenn Sie hier nichts ändern, etwa nachdem der Tag ein anderes Datum oder einen anderen Ort
+  bekommen hat; soll keine E-Mail hinausgehen, nehmen Sie das Häkchen heraus.
 - ***Löschen***: eine Buchung entfernen.
 - ***Eintragen***: selbst einen Termin eintragen, z. B. nach einem Telefonat. Die Bestätigungs-E-Mail mit
   Änderungslink ist angehakt, sobald Sie eine E-Mail-Adresse eintragen; nur so erfahren die Eltern von
@@ -75,13 +77,17 @@ Pro Tag sehen Sie alle Termine mit den Buchungen:
 Wenn Sie Zeiten oder Pausen ändern, werden **gebuchte Termine nie gelöscht**; Termine, die nicht mehr
 passen, werden mit ⚠ markiert, damit Sie sie verschieben können.
 
-**Die Eltern werden nicht automatisch benachrichtigt**, wenn Sie eine Buchung, einen Tag, eine Runde oder
-ein Konto löschen, einem Tag oder der Runde ein anderes Datum oder einen anderen Ort geben oder wenn eine
-Buchung zum Konflikt wird. Darauf weisen die Bestätigungsdialoge, die Hinweise in den Formularen und die
+**Die Eltern werden nicht automatisch benachrichtigt**, wenn Sie eine Buchung, einen Tag oder eine Runde
+löschen, wenn ein Tag ein anderes Datum oder einen anderen Ort bekommt, die Runde einen anderen Ort oder
+(durch einen Admin) eine andere Lehrkraft, oder wenn eine Buchung zum Konflikt wird; ebenso, wenn ein
+Admin ein Konto löscht. Darauf weisen die Bestätigungsdialoge, die Hinweise in den Formularen und die
 Meldung danach hin, jeweils mit der Zahl der betroffenen Buchungen. Bitte informieren Sie die Eltern
-selbst, persönlich, wenn keine E-Mail-Adresse hinterlegt ist. Öffnen Sie vor dem Löschen eines Tages oder
-einer Runde die Druckansicht: Danach ist nicht mehr zu sehen, wer gebucht hatte. Um einen Konflikt
-umzubuchen, bearbeiten Sie die Buchung und lassen *Änderung per E-Mail mitteilen* angehakt.
+selbst, persönlich, wenn keine E-Mail-Adresse hinterlegt ist. Besteht die Buchung noch, geht es am
+einfachsten über den Eintrag: *Bearbeiten* öffnen und mit *Änderung per E-Mail mitteilen* speichern, dann
+erhalten Eltern mit E-Mail-Adresse die neuen Daten in ihrer Sprache (höchstens 30 E-Mails pro Stunde aus
+Ihrem Konto; darüber hinaus bittet die Meldung, später erneut zu speichern). Öffnen Sie vor dem Löschen
+eines Tages oder einer Runde die Druckansicht: Danach ist nicht mehr zu sehen, wer gebucht hatte. Um einen
+Konflikt umzubuchen, bearbeiten Sie die Buchung und lassen *Änderung per E-Mail mitteilen* angehakt.
 
 Weitere Aktionen für die Runde: bearbeiten, deaktivieren, ***Druckansicht / PDF***, löschen und
 ***Duplizieren …***: eine Kopie mit neuem Link und Code, mit Zeiten, Pausen, gesperrten Terminen,

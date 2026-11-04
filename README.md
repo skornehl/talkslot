@@ -63,10 +63,10 @@ schools (GDPR/DSGVO, TDDDG) and multilingual families.
   location (per round, optionally per day); block single slots; duplicate with a new first day; templates
   (e.g. "parent-teacher day, 08:00–16:00, 15 minutes"); deadlines for booking and changes; ready-to-copy
   invitation text.
-- Bookings: overview, edit, move, delete, add manually (with a confirmation mail, ticked as soon as an
-  address is entered). Changed times never delete bookings, conflicts are flagged with ⚠. Dialogs and
-  messages say clearly that parents are not notified automatically of deletions or changes. Print view per
-  round or day.
+- Bookings: overview, edit, move, delete, add manually (with a mail to the parents, ticked as soon as an
+  address is entered). Changed times never delete bookings, conflicts are flagged with ⚠. Dialogs, hints
+  and messages say clearly that parents are not notified automatically of deletions, of a new date or
+  location for a day and of a new location or teacher for the round. Print view per round or day.
 - Translation of title and description **in the teacher's browser** (Chrome/Edge Translator API with a
   local model, no text leaves the device), manually editable.
 - Summary mails: evening before a day and after the booking deadline (time and name only).

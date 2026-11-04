@@ -59,7 +59,9 @@ reachable via their personal links.
 Per day you see all slots with the bookings:
 
 - **Edit** (*Bearbeiten*): change name or e-mail, or **move** the booking to another slot, with a mail to
-  the parents (*Änderung per E-Mail mitteilen*, ticked by default; saving without a change sends none).
+  the parents (*Änderung per E-Mail mitteilen*, ticked by default). The mail gives the current date, time
+  and location in the parents' language, so it also goes out when you save without a change here, e.g.
+  after the day got a new date or location; untick the box if you do not want to send it.
 - **Delete** (*Löschen*) a booking.
 - **Add** (*Eintragen*) an appointment yourself, e.g. after a phone call. The confirmation mail with the
   change link is ticked as soon as you enter an e-mail address; it is the only way the parents learn about
@@ -71,12 +73,16 @@ Per day you see all slots with the bookings:
 If you change times or breaks, **booked appointments are never deleted**; slots that no longer fit are
 marked with ⚠ so you can move them.
 
-**Parents are not notified automatically** when you delete a booking, a day, a round or an account, give a
-day or the round another date or location, or when a booking becomes a conflict. The confirmation dialogs,
-the hints in the forms and the message afterwards say so, with the number of bookings concerned. Please
-inform the parents yourself, in person if no e-mail address is stored. Before deleting a day or a round,
-open the print view: afterwards nobody can see who had booked. To move a conflicting booking, edit it and
-leave *Änderung per E-Mail mitteilen* ticked.
+**Parents are not notified automatically** when you delete a booking, a day or a round, when a day gets
+another date or location, the round another location or (by an admin) another teacher, or when a booking
+becomes a conflict; the same goes for an admin deleting an account. The confirmation dialogs, the hints in
+the forms and the message afterwards say so, with the number of bookings concerned. Please inform the
+parents yourself, in person if no e-mail address is stored. If the booking still exists, the simplest way
+is the entry itself: open *Bearbeiten* and save with *Änderung per E-Mail mitteilen* ticked, and parents
+with an e-mail address receive the new details in their language (at most 30 mails per hour from your
+account; beyond that the message asks you to save again later). Before deleting a day or a round, open the
+print view: afterwards nobody can see who had booked. To move a conflicting booking, edit it and leave
+*Änderung per E-Mail mitteilen* ticked.
 
 Further actions on the round: edit, deactivate, **print view / PDF** (*Druckansicht / PDF*), delete, and
 **duplicate** (*Duplizieren …*): a copy with new link and code, including times, breaks, blocked slots,

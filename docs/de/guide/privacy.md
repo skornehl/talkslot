@@ -28,10 +28,17 @@ Datenschutzerklärung.
   Runde vorgesehen hat, eine Erinnerung am Vorabend. Die Vorlage der Datenschutzerklärung nennt all das.
 - **Einträge durch die Lehrkraft:** Die Bestätigungs-E-Mail mit Änderungslink ist standardmäßig angehakt,
   sobald eine Adresse eingetragen ist. So erfahren Eltern, die das Buchungsformular nie gesehen haben, von
-  dem Eintrag, wer verantwortlich ist und wo die Datenschutzhinweise stehen (Art. 14 DSGVO). Beim Löschen
-  oder Ändern von Buchungen geht noch keine E-Mail hinaus; der Admin-Bereich sagt das in jedem Dialog.
-  Auf einen `mailto:`-Link an die Eltern wurde bewusst verzichtet, damit ihre Adressen nicht über das
-  Mailprogramm des Browsers in private Postfächer gelangen.
+  dem Eintrag, wer verantwortlich ist und wo die Datenschutzhinweise stehen (Art. 14 DSGVO).
+- **Änderungen durch die Lehrkraft:** Ändert oder verschiebt die Lehrkraft eine einzelne Buchung, geht
+  standardmäßig eine Änderungs-E-Mail mit den aktuellen Termindaten an die Eltern (sofern eine Adresse
+  hinterlegt ist; das Häkchen lässt sich herausnehmen). Beim Löschen einer Buchung, eines Tages, einer
+  Runde oder eines Kontos, wenn ein Tag ein anderes Datum oder einen anderen Ort bekommt und wenn die
+  Runde einen anderen Ort oder eine andere Lehrkraft bekommt, geht noch keine E-Mail an die Eltern;
+  Bestätigungsdialoge, Formularhinweise und die Meldung danach sagen das. Auf einen `mailto:`-Link an die
+  Eltern wurde bewusst verzichtet, damit ihre Adressen nicht über das Mailprogramm des Browsers in private
+  Postfächer gelangen. Nach dem Löschen einer Buchung nennt die Meldung die Eltern einmal mit ihrer
+  Adresse (beides stand vorher auf der Seite der Runde), damit die Lehrkraft sie informieren kann, am
+  besten aus dem dienstlichen Postfach.
 - **Protokoll ohne Kontrolle der Lehrkräfte:** Erfasst werden nur Änderungen durch Admin-Konten, damit bei
   mehreren Admins nachvollziehbar ist, wer was getan hat. Was Lehrkräfte in ihren eigenen Runden tun,
   wird nicht aufgezeichnet, Buchungen erscheinen nur mit Datum und Uhrzeit. Je nach Bundesland kann ein
