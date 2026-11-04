@@ -5,8 +5,8 @@ echo "Operations: automatic deletion only for rounds in use"
 # and the overview say when a round will be deleted. Rounds of this file are called "Betrieb …".
 T=$(curl -s -b "$J" "$B/admin" | csrf)
 OP_PAST=$(date -d '-3 day' +%F); OP_NEXT=$(date -d '+15 day' +%F)
-op_round() { # op_round <title> <active 0/1> <date> → id of the new round (10:00–11:00, two slots)
-  curl -s -o /dev/null -w '%{redirect_url}' -b "$J" --data-urlencode "csrf=$T" --data-urlencode "title=$1" -d "is_active=$2&booking_deadline_hours=0&cancel_deadline_hours=0&delete_after_hours=24&day_dates%5B%5D=$3&start_time=10:00&end_time=11:00&slot_minutes=30" "$B/admin/round/new" | grep -o '[0-9]*$'
+op_round() { # op_round <title> <active 0/1> <date> [teacher id] → id of the new round (10:00–11:00, two slots)
+  curl -s -o /dev/null -w '%{redirect_url}' -b "$J" --data-urlencode "csrf=$T" --data-urlencode "title=$1" -d "is_active=$2&user_id=${4:-}&booking_deadline_hours=0&cancel_deadline_hours=0&delete_after_hours=24&day_dates%5B%5D=$3&start_time=10:00&end_time=11:00&slot_minutes=30" "$B/admin/round/new" | grep -o '[0-9]*$'
 }
 op_entry() { # op_entry <round> <name>: entry by the teacher in the first free slot
   curl -s -o /dev/null -b "$J" --data-urlencode "csrf=$T" --data-urlencode "name=$2" -d "lang=de" "$B$(curl -s -b "$J" "$B/admin/round/$1" | grep -o '/admin/slot/[0-9]*/book' | head -1)"
@@ -21,11 +21,19 @@ OPX_PAGE=$(curl -s -b "$J" "$B/admin/round/$OPX")
 check "active round: the round page says when it will be deleted (0:00 after the last day + 24 h)" 'echo "$OPX_PAGE" | grep -q "Runde wird am [A-Za-z]*, $(date -d "$OP_NEXT +2 day" +%d.%m.%Y), 00:00 Uhr gelöscht (24 h nach Ablauf)"'
 curl -s -o /dev/null -b "$J" -d "csrf=$T" "$B/admin/round/$OPX/toggle"
 DBQ "UPDATE tp_round_days SET day_date = '$OP_PAST' WHERE round_id = $OPX"
+# Deactivated accounts unused for 15 months: a draft must not keep them forever (it no longer expires)
+DBQ "INSERT INTO tp_users (username, password_hash, role, display_name, email, is_active, created_at) VALUES ('betrieb-entwurf@example.org', 'x', 'teacher', 'Frau Entwurf', 'betrieb-entwurf@example.org', 1, NOW()), ('betrieb-genutzt@example.org', 'x', 'teacher', 'Herr Genutzt', 'betrieb-genutzt@example.org', 1, NOW())"
+OPU1=$(DBQ "SELECT id FROM tp_users WHERE username = 'betrieb-entwurf@example.org'"); OPU2=$(DBQ "SELECT id FROM tp_users WHERE username = 'betrieb-genutzt@example.org'")
+OPW1=$(op_round "Betrieb Konto Entwurf" 0 "$OP_NEXT" "$OPU1"); OPW2=$(op_round "Betrieb Konto genutzt" 1 "$OP_NEXT" "$OPU2")
+curl -s -o /dev/null -b "$J" -d "csrf=$T" "$B/admin/round/$OPW2/toggle"
+DBQ "UPDATE tp_users SET is_active = 0, last_login_at = NOW() - INTERVAL 2 YEAR WHERE id IN ($OPU1, $OPU2)"
 OPC=$(curl -s -o /dev/null -w '%{redirect_url}' -b "$J" -d "csrf=$T" "$B/admin/round/$OPA/duplicate" | grep -o '[0-9]*$')
 check "in use: activated (also when deactivated again) or with an entry; not: drafts and the copy of a round" '[ "$(op_used "$OPA,$OPD,$OPE,$OPX,$OPB,$OPC")" = "$OPA:1,$OPD:0,$OPE:1,$OPX:1,$OPB:1,$OPC:0" ] && [ "$(DBQ "SELECT is_active FROM tp_rounds WHERE id=$OPX")" = 0 ]'
 check "draft: the round page says it is not deleted automatically" 'curl -s -b "$J" "$B/admin/round/$OPD" | has "Noch nie aktiv: wird nicht automatisch gelöscht"'
 $DC exec -T app php -r 'require "/srv/app/app/bootstrap.php"; App\Cleanup::run();'
 check "clean-up: rounds in use expire (active, deactivated by hand, with an entry); a draft never used stays, also the copy with the old dates" '[ "$(DBQ "SELECT COUNT(*) FROM tp_rounds WHERE id IN ($OPA,$OPX,$OPE) AND expired_at IS NOT NULL AND is_active = 0")" = 3 ] && [ "$(DBQ "SELECT COUNT(*) FROM tp_rounds WHERE id IN ($OPD,$OPC) AND expired_at IS NULL")" = 2 ] && ! curl -s -b "$J" "$B/admin/round/$OPC" | has "Abgelaufen:"'
+check "deactivated account unused for 15 months: deleted with its draft; a round that was in use keeps it" '[ -z "$(DBQ "SELECT id FROM tp_users WHERE id = $OPU1")" ] && [ -z "$(DBQ "SELECT id FROM tp_rounds WHERE id = $OPW1")" ] && [ "$(DBQ "SELECT COUNT(*) FROM tp_rounds WHERE id = $OPW2 AND user_id = $OPU2 AND is_active = 0")" = 1 ]'
+DBQ "DELETE FROM tp_users WHERE id IN ($OPU1, $OPU2)"
 OP_DEL=$(DBQ "SELECT DATE_FORMAT(expired_at + INTERVAL 24 HOUR, '%d.%m.%Y, %H:%i') FROM tp_rounds WHERE id=$OPA")
 OPA_PAGE=$(curl -s -b "$J" "$B/admin/round/$OPA")
 check "expired round: notice with the date of deletion and how to keep the round ($OP_DEL)" 'echo "$OPA_PAGE" | grep -q "Abgelaufen: Die Runde wird am [A-Za-z]*, $OP_DEL Uhr automatisch gelöscht, mit allen Tagen und Einstellungen. Zum Behalten einen Tag ab heute hinzufügen" && echo "$OPA_PAGE" | grep -q "Runde wird am [A-Za-z]*, $OP_DEL Uhr gelöscht (24 h nach Ablauf)"'

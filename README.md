@@ -81,9 +81,9 @@ schools (GDPR/DSGVO, TDDDG) and multilingual families.
 - Bookings of a day are deleted from 0:00 the following day.
 - A round is deactivated after its last day and deleted 24 h later (configurable per round). This applies
   to rounds that were in use (active at some point or with an entry by the teacher); a draft that was never
-  active, e.g. a copy with the old dates, stays until it is deleted by hand. The round page shows the date.
-- Rate-limit data after 24 h, inactive teacher accounts without rounds after 15 months, admin log entries
-  after 90 days.
+  active, e.g. a copy with the old dates, stays. The round page shows the date of the deletion.
+- Rate-limit data after 24 h, inactive teacher accounts without rounds in use (with their drafts) after
+  15 months, admin log entries after 90 days.
 - Runs hourly via cron (or the included GitHub workflow), plus as a fallback on page views.
 
 **Operations**

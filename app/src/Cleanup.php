@@ -81,12 +81,13 @@ final class Cleanup
         // 6. Delete the summary delivery log (contains no content) after 60 days
         $stats['summary_log_deleted'] = Db::exec('DELETE FROM sent_summaries WHERE sent_at < ?', [Time::now()->modify('-60 days')->format('Y-m-d H:i:s')]);
 
-        // 7. Delete deactivated teacher accounts without rounds after 15 months without login
-        //    (name, email, last login are no longer needed then)
+        // 7. Delete deactivated teacher accounts without rounds in use after 15 months without login
+        //    (name, email, last login are no longer needed then). Drafts that were never used go with
+        //    them, as they no longer expire on their own (step 3)
         $stats['accounts_deleted'] = Db::exec(
             "DELETE FROM users WHERE role <> 'admin' AND is_active = 0
                 AND COALESCE(last_login_at, created_at) < ?
-                AND NOT EXISTS (SELECT 1 FROM rounds r WHERE r.user_id = users.id)",
+                AND NOT EXISTS (SELECT 1 FROM rounds r WHERE r.user_id = users.id AND (r.is_active = 1 OR r.was_used = 1))",
             [Time::now()->modify('-15 months')->format('Y-m-d H:i:s')]
         );
 
