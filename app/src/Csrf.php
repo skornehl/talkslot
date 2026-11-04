@@ -25,7 +25,7 @@ final class Csrf
         return $ts . '.' . hash_hmac('sha256', 'pub|' . $context . '|' . $ts, self::secret());
     }
 
-    public static function checkPublic(string $context, mixed $token, ?int $minAge = null): string
+    public static function checkPublic(string $context, #[\SensitiveParameter] mixed $token, ?int $minAge = null): string
     {
         if (!is_string($token) || !preg_match('/^(\d{10})\.([a-f0-9]{64})$/', $token, $m)) {
             return self::INVALID;
@@ -52,7 +52,7 @@ final class Csrf
         return (string) $_SESSION['csrf'];
     }
 
-    public static function checkAdmin(mixed $token): bool
+    public static function checkAdmin(#[\SensitiveParameter] mixed $token): bool
     {
         return is_string($token) && !empty($_SESSION['csrf']) && hash_equals((string) $_SESSION['csrf'], $token);
     }

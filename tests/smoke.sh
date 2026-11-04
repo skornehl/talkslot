@@ -155,8 +155,8 @@ check "link invalid after cancellation (404)" '[ "$code" = 404 ]'
 
 echo "Languages"
 LP=$(curl -s "$B/$SLUG?lang=tr")
-check "Turkish page with flags for 6 languages" 'echo "$LP" | grep -q "Boş bir saat seçin" && [ "$(echo "$LP" | grep -c "assets/flags/")" = 6 ] && echo "$LP" | grep -q "title=\"Українська\""'
-check "flag SVG served" '[ "$(curl -s -o /dev/null -w "%{http_code}" "$B/assets/flags/uk.svg")" = 200 ]'
+check "Turkish page with the names of all 6 languages" 'echo "$LP" | grep -q "Boş bir saat seçin" && [ "$(echo "$LP" | grep -c "name=\"switch_lang\" value=")" = 6 ] && echo "$LP" | grep -q "lang=\"uk\">Українська</button>"'
+check "flag SVG served (admin translation form)" '[ "$(curl -s -o /dev/null -w "%{http_code}" "$B/assets/flags/uk.svg")" = 200 ]'
 check "privacy page in a new language falls back to English" 'curl -s "$B/datenschutz?lang=pl" | grep -q "Controller"'
 check "privacy page without Google Calendar" '! curl -s "$B/datenschutz" | grep -qiE "google[- ]?(kalender|calendar)"'
 
@@ -387,7 +387,7 @@ check "code assigned right when creating/duplicating (not only when viewing)" '[
 AR=$(curl -s -b "$J" "$B/admin/round/$RID"); RCODE=$(rcode "$RID")
 check "round code shown + in the invitation text ($RCODE)" '[[ "$RCODE" =~ ^[2-9A-HJKMNP-Z]{4}-[2-9A-HJKMNP-Z]{4}$ ]] && echo "$AR" | grep -q "den Code der Terminvergabe $RCODE eingeben"'
 check "home page with code field" 'curl -s "$B/" | grep -q "name=\"code\""'
-check "without language choice always German (browser language ignored)" 'curl -s -H "Accept-Language: en-US,en;q=0.9" "$B/" | grep -q "<html lang=\"de\">" && curl -s -H "Accept-Language: tr" "$B/$SLUG" | grep -q ">Name <"'
+check "without language choice always German (the browser language does not switch)" 'curl -s -H "Accept-Language: en-US,en;q=0.9" "$B/" | grep -q "<html lang=\"de\">" && curl -s -H "Accept-Language: tr" "$B/$SLUG" | grep -q ">Name <"'
 r=$(curl -s -o /dev/null -w '%{http_code} %{redirect_url}' -G --data-urlencode "code=$(echo "$RCODE" | tr A-Z a-z | tr - ' ')" -d lang=tr "$B/")
 check "code (lower case, with spaces) → round, language kept ($r)" '[[ "$r" == "303 "*"/$SLUG?lang=tr" ]]'
 CYR=$(echo "$RCODE" | sed 's/A/А/g;s/B/В/g;s/C/С/g;s/E/Е/g;s/H/Н/g;s/K/К/g;s/M/М/g;s/P/Р/g;s/T/Т/g;s/X/Х/g;s/Y/У/g;s/3/З/g;s/-/–/')
@@ -508,7 +508,8 @@ BK4=$($DC exec -T db mariadb -uapp -papp-dev-only talkslot -Ne "SELECT id FROM t
 AMAIL=$($DC exec -T app php -r '$r=json_decode(file_get_contents("http://mail:8025/api/v1/search?query=to:admin-buchung@example.org"),true); echo json_encode($r["messages"][0]["ReplyTo"] ?? []), " ", json_decode(file_get_contents("http://mail:8025/api/v1/message/".($r["messages"][0]["ID"] ?? "x")),true)["Text"] ?? "";')
 check "admin books in a teacher's round: mail with the teacher's Reply-To, footer names the admin" '[ -n "$BK4" ] && echo "$AMAIL" | grep -q "zwei@example.org" && echo "$AMAIL" | grep -q "Verantwortlich: Sabrina Test" && ! echo "$AMAIL" | grep -q "Verantwortlich: Herr Zwei"'
 curl -s -o /dev/null -b "$J" -d "csrf=$TA" "$B/admin/booking/$BK4/delete"
-check "admin deletes a booking in a teacher's round" '! curl -s -b "$J" "$B/admin/round/$R4" | grep -q "Vom Admin gebucht"'
+# The message after deleting names the parents, so look at the booking list itself
+check "admin deletes a booking in a teacher's round" '[ -z "$(DBQ "SELECT id FROM tp_bookings WHERE id=$BK4")" ] && ! curl -s -b "$J" "$B/admin/round/$R4" | grep -q "<strong>Vom Admin gebucht</strong>"'
 TT=$(curl -s -c "$J2" -b "$J2" "$B/admin" | csrf)
 curl -s -o /dev/null -c "$J2" -b "$J2" --data-urlencode "csrf=$TT" -d "user_id=1&title=Uebernahmeversuch&is_active=1&booking_deadline_hours=0&cancel_deadline_hours=0" "$B/admin/round/$R4/edit"
 check "teacher cannot change the teacher of a round" 'curl -s -c "$J2" -b "$J2" "$B/admin" | grep -q "Uebernahmeversuch" && [ "$($DC exec -T db mariadb -uapp -papp-dev-only talkslot -Ne "SELECT user_id FROM tp_rounds WHERE id=$R4")" = "$U2" ]'
@@ -1053,7 +1054,7 @@ curl -s -o /dev/null -b "$J" -d "csrf=$T&confirm=1" "$B/admin/users/$(DBQ "SELEC
 
 echo "Several admins"
 T=$(curl -s -b "$J" "$B/admin/users" | csrf)
-curl -s -o /dev/null -b "$J" -d "csrf=$T&display_name=Frau+Zweitadmin&email=zweitadmin@example.org&role=admin" "$B/admin/users/new"
+curl -s -o /dev/null -b "$J" -d "csrf=$T&display_name=Frau+Zweitadmin&email=zweitadmin@example.org&role=admin" --data-urlencode "current_password=$PASS" "$B/admin/users/new"
 curl -s -o /dev/null -b "$J" -d "csrf=$T&display_name=Frau+Fuenf&email=fuenf@example.org&role=teacher" "$B/admin/users/new"
 UT=$(DBQ "SELECT id FROM tp_users WHERE username='fuenf@example.org'")
 UZ=$(DBQ "SELECT id FROM tp_users WHERE username='zweitadmin@example.org'")
@@ -1082,7 +1083,7 @@ check "second admin maintains the details for all" 'curl -s "$B/impressum" | gre
 curl -s -o /dev/null -c "$JV" -b "$JV" -d "csrf=$TV&username=zweitadmin@example.org&display_name=Frau+Zweitadmin&email=zweitadmin@example.org&role=teacher&is_active=1" "$B/admin/users/$UZ/edit"
 check "own role cannot be changed (no locking oneself out)" '[ "$(DBQ "SELECT role FROM tp_users WHERE id=$UZ")" = admin ] && ! curl -s -c "$JV" -b "$JV" "$B/admin/users/$UZ/edit" | grep -q "name=\"role\""'
 T=$(curl -s -b "$J" "$B/admin/users" | csrf)
-curl -s -o /dev/null -b "$J" -d "csrf=$T&username=zweitadmin@example.org&display_name=Frau+Zweitadmin&email=zweitadmin@example.org&role=teacher&is_active=1" "$B/admin/users/$UZ/edit"
+curl -s -o /dev/null -b "$J" -d "csrf=$T&username=zweitadmin@example.org&display_name=Frau+Zweitadmin&email=zweitadmin@example.org&role=teacher&is_active=1" --data-urlencode "current_password=$PASS" "$B/admin/users/$UZ/edit"
 check "another admin can take the role away" '[ "$(DBQ "SELECT role FROM tp_users WHERE id=$UZ")" = teacher ] && [ "$(curl -s -o /dev/null -w "%{http_code}" -c "$JV" -b "$JV" "$B/admin/users")" = 404 ] && curl -s -c "$JV" -b "$JV" "$B/admin" | grep -q "Meine Terminrunden" && [ "$(curl -s -o /dev/null -w "%{http_code}" -c "$JV" -b "$JV" "$B/admin/round/$RID")" = 404 ]'
 check "log: only for admins" '[ "$(curl -s -o /dev/null -w "%{http_code}" -c "$JV" -b "$JV" "$B/admin/log")" = 404 ] && ! curl -s -c "$JV" -b "$JV" "$B/admin" | grep -q "href=\"/admin/log\"" && curl -s -b "$J" "$B/admin" | grep -q "href=\"/admin/log\">Protokoll</a>"'
 check "templates: teachers can use them, but not maintain them" '[ "$(curl -s -o /dev/null -w "%{http_code}" -c "$JV" -b "$JV" "$B/admin/templates")" = 404 ] && curl -s -c "$JV" -b "$JV" "$B/admin/round/new?template=$TID" | grep -q "name=\"start_time\" required value=\"08:00\"" && ! curl -s -c "$JV" -b "$JV" "$B/admin/round/$(DBQ "SELECT MAX(id) FROM tp_rounds WHERE user_id=$UZ")" | grep -q "Als Vorlage speichern" && [ "$(curl -s -o /dev/null -w "%{http_code}" -c "$JV" -b "$JV" -d "csrf=$TV" "$B/admin/templates/from-round/$RV")" = 404 ]'
@@ -1092,7 +1093,7 @@ loc=$(curl -s -o /dev/null -w '%{redirect_url}' -c "$JV" -b "$JV" --data-urlenco
 check "log: changes by a teacher in their own rounds are not recorded" '[ -n "$(echo "$loc" | grep -o "[0-9]*$")" ] && [ "$(DBQ "SELECT COUNT(*) FROM tp_audit_log")" = "$NLOG" ]'
 DBQ "UPDATE tp_users SET role = 'admin', is_active = 0 WHERE id = $UZ"
 T=$(curl -s -b "$J" "$B/admin/users" | csrf)
-curl -s -o /dev/null -b "$J" -d "csrf=$T&username=zweitadmin@example.org&display_name=Frau+Zweitadmin&email=zweitadmin@example.org&role=teacher" "$B/admin/users/$UZ/edit"
+curl -s -o /dev/null -b "$J" -d "csrf=$T&username=zweitadmin@example.org&display_name=Frau+Zweitadmin&email=zweitadmin@example.org&role=teacher" --data-urlencode "current_password=$PASS" "$B/admin/users/$UZ/edit"
 check "a deactivated admin can be demoted (one active admin remains)" '[ "$(DBQ "SELECT role FROM tp_users WHERE id=$UZ")" = teacher ]'
 check "log: role changes are recorded" '[ "$(DBQ "SELECT COUNT(*) FROM tp_audit_log WHERE message = \"Konto „Frau Zweitadmin“ bearbeitet: Rolle jetzt Lehrkraft\"")" -ge 2 ]'
 curl -s -o /dev/null -c "$JV" -b "$JV" -d "csrf=$TV" "$B/admin/logout"; rm -f "$JV"

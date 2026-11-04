@@ -44,7 +44,8 @@ The browser test drives headless Chrome (Node 22+, no dependencies) through the 
 the slot preview (compared with the slots the server creates), date and break fields, double-submit and
 delete confirmations, copying links, the in-browser translation (with a simulated Translator API, including language-pack downloads,
 re-translating and error cases), "remember
-my appointment" including rejected foreign links, error focus and the light/dark switch.
+my appointment" including rejected foreign links, the language choice at phone width (Enter still books,
+switching keeps the input, the browser-language hint), error focus and the light/dark switch.
 
 CI runs the unit tests on every push, and the smoke, browser and deployment tests against the Docker environment.
 

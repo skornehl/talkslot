@@ -46,7 +46,13 @@ The round page shows everything you need:
 - the **link for parents** (*Link kopieren*, *Öffnen*),
 - the **round code**, e.g. `3MMP-WYA9`. Parents can enter it on the start page instead of using the link,
   handy for paper invitations. Typos like `0`/`O`, dashes and case do not matter.
-- a ready-made **invitation text** with link and code (*Einladungstext kopieren*, *Als E-Mail öffnen*).
+- a ready-made **invitation text** (*Einladungstext kopieren*, *Als E-Mail öffnen*) with the link, a direct
+  link for every further parent language (`Türkçe: …?lang=tr`), the location and code if any, and the
+  same sentence on multiple bookings that parents see on the round page (for example the sibling rule).
+
+Parents choose their language at the top of every page, by its own name (*Deutsch, English, Polski,
+Русский, Українська, Türkçe*). If their browser is set to another offered language, a link to it appears
+above the page.
 
 With *Nur mit Rundencode* the link alone shows only a code prompt; the title and slots stay hidden from
 strangers. A new code (when editing) makes the old one invalid immediately; existing bookings stay
@@ -58,16 +64,31 @@ reachable via their personal links.
 
 Per day you see all slots with the bookings:
 
-- **Edit** (*Bearbeiten*): change name or e-mail, or **move** the booking to another slot, optionally with
-  a mail to the parent.
+- **Edit** (*Bearbeiten*): change name or e-mail, or **move** the booking to another slot, with a mail to
+  the parents (*Änderung per E-Mail mitteilen*, ticked by default). The mail gives the current date, time
+  and location in the parents' language, so it also goes out when you save without a change here, e.g.
+  after the day got a new date or location; untick the box if you do not want to send it.
 - **Delete** (*Löschen*) a booking.
-- **Add** (*Eintragen*) an appointment yourself, e.g. after a phone call, optionally with a confirmation mail.
+- **Add** (*Eintragen*) an appointment yourself, e.g. after a phone call. The confirmation mail with the
+  change link is ticked as soon as you enter an e-mail address; it is the only way the parents learn about
+  the entry.
 - **Block** (*Sperren*) a slot so nobody can book it, and release it again.
 - **Days**: edit times and the location of a single day (*Tag bearbeiten*), add breaks, print a day (*Tag drucken*), add more days
   (*+ Tag hinzufügen*) or delete a day.
 
 If you change times or breaks, **booked appointments are never deleted**; slots that no longer fit are
 marked with ⚠ so you can move them.
+
+**Parents are not notified automatically** when you delete a booking, a day or a round, when a day gets
+another date or location, the round another location or (by an admin) another teacher, or when a booking
+becomes a conflict; the same goes for an admin deleting an account. The confirmation dialogs, the hints in
+the forms and the message afterwards say so, with the number of bookings concerned. Please inform the
+parents yourself, in person if no e-mail address is stored. If the booking still exists, the simplest way
+is the entry itself: open *Bearbeiten* and save with *Änderung per E-Mail mitteilen* ticked, and parents
+with an e-mail address receive the new details in their language (at most 30 mails per hour from your
+account; beyond that the message asks you to save again later). Before deleting a day or a round, open the
+print view: afterwards nobody can see who had booked. To move a conflicting booking, edit it and leave
+*Änderung per E-Mail mitteilen* ticked.
 
 Further actions on the round: edit, deactivate, **print view / PDF** (*Druckansicht / PDF*), delete, and
 **duplicate** (*Duplizieren …*): a copy with new link and code, including times, breaks, blocked slots,

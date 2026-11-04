@@ -1,4 +1,4 @@
-<?php /** @var ?array $user @var array $data @var array $errors @var bool $isSelf */ use App\Csrf; ?>
+<?php /** @var ?array $user @var array $data @var array $errors @var bool $isSelf @var int $bookings */ use App\Csrf; ?>
 <p class="breadcrumb"><a href="<?= e(url('/admin/users')) ?>"><?= e(__('Benutzer')) ?></a></p>
 <h1><?= e($title) ?></h1>
 <?php require __DIR__ . '/_errors.php'; ?>
@@ -12,7 +12,7 @@
   </div>
   <div class="field">
     <label for="email"><?= e(__('E-Mail-Adresse')) ?></label>
-    <input type="email" id="email" name="email" required maxlength="254" autocapitalize="none" spellcheck="false" value="<?= e($data['email'] ?? '') ?>" aria-describedby="em-hint">
+    <input type="email" id="email" name="email" required maxlength="254" autocapitalize="none" spellcheck="false" autocomplete="off" value="<?= e($data['email'] ?? '') ?>" aria-describedby="em-hint">
     <p class="hint" id="em-hint"><?= $user ? e(__('Für Zusammenfassungen und neue Startpasswörter.')) : e(__('Dient als Benutzername. Die Zugangsdaten werden an diese Adresse geschickt.')) ?></p>
   </div>
   <div class="field">
@@ -27,7 +27,7 @@
   <?php if ($user): ?>
   <div class="field">
     <label for="username"><?= e(__('Benutzername (Login)')) ?></label>
-    <input type="text" id="username" name="username" required maxlength="254" autocapitalize="none" spellcheck="false" value="<?= e($data['username']) ?>">
+    <input type="text" id="username" name="username" required maxlength="254" autocapitalize="none" spellcheck="false" autocomplete="off" value="<?= e($data['username']) ?>">
   </div>
   <?php endif; ?>
   <?php if (!$isSelf): ?>
@@ -49,8 +49,13 @@
   <?php else: ?>
   <p class="small"><?= __h('Rolle: {role} (die eigene Rolle kann nur ein anderer Admin ändern).', ['role' => '<strong>' . (($user['role'] ?? '') === 'admin' ? 'Admin' : e(__('Lehrkraft'))) . '</strong>']) ?></p>
   <?php endif; ?>
+  <div class="field">
+    <label for="current_password"><?= e(__('Ihr Passwort (zur Bestätigung)')) ?></label>
+    <input type="password" id="current_password" name="current_password" autocomplete="current-password" aria-describedby="pw-hint">
+    <p class="hint" id="pw-hint"><?= e(__('Nur nötig, wenn Sie Admin-Rechte vergeben oder entziehen, ein Admin-Konto deaktivieren oder wieder aktivieren oder die E-Mail-Adresse ändern. Dann geht eine E-Mail hinaus: bei Admin-Rechten an alle Admins und die betroffene Person, bei einer neuen E-Mail-Adresse an die bisherige.')) ?></p>
+  </div>
   <?php if (!$user): ?>
-    <p class="hint"><?= e(__('Beim Speichern erhält die Person eine Einladung per E-Mail mit einem Link, über den sie ihr Passwort selbst festlegt (einmalig nutzbar, {hours} Stunden gültig). Danach kann sie ihre Terminrunden selbst verwalten; Sie können Runden auch für sie anlegen. Kann die Mail nicht versendet werden, wird der Link einmalig angezeigt.', ['hours' => (int) App\AccountLinks::validHours()])) ?></p>
+    <p class="hint"><?= e(__('Beim Speichern erhält die Person eine Einladung per E-Mail mit einem Link, über den sie ihr Passwort selbst festlegt (einmalig nutzbar, {hours} Stunden gültig). Danach kann sie ihre Terminrunden selbst verwalten; Sie können Runden auch für sie anlegen.', ['hours' => (int) App\AccountLinks::validHours()])) ?></p>
   <?php endif; ?>
   <div class="actions">
     <button type="submit" class="button button-primary"><?= e(__('Speichern')) ?></button>
@@ -70,9 +75,13 @@
 <section class="card">
   <h2><?= e(__('Benutzer löschen')) ?></h2>
   <p><?= __h('Löscht das Konto {bold} dieser Person. Das kann nicht rückgängig gemacht werden. Alternative: Konto deaktivieren.', ['bold' => '<strong>' . e(__('mit allen Terminrunden und Buchungen')) . '</strong>']) ?></p>
-  <form method="post" action="<?= e(url('/admin/users/' . (int) $user['id'] . '/delete')) ?>" class="inline-delete" data-confirm="<?= e(__('Konto „{username}“ mit allen Runden und Buchungen endgültig löschen?', ['username' => $user['username']])) ?>">
+  <form method="post" action="<?= e(url('/admin/users/' . (int) $user['id'] . '/delete')) ?>" class="inline-delete" data-confirm="<?= e(__('Konto „{username}“ mit allen Runden und Buchungen endgültig löschen?', ['username' => $user['username']]) . ($bookings ? "\n\n" . __('Die Eltern von {count} Buchung(en) werden NICHT automatisch benachrichtigt – bitte selbst informieren.', ['count' => $bookings]) : '')) ?>">
     <?= Csrf::adminField() ?>
     <label class="small"><input type="checkbox" name="confirm" value="1" required> <?= e(__('Ja, endgültig löschen')) ?></label>
+    <?php if ($user['role'] === 'admin'): ?>
+    <label class="small" for="delete_password"><?= e(__('Ihr Passwort (zur Bestätigung)')) ?></label>
+    <input type="password" id="delete_password" name="current_password" required autocomplete="current-password">
+    <?php endif; ?>
     <button type="submit" class="button button-danger"><?= e(__('Löschen')) ?></button>
   </form>
 </section>

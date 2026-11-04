@@ -287,7 +287,7 @@ final class PublicController
         Http::redirect('/b/' . $token, ['done' => 'booked', 'mail' => $mailed ? '1' : null, 'remember' => $old['remember'] ? self::rememberSignature($token) : null]);
     }
 
-    private function manage(string $token, array $errors = []): void
+    private function manage(#[\SensitiveParameter] string $token, array $errors = []): void
     {
         [$limit, $window] = RateLimiter::limits('manage', 300, 3600);
         if (!RateLimiter::hit('manage', $limit, $window)) {
@@ -318,7 +318,7 @@ final class PublicController
         ]);
     }
 
-    private function managePost(string $token): void
+    private function managePost(#[\SensitiveParameter] string $token): void
     {
         [$limit, $window] = RateLimiter::limits('manage', 300, 3600);
         if (!RateLimiter::hit('manage', $limit, $window)) {
@@ -404,13 +404,13 @@ final class PublicController
      * "Remember my appointment on this device": the parameter after booking is signed and valid for 10
      * minutes, so that a foreign link (/b/…?remember=1) cannot set a remember-me entry in other people's browsers.
      */
-    private static function rememberSignature(string $token): string
+    private static function rememberSignature(#[\SensitiveParameter] string $token): string
     {
         $ts = (string) time();
         return $ts . '.' . substr(hash_hmac('sha256', 'remember|' . $token . '|' . $ts, (string) Config::get('secret', '')), 0, 32);
     }
 
-    private static function rememberValid(string $token, string $value): bool
+    private static function rememberValid(#[\SensitiveParameter] string $token, string $value): bool
     {
         if (!preg_match('/^(\d{10})\.([a-f0-9]{32})$/', $value, $m) || time() - (int) $m[1] > 600 || (int) $m[1] > time() + 60) {
             return false;

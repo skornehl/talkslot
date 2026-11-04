@@ -14,7 +14,8 @@ return [
     'theme.auto' => 'Automatic',
     'theme.light' => 'Light',
     'theme.dark' => 'Dark',
-    'footer.language' => 'Language',
+    'lang.label' => 'Language',
+    'lang.suggest' => 'View this page in English',
 
     'home.title' => 'Appointments',
     'home.text' => 'Please use the link from your invitation, or enter the code from your invitation here.',

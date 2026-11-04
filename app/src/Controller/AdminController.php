@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\AccountLinks;
+use App\AccountSecurity;
 use App\AdminI18n;
 use App\Audit;
 use App\Auth;
@@ -13,12 +14,11 @@ use App\Csrf;
 use App\Db;
 use App\Http;
 use App\I18n;
+use App\Invitation;
 use App\LegalTexts;
-use App\Mailer;
 use App\Notifier;
 use App\Operator;
 use App\RateLimiter;
-use App\RoundAccess;
 use App\RoundCode;
 use App\SlotGenerator;
 use App\Slug;
@@ -73,6 +73,7 @@ final class AdminController
         ['POST', '#^/users/(\d+)/edit$#', 'userSave'],
         ['POST', '#^/users/(\d+)/reset-password$#', 'userResetPassword'],
         ['POST', '#^/users/(\d+)/delete$#', 'userDelete'],
+        ['POST', '#^/users/end-sessions$#', 'endAllSessions'],
         ['GET', '#^/texts$#', 'texts'],
         ['POST', '#^/texts/operator$#', 'operatorSave'],
         ['GET', '#^/page/(imprint|privacy)/([a-z]{2})$#', 'pageForm'],
@@ -209,10 +210,17 @@ final class AdminController
             'title' => $all ? __('Alle Terminrunden') : __('Meine Terminrunden'),
             'rounds' => $rounds,
             'showOwner' => $all,
+            // config.php readable for every user of the server (only admins can have that fixed)
+            'configExposed' => Auth::isAdmin() ? \App\Config::exposedFiles() : [],
             'profileHints' => $this->profileHints(),
             'operatorMissing' => !Operator::ready(),
             'textsOpen' => !Auth::isAdmin() && Operator::ready() && LegalTexts::open() !== [],
             'legalHints' => Auth::isAdmin() ? array_merge(self::operatorHints(), self::legalHints()) : [],
+            // Offboarding: active accounts nobody has signed in to for a long time (only the number)
+            'unusedAccounts' => Auth::isAdmin() ? (int) Db::value(
+                'SELECT COUNT(*) FROM users WHERE is_active = 1 AND COALESCE(last_login_at, created_at) < ?',
+                [self::inactiveSince()]
+            ) : 0,
         ]);
     }
 
@@ -374,11 +382,21 @@ final class AdminController
                 . ((int) $round['is_active'] !== $data['is_active'] ? ', ' . ($data['is_active'] ? __('aktiviert') : __('deaktiviert')) : '')
                 . ($ownerChanged ? ', ' . __('Lehrkraft bisher {account}', ['account' => self::accountLabel($this->userById((int) $round['user_id']))]) : '')
                 . ($newCode ? ', ' . __('neuer Rundencode') : ''), $id);
+            $booked = 0;
             if ($ownerChanged) {
+                // The mails to the parents name the teacher: all bookings are concerned
                 $booked = (int) Db::value('SELECT COUNT(*) FROM bookings b JOIN slots s ON s.id = b.slot_id JOIN round_days d ON d.id = s.day_id WHERE d.round_id = ?', [$id]);
                 $this->flash('info', __('Die Runde gehört jetzt {name}.', ['name' => $owner['display_name'] ?: $owner['username']])
                     . ($booked ? ' ' . __('Die {count} bestehende(n) Buchung(en) sieht ab jetzt diese Lehrkraft; Zusammenfassungen gehen an sie.', ['count' => $booked]) : ''));
+            } elseif ($data['location'] !== trim((string) ($round['location'] ?? ''))) {
+                // Days with their own location keep it (same rule as BookingService::DETAIL_SQL)
+                $booked = (int) Db::value(
+                    "SELECT COUNT(*) FROM bookings b JOIN slots s ON s.id = b.slot_id JOIN round_days d ON d.id = s.day_id
+                      WHERE d.round_id = ? AND COALESCE(TRIM(d.location), '') = ''",
+                    [$id]
+                );
             }
+            $this->parentsNotNotified($booked, true);
         } else {
             // Round and days together: if creating the days fails, no empty round is left behind
             $ownerId = (int) $owner['id'];
@@ -428,7 +446,7 @@ final class AdminController
             'conflicts' => $conflicts,
             'publicUrl' => abs_url('/' . $round['slug']),
             'homeUrl' => abs_url('/'),
-            'invitation' => self::invitationText($round, $owner),
+            'invitation' => Invitation::text($round, $owner),
             'owner' => $owner,
             'showOwner' => Auth::isAdmin(),
             'addDayData' => $addDayData ?? self::defaultDayData(),
@@ -471,35 +489,6 @@ final class AdminController
     private static function translationFingerprint(?array $t): string
     {
         return $t ? hash('sha256', $t['title'] . "\0" . ($t['description'] ?? '') . "\0" . $t['source_hash']) : '';
-    }
-
-    /** Text to pass on to parents (link and access code if applicable). */
-    private static function invitationText(array $round, array $owner): string
-    {
-        $lines = [
-            __('Liebe Eltern,'),
-            '',
-            __('über den folgenden Link können Sie einen Gesprächstermin für „{title}“ bei {teacher} buchen:', ['title' => $round['title'], 'teacher' => $owner['display_name'] ?: __('mir')]),
-            abs_url('/' . $round['slug']),
-        ];
-        if (trim((string) ($round['location'] ?? '')) !== '') {
-            $lines[] = '';
-            $lines[] = __('Ort: {location}', ['location' => trim((string) $round['location'])]);
-        }
-        $code = RoundCode::format($round['code'] ?? null);
-        if ($code !== '' && RoundAccess::required($round)) {
-            $lines[] = '';
-            $lines[] = __('Code der Terminvergabe: {code} (wird nach dem Öffnen des Links abgefragt).', ['code' => $code]);
-            $lines[] = __('Alternativ können Sie auf {url} nur diesen Code eingeben.', ['url' => abs_url('/')]);
-            $lines[] = __('Bitte geben Sie Link und Code nicht weiter.');
-        } elseif ($code !== '') {
-            $lines[] = __('Alternativ können Sie auf {url} den Code der Terminvergabe {code} eingeben.', ['url' => abs_url('/'), 'code' => $code]);
-        }
-        $lines[] = '';
-        $lines[] = __('Bitte buchen Sie nur einen Termin. Nach der Buchung erhalten Sie einen persönlichen Link, über den Sie den Termin ändern oder absagen können.');
-        $lines[] = '';
-        $lines[] = __('Viele Grüße');
-        return implode("\n", $lines);
     }
 
     // ---------------------------------------------------------------- Translations
@@ -694,6 +683,7 @@ final class AdminController
         $this->audit(fn () => $booked ? __('gelöscht (mit {count} Buchung(en))', ['count' => $booked]) : __('gelöscht'), $id);
         Db::run('DELETE FROM rounds WHERE id = ?', [$id]);
         $this->flash('success', __('Runde mit allen Tagen und Buchungen gelöscht.'));
+        $this->parentsNotNotified($booked);
         Http::redirect('/admin');
     }
 
@@ -852,6 +842,7 @@ final class AdminController
             'title' => __('Tag bearbeiten'),
             'day' => $day,
             'round' => $this->round((int) $day['round_id']),
+            'bookings' => $this->dayBookings($id),
             'errors' => $errors,
         ]);
     }
@@ -873,6 +864,11 @@ final class AdminController
             $this->dayForm($id, $errors);
             return;
         }
+        // Booked parents are not informed about a new date or place: remind the teacher afterwards
+        $roundLocation = trim((string) ($this->round((int) $day['round_id'])['location'] ?? ''));
+        $place = static fn (string $own): string => $own !== '' ? $own : $roundLocation;
+        $moved = $in['date'] !== $day['day_date'] || $place($in['location']) !== $place(trim((string) ($day['location'] ?? '')))
+            ? $this->dayBookings($id) : 0;
         Db::run(
             'UPDATE round_days SET day_date = ?, start_time = ?, end_time = ?, slot_minutes = ?, location = ? WHERE id = ?',
             [$in['date'], $in['start'], $in['end'], $in['minutes'], $in['location'] !== '' ? $in['location'] : null, $id]
@@ -885,13 +881,13 @@ final class AdminController
         $this->audit(fn () => $in['date'] !== $day['day_date']
             ? __('Tag {date} bearbeitet (jetzt {new})', ['date' => self::when($day['day_date']), 'new' => self::when($in['date'])])
             : __('Tag {date} bearbeitet', ['date' => self::when($day['day_date'])]), (int) $day['round_id']);
-        $this->afterSync((int) $day['round_id'], $id, __('Tag gespeichert.'));
+        $this->afterSync((int) $day['round_id'], $id, __('Tag gespeichert.'), $moved);
     }
 
     private function dayDelete(int $id): void
     {
         $day = $this->day($id);
-        $bookings = (int) Db::value('SELECT COUNT(*) FROM bookings b JOIN slots s ON s.id = b.slot_id WHERE s.day_id = ?', [$id]);
+        $bookings = $this->dayBookings($id);
         if ($bookings > 0 && Http::post('confirm') !== '1') {
             $this->flash('error', __('An diesem Tag gibt es {count} Buchung(en). Bitte das Löschen ausdrücklich bestätigen.', ['count' => $bookings]));
             Http::redirect('/admin/round/' . $day['round_id'], [], 'day-' . $id);
@@ -901,7 +897,13 @@ final class AdminController
             : __('Tag {date} gelöscht', ['date' => self::when($day['day_date'])]), (int) $day['round_id']);
         Db::run('DELETE FROM round_days WHERE id = ?', [$id]);
         $this->flash('success', $bookings ? __('Tag gelöscht (inkl. {count} Buchung(en)).', ['count' => $bookings]) : __('Tag gelöscht.'));
+        $this->parentsNotNotified($bookings);
         Http::redirect('/admin/round/' . $day['round_id']);
+    }
+
+    private function dayBookings(int $dayId): int
+    {
+        return (int) Db::value('SELECT COUNT(*) FROM bookings b JOIN slots s ON s.id = b.slot_id WHERE s.day_id = ?', [$dayId]);
     }
 
     private function breakAdd(int $dayId): void
@@ -929,14 +931,17 @@ final class AdminController
         $this->afterSync((int) $day['round_id'], (int) $day['id'], __('Pause entfernt.'));
     }
 
-    private function afterSync(int $roundId, int $dayId, string $message): never
+    /** Regenerates the slots of a day; $moved = bookings whose date or location changed (parents not informed). */
+    private function afterSync(int $roundId, int $dayId, string $message, int $moved = 0): never
     {
         $conflicts = SlotGenerator::sync($dayId);
         if ($conflicts > 0) {
-            $this->flash('warning', $message . ' ' . __('Achtung: {count} gebuchte(r) Termin(e) passen nicht mehr zum Zeitplan und sind als Konflikt markiert. Bitte umbuchen oder löschen.', ['count' => $conflicts]));
+            $this->flash('warning', $message . ' ' . __('Achtung: {count} gebuchte(r) Termin(e) passen nicht mehr zum Zeitplan und sind als Konflikt markiert. Bitte umbuchen oder löschen.', ['count' => $conflicts])
+                . ' ' . __('Die Eltern werden dabei NICHT automatisch benachrichtigt: Beim Umbuchen „Änderung per E-Mail mitteilen“ angehakt lassen, ohne E-Mail-Adresse bitte persönlich informieren.'));
         } else {
             $this->flash('success', $message . ' ' . __('Slots wurden aktualisiert.'));
         }
+        $this->parentsNotNotified($moved, true);
         Http::redirect('/admin/round/' . $roundId, [], 'day-' . $dayId);
     }
 
@@ -978,7 +983,8 @@ final class AdminController
             'round' => $this->round((int) $slot['round_id']),
             'booking' => null,
             'moveOptions' => [],
-            'old' => $old + ['name' => '', 'email' => '', 'lang' => I18n::defaultLanguage(), 'send_mail' => false],
+            // Mail on by default: it is the only way the parents learn about an entry (and its privacy notice)
+            'old' => $old + ['name' => '', 'email' => '', 'lang' => I18n::defaultLanguage(), 'send_mail' => true],
             'errors' => $errors,
         ]);
     }
@@ -1026,7 +1032,7 @@ final class AdminController
             'round' => $round,
             'booking' => $booking,
             'moveOptions' => $moveOptions,
-            'old' => $old + ['name' => $booking['name'], 'email' => (string) $booking['email'], 'lang' => $booking['lang'], 'send_mail' => false, 'move_to' => ''],
+            'old' => $old + ['name' => $booking['name'], 'email' => (string) $booking['email'], 'lang' => $booking['lang'], 'send_mail' => true, 'move_to' => ''],
             'errors' => $errors,
         ]);
     }
@@ -1057,6 +1063,8 @@ final class AdminController
             ? __('Buchung {slot} geändert, umgebucht auf {target}', ['slot' => self::when($booking['day_date'], $booking['start_time']), 'target' => self::when($target['day_date'], $target['start_time'])])
             : __('Buchung {slot} geändert', ['slot' => self::when($booking['day_date'], $booking['start_time'])]), (int) $booking['round_id']);
         $msg = $moved ? __('Eintrag gespeichert und umgebucht.') : __('Eintrag gespeichert.');
+        // Also without a change here: this is how parents learn the new date, location or teacher of their
+        // appointment after the day or the round was changed (the mail carries the current details)
         if ($old['send_mail'] && $old['email'] !== '' && $this->teacherMailAllowed($msg)) {
             $updated = BookingService::findById($id);
             $msg .= ' ' . ($updated && Notifier::parentChanged($updated, null) ? __('Änderung per E-Mail mitgeteilt.') : __('E-Mail konnte nicht gesendet werden.'));
@@ -1071,6 +1079,10 @@ final class AdminController
         BookingService::delete($booking);
         $this->audit(fn () => __('Buchung {slot} gelöscht', ['slot' => self::when($booking['day_date'], $booking['start_time'])]), (int) $booking['round_id']);
         $this->flash('success', __('Eintrag gelöscht – der Slot ist wieder frei.'));
+        // Nothing goes to the parents (yet): say so, with name and address, which the round page no longer shows
+        $this->flash('warning', (string) $booking['email'] !== ''
+            ? __('Die Eltern („{name}“, {email}) wurden NICHT automatisch benachrichtigt – bitte selbst informieren.', ['name' => $booking['name'], 'email' => $booking['email']])
+            : __('Die Eltern („{name}“) wurden NICHT automatisch benachrichtigt; es war keine E-Mail-Adresse hinterlegt – bitte persönlich informieren.', ['name' => $booking['name']]));
         Http::redirect('/admin/round/' . $booking['round_id'], [], 'day-' . $booking['day_id']);
     }
 
@@ -1211,26 +1223,16 @@ final class AdminController
         // Password reset links go to this address: changing it requires the current password
         $oldEmail = (string) (Auth::user()['email'] ?? '');
         $emailChanged = mb_strtolower($data['email']) !== mb_strtolower($oldEmail);
-        if (!$errors && $emailChanged && !password_verify(Http::postRaw('current_password'), (string) Auth::user()['password_hash'])) {
-            $errors[] = __('Zum Ändern der E-Mail-Adresse bitte Ihr aktuelles Passwort eingeben.');
+        if (!$errors && $emailChanged
+            && ($error = Auth::confirmPassword(Http::postRaw('current_password'), __('Zum Ändern der E-Mail-Adresse bitte Ihr aktuelles Passwort eingeben.'))) !== null) {
+            $errors[] = $error;
         }
         if ($errors) {
             $this->profile($errors, $data);
             return;
         }
-        if ($emailChanged && is_valid_email($oldEmail)) {
-            // In the language of the account (as it was before this change)
-            AdminI18n::with(AdminI18n::of(Auth::user()), static function () use ($oldEmail, $data): void {
-                $vars = ['app' => app_name(), 'url' => abs_url('/admin', ['lang' => null]), 'email' => $data['email']];
-                Mailer::send($oldEmail, __('Ihre E-Mail-Adresse wurde geändert'), implode("\n", [
-                    __('Hallo {name},', ['name' => Auth::user()['display_name'] ?: Auth::user()['username']]), '',
-                    $data['email'] !== ''
-                        ? __('für Ihr Konto bei {app} ({url}) wurde die E-Mail-Adresse geändert auf {email}.', $vars)
-                        : __('für Ihr Konto bei {app} ({url}) wurde die E-Mail-Adresse geändert (keine Adresse mehr hinterlegt).', $vars),
-                    __('Waren Sie das nicht, wenden Sie sich bitte umgehend an einen Admin.'),
-                ]));
-            });
-        }
+        // To the previous address, in the language of the account (as it was before this change)
+        AccountSecurity::contactChanged(Auth::user(), ['email' => $data['email']] + Auth::user(), Auth::user());
         Db::run(
             'UPDATE users SET display_name = ?, email = ?, summary_evening = ?, summary_deadline = ?, lang = ? WHERE id = ?',
             [$data['display_name'], $data['email'] !== '' ? $data['email'] : null, $data['summary_evening'], $data['summary_deadline'], $data['lang'], Auth::id()]
@@ -1280,10 +1282,14 @@ final class AdminController
 
     private function users(): void
     {
+        // Sign-ins only in coarse steps (never, within / more than 12 months ago): enough to clean up
+        // accounts, without showing everybody's login times to all admins (employee data protection)
         $users = Db::all(
-            'SELECT u.id, u.username, u.display_name, u.email, u.role, u.is_active, u.must_change_password, u.last_login_at, u.access_token_expires_at,
+            'SELECT u.id, u.username, u.display_name, u.email, u.role, u.is_active, u.must_change_password, u.access_token_expires_at,
+                    u.last_login_at IS NULL AS never_signed_in, u.last_login_at < ? AS long_inactive,
                     (SELECT COUNT(*) FROM rounds r WHERE r.user_id = u.id) AS round_count
-               FROM users u ORDER BY u.is_active DESC, u.display_name, u.username'
+               FROM users u ORDER BY u.is_active DESC, u.display_name, u.username',
+            [self::inactiveSince()]
         );
         $this->render('admin/users', ['title' => __('Benutzer'), 'users' => $users, 'me' => Auth::id()]);
     }
@@ -1297,7 +1303,17 @@ final class AdminController
             'data' => $data ?? $user ?? ['username' => '', 'display_name' => '', 'email' => '', 'role' => 'teacher', 'is_active' => 1],
             'errors' => $errors,
             'isSelf' => $user && (int) $user['id'] === Auth::id(),
+            'bookings' => $user ? $this->userBookings((int) $user['id']) : 0,
         ]);
+    }
+
+    /** Number of bookings in all rounds of an account. */
+    private function userBookings(int $userId): int
+    {
+        return (int) Db::value(
+            'SELECT COUNT(*) FROM bookings b JOIN slots s ON s.id = b.slot_id JOIN round_days d ON d.id = s.day_id JOIN rounds r ON r.id = d.round_id WHERE r.user_id = ?',
+            [$userId]
+        );
     }
 
     private function userSave(?int $id = null): void
@@ -1333,20 +1349,25 @@ final class AdminController
         } elseif (Db::value('SELECT id FROM users WHERE username = ? AND id <> ?', [$data['username'], $id ?? 0]) !== null) {
             $errors[] = __('Für diese E-Mail-Adresse bzw. diesen Benutzernamen gibt es bereits ein Konto.');
         }
-        // At least one active admin must remain (counting the others; this account only if it stays an active admin)
-        $otherActiveAdmins = $this->activeAdminCount() - ($user && $user['role'] === 'admin' && $user['is_active'] ? 1 : 0);
-        if ($user && $user['role'] === 'admin' && ($data['role'] !== 'admin' || !$data['is_active']) && $otherActiveAdmins < 1) {
-            $errors[] = __('Es muss mindestens ein aktives Admin-Konto geben.');
+        // Admin rights and e-mail addresses: only with the password of the acting admin
+        if (!$errors && AccountSecurity::needsPassword($user, $data)
+            && ($error = Auth::confirmPassword(Http::postRaw('current_password'), __('Zur Bestätigung bitte Ihr Passwort eingeben (nötig bei Admin-Rechten und E-Mail-Adressen).'))) !== null) {
+            $errors[] = $error;
         }
         if ($errors) {
             $this->userForm($id, $errors, $data);
             return;
         }
         if ($user) {
-            Db::run(
+            // At least one active admin must remain (checked under a lock, see AccountSecurity)
+            $saved = AccountSecurity::keepingAnAdmin((int) $id, $data['role'] === 'admin' && $data['is_active'] === 1, static fn () => Db::run(
                 'UPDATE users SET username = ?, display_name = ?, email = ?, role = ?, is_active = ?, lang = ? WHERE id = ?',
                 [$data['username'], $data['display_name'], $data['email'], $data['role'], $data['is_active'], $data['lang'], $id]
-            );
+            ));
+            if (!$saved) {
+                $this->userForm($id, [__('Es muss mindestens ein aktives Admin-Konto geben.')], $data);
+                return;
+            }
             // A closure, so that the log gets its own language (see audit())
             $changes = static fn (): array => array_filter([
                 $data['role'] !== $user['role'] ? __('Rolle jetzt {role}', ['role' => self::roleLabel($data['role'])]) : '',
@@ -1355,6 +1376,11 @@ final class AdminController
                 $data['email'] !== (string) $user['email'] || $data['username'] !== $user['username'] ? __('E-Mail/Benutzername geändert') : '',
             ]);
             $this->audit(fn () => __('Konto {account} bearbeitet', ['account' => self::accountLabel($user)]) . ($changes() ? ': ' . implode(', ', $changes()) : ''));
+            $after = $data + $user;
+            AccountSecurity::contactChanged($user, $after, Auth::user());
+            if (($event = AccountSecurity::adminEvent($user, $after)) !== null) {
+                AccountSecurity::adminChange($event, $after, Auth::user());
+            }
             $this->flash('success', __('Benutzer gespeichert.') . (!$data['is_active'] ? ' ' . __('Das Konto ist deaktiviert; seine Runden sind öffentlich nicht mehr erreichbar.') : ''));
         } else {
             $id = Db::insert(
@@ -1364,6 +1390,9 @@ final class AdminController
             );
             $this->audit(fn () => __('Konto {account} angelegt ({role}) und eingeladen', ['account' => self::accountLabel($data), 'role' => self::roleLabel($data['role'])]));
             $this->linkFlash($this->userById($id), AccountLinks::INVITE);
+            if ($data['role'] === 'admin') {
+                AccountSecurity::adminChange(AccountSecurity::INVITED, $this->userById($id), Auth::user());
+            }
         }
         Http::redirect('/admin/users');
     }
@@ -1389,24 +1418,27 @@ final class AdminController
         Http::redirect('/admin/users');
     }
 
-    /** Send the link and show the result; on mail failure show the link once. */
+    /**
+     * Send the link and show the result. The link itself is never shown, also not when the mail fails:
+     * with it, the admin could set the password of somebody else's account and use it unnoticed.
+     */
     private function linkFlash(array $user, string $kind): void
     {
-        [$sent, $link] = AccountLinks::send($user, $kind, Auth::user());
+        $sent = AccountLinks::send($user, $kind, Auth::user());
         $vars = [
             'what' => $kind === AccountLinks::INVITE ? __('Einladung') : __('Link zum Festlegen eines neuen Passworts'),
-            'email' => $user['email'], 'hours' => AccountLinks::validHours(), 'link' => $link,
+            'email' => $user['email'], 'hours' => AccountLinks::validHours(),
         ];
         if ($sent) {
             $this->flash('success', __('{what} an {email} gesendet (gültig {hours} Stunden, einmalig nutzbar).', $vars));
         } else {
-            $this->flash('warning', __('{what} konnte nicht an {email} gesendet werden. Link (wird nur jetzt angezeigt, bitte persönlich weitergeben): {link}', $vars));
+            $this->flash('warning', __('{what} konnte nicht an {email} gesendet werden. Bitte prüfen Sie den Mailversand (unter „Texte“) und senden Sie den Link danach über „Bearbeiten“ erneut.', $vars));
         }
     }
 
     // ---------------------------------------------------------------- Invitation / forgot password (without login)
 
-    private function inviteForm(string $token, array $errors = []): void
+    private function inviteForm(#[\SensitiveParameter] string $token, array $errors = []): void
     {
         $user = $this->linkUser($token);
         if (!$user) {
@@ -1417,7 +1449,7 @@ final class AdminController
         $this->render('admin/invite', ['title' => __('Passwort festlegen'), 'user' => $user, 'token' => $token, 'errors' => $errors, 'csrf' => self::formToken('invite')]);
     }
 
-    private function inviteSave(string $token): void
+    private function inviteSave(#[\SensitiveParameter] string $token): void
     {
         $user = $this->linkUser($token);
         if (!$user || !self::checkFormToken('invite')) {
@@ -1439,7 +1471,7 @@ final class AdminController
     }
 
     /** Check the token; failed attempts limited per IP. */
-    private function linkUser(string $token): ?array
+    private function linkUser(#[\SensitiveParameter] string $token): ?array
     {
         [$limit, $window] = RateLimiter::limits('invite', 20, 3600);
         if (RateLimiter::count('invite', $window) >= $limit) {
@@ -1500,20 +1532,30 @@ final class AdminController
             $this->flash('error', __('Sie können Ihr eigenes Konto nicht löschen.'));
             Http::redirect('/admin/users');
         }
-        if ($user['role'] === 'admin' && $user['is_active'] && $this->activeAdminCount() <= 1) {
-            $this->flash('error', __('Es muss mindestens ein aktives Admin-Konto geben.'));
-            Http::redirect('/admin/users');
-        }
         if (Http::post('confirm') !== '1') {
             $this->flash('error', __('Bitte das Löschen ausdrücklich bestätigen.'));
             Http::redirect('/admin/users/' . $id . '/edit');
         }
+        if ($user['role'] === 'admin'
+            && ($error = Auth::confirmPassword(Http::postRaw('current_password'), __('Zum Löschen eines Admin-Kontos bitte Ihr Passwort eingeben.'))) !== null) {
+            $this->flash('error', $error);
+            Http::redirect('/admin/users/' . $id . '/edit');
+        }
         $rounds = (int) Db::value('SELECT COUNT(*) FROM rounds WHERE user_id = ?', [$id]);
+        $bookings = $this->userBookings($id);
+        // At least one active admin must remain (checked under a lock, see AccountSecurity)
+        if (!AccountSecurity::keepingAnAdmin($id, false, static fn () => Db::run('DELETE FROM users WHERE id = ?', [$id]))) {
+            $this->flash('error', __('Es muss mindestens ein aktives Admin-Konto geben.'));
+            Http::redirect('/admin/users');
+        }
         $this->audit(fn () => $rounds
             ? __('Konto {account} gelöscht (mit {count} Runde(n))', ['account' => self::accountLabel($user), 'count' => $rounds])
             : __('Konto {account} gelöscht', ['account' => self::accountLabel($user)]));
-        Db::run('DELETE FROM users WHERE id = ?', [$id]);
+        if ($user['role'] === 'admin') {
+            AccountSecurity::adminChange(AccountSecurity::DELETED, $user, Auth::user());
+        }
         $this->flash('success', __('Benutzer „{name}“ mit allen Runden und Buchungen gelöscht.', ['name' => $user['username']]));
+        $this->parentsNotNotified($bookings);
         Http::redirect('/admin/users');
     }
 
@@ -1543,9 +1585,28 @@ final class AdminController
             [mb_strtolower($email), mb_strtolower($email), $exceptId]) !== null;
     }
 
-    private function activeAdminCount(): int
+    /**
+     * Admin: end the sessions of all accounts on all devices, e.g. after a lost device or a suspected
+     * break-in (keeps the own session). Asks for the password; all admins are told by e-mail.
+     */
+    private function endAllSessions(): void
     {
-        return (int) Db::value("SELECT COUNT(*) FROM users WHERE role = 'admin' AND is_active = 1");
+        $error = Auth::confirmPassword(Http::postRaw('current_password'), __('Zum Beenden aller Sitzungen bitte Ihr Passwort eingeben.'));
+        if ($error !== null) {
+            $this->flash('error', $error);
+            Http::redirect('/admin/users');
+        }
+        Auth::endAllSessions();
+        $this->audit(fn () => __('Alle Sitzungen beendet'));
+        AccountSecurity::adminChange(AccountSecurity::SESSIONS_ENDED, null, Auth::user());
+        $this->flash('success', __('Alle Sitzungen beendet: Alle Konten müssen sich auf allen Geräten neu anmelden, nur diese Sitzung bleibt bestehen.'));
+        Http::redirect('/admin/users');
+    }
+
+    /** Accounts without a sign-in since then count as long inactive (users list, dashboard). */
+    private static function inactiveSince(): string
+    {
+        return Time::now()->modify('-12 months')->format('Y-m-d H:i:s');
     }
 
     // ---------------------------------------------------------------- Global texts (admin)
@@ -1949,6 +2010,19 @@ final class AdminController
     private function flash(string $type, string $message): void
     {
         $_SESSION['flash'][] = [$type, $message];
+    }
+
+    /**
+     * Changes and deletions by the teacher do not reach the parents (no mail yet): say so after the
+     * action, so nobody relies on the system having informed them. Nothing if no booking is affected.
+     * $resend: the bookings still exist, so their parents can be sent the new details from the entry.
+     */
+    private function parentsNotNotified(int $bookings, bool $resend = false): void
+    {
+        if ($bookings > 0) {
+            $this->flash('warning', __('Die Eltern von {count} Buchung(en) wurden NICHT automatisch benachrichtigt – bitte selbst informieren.', ['count' => $bookings])
+                . ($resend ? ' ' . __('Eltern mit E-Mail-Adresse erhalten die neuen Daten in ihrer Sprache, wenn Sie ihren Eintrag bearbeiten und mit „Änderung per E-Mail mitteilen“ speichern.') : ''));
+        }
     }
 
     private function notFound(): never

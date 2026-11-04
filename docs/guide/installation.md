@@ -47,7 +47,8 @@ Copy `config/config.sample.php` to `config/config.php` and fill in at least:
 | `hosting` | your web host for the privacy policy, see [Privacy]({{ '/guide/privacy/' | relative_url }}) |
 
 All options are explained in [Configuration]({{ '/guide/configuration/' | relative_url }}). Keep
-`config.php` readable only for the PHP user (`chmod 600` or `640`).
+`config.php` readable only for the PHP user (`chmod 600` or `640`): it contains the database and mail
+passwords and the secret. The dashboard warns admins as long as every user of the server can read it.
 
 ## 3. Install
 

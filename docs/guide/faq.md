@@ -27,7 +27,8 @@ parents come from many backgrounds.
 
 ## How do I add a language for parents?
 
-Copy `app/lang/en.php`, translate it, add a flag under `public/assets/flags/` and the code to `languages`.
+Copy `app/lang/en.php`, translate it, add a flag under `public/assets/flags/` (for the admin translation
+form) and the code to `languages`.
 See [Configuration]({{ '/guide/configuration/' | relative_url }}#languages).
 
 ## Does it work with MySQL, PostgreSQL or SQLite?

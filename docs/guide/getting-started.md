@@ -41,7 +41,7 @@ dev/demo.sh        # optional: three demo rounds with bookings
 3. **Book as a parent:** click *Öffnen* next to the link, choose a slot, enter a name and tick the
    privacy checkbox. The confirmation page shows the personal change link. With an e-mail address the
    confirmation arrives in Mailpit, including a calendar file.
-4. **Switch the language** with the flags in the footer, and try light and dark mode.
+4. **Switch the language** at the top of the page, and try light and dark mode in the footer.
 5. **Create your own round** with *+ Neue Runde*: pick one or more dates, the first and last slot, the
    duration and breaks. The preview shows the resulting slots before you save.
 

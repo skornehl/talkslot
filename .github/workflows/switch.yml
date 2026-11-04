@@ -3,6 +3,8 @@
 #   previous   one version back (default)
 #   <name>     exactly this version, e.g. 20261102-153012-v1.9.0 (names: run with "list")
 #   list       only show what is on the server
+#   prune      delete all versions except the active one, e.g. after changing secrets (older versions
+#              keep the old ones in their config.php); no rollback is possible afterwards
 # After switching, the site is checked; if that fails, the previous version stays active.
 # The next push to main deploys the latest code again. The database is not rolled back:
 # an older version runs with the newer schema as long as migrations only add columns/tables with
@@ -13,7 +15,7 @@ on:
   workflow_dispatch:
     inputs:
       target:
-        description: 'previous, list or version name'
+        description: 'previous, list, prune or version name'
         required: true
         default: previous
   # Called from a separate repo containing only configuration (see deploy.yml)
@@ -73,5 +75,9 @@ jobs:
           sudo apt-get install -y -qq lftp > /dev/null
           export LFTP_PASSWORD="$(printf '%s' "$FTP_PASS" | tr -d '\r\n')"
           TARGET="$(printf '%s' "$TARGET" | tr -d ' \r\n')"
-          if [ "$TARGET" != list ]; then bin/deploy.sh switch "$TARGET"; fi
+          case "$TARGET" in
+            list) ;;
+            prune) bin/deploy.sh prune ;;
+            *) bin/deploy.sh switch "$TARGET" ;;
+          esac
           { echo '```'; bin/deploy.sh list; echo '```'; } | tee -a "$GITHUB_STEP_SUMMARY"
