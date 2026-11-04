@@ -26,6 +26,11 @@ des deutschen Admin-Bereichs; jedes Konto kann ihn unter *Mein Profil* auf Engli
 5. ***Vorlagen*** (optional): die üblichen Formate einmal anlegen, z. B. Ihren Elternsprechtag.
 6. **Lehrkräfte einladen** und bei Bedarf weitere Admins (*Benutzer*).
 
+Warnt die Übersicht, dass die Konfiguration für alle Benutzer des Servers lesbar ist, setzen Sie die
+Rechte der genannten Dateien auf `600` oder geben Sie die Warnung an die technische Betreuung weiter: Sie
+enthalten die Passwörter für Datenbank und Mailversand. Könnten diese inzwischen in falsche Hände gelangt
+sein, siehe [Secrets austauschen]({{ '/de/guide/operations/' | relative_url }}#changing-secrets).
+
 ## Konten
 
 Unter *Benutzer* → *+ Neuer Benutzer* geben Sie **Name und E-Mail-Adresse** ein und wählen die **Rolle**:

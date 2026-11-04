@@ -26,6 +26,11 @@ the platform on its behalf. The admin area is available in German and English (*
 5. **Templates** (*Vorlagen*, optional): set up the usual formats once, e.g. your parent-teacher day.
 6. **Invite teachers** and, if you like, further admins (*Benutzer*).
 
+If the dashboard warns that the configuration can be read by every user of the server, set the
+permissions of the files it lists to `600` or pass the warning on to whoever runs the server: they contain
+the database and mail passwords. If these may have got out in the meantime, see
+[Changing secrets]({{ '/guide/operations/' | relative_url }}#changing-secrets).
+
 ## Accounts
 
 Under *Benutzer* (users) → *+ Neuer Benutzer* (new user) enter **name and e-mail address** and choose the

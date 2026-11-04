@@ -45,7 +45,11 @@ not public issues.
 **Operations**
 - No error details in production; `public/.user.ini` also hides errors that occur before the app starts.
   The app writes its own log with values, quotes and e-mail addresses removed.
-- `app/` and `config/` live outside the web root and are additionally denied by `.htaccess`.
+- `app/` and `config/` live outside the web root and are additionally denied by `.htaccess`. The
+  deployment restricts `config.php` to its owner (`chmod 600`) in every version on the server, and the
+  dashboard warns admins while every user of the server can read one of these copies (it cannot tell
+  whether a group in `640` is shared with other customers). After changing secrets, `prune` deletes the
+  old versions with their old `config.php`.
 - The deployment validates configuration values with a fixed set of options (a typo in `SMTP_ENCRYPTION`
   would otherwise mean plain-text passwords) and never ships the installer after installation.
 - CI and deployment use no third-party GitHub Actions; code is fetched with plain `git` and the token is
