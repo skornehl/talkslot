@@ -584,7 +584,7 @@ curl -s -o /dev/null "$B/"
 check "migration 17: template table created" '[ "$(DBQ "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=\"tp_round_templates\"")" = 1 ] && [ "$(DBQ "SELECT value FROM tp_settings WHERE name=\"schema_version\"")" = "$LATEST" ] && [ "$(curl -s -o /dev/null -w "%{http_code}" -b "$J" "$B/admin/templates")" = 200 ]'
 DBQ "ALTER TABLE tp_users DROP COLUMN lang; UPDATE tp_settings SET value = '17' WHERE name = 'schema_version'"
 curl -s -o /dev/null "$B/"
-check "migration 18: language column for accounts, existing ones keep the default (German)" '[ "$(DBQ "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=\"tp_users\" AND COLUMN_NAME=\"lang\"")" = 1 ] && [ "$(DBQ "SELECT value FROM tp_settings WHERE name=\"schema_version\"")" = "$LATEST" ] && curl -s -b "$J" "$B/admin" | grep -q "<html lang=\"de\">"'
+check "migration 18: language column for accounts, existing ones keep the default (German)" '[ "$(DBQ "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=\"tp_users\" AND COLUMN_NAME=\"lang\"")" = 1 ] && [ "$(DBQ "SELECT value FROM tp_settings WHERE name=\"schema_version\"")" = "$LATEST" ] && curl -s -b "$J" "$B/admin" | grep -q "<html lang=\"de\""'
 
 echo "Web cron"
 CTOK=$(printf 'cron' | openssl dgst -sha256 -hmac "$(printf 'd%.0s' {1..64})" | sed 's/.*= //')
@@ -1017,12 +1017,12 @@ check "template deleted; changes are logged" '[ "$(DBQ "SELECT COUNT(*) FROM tp_
 
 echo "Admin area in English"
 LG=$(curl -s -H 'Accept-Language: en-GB,en;q=0.9,de;q=0.5' "$B/admin/login")
-check "login page follows the browser language, with a language switch" 'echo "$LG" | grep -q "<html lang=\"en\">" && echo "$LG" | grep -qF ">Sign in</" && echo "$LG" | grep -q "href=\"/admin/login?lang=de\"" && ! echo "$LG" | grep -q ">Anmelden</"'
-check "?lang= wins over the browser language; without a hint: German" 'curl -s -H "Accept-Language: en" "$B/admin/login?lang=de" | grep -q "<html lang=\"de\">" && curl -s "$B/admin/login" | grep -q "<html lang=\"de\">" && curl -s "$B/admin/forgot?lang=en" | grep -q "<html lang=\"en\">"'
+check "login page follows the browser language, with a language switch" 'echo "$LG" | grep -q "<html lang=\"en\"" && echo "$LG" | grep -qF ">Sign in</" && echo "$LG" | grep -q "href=\"/admin/login?lang=de\"" && ! echo "$LG" | grep -q ">Anmelden</"'
+check "?lang= wins over the browser language; without a hint: German" 'curl -s -H "Accept-Language: en" "$B/admin/login?lang=de" | grep -q "<html lang=\"de\"" && curl -s "$B/admin/login" | grep -q "<html lang=\"de\"" && curl -s "$B/admin/forgot?lang=en" | grep -q "<html lang=\"en\""'
 T=$(curl -s -b "$J" "$B/admin" | csrf)
 AEM=$(DBQ "SELECT email FROM tp_users WHERE username='$USER'")
 P=$(PROF -d "email=$AEM&lang=en")
-check "profile: switching to English, confirmation already in English" 'echo "$P" | grep -q "<html lang=\"en\">" && echo "$P" | grep -qF "Profile saved." && echo "$P" | grep -q "<option value=\"en\" selected>English</option>" && [ "$(DBQ "SELECT lang FROM tp_users WHERE username=\"$USER\"")" = en ]'
+check "profile: switching to English, confirmation already in English" 'echo "$P" | grep -q "<html lang=\"en\"" && echo "$P" | grep -qF "Profile saved." && echo "$P" | grep -q "<option value=\"en\" selected>English</option>" && [ "$(DBQ "SELECT lang FROM tp_users WHERE username=\"$USER\"")" = en ]'
 D=$(curl -s -b "$J" "$B/admin")
 check "admin area in English: navigation, page, JavaScript texts" 'echo "$D" | grep -qF ">All rounds</a>" && echo "$D" | grep -qF ">My profile</a>" && echo "$D" | grep -q "<script type=\"application/json\" id=\"tp-i18n\">" && ! echo "$D" | grep -q ">Alle Runden</a>"'
 X=$(curl -s -b "$J" --data-urlencode "csrf=$T" -d "title=&booking_deadline_hours=0&cancel_deadline_hours=0&day_dates%5B%5D=$(date -d '+30 day' +%F)&start_time=14:00&end_time=15:00&slot_minutes=15" "$B/admin/round/new")
@@ -1032,9 +1032,9 @@ check "log entries stay in the default language (German) for an English admin" '
 curl -s -o /dev/null -b "$J" -d "csrf=$T&display_name=Ms+English&email=english-$RUN@example.org&role=teacher&lang=en" "$B/admin/users/new"
 IM=$($DC exec -T app php -r '$r=json_decode(file_get_contents("http://mail:8025/api/v1/search?query=to:english-'"$RUN"'@example.org"),true); $m=$r["messages"][0]; echo $m["Subject"], "\n", json_decode(file_get_contents("http://mail:8025/api/v1/message/".$m["ID"]),true)["Text"];')
 ILINK=$(echo "$IM" | grep -o 'http[^ ]*/admin/invite/[A-Za-z0-9_-]\{43\}?lang=en' | head -1)
-check "invitation in the language of the new account, link opens the page in English" 'echo "$IM" | head -1 | grep -qF "Invitation to TalkSlot" && echo "$IM" | grep -qF "Please set your password using this link:" && [ -n "$ILINK" ] && curl -s "$ILINK" | grep -q "<html lang=\"en\">" && [ "$(DBQ "SELECT lang FROM tp_users WHERE username=\"english-$RUN@example.org\"")" = en ]'
+check "invitation in the language of the new account, link opens the page in English" 'echo "$IM" | head -1 | grep -qF "Invitation to TalkSlot" && echo "$IM" | grep -qF "Please set your password using this link:" && [ -n "$ILINK" ] && curl -s "$ILINK" | grep -q "<html lang=\"en\"" && [ "$(DBQ "SELECT lang FROM tp_users WHERE username=\"english-$RUN@example.org\"")" = en ]'
 P=$(PROF -d "email=$AEM&lang=de")
-check "back to German" 'echo "$P" | grep -q "<html lang=\"de\">" && echo "$P" | grep -q "Profil gespeichert." && curl -s -b "$J" "$B/admin" | grep -q ">Alle Runden</a>" && ! curl -s -b "$J" "$B/admin" | grep -q "id=\"tp-i18n\""'
+check "back to German" 'echo "$P" | grep -q "<html lang=\"de\"" && echo "$P" | grep -q "Profil gespeichert." && curl -s -b "$J" "$B/admin" | grep -q ">Alle Runden</a>" && ! curl -s -b "$J" "$B/admin" | grep -q "id=\"tp-i18n\""'
 curl -s -o /dev/null -b "$J" -d "csrf=$T&confirm=1" "$B/admin/users/$(DBQ "SELECT id FROM tp_users WHERE username='english-$RUN@example.org'")/delete"
 
 echo "Several admins"

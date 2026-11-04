@@ -33,6 +33,11 @@ ask how long they are kept and state it in the privacy policy.
   stateless. No cookie banner is needed. Only the admin area uses a session cookie, limited to `/admin`.
 - **No third parties:** no CDNs, web fonts, analytics or external scripts. Translations of a round's title
   happen in the teacher's browser with a local model; no text is sent to a translation service.
+- **No page translation of booking lists:** the admin area and the print view carry `translate="no"`,
+  `class="notranslate"` and `<meta name="google" content="notranslate">`, so browsers do not offer their
+  page translation there, which would send names and e-mail addresses to a cloud service (a transfer to a
+  third country that the privacy policy rules out). Parent pages stay translatable on purpose: parents
+  may need a language beyond the six offered and only see their own data there.
 - **Remember on this device** (§ 25 TDDDG): storing something in the browser without consent is only
   allowed if it is strictly necessary for a service the user explicitly asked for. Preventing double
   bookings is in the teacher's interest, not the parents', so it would not qualify. That is why the

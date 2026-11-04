@@ -91,9 +91,11 @@ Eltern sehen Titel und Beschreibung in ihrer Sprache, wenn eine Übersetzung vor
 - Übersetzungen von Hand eingeben oder korrigieren, eine veraltete Übersetzung als weiterhin korrekt
   bestätigen oder eine Sprache bewusst unübersetzt lassen (leerer Titel).
 
-Fehlende oder veraltete Übersetzungen zeigen das Original. Bitte nutzen Sie im Admin-Bereich nicht die
-browsereigene Funktion „Seite übersetzen“: Sie schickt die ganze Seite einschließlich der Buchungen an
-Google oder Microsoft.
+Fehlende oder veraltete Übersetzungen zeigen das Original. Der Admin-Bereich und die Druckansicht sind
+mit `translate="no"` gekennzeichnet, damit Browser dort ihre eigene Funktion „Seite übersetzen“ nicht
+anbieten: Sie würde die ganze Seite einschließlich der Buchungen an Google oder Microsoft schicken.
+Browser oder Erweiterungen, die diese Kennzeichnung missachten, könnten das trotzdem tun – bitte
+übersetzen Sie Admin-Seiten deshalb auch nicht auf anderem Weg.
 
 ## Zusammenfassungen per E-Mail
 
