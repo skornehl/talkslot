@@ -160,7 +160,9 @@ dem Buchungsschluss eines Tages. Sie enthalten nur Uhrzeit und Name, keine E-Mai
 dazu eine Kalenderdatei.
 
 Eltern mit E-Mail-Adresse bekommen am Vorabend ihres Termins eine **Erinnerung** (zur selben Uhrzeit,
-standardmäßig ab 18:00 Uhr) mit einem Link zum Absagen. Sie lässt sich pro Runde abschalten (*Eltern am
+standardmäßig ab 18:00 Uhr) mit einem Link zum Absagen. Zusammenfassungen und Erinnerungen verschickt der
+Cronjob über die [Mail-Warteschlange]({{ '/de/guide/operations/' | relative_url }}#mail-warteschlange); die
+Übersicht weist Admins darauf hin, wenn E-Mails länger als zwei Stunden warten. Sie lässt sich pro Runde abschalten (*Eltern am
 Vorabend an ihren Termin erinnern*). Die Vorlage der Datenschutzerklärung nennt die Erinnerung als Zweck der
 E-Mail-Adresse; haben Sie Ihre Datenschutzerklärung bearbeitet, bittet ein Hinweis in der Übersicht, das
 zu ergänzen.

@@ -66,8 +66,8 @@ php bin/install.php <username> [email]   # asks for the password
 
 ## 4. Set up the cron job
 
-TalkSlot deletes past bookings, deactivates and deletes finished rounds and sends teacher summaries in
-a cron job. Run it hourly:
+TalkSlot deletes past bookings, deactivates and deletes finished rounds and sends teacher summaries,
+reminders to parents and mails that could not be sent at once in a cron job. Run it hourly:
 
 ```cron
 5 * * * * php /path/to/talkslot/bin/cron.php
@@ -82,7 +82,9 @@ curl -fsS -X POST -H "X-Cron-Token: $TOKEN" https://your-site/cron
 ```
 
 The included GitHub workflow `cron.yml` does exactly this every hour. As a fallback, clean-up also runs on
-page views at most every 15 minutes.
+page views at most every 15 minutes; mails only go out there with PHP-FPM or LiteSpeed, after the page has
+been delivered. Without a cron job, reminders and summaries may therefore not be sent at all (see
+[mail queue]({{ '/guide/operations/' | relative_url }}#mail-queue)).
 
 ## 5. Fill in the legal details
 

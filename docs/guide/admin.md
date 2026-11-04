@@ -148,6 +148,8 @@ overview of the next day in the evening (from 18:00 by default) and an overview 
 deadline of a day. They contain time and name only, no e-mail addresses of parents, plus a calendar file.
 
 Parents who gave an e-mail address get a **reminder** the evening before their appointment (at the same
-time, from 18:00 by default), with a link to cancel. It can be turned off per round (*Eltern am Vorabend an
+time, from 18:00 by default), with a link to cancel. Summaries and reminders are sent by the cron job
+through the [mail queue]({{ '/guide/operations/' | relative_url }}#mail-queue); the overview tells admins
+when mails have been waiting for more than two hours. It can be turned off per round (*Eltern am Vorabend an
 ihren Termin erinnern*). The privacy policy template names the reminder as a purpose of the e-mail
 address; if you have edited your privacy policy, a hint on the dashboard asks you to add it.

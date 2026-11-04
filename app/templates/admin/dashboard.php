@@ -1,4 +1,7 @@
-<?php /** @var array $rounds @var list<string> $profileHints @var list<string> $legalHints @var bool $showOwner @var bool $operatorMissing @var bool $textsOpen @var int $unusedAccounts */ ?>
+<?php /** @var array $rounds @var list<string> $profileHints @var list<string> $legalHints @var bool $showOwner @var bool $operatorMissing @var bool $textsOpen @var int $unusedAccounts @var ?array $mailsLate */ ?>
+<?php if ($mailsLate): ?>
+  <div class="alert alert-warning" role="status" data-mails-late><p><?= e(__('{count} E-Mail(s) warten seit über {hours} Stunden auf den Versand (die älteste seit {since}). Erinnerungen, Zusammenfassungen und Bestätigungen, die nicht sofort zugestellt werden konnten, verschickt der Cron-Job: Bitte prüfen Sie, ob er stündlich läuft und ob der Mailversand funktioniert. Nach 48 Stunden werden sie verworfen.', ['count' => $mailsLate['count'], 'hours' => App\Outbox::LATE_HOURS, 'since' => date('d.m.Y H:i', (int) strtotime($mailsLate['since']))])) ?></p></div>
+<?php endif; ?>
 <?php foreach ($legalHints as $h): ?>
   <div class="alert alert-warning" role="status"><p><?= e($h) ?> <a href="<?= e(url('/admin/texts')) ?>"><?= e(__('Zu den Texten')) ?></a></p></div>
 <?php endforeach; ?>

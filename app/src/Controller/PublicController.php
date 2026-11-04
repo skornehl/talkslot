@@ -284,9 +284,9 @@ final class PublicController
         }
         RateLimiter::hit('booking', $limit, $window);
 
-        $booking = BookingService::findById($id);
-        $mailed = $booking && Notifier::parentBooked($booking, $token);
-        Http::redirect('/b/' . $token, ['done' => 'booked', 'mail' => $mailed ? '1' : null, 'remember' => $old['remember'] ? self::rememberSignature($token) : null]);
+        // Sent right away; if that fails it is queued and the page says it will follow
+        $mail = Notifier::sendOrQueue((array) BookingService::findById($id), 'booked', $token);
+        Http::redirect('/b/' . $token, ['done' => 'booked', 'mail' => self::mailParam($mail), 'remember' => $old['remember'] ? self::rememberSignature($token) : null]);
     }
 
     private function manage(#[\SensitiveParameter] string $token, array $errors = []): void
@@ -315,6 +315,7 @@ final class PublicController
             'csrf' => Csrf::publicToken('manage:' . $booking['id']),
             'done' => Http::query('done'),
             'mailed' => Http::query('mail') === '1',
+            'mailQueued' => Http::query('mail') === 'queued',
             'remember' => self::rememberValid($token, Http::query('remember')),
             // After an error, the section of the form that was sent stays open (move, cancel, mail)
             'open' => $errors ? Http::post('action') : '',
@@ -391,9 +392,8 @@ final class PublicController
                 $this->manage($token, [t('err.' . $e->getMessage())]);
                 return;
             }
-            $updated = BookingService::findById((int) $booking['id']);
-            $mailed = $updated && Notifier::parentChanged($updated, $token);
-            Http::redirect('/b/' . $token, ['done' => 'changed', 'mail' => $mailed ? '1' : null]);
+            $mail = Notifier::sendOrQueue((array) BookingService::findById((int) $booking['id']), 'changed', $token);
+            Http::redirect('/b/' . $token, ['done' => 'changed', 'mail' => self::mailParam($mail)]);
         }
 
         $this->manage($token);
@@ -434,6 +434,12 @@ final class PublicController
             Http::redirect('/b/' . $token, ['done' => 'sent']);
         }
         $this->manage($token, [t('manage.mail.failed')]);
+    }
+
+    /** Notice on the appointment page after booking or moving: "mail=1" sent, "mail=queued" follows later. */
+    private static function mailParam(?string $result): ?string
+    {
+        return match ($result) { Notifier::SENT => '1', Notifier::QUEUED => 'queued', default => null };
     }
 
     /** Shared validation for name/email/slot (also used by the admin). */

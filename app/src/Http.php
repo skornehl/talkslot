@@ -114,6 +114,18 @@ final class Http
     }
 
     /** Redirect (303 See Other – always GET after POST). */
+    /**
+     * Ends the response to the browser so that the script can go on without the visitor waiting
+     * (PHP-FPM, LiteSpeed). false: not possible with this server API (e.g. Apache mod_php, CLI).
+     */
+    public static function finishResponse(): bool
+    {
+        if (function_exists('fastcgi_finish_request')) {
+            return fastcgi_finish_request();
+        }
+        return function_exists('litespeed_finish_request') && litespeed_finish_request();
+    }
+
     public static function redirect(string $path, array $query = [], string $fragment = ''): never
     {
         header('Location: ' . url($path, $query) . ($fragment !== '' ? '#' . rawurlencode($fragment) : ''), true, 303);

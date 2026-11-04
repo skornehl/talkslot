@@ -89,7 +89,7 @@ or an old backup is lost.
 
 A new `APP_SECRET` changes the web cron token. The included `cron.yml` derives it from the same secret; an
 external cron service needs the new token (see [web cron]({{ '/guide/installation/' | relative_url }})),
-otherwise the clean-up only runs on page views. It also resets the rate limits, and parents have to
+otherwise the clean-up only runs on page views and queued mails wait. It also resets the rate limits, and parents have to
 reload an open booking form or enter a round code again. Admin sessions, change links and bookings stay
 valid.
 
@@ -102,9 +102,33 @@ valid.
 | Rate-limit data | after 24 hours at the latest |
 | Inactive teacher accounts without rounds | 15 months after the last login |
 | Admin log (*Protokoll*) | after 90 days (`audit_log_days`) |
+| Mail queue entries (no address or content) | once the mail is sent; mails that could not be sent after 48 hours |
 
 The clean-up runs in the cron job and, as a fallback, on page views at most every 15 minutes. The same
-runs send the teachers' summary mails and the parents' reminders.
+runs queue the teachers' summary mails and the parents' reminders; the cron job sends them.
+
+## Mail queue
+
+No visitor waits for the mail server: page views only run the database steps of the clean-up, and
+reminders, summaries and mails that failed go to a **mail queue** (outbox) that the **cron job** sends
+(`bin/cron.php` or the web cron). Per run it sends at most 100 mails within about 20 seconds over one SMTP
+connection; confirmations and change notices to parents go first, then summaries, then reminders
+(see [configuration]({{ '/guide/configuration/' | relative_url }}#mail-queue), also for an hourly limit).
+
+- **Confirmations stay immediate.** When parents book or move an appointment, or a teacher saves an entry
+  with a mail, the mail is sent right away. If the mail server refuses it, it goes to the queue, and the
+  page says the confirmation follows. The queue retries after 5, 15, 30, 60, 120 and then every 240 minutes.
+- **References only.** A queue entry says which mail is due for which booking or account, nothing else. The
+  address and text are taken from the booking when sending, and a confirmation sent later gets a new
+  personal link of its own (the first one stays valid), so the queue holds no address and no link. Entries
+  go with their booking and are deleted once sent, after 48 hours at the latest.
+- **Nothing gets lost unnoticed.** The booking list shows *E-Mail nicht zugestellt* at an entry whose mail
+  failed (with *neuer Versuch folgt* while it is retried), and admins see a notice on the overview when
+  mails have waited for more than two hours, usually because the cron job does not run or the mail server
+  keeps refusing.
+- **Without a cron job** mails can only go out on page views if PHP runs as PHP-FPM or LiteSpeed: the page
+  is delivered first, then up to 10 due mails are sent (`mail_queue.after_response`). With Apache's
+  mod_php that is not possible, so set up the cron job; the included `cron.yml` runs it hourly.
 
 ## Troubleshooting
 
@@ -119,7 +143,8 @@ Wi-Fi). Raise the [rate limits]({{ '/guide/configuration/' | relative_url }}#rat
 during a busy booking phase.
 
 **Mails do not arrive.** Check the sender domain's SPF and DKIM records, try `smtp` instead of `mail`, and
-look for the alert "Mailversand fehlgeschlagen".
+look for the alert "Mailversand fehlgeschlagen". Reminders and summaries are sent by the cron job: if the
+overview says mails are waiting, check that it runs (`php bin/cron.php -v` prints `mails_sent`).
 
 **The privacy policy shows `[HOSTER MIT ANSCHRIFT]`.** Set `hosting` (or `HOSTING_DE`/`HOSTING_EN`); see
 [Privacy and legal]({{ '/guide/privacy/' | relative_url }}).

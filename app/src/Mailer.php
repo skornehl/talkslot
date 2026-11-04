@@ -7,9 +7,38 @@ namespace App;
  * Sends plain-text emails via PHP mail() or SMTP (bundled PHPMailer).
  * Switchable via config "mail.transport": mail | smtp | none.
  * Errors are logged without the recipient address.
+ * Within batch() all SMTP mails share one connection (outbox runs, see Outbox).
  */
 final class Mailer
 {
+    /** Open SMTP connection of the running batch() (null: one connection per mail). */
+    private static ?\PHPMailer\PHPMailer\PHPMailer $smtp = null;
+    private static bool $batch = false;
+
+    /**
+     * Runs $fn; SMTP mails sent in it keep the connection open for the next one (SMTPKeepAlive), so a run
+     * of the outbox does not connect and log in again for every mail. Closed at the end.
+     * @template T
+     * @param callable(): T $fn
+     * @return T
+     */
+    public static function batch(callable $fn): mixed
+    {
+        self::$batch = true;
+        try {
+            return $fn();
+        } finally {
+            self::$batch = false;
+            self::disconnect();
+        }
+    }
+
+    private static function disconnect(): void
+    {
+        self::$smtp?->smtpClose();
+        self::$smtp = null;
+    }
+
     /**
      * @param list<array{name:string,type:string,content:string}> $attachments e.g. an .ics file
      * @param ?string $replyTo reply address (e.g. the teacher); otherwise config mail.reply_to
@@ -33,6 +62,7 @@ final class Mailer
                 default => self::viaMail($to, $subject, $body, $from, $attachments, $replyTo),
             };
         } catch (\Throwable $e) {
+            self::disconnect(); // in a batch: the next mail starts with a new connection
             $reason = get_class($e) . ': ' . ErrorPage::sanitize($e->getMessage());
             ErrorPage::writeLog('Mailer: Versand fehlgeschlagen (' . $reason . ')');
             Alert::notify('mail', 'Mailversand fehlgeschlagen', ['Mailversand fehlgeschlagen: ' . $reason]);
@@ -86,6 +116,32 @@ final class Mailer
 
     private static function viaSmtp(string $to, string $subject, string $body, string $from, array $attachments, ?string $replyTo): bool
     {
+        $m = self::$smtp ?? self::smtpConnection();
+        if (self::$batch) {
+            self::$smtp = $m;
+        }
+        $m->clearAllRecipients();
+        $m->clearReplyTos();
+        $m->clearAttachments();
+        $m->clearCustomHeaders();
+        $m->setFrom($from, (string) Config::get('mail.from_name', ''));
+        $replyTo = $replyTo ?: (string) Config::get('mail.reply_to', '');
+        if (filter_var($replyTo, FILTER_VALIDATE_EMAIL)) {
+            $m->addReplyTo($replyTo);
+        }
+        $m->addAddress($to);
+        $m->addCustomHeader('Auto-Submitted', 'auto-generated');
+        $m->Subject = $subject;
+        $m->Body = $body;
+        foreach ($attachments as $a) {
+            $m->addStringAttachment($a['content'], $a['name'], \PHPMailer\PHPMailer\PHPMailer::ENCODING_BASE64, $a['type']);
+        }
+        return $m->send();
+    }
+
+    /** PHPMailer with the SMTP settings; keeps the connection open within batch(). */
+    private static function smtpConnection(): \PHPMailer\PHPMailer\PHPMailer
+    {
         $dir = APP_ROOT . '/app/vendor/phpmailer/src/';
         require_once $dir . 'Exception.php';
         require_once $dir . 'PHPMailer.php';
@@ -93,6 +149,7 @@ final class Mailer
 
         $m = new \PHPMailer\PHPMailer\PHPMailer(true);
         $m->isSMTP();
+        $m->SMTPKeepAlive = self::$batch;
         $m->Host = (string) Config::get('mail.smtp.host', '');
         $m->Port = (int) Config::get('mail.smtp.port', 587);
         $user = (string) Config::get('mail.smtp.user', '');
@@ -114,19 +171,7 @@ final class Mailer
         $m->CharSet = 'UTF-8';
         $m->Encoding = 'quoted-printable';
         $m->XMailer = ' ';
-        $m->setFrom($from, (string) Config::get('mail.from_name', ''));
-        $replyTo = $replyTo ?: (string) Config::get('mail.reply_to', '');
-        if (filter_var($replyTo, FILTER_VALIDATE_EMAIL)) {
-            $m->addReplyTo($replyTo);
-        }
-        $m->addAddress($to);
-        $m->addCustomHeader('Auto-Submitted', 'auto-generated');
         $m->isHTML(false);
-        $m->Subject = $subject;
-        $m->Body = $body;
-        foreach ($attachments as $a) {
-            $m->addStringAttachment($a['content'], $a['name'], \PHPMailer\PHPMailer\PHPMailer::ENCODING_BASE64, $a['type']);
-        }
-        return $m->send();
+        return $m;
     }
 }

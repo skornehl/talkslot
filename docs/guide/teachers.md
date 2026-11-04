@@ -31,8 +31,10 @@ the German ones, with the English label in brackets.
 - **Delete after** (*Runde löschen nach Ablauf*): hours after the last day, 24 by default, empty = never.
   Bookings are deleted the day after the appointment either way.
 - **Reminder** (*Eltern am Vorabend an ihren Termin erinnern*, on by default): parents who gave an e-mail
-  address get a reminder the evening before, with the link to cancel. Who booked on that same day gets
-  none, as the confirmation has just been sent.
+  address get a reminder the evening before, with the link to cancel. Who got a confirmation or change
+  notice on that same day gets none (editing a name without a mail does not count). It applies to bookings
+  made while it is on; your own entries only get it once their parents received a confirmation or change
+  notice by mail.
 - **Random part in the address** (recommended) so the round cannot be found by guessing, and optionally
   **round code required** (*Nur mit Rundencode*).
 - **Active**: parents can book. Inactive rounds take no bookings, but parents can still cancel.
@@ -72,6 +74,9 @@ Per day you see all slots with the bookings:
 - **Add** (*Eintragen*) an appointment yourself, e.g. after a phone call. The confirmation mail with the
   change link is ticked as soon as you enter an e-mail address; it is the only way the parents learn about
   the entry.
+- ***E-Mail nicht zugestellt*** next to an entry: the mail to the parents could not be sent. While it says
+  *neuer Versuch folgt*, it is retried automatically; otherwise please inform the parents in person or
+  check the address (correct it under *Bearbeiten* and save with the mail ticked).
 - **Block** (*Sperren*) a slot so nobody can book it, and release it again.
 - **Days**: edit times and the location of a single day (*Tag bearbeiten*), add breaks, print a day (*Tag drucken*), add more days
   (*+ Tag hinzufügen*) or delete a day.

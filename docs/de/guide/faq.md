@@ -17,10 +17,11 @@ Praktikumsgespräche.
 
 ## Braucht es einen Cronjob?
 
-Empfohlen ist er, damit Buchungen rechtzeitig gelöscht sowie Zusammenfassungen und Erinnerungen verschickt
-werden. Ohne
+Ja, damit Buchungen rechtzeitig gelöscht sowie Zusammenfassungen, Erinnerungen und erneut versuchte
+Bestätigungen verschickt werden: Während ein Besucher wartet, werden nie E-Mails verschickt. Ohne
 Shell-Zugang nutzen Sie den Web-Cron (der mitgelieferte GitHub-Workflow ruft ihn stündlich auf). Als
-Rückfallebene läuft das Aufräumen außerdem bei Seitenaufrufen, höchstens alle 15 Minuten.
+Rückfallebene läuft das Aufräumen außerdem bei Seitenaufrufen, höchstens alle 15 Minuten, und mit PHP-FPM
+oder LiteSpeed verschickt ein Seitenaufruf nach seiner Antwort bis zu 10 wartende E-Mails.
 
 ## In welchen Sprachen gibt es den Adminbereich?
 

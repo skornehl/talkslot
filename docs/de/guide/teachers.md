@@ -32,8 +32,10 @@ Englisch umstellen.
   bis *N* Stunden vorher ändern oder absagen (*Ändern/Absagen bis*).
 - ***Runde löschen nach Ablauf***: Stunden nach dem letzten Tag, standardmäßig 24, leer = nie. Buchungen werden in jedem Fall am Tag nach dem Termin gelöscht.
 - **Erinnerung** (*Eltern am Vorabend an ihren Termin erinnern*, standardmäßig an): Eltern mit
-  E-Mail-Adresse bekommen am Vorabend eine Erinnerung mit dem Link zum Absagen. Wer erst am selben Tag
-  gebucht hat, bekommt keine, die Bestätigung kam ja gerade erst.
+  E-Mail-Adresse bekommen am Vorabend eine Erinnerung mit dem Link zum Absagen. Wer am selben Tag eine
+  Bestätigung oder Änderungsmitteilung bekommen hat, bekommt keine (eine Namenskorrektur ohne E-Mail zählt
+  nicht). Sie gilt für Buchungen, die gemacht wurden, während sie eingeschaltet war; Ihre eigenen Einträge
+  bekommen sie erst, wenn die Eltern eine Bestätigung oder Änderungsmitteilung per E-Mail erhalten haben.
 - **Zufallsanteil in der Adresse** (empfohlen), damit die Runde nicht durch Ausprobieren gefunden wird,
   und optional *Nur mit Rundencode*.
 - **Aktiv**: Eltern können buchen. Inaktive Runden nehmen keine Buchungen an, Eltern können aber weiterhin
@@ -77,6 +79,10 @@ Pro Tag sehen Sie alle Termine mit den Buchungen:
 - ***Eintragen***: selbst einen Termin eintragen, z. B. nach einem Telefonat. Die Bestätigungs-E-Mail mit
   Änderungslink ist angehakt, sobald Sie eine E-Mail-Adresse eintragen; nur so erfahren die Eltern von
   dem Eintrag.
+- ***E-Mail nicht zugestellt*** neben einem Eintrag: Die E-Mail an die Eltern konnte nicht verschickt
+  werden. Steht dort *neuer Versuch folgt*, wird sie automatisch wiederholt; sonst informieren Sie die
+  Eltern bitte persönlich oder prüfen die Adresse (unter *Bearbeiten* korrigieren und mit angehakter
+  E-Mail speichern).
 - ***Sperren***: einen Termin sperren, damit niemand ihn buchen kann, und wieder freigeben.
 - **Tage**: Zeiten und den Ort eines einzelnen Tages bearbeiten (*Tag bearbeiten*), Pausen hinzufügen,
   einen Tag drucken (*Tag drucken*), weitere Tage hinzufügen (*+ Tag hinzufügen*) oder einen Tag löschen.

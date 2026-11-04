@@ -160,6 +160,7 @@ $roundBookings = array_sum(array_map(static fn ($d) => count(array_filter($d['sl
           <?php if ($s['booking_id']): ?>
             <strong><?= e($s['name']) ?></strong><?php if ($s['email']): ?><br><span class="small"><?= e($s['email']) ?></span><?php endif; ?>
             <?php if ($s['source'] === 'admin'): ?> <span class="badge"><?= e(__('selbst eingetragen')) ?></span><?php endif; ?>
+            <?php if ($s['mail_failed_at'] !== null): ?> <span class="badge badge-warning" data-mail-failed title="<?= e($s['mail_waiting'] ? __('Neuer Versuch folgt automatisch. Erhalten die Eltern sie nicht, informieren Sie sie bitte persönlich oder prüfen Sie die Adresse.') : __('Es folgt kein weiterer Versuch. Bitte informieren Sie die Eltern persönlich oder prüfen Sie die Adresse.')) ?>"><?= e($s['mail_waiting'] ? __('E-Mail nicht zugestellt – neuer Versuch folgt') : __('E-Mail nicht zugestellt')) ?></span><?php endif; ?>
           <?php elseif ($s['is_blocked']): ?><span class="muted"><?= e(__('gesperrt')) ?></span>
           <?php else: ?><span class="muted"><?= e(__('frei')) ?></span><?php endif; ?>
         </td>

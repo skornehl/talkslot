@@ -2,7 +2,7 @@
 /**
  * Confirmation and change page (reachable only via the secret link).
  * @var array $booking @var string $token @var bool $canChange @var bool $canMove @var array $days
- * @var string $csrf @var string $done @var bool $mailed @var bool $remember @var array $errors
+ * @var string $csrf @var string $done @var bool $mailed @var bool $mailQueued @var bool $remember @var array $errors
  * @var string $open section whose form was sent with an error (move, cancel, mail): shown opened
  * @var string $mailTo address entered for the confirmation mail (only after an error)
  */
@@ -21,6 +21,7 @@ $doneText = ['booked' => 'manage.booked', 'changed' => 'manage.changed', 'sent' 
   <div class="alert alert-success" role="status">
     <p><strong><?= e(t($doneText)) ?></strong></p>
     <?php if ($mailed): ?><p><?= e(t('manage.mail_sent')) ?></p><?php endif; ?>
+    <?php if ($mailQueued): ?><p data-mail-queued><?= e(t('manage.mail_queued')) ?></p><?php endif; ?>
   </div>
 <?php endif; ?>
 
@@ -56,7 +57,7 @@ $doneText = ['booked' => 'manage.booked', 'changed' => 'manage.changed', 'sent' 
 <details class="card" id="confirm-mail"<?= $open === 'mail' ? ' open' : '' ?>>
   <summary><h2><?= e(t('manage.mail')) ?></h2></summary>
   <p><?= e(t('manage.mail.text')) ?></p>
-  <form method="post" action="<?= e($manageUrl) ?>">
+  <form method="post" action="<?= e($manageUrl) ?>" data-once>
     <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
     <input type="hidden" name="action" value="mail">
     <div class="field">
@@ -79,7 +80,7 @@ $doneText = ['booked' => 'manage.booked', 'changed' => 'manage.changed', 'sent' 
       <p><?= e(t('manage.change.none')) ?></p>
     <?php else: ?>
       <p><?= e(t('manage.change.text')) ?></p>
-      <form method="post" action="<?= e($manageUrl) ?>">
+      <form method="post" action="<?= e($manageUrl) ?>" data-once>
         <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
         <input type="hidden" name="action" value="move">
         <?php $selected = ''; require __DIR__ . '/_slots.php'; ?>
@@ -92,7 +93,7 @@ $doneText = ['booked' => 'manage.booked', 'changed' => 'manage.changed', 'sent' 
   <details class="card" id="cancel"<?= $open === 'cancel' ? ' open' : '' ?>>
     <summary><h2><?= e(t('manage.cancel')) ?></h2></summary>
     <p><?= e(t('manage.cancel.text')) ?></p>
-    <form method="post" action="<?= e($manageUrl) ?>">
+    <form method="post" action="<?= e($manageUrl) ?>" data-once>
       <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
       <input type="hidden" name="action" value="cancel">
       <div class="check">

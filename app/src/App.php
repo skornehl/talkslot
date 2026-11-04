@@ -15,16 +15,19 @@ final class App
         Http::sendSecurityHeaders();
         header('Content-Type: text/html; charset=utf-8');
 
+        $path = Http::path();
         try {
             if (Installer::isInstalled()) {
                 Migrations::run();
-                Cleanup::maybeRun();
+                if ($path !== '/cron') { // the web cron runs all steps itself
+                    Cleanup::maybeRun();
+                    register_shutdown_function(self::afterResponse(...));
+                }
             }
         } catch (\Throwable $e) {
             Alert::exception($e, 'Migration/Bereinigung'); // must not block the page
         }
 
-        $path = Http::path();
         $admin = $path === '/admin' || str_starts_with($path, '/admin/');
         // Form posts from other sites are refused before anything is processed (login CSRF; a second
         // layer next to the CSRF tokens)
@@ -70,6 +73,16 @@ final class App
         View::render('public/notfound', ['title' => t('crosssite.title'), 'text' => t('crosssite.text')]);
     }
 
+    /** At the end of a page request: send due mails once the response is out (see Outbox::afterResponse()). */
+    private static function afterResponse(): void
+    {
+        try {
+            Outbox::afterResponse(Http::finishResponse(...));
+        } catch (\Throwable $e) {
+            Alert::exception($e, 'Mailversand nach der Antwort');
+        }
+    }
+
     /** Key for the web cron, derived from the app secret (no separate secret needed). */
     public static function cronToken(): string
     {
@@ -79,7 +92,7 @@ final class App
     /**
      * Web cron as a replacement for a cron job on the server: POST /cron with header
      * "X-Cron-Token". The key never appears in the URL (no entry in access logs).
-     * Response: counts only, no personal data.
+     * Response: counts only, no personal data. Sends the due mails of the outbox (limited in number and time).
      */
     private static function webCron(): void
     {
@@ -96,6 +109,7 @@ final class App
             return;
         }
         Migrations::run();
-        echo json_encode(['status' => 'ok'] + Cleanup::run() + Summaries::run() + Reminders::run());
+        set_time_limit((int) Config::get('mail_queue.seconds', 20) + 60);
+        echo json_encode(['status' => 'ok'] + Cleanup::run() + Summaries::run() + Reminders::run() + Outbox::process());
     }
 }
