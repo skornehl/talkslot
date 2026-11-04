@@ -1,8 +1,11 @@
-<?php /** @var array $day @var array $round @var array $errors */ use App\Csrf; ?>
+<?php /** @var array $day @var array $round @var int $bookings @var array $errors */ use App\Csrf; ?>
 <p class="breadcrumb"><a href="<?= e(url('/admin')) ?>"><?= e(__('Runden')) ?></a> › <a href="<?= e(url('/admin/round/' . (int) $round['id'])) ?>"><?= e($round['title']) ?></a></p>
 <h1><?= e(__('Tag bearbeiten')) ?></h1>
 <?php require __DIR__ . '/_errors.php'; ?>
 <p class="alert alert-info"><?= e(__('Gebuchte Termine werden bei Änderungen nie automatisch gelöscht. Passt ein gebuchter Termin nicht mehr in den neuen Zeitplan, wird er als Konflikt markiert.')) ?></p>
+<?php if ($bookings > 0): ?>
+<p class="alert alert-warning"><?= e(__('An diesem Tag sind {count} Termin(e) gebucht. Die Eltern werden über Änderungen an Datum, Zeiten oder Ort NICHT automatisch benachrichtigt – bitte selbst informieren.', ['count' => $bookings])) ?></p>
+<?php endif; ?>
 <form method="post" action="<?= e(url('/admin/day/' . (int) $day['id'] . '/edit')) ?>" class="card form-grid">
   <?= Csrf::adminField() ?>
   <div class="field-row">
@@ -14,7 +17,7 @@
   <div class="field">
     <label for="location"><?= e(__('Ort an diesem Tag (optional)')) ?></label>
     <input type="text" id="location" name="location" maxlength="200" value="<?= e($day['location'] ?? '') ?>" placeholder="<?= e(trim((string) ($round['location'] ?? '')) !== '' ? __('wie die Runde: {location}', ['location' => trim((string) $round['location'])]) : __('z. B. Raum 2.14')) ?>" aria-describedby="dloc-hint">
-    <p class="hint" id="dloc-hint"><?= e(__('Nur ausfüllen, wenn der Tag nicht am Ort der Runde stattfindet. Bereits gebuchte Eltern werden nicht benachrichtigt.')) ?></p>
+    <p class="hint" id="dloc-hint"><?= e(__('Nur ausfüllen, wenn der Tag nicht am Ort der Runde stattfindet.')) ?> <?= e(__('Bereits gebuchte Eltern werden bei einer Änderung NICHT automatisch benachrichtigt.')) ?></p>
   </div>
   <div class="actions">
     <button type="submit" class="button button-primary"><?= e(__('Speichern')) ?></button>

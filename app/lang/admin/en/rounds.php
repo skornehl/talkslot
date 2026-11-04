@@ -158,7 +158,6 @@ return [
     'Ort an diesem Tag (optional)' => 'Location on this day (optional)',
     'wie die Runde: {location}' => 'same as the round: {location}',
     'z. B. Raum 2.14' => 'e.g. Room 2.14',
-    'Nur ausfüllen, wenn der Tag nicht am Ort der Runde stattfindet. Bereits gebuchte Eltern werden nicht benachrichtigt.' => 'Only fill in if the day does not take place at the location of the round. Parents who have already booked are not notified.',
 
     // Booking form (booking_form.php)
     'Name(n)' => 'Name(s)',

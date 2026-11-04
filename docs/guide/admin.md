@@ -26,6 +26,11 @@ the platform on its behalf. The admin area is available in German and English (*
 5. **Templates** (*Vorlagen*, optional): set up the usual formats once, e.g. your parent-teacher day.
 6. **Invite teachers** and, if you like, further admins (*Benutzer*).
 
+If the dashboard warns that the configuration can be read by every user of the server, set the
+permissions of the files it lists to `600` or pass the warning on to whoever runs the server: they contain
+the database and mail passwords. If these may have got out in the meantime, see
+[Changing secrets]({{ '/guide/operations/' | relative_url }}#changing-secrets).
+
 ## Accounts
 
 Under *Benutzer* (users) → *+ Neuer Benutzer* (new user) enter **name and e-mail address** and choose the
@@ -46,7 +51,9 @@ For an existing account you can:
 - send a new **invitation** or a **password reset link** (*Einladung erneut senden* / *Link zum
   Zurücksetzen senden*). The old password stops working and all sessions of the account end;
 - change its **role**, e.g. make a teacher an admin or the other way round;
-- **delete** it, including all its rounds and bookings.
+- **delete** it, including all its rounds and bookings. The parents of these bookings are **not**
+  notified automatically; the confirmation dialog and the message afterwards give their number. Open the
+  print view of the rounds first, afterwards nobody can see who had booked.
 
 Nobody can change their own role, deactivate or delete their own account, and at least one active admin
 always remains, even when two admins demote each other at the same moment.
@@ -84,8 +91,9 @@ The hint on the overview about accounts unused for over 12 months helps you not 
 
 Admins see and edit **all rounds** (*Alle Runden*) with their bookings, and can create a round for a
 teacher or move a round to another teacher (field *Lehrkraft* in the round form). The round then appears
-for that teacher, parents see their name and summaries go to them. Teachers only ever see their own
-rounds; this is enforced centrally and covered by tests.
+for that teacher, parents see their name and summaries go to them. Parents who have already booked are not
+notified automatically; the message after saving says so and how to send them the new details. Teachers
+only ever see their own rounds; this is enforced centrally and covered by tests.
 
 How rounds work is described in the [Teacher guide]({{ '/guide/teachers/' | relative_url }}).
 

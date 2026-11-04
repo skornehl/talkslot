@@ -1,4 +1,4 @@
-<?php /** @var ?array $user @var array $data @var array $errors @var bool $isSelf */ use App\Csrf; ?>
+<?php /** @var ?array $user @var array $data @var array $errors @var bool $isSelf @var int $bookings */ use App\Csrf; ?>
 <p class="breadcrumb"><a href="<?= e(url('/admin/users')) ?>"><?= e(__('Benutzer')) ?></a></p>
 <h1><?= e($title) ?></h1>
 <?php require __DIR__ . '/_errors.php'; ?>
@@ -75,7 +75,7 @@
 <section class="card">
   <h2><?= e(__('Benutzer löschen')) ?></h2>
   <p><?= __h('Löscht das Konto {bold} dieser Person. Das kann nicht rückgängig gemacht werden. Alternative: Konto deaktivieren.', ['bold' => '<strong>' . e(__('mit allen Terminrunden und Buchungen')) . '</strong>']) ?></p>
-  <form method="post" action="<?= e(url('/admin/users/' . (int) $user['id'] . '/delete')) ?>" class="inline-delete" data-confirm="<?= e(__('Konto „{username}“ mit allen Runden und Buchungen endgültig löschen?', ['username' => $user['username']])) ?>">
+  <form method="post" action="<?= e(url('/admin/users/' . (int) $user['id'] . '/delete')) ?>" class="inline-delete" data-confirm="<?= e(__('Konto „{username}“ mit allen Runden und Buchungen endgültig löschen?', ['username' => $user['username']]) . ($bookings ? "\n\n" . __('Die Eltern von {count} Buchung(en) werden NICHT automatisch benachrichtigt – bitte selbst informieren.', ['count' => $bookings]) : '')) ?>">
     <?= Csrf::adminField() ?>
     <label class="small"><input type="checkbox" name="confirm" value="1" required> <?= e(__('Ja, endgültig löschen')) ?></label>
     <?php if ($user['role'] === 'admin'): ?>

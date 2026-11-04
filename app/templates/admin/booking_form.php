@@ -40,10 +40,14 @@ $action = $booking ? url('/admin/booking/' . (int) $booking['id'] . '/edit') : u
   </div>
   <?php endif; ?>
 
+  <?php // Ticked by default, and as long as no address is entered (the script then follows the e-mail field) ?>
   <div class="check">
-    <input type="checkbox" id="send_mail" name="send_mail" value="1"<?= !empty($old['send_mail']) ? ' checked' : '' ?>>
+    <input type="checkbox" id="send_mail" name="send_mail" value="1" data-mail-for="email"<?= !empty($old['send_mail']) || trim((string) $old['email']) === '' ? ' checked' : '' ?><?= $booking ? ' aria-describedby="mail-hint"' : '' ?>>
     <label for="send_mail"><?= e($booking ? __('Änderung per E-Mail mitteilen (nur wenn eine Adresse eingetragen ist)') : __('Bestätigung mit Änderungslink per E-Mail senden (nur wenn eine Adresse eingetragen ist)')) ?></label>
   </div>
+  <?php if ($booking): ?>
+  <p class="hint hint-indent" id="mail-hint"><?= e(__('Die E-Mail nennt die aktuellen Termindaten in der Sprache der Eltern und geht auch ohne Änderung hier hinaus, z. B. nachdem Datum oder Ort des Tages geändert wurden.')) ?></p>
+  <?php endif; ?>
 
   <div class="actions">
     <button type="submit" class="button button-primary"><?= e(__('Speichern')) ?></button>

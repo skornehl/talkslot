@@ -494,7 +494,8 @@ BK4=$($DC exec -T db mariadb -uapp -papp-dev-only talkslot -Ne "SELECT id FROM t
 AMAIL=$($DC exec -T app php -r '$r=json_decode(file_get_contents("http://mail:8025/api/v1/search?query=to:admin-buchung@example.org"),true); echo json_encode($r["messages"][0]["ReplyTo"] ?? []), " ", json_decode(file_get_contents("http://mail:8025/api/v1/message/".($r["messages"][0]["ID"] ?? "x")),true)["Text"] ?? "";')
 check "admin books in a teacher's round: mail with the teacher's Reply-To, footer names the admin" '[ -n "$BK4" ] && echo "$AMAIL" | grep -q "zwei@example.org" && echo "$AMAIL" | grep -q "Verantwortlich: Sabrina Test" && ! echo "$AMAIL" | grep -q "Verantwortlich: Herr Zwei"'
 curl -s -o /dev/null -b "$J" -d "csrf=$TA" "$B/admin/booking/$BK4/delete"
-check "admin deletes a booking in a teacher's round" '! curl -s -b "$J" "$B/admin/round/$R4" | grep -q "Vom Admin gebucht"'
+# The message after deleting names the parents, so look at the booking list itself
+check "admin deletes a booking in a teacher's round" '[ -z "$(DBQ "SELECT id FROM tp_bookings WHERE id=$BK4")" ] && ! curl -s -b "$J" "$B/admin/round/$R4" | grep -q "<strong>Vom Admin gebucht</strong>"'
 TT=$(curl -s -c "$J2" -b "$J2" "$B/admin" | csrf)
 curl -s -o /dev/null -c "$J2" -b "$J2" --data-urlencode "csrf=$TT" -d "user_id=1&title=Uebernahmeversuch&is_active=1&booking_deadline_hours=0&cancel_deadline_hours=0" "$B/admin/round/$R4/edit"
 check "teacher cannot change the teacher of a round" 'curl -s -c "$J2" -b "$J2" "$B/admin" | grep -q "Uebernahmeversuch" && [ "$($DC exec -T db mariadb -uapp -papp-dev-only talkslot -Ne "SELECT user_id FROM tp_rounds WHERE id=$R4")" = "$U2" ]'
