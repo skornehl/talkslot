@@ -130,3 +130,12 @@ statt `mail` und achten Sie auf die Meldung „Mailversand fehlgeschlagen“.
 
 **Die Datenschutzerklärung zeigt `[HOSTER MIT ANSCHRIFT]`.** Setzen Sie `hosting` (bzw.
 `HOSTING_DE`/`HOSTING_EN`); siehe [Datenschutz und Recht]({{ '/de/guide/privacy/' | relative_url }}).
+
+**Eine Einladung oder ein Passwortlink konnte nicht gesendet werden.** Der Admin sieht nur einen Hinweis;
+der Link wird nie angezeigt. Bringen Sie den Mailversand in Ordnung (siehe oben) und senden Sie ihn dann
+unter *Benutzer → Bearbeiten* erneut.
+
+**Ein Gerät ist verloren gegangen oder ein Konto könnte missbraucht sein.** Siehe
+[Bei Verdacht auf Missbrauch]({{ '/de/guide/security/' | relative_url }}#bei-verdacht-auf-missbrauch):
+alle Sitzungen beenden, Konten und Protokoll prüfen, Passwörter ändern und, wenn personenbezogene Daten
+betroffen sein könnten, rechtzeitig melden.

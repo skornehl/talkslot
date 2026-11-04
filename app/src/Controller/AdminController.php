@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\AccountLinks;
+use App\AccountSecurity;
 use App\AdminI18n;
 use App\Audit;
 use App\Auth;
@@ -14,7 +15,6 @@ use App\Db;
 use App\Http;
 use App\I18n;
 use App\Invitation;
-use App\Mailer;
 use App\Notifier;
 use App\Operator;
 use App\RateLimiter;
@@ -72,6 +72,7 @@ final class AdminController
         ['POST', '#^/users/(\d+)/edit$#', 'userSave'],
         ['POST', '#^/users/(\d+)/reset-password$#', 'userResetPassword'],
         ['POST', '#^/users/(\d+)/delete$#', 'userDelete'],
+        ['POST', '#^/users/end-sessions$#', 'endAllSessions'],
         ['GET', '#^/texts$#', 'texts'],
         ['POST', '#^/texts/operator$#', 'operatorSave'],
         ['GET', '#^/page/(imprint|privacy)/([a-z]{2})$#', 'pageForm'],
@@ -213,6 +214,11 @@ final class AdminController
             'profileHints' => $this->profileHints(),
             'operatorMissing' => !Operator::ready(),
             'legalHints' => Auth::isAdmin() ? array_merge(self::operatorHints(), self::legalHints()) : [],
+            // Offboarding: active accounts nobody has signed in to for a long time (only the number)
+            'unusedAccounts' => Auth::isAdmin() ? (int) Db::value(
+                'SELECT COUNT(*) FROM users WHERE is_active = 1 AND COALESCE(last_login_at, created_at) < ?',
+                [self::inactiveSince()]
+            ) : 0,
         ]);
     }
 
@@ -1209,26 +1215,16 @@ final class AdminController
         // Password reset links go to this address: changing it requires the current password
         $oldEmail = (string) (Auth::user()['email'] ?? '');
         $emailChanged = mb_strtolower($data['email']) !== mb_strtolower($oldEmail);
-        if (!$errors && $emailChanged && !password_verify(Http::postRaw('current_password'), (string) Auth::user()['password_hash'])) {
-            $errors[] = __('Zum Ändern der E-Mail-Adresse bitte Ihr aktuelles Passwort eingeben.');
+        if (!$errors && $emailChanged
+            && ($error = Auth::confirmPassword(Http::postRaw('current_password'), __('Zum Ändern der E-Mail-Adresse bitte Ihr aktuelles Passwort eingeben.'))) !== null) {
+            $errors[] = $error;
         }
         if ($errors) {
             $this->profile($errors, $data);
             return;
         }
-        if ($emailChanged && is_valid_email($oldEmail)) {
-            // In the language of the account (as it was before this change)
-            AdminI18n::with(AdminI18n::of(Auth::user()), static function () use ($oldEmail, $data): void {
-                $vars = ['app' => app_name(), 'url' => abs_url('/admin', ['lang' => null]), 'email' => $data['email']];
-                Mailer::send($oldEmail, __('Ihre E-Mail-Adresse wurde geändert'), implode("\n", [
-                    __('Hallo {name},', ['name' => Auth::user()['display_name'] ?: Auth::user()['username']]), '',
-                    $data['email'] !== ''
-                        ? __('für Ihr Konto bei {app} ({url}) wurde die E-Mail-Adresse geändert auf {email}.', $vars)
-                        : __('für Ihr Konto bei {app} ({url}) wurde die E-Mail-Adresse geändert (keine Adresse mehr hinterlegt).', $vars),
-                    __('Waren Sie das nicht, wenden Sie sich bitte umgehend an einen Admin.'),
-                ]));
-            });
-        }
+        // To the previous address, in the language of the account (as it was before this change)
+        AccountSecurity::contactChanged(Auth::user(), ['email' => $data['email']] + Auth::user(), Auth::user());
         Db::run(
             'UPDATE users SET display_name = ?, email = ?, summary_evening = ?, summary_deadline = ?, lang = ? WHERE id = ?',
             [$data['display_name'], $data['email'] !== '' ? $data['email'] : null, $data['summary_evening'], $data['summary_deadline'], $data['lang'], Auth::id()]
@@ -1278,10 +1274,14 @@ final class AdminController
 
     private function users(): void
     {
+        // Sign-ins only in coarse steps (never, within / more than 12 months ago): enough to clean up
+        // accounts, without showing everybody's login times to all admins (employee data protection)
         $users = Db::all(
-            'SELECT u.id, u.username, u.display_name, u.email, u.role, u.is_active, u.must_change_password, u.last_login_at, u.access_token_expires_at,
+            'SELECT u.id, u.username, u.display_name, u.email, u.role, u.is_active, u.must_change_password, u.access_token_expires_at,
+                    u.last_login_at IS NULL AS never_signed_in, u.last_login_at < ? AS long_inactive,
                     (SELECT COUNT(*) FROM rounds r WHERE r.user_id = u.id) AS round_count
-               FROM users u ORDER BY u.is_active DESC, u.display_name, u.username'
+               FROM users u ORDER BY u.is_active DESC, u.display_name, u.username',
+            [self::inactiveSince()]
         );
         $this->render('admin/users', ['title' => __('Benutzer'), 'users' => $users, 'me' => Auth::id()]);
     }
@@ -1341,20 +1341,25 @@ final class AdminController
         } elseif (Db::value('SELECT id FROM users WHERE username = ? AND id <> ?', [$data['username'], $id ?? 0]) !== null) {
             $errors[] = __('Für diese E-Mail-Adresse bzw. diesen Benutzernamen gibt es bereits ein Konto.');
         }
-        // At least one active admin must remain (counting the others; this account only if it stays an active admin)
-        $otherActiveAdmins = $this->activeAdminCount() - ($user && $user['role'] === 'admin' && $user['is_active'] ? 1 : 0);
-        if ($user && $user['role'] === 'admin' && ($data['role'] !== 'admin' || !$data['is_active']) && $otherActiveAdmins < 1) {
-            $errors[] = __('Es muss mindestens ein aktives Admin-Konto geben.');
+        // Admin rights and e-mail addresses: only with the password of the acting admin
+        if (!$errors && AccountSecurity::needsPassword($user, $data)
+            && ($error = Auth::confirmPassword(Http::postRaw('current_password'), __('Zur Bestätigung bitte Ihr Passwort eingeben (nötig bei Admin-Rechten und E-Mail-Adressen).'))) !== null) {
+            $errors[] = $error;
         }
         if ($errors) {
             $this->userForm($id, $errors, $data);
             return;
         }
         if ($user) {
-            Db::run(
+            // At least one active admin must remain (checked under a lock, see AccountSecurity)
+            $saved = AccountSecurity::keepingAnAdmin((int) $id, $data['role'] === 'admin' && $data['is_active'] === 1, static fn () => Db::run(
                 'UPDATE users SET username = ?, display_name = ?, email = ?, role = ?, is_active = ?, lang = ? WHERE id = ?',
                 [$data['username'], $data['display_name'], $data['email'], $data['role'], $data['is_active'], $data['lang'], $id]
-            );
+            ));
+            if (!$saved) {
+                $this->userForm($id, [__('Es muss mindestens ein aktives Admin-Konto geben.')], $data);
+                return;
+            }
             // A closure, so that the log gets its own language (see audit())
             $changes = static fn (): array => array_filter([
                 $data['role'] !== $user['role'] ? __('Rolle jetzt {role}', ['role' => self::roleLabel($data['role'])]) : '',
@@ -1363,6 +1368,11 @@ final class AdminController
                 $data['email'] !== (string) $user['email'] || $data['username'] !== $user['username'] ? __('E-Mail/Benutzername geändert') : '',
             ]);
             $this->audit(fn () => __('Konto {account} bearbeitet', ['account' => self::accountLabel($user)]) . ($changes() ? ': ' . implode(', ', $changes()) : ''));
+            $after = $data + $user;
+            AccountSecurity::contactChanged($user, $after, Auth::user());
+            if (($event = AccountSecurity::adminEvent($user, $after)) !== null) {
+                AccountSecurity::adminChange($event, $after, Auth::user());
+            }
             $this->flash('success', __('Benutzer gespeichert.') . (!$data['is_active'] ? ' ' . __('Das Konto ist deaktiviert; seine Runden sind öffentlich nicht mehr erreichbar.') : ''));
         } else {
             $id = Db::insert(
@@ -1372,6 +1382,9 @@ final class AdminController
             );
             $this->audit(fn () => __('Konto {account} angelegt ({role}) und eingeladen', ['account' => self::accountLabel($data), 'role' => self::roleLabel($data['role'])]));
             $this->linkFlash($this->userById($id), AccountLinks::INVITE);
+            if ($data['role'] === 'admin') {
+                AccountSecurity::adminChange(AccountSecurity::INVITED, $this->userById($id), Auth::user());
+            }
         }
         Http::redirect('/admin/users');
     }
@@ -1397,24 +1410,27 @@ final class AdminController
         Http::redirect('/admin/users');
     }
 
-    /** Send the link and show the result; on mail failure show the link once. */
+    /**
+     * Send the link and show the result. The link itself is never shown, also not when the mail fails:
+     * with it, the admin could set the password of somebody else's account and use it unnoticed.
+     */
     private function linkFlash(array $user, string $kind): void
     {
-        [$sent, $link] = AccountLinks::send($user, $kind, Auth::user());
+        $sent = AccountLinks::send($user, $kind, Auth::user());
         $vars = [
             'what' => $kind === AccountLinks::INVITE ? __('Einladung') : __('Link zum Festlegen eines neuen Passworts'),
-            'email' => $user['email'], 'hours' => AccountLinks::validHours(), 'link' => $link,
+            'email' => $user['email'], 'hours' => AccountLinks::validHours(),
         ];
         if ($sent) {
             $this->flash('success', __('{what} an {email} gesendet (gültig {hours} Stunden, einmalig nutzbar).', $vars));
         } else {
-            $this->flash('warning', __('{what} konnte nicht an {email} gesendet werden. Link (wird nur jetzt angezeigt, bitte persönlich weitergeben): {link}', $vars));
+            $this->flash('warning', __('{what} konnte nicht an {email} gesendet werden. Bitte prüfen Sie den Mailversand (unter „Texte“) und senden Sie den Link danach über „Bearbeiten“ erneut.', $vars));
         }
     }
 
     // ---------------------------------------------------------------- Invitation / forgot password (without login)
 
-    private function inviteForm(string $token, array $errors = []): void
+    private function inviteForm(#[\SensitiveParameter] string $token, array $errors = []): void
     {
         $user = $this->linkUser($token);
         if (!$user) {
@@ -1425,7 +1441,7 @@ final class AdminController
         $this->render('admin/invite', ['title' => __('Passwort festlegen'), 'user' => $user, 'token' => $token, 'errors' => $errors, 'csrf' => self::formToken('invite')]);
     }
 
-    private function inviteSave(string $token): void
+    private function inviteSave(#[\SensitiveParameter] string $token): void
     {
         $user = $this->linkUser($token);
         if (!$user || !self::checkFormToken('invite')) {
@@ -1447,7 +1463,7 @@ final class AdminController
     }
 
     /** Check the token; failed attempts limited per IP. */
-    private function linkUser(string $token): ?array
+    private function linkUser(#[\SensitiveParameter] string $token): ?array
     {
         [$limit, $window] = RateLimiter::limits('invite', 20, 3600);
         if (RateLimiter::count('invite', $window) >= $limit) {
@@ -1508,20 +1524,28 @@ final class AdminController
             $this->flash('error', __('Sie können Ihr eigenes Konto nicht löschen.'));
             Http::redirect('/admin/users');
         }
-        if ($user['role'] === 'admin' && $user['is_active'] && $this->activeAdminCount() <= 1) {
-            $this->flash('error', __('Es muss mindestens ein aktives Admin-Konto geben.'));
-            Http::redirect('/admin/users');
-        }
         if (Http::post('confirm') !== '1') {
             $this->flash('error', __('Bitte das Löschen ausdrücklich bestätigen.'));
             Http::redirect('/admin/users/' . $id . '/edit');
         }
+        if ($user['role'] === 'admin'
+            && ($error = Auth::confirmPassword(Http::postRaw('current_password'), __('Zum Löschen eines Admin-Kontos bitte Ihr Passwort eingeben.'))) !== null) {
+            $this->flash('error', $error);
+            Http::redirect('/admin/users/' . $id . '/edit');
+        }
         $rounds = (int) Db::value('SELECT COUNT(*) FROM rounds WHERE user_id = ?', [$id]);
         $bookings = $this->userBookings($id);
+        // At least one active admin must remain (checked under a lock, see AccountSecurity)
+        if (!AccountSecurity::keepingAnAdmin($id, false, static fn () => Db::run('DELETE FROM users WHERE id = ?', [$id]))) {
+            $this->flash('error', __('Es muss mindestens ein aktives Admin-Konto geben.'));
+            Http::redirect('/admin/users');
+        }
         $this->audit(fn () => $rounds
             ? __('Konto {account} gelöscht (mit {count} Runde(n))', ['account' => self::accountLabel($user), 'count' => $rounds])
             : __('Konto {account} gelöscht', ['account' => self::accountLabel($user)]));
-        Db::run('DELETE FROM users WHERE id = ?', [$id]);
+        if ($user['role'] === 'admin') {
+            AccountSecurity::adminChange(AccountSecurity::DELETED, $user, Auth::user());
+        }
         $this->flash('success', __('Benutzer „{name}“ mit allen Runden und Buchungen gelöscht.', ['name' => $user['username']]));
         $this->parentsNotNotified($bookings);
         Http::redirect('/admin/users');
@@ -1553,9 +1577,28 @@ final class AdminController
             [mb_strtolower($email), mb_strtolower($email), $exceptId]) !== null;
     }
 
-    private function activeAdminCount(): int
+    /**
+     * Admin: end the sessions of all accounts on all devices, e.g. after a lost device or a suspected
+     * break-in (keeps the own session). Asks for the password; all admins are told by e-mail.
+     */
+    private function endAllSessions(): void
     {
-        return (int) Db::value("SELECT COUNT(*) FROM users WHERE role = 'admin' AND is_active = 1");
+        $error = Auth::confirmPassword(Http::postRaw('current_password'), __('Zum Beenden aller Sitzungen bitte Ihr Passwort eingeben.'));
+        if ($error !== null) {
+            $this->flash('error', $error);
+            Http::redirect('/admin/users');
+        }
+        Auth::endAllSessions();
+        $this->audit(fn () => __('Alle Sitzungen beendet'));
+        AccountSecurity::adminChange(AccountSecurity::SESSIONS_ENDED, null, Auth::user());
+        $this->flash('success', __('Alle Sitzungen beendet: Alle Konten müssen sich auf allen Geräten neu anmelden, nur diese Sitzung bleibt bestehen.'));
+        Http::redirect('/admin/users');
+    }
+
+    /** Accounts without a sign-in since then count as long inactive (users list, dashboard). */
+    private static function inactiveSince(): string
+    {
+        return Time::now()->modify('-12 months')->format('Y-m-d H:i:s');
     }
 
     // ---------------------------------------------------------------- Global texts (admin)

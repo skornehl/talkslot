@@ -33,7 +33,7 @@ final class AccountLinks
     }
 
     /** Account for a valid, unexpired token (active accounts only). */
-    public static function findUser(string $plain): ?array
+    public static function findUser(#[\SensitiveParameter] string $plain): ?array
     {
         if (!Token::isWellFormed($plain)) {
             return null;
@@ -44,14 +44,15 @@ final class AccountLinks
         );
     }
 
-    /** Sets the password and invalidates the link. */
-    public static function consume(int $userId, string $password): void
+    /** Sets the password, invalidates the link and tells the account holder by e-mail. */
+    public static function consume(int $userId, #[\SensitiveParameter] string $password): void
     {
         Db::run(
             'UPDATE users SET password_hash = ?, must_change_password = 0, access_token_hash = NULL, access_token_expires_at = NULL WHERE id = ?',
             [password_hash($password, PASSWORD_DEFAULT), $userId]
         );
         Auth::endOtherSessions($userId, false);
+        AccountSecurity::passwordChanged(Db::one('SELECT * FROM users WHERE id = ?', [$userId]) ?? []);
     }
 
     /** Was a still valid link issued for the account less than $minutes minutes ago? */
@@ -72,15 +73,16 @@ final class AccountLinks
     }
 
     /**
-     * Sends the link by email.
-     * @return array{0:bool,1:string} [sent, link]
+     * Sends the link by email. $sender: the admin who sent it (reply address; for a reset: the previous
+     * password no longer works, the mail says so). The link itself is never shown to the sender.
+     * @return bool sent
      */
-    public static function send(array $user, string $kind, ?array $sender = null): array
+    public static function send(array $user, string $kind, ?array $sender = null): bool
     {
         $link = self::issue((int) $user['id']);
         $until = Time::now()->modify('+' . self::validHours() . ' hours');
         // In the recipient's language (dates as well), not in the language of whoever triggers it
-        [$subject, $lines] = AdminI18n::with(AdminI18n::of($user), static function () use ($user, $kind, $link, $until): array {
+        [$subject, $lines] = AdminI18n::with(AdminI18n::of($user), static function () use ($user, $kind, $link, $until, $sender): array {
             $untilText = __('{date}, {time} Uhr', ['date' => fmt_date($until->format('Y-m-d')), 'time' => $until->format('H:i')]);
             if ($kind === self::INVITE) {
                 return [__('Einladung zu {app}', ['app' => app_name()]), [
@@ -97,20 +99,25 @@ final class AccountLinks
                     __('Prüfen Sie danach unter „Mein Profil“ Ihren Anzeigenamen (so sehen Eltern Sie) und Ihre E-Mail-Adresse für Zusammenfassungen.'),
                 ]];
             }
+            // Reset by an admin: the previous password is already invalid (see AdminController::userResetPassword)
+            $byAdmin = $sender !== null;
             return [__('Passwort festlegen für {app}', ['app' => app_name()]), [
                 __('Hallo {name},', ['name' => $user['display_name']]),
                 '',
-                __('für Ihr Konto bei {app} wurde ein Link zum Festlegen eines neuen Passworts angefordert:', ['app' => app_name()]),
+                $byAdmin
+                    ? __('für Ihr Konto bei {app} hat {admin} (Admin) das Passwort zurückgesetzt. Ihr bisheriges Passwort gilt nicht mehr. Bitte legen Sie über diesen Link ein neues fest:', ['app' => app_name(), 'admin' => $sender['display_name'] ?: $sender['username']])
+                    : __('für Ihr Konto bei {app} wurde ein Link zum Festlegen eines neuen Passworts angefordert:', ['app' => app_name()]),
                 $link,
                 '',
                 __('Der Link ist einmalig nutzbar und gültig bis {until}.', ['until' => $untilText]),
                 __('Ihr Benutzername: {username}', ['username' => $user['username']]),
                 '',
-                __('Falls Sie das nicht angefordert haben, können Sie diese E-Mail ignorieren – Ihr bisheriges Passwort bleibt dann unverändert.'),
+                $byAdmin
+                    ? __('War das nicht abgesprochen, wenden Sie sich bitte umgehend an einen anderen Admin.')
+                    : __('Falls Sie das nicht angefordert haben, können Sie diese E-Mail ignorieren – Ihr bisheriges Passwort bleibt dann unverändert.'),
             ]];
         });
         $replyTo = $sender && filter_var((string) ($sender['email'] ?? ''), FILTER_VALIDATE_EMAIL) ? (string) $sender['email'] : null;
-        $sent = Mailer::send((string) $user['email'], $subject, implode("\n", $lines), [], $replyTo);
-        return [$sent, $link];
+        return Mailer::send((string) $user['email'], $subject, implode("\n", $lines), [], $replyTo);
     }
 }

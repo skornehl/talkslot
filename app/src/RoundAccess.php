@@ -24,7 +24,7 @@ final class RoundAccess
     }
 
     /** Does the input (case/format irrelevant, see RoundCode::normalize) match the round code? */
-    public static function checkCode(array $round, string $input): bool
+    public static function checkCode(array $round, #[\SensitiveParameter] string $input): bool
     {
         $code = RoundCode::normalize($input);
         return $code !== null && (string) ($round['code'] ?? '') !== '' && hash_equals((string) $round['code'], $code);
@@ -36,7 +36,7 @@ final class RoundAccess
         return $ts . '.' . self::sign($round, $ts);
     }
 
-    public static function validToken(array $round, mixed $token): bool
+    public static function validToken(array $round, #[\SensitiveParameter] mixed $token): bool
     {
         if (!is_string($token) || !preg_match('/^(\d{10})\.([a-f0-9]{64})$/', $token, $m)) {
             return false;

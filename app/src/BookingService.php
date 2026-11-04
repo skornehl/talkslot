@@ -173,7 +173,7 @@ final class BookingService
         );
     }
 
-    public static function findByToken(string $plain): ?array
+    public static function findByToken(#[\SensitiveParameter] string $plain): ?array
     {
         if (!Token::isWellFormed($plain)) {
             return null;

@@ -264,7 +264,11 @@ otherwise the legal pages fall back to English.
 - Double bookings prevented twice: `SELECT … FOR UPDATE` in a transaction and `UNIQUE(slot_id)`.
 - Change links: 256-bit random tokens, only their SHA-256 hash is stored.
 - Admin session: cookie limited to `/admin`, `HttpOnly`, `Secure`, `SameSite=Strict`, idle and absolute
-  timeouts, ID regeneration; password changes end all other sessions. No session for anonymous visitors.
+  timeouts, ID regeneration; password changes end all other sessions, an admin can end all sessions of all
+  accounts. No session for anonymous visitors.
+- Admin rights and e-mail addresses change only with the password of the acting admin; security mails to
+  the account holder, the previous address and all admins; at least one active admin under a row lock;
+  password links are never shown on screen. Password and token parameters are `#[\SensitiveParameter]`.
 - Brute-force protection per shortened IP and per username; uniform responses and timing;
   passwords 12 characters up to 72 bytes (bcrypt).
 - Spam protection: honeypot, minimum fill-in time, rate limits on bookings, codes and change links.
