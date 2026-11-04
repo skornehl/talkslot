@@ -441,9 +441,10 @@ final class AdminController
         $conflicts = 0;
         foreach ($days as &$day) {
             $day['breaks'] = Db::all('SELECT * FROM day_breaks WHERE day_id = ? ORDER BY start_time', [$day['id']]);
+            // mail_waiting: a mail that failed and is retried (not one queued since, e.g. the reminder)
             $day['slots'] = Db::all(
                 'SELECT s.*, b.id AS booking_id, b.name, b.email, b.source, b.created_at AS booked_at, b.updated_at AS booking_updated,
-                        b.mail_failed_at, (SELECT COUNT(*) FROM mail_outbox o WHERE o.booking_id = b.id) AS mail_waiting
+                        b.mail_failed_at, (SELECT COUNT(*) FROM mail_outbox o WHERE o.booking_id = b.id AND o.attempts > 0) AS mail_waiting
                    FROM slots s LEFT JOIN bookings b ON b.slot_id = s.id
                   WHERE s.day_id = ? ORDER BY s.start_time',
                 [$day['id']]

@@ -113,7 +113,6 @@ final class Http
         return is_string($v) && mb_check_encoding($v, 'UTF-8') ? $v : null;
     }
 
-    /** Redirect (303 See Other – always GET after POST). */
     /**
      * Ends the response to the browser so that the script can go on without the visitor waiting
      * (PHP-FPM, LiteSpeed). false: not possible with this server API (e.g. Apache mod_php, CLI).
@@ -126,6 +125,7 @@ final class Http
         return function_exists('litespeed_finish_request') && litespeed_finish_request();
     }
 
+    /** Redirect (303 See Other – always GET after POST). */
     public static function redirect(string $path, array $query = [], string $fragment = ''): never
     {
         header('Location: ' . url($path, $query) . ($fragment !== '' ? '#' . rawurlencode($fragment) : ''), true, 303);

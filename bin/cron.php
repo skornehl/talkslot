@@ -22,7 +22,7 @@ if (!App\Installer::isInstalled()) {
     exit(0);
 }
 App\Migrations::run();
-$stats = App\Cleanup::run() + App\Summaries::run() + App\Reminders::run() + App\Outbox::process();
+$stats = App\Cleanup::run() + App\Summaries::run() + App\Reminders::run() + App\Outbox::process(wait: App\Outbox::CRON_WAIT);
 if (in_array('-v', $argv, true)) {
     foreach ($stats as $k => $v) {
         echo str_pad($k, 24) . $v . "\n";

@@ -110,6 +110,6 @@ final class App
         }
         Migrations::run();
         set_time_limit((int) Config::get('mail_queue.seconds', 20) + 60);
-        echo json_encode(['status' => 'ok'] + Cleanup::run() + Summaries::run() + Reminders::run() + Outbox::process());
+        echo json_encode(['status' => 'ok'] + Cleanup::run() + Summaries::run() + Reminders::run() + Outbox::process(wait: Outbox::CRON_WAIT));
     }
 }

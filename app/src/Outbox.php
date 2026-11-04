@@ -32,6 +32,10 @@ final class Outbox
     public const BACKOFF = [5, 15, 30, 60, 120, 240];
     /** After this many failures in a row a run stops: the mail server is probably down. */
     private const MAX_FAILURES_IN_A_ROW = 3;
+    /** Seconds the cron job waits for a run in progress (e.g. one after a page request) before it gives up. */
+    public const CRON_WAIT = 15;
+    /** Lock of a run, per database and table prefix: installations on one database server do not block each other. */
+    private const LOCK = "SHA1(CONCAT(DATABASE(), '.', ?))";
     /** Fallback after the response of a page request: at most this many mails and seconds. */
     private const REQUEST_MAILS = 10;
     private const REQUEST_SECONDS = 10;
@@ -68,16 +72,16 @@ final class Outbox
 
     /**
      * Sends due mails: at most $limit, within about $seconds (a started mail is finished). Only one run at a
-     * time (cron job and page requests); a second one returns at once.
+     * time (cron job and page requests); a second one waits up to $wait seconds for it, then returns.
      * @return array{mails_sent:int,mails_failed:int,mails_dropped:int} failed = will be retried,
      *         dropped = no longer needed (booking gone or moved, day over, summary turned off)
      */
-    public static function process(?int $limit = null, ?float $seconds = null): array
+    public static function process(?int $limit = null, ?float $seconds = null, int $wait = 0): array
     {
         $stats = ['mails_sent' => 0, 'mails_failed' => 0, 'mails_dropped' => 0];
         $limit ??= max(1, (int) Config::get('mail_queue.batch', 100));
         $seconds ??= max(1.0, (float) Config::get('mail_queue.seconds', 20));
-        if ((int) Db::value('SELECT GET_LOCK(?, 0)', [Db::table('outbox')]) !== 1) {
+        if ((int) Db::value('SELECT GET_LOCK(' . self::LOCK . ', ?)', [Db::table('outbox'), max(0, $wait)]) !== 1) {
             return $stats;
         }
         try {
@@ -89,6 +93,7 @@ final class Outbox
                 [Time::nowSql(), self::maxAge()]
             );
             [$hour, $count] = self::hourCount();
+            $before = $count;
             $hourly = max(0, (int) Config::get('mail_queue.hourly_limit', 0));
             Mailer::batch(static function () use ($rows, $limit, $end, $hourly, &$count, &$stats): void {
                 $failures = 0;
@@ -98,6 +103,12 @@ final class Outbox
                     }
                     if ($hourly > 0 && $count >= $hourly && (int) $row['priority'] > 1) {
                         continue; // reminders and summaries wait for the next hour; single mails still go out
+                    }
+                    // Made obsolete since the rows were read: a newer mail about the booking has gone out (in
+                    // this run or a page request) and removed a waiting change notice (BookingService::mailResult())
+                    if (Db::value('SELECT 1 FROM mail_outbox WHERE id = ?', [$row['id']]) === null) {
+                        $stats['mails_dropped']++;
+                        continue;
                     }
                     try {
                         $sent = self::deliver($row);
@@ -117,9 +128,11 @@ final class Outbox
                     $count += $sent ? 1 : 0;
                 }
             });
-            Settings::set('mail_hour', $hour . '|' . $count);
+            if ($count !== $before) {
+                Settings::set('mail_hour', $hour . '|' . $count);
+            }
         } finally {
-            Db::value('SELECT RELEASE_LOCK(?)', [Db::table('outbox')]);
+            Db::value('SELECT RELEASE_LOCK(' . self::LOCK . ')', [Db::table('outbox')]);
         }
         return $stats;
     }
@@ -148,10 +161,18 @@ final class Outbox
         return self::process(self::REQUEST_MAILS, self::REQUEST_SECONDS)['mails_sent'];
     }
 
-    /** Is a mail due? (one indexed query per page request) */
+    /**
+     * Is a mail due that a run would send now? Not one waiting for the clean-up to give it up, nor one held
+     * back by the hourly limit (one indexed query per page request).
+     */
     public static function due(): bool
     {
-        return Db::value('SELECT 1 FROM mail_outbox WHERE next_attempt_at <= ? LIMIT 1', [Time::nowSql()]) !== null;
+        $hourly = max(0, (int) Config::get('mail_queue.hourly_limit', 0));
+        $priority = $hourly > 0 && self::hourCount()[1] >= $hourly ? 1 : max(self::KINDS);
+        return Db::value(
+            'SELECT 1 FROM mail_outbox WHERE next_attempt_at <= ? AND created_at >= ? AND priority <= ? LIMIT 1',
+            [Time::nowSql(), self::maxAge(), $priority]
+        ) !== null;
     }
 
     /**
