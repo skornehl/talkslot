@@ -43,7 +43,7 @@ TG=$(curl -s -L -c "$JP" -b "$JP" -d "csrf=$(curl -s -c "$JP" -b "$JP" "$B/admin
 check "teacher: notice on the overview, activation refused with a matching message" 'curl -s -c "$JP" -b "$JP" "$B/admin" | grep -q "enthalten noch offene Platzhalter (Aufgabe der Admins)" && echo "$TG" | grep -q "wenn ein Admin die offenen Platzhalter in Impressum bzw. Datenschutzerklärung ausgefüllt hat" && [ "$(DBQ "SELECT is_active FROM tp_rounds WHERE id=$PLR")" = 0 ]'
 # Language that is not offered: parents never see it, so it does not block
 DBQ "INSERT INTO tp_pages (page_key, lang, content, updated_at) VALUES ('privacy', 'fr', '[ADRESSE]', NOW())"
-check "only the texts of offered languages count" '! curl -s -b "$J" "$B/admin" | grep -qF "(FR):"'
+check "only the texts of offered languages count" '[ "$(DBQ "SELECT COUNT(*) FROM tp_pages WHERE lang=\"fr\"")" = 1 ] && D=$(curl -s -b "$J" "$B/admin") && echo "$D" | grep -qF "Datenschutzerklärung (DE): [KONTAKTDATEN" && ! echo "$D" | grep -qF "(FR):"'
 DBQ "DELETE FROM tp_pages WHERE lang = 'fr'"
 
 # Private operator: template filled in, a Markdown link with capitals is not a placeholder
