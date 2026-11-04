@@ -10,7 +10,7 @@ namespace App;
  */
 final class Migrations
 {
-    public const LATEST = 16;
+    public const LATEST = 17;
 
     /** Version => SQL statements */
     private const STEPS = [
@@ -117,6 +117,14 @@ final class Migrations
                 actor VARCHAR(254) NOT NULL, message VARCHAR(1000) NOT NULL,
                 KEY idx_audit_created (created_at),
                 CONSTRAINT fk_audit_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE SET NULL
+             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        ],
+        // 17: templates for new rounds
+        17 => [
+            "CREATE TABLE IF NOT EXISTS round_templates (
+                id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, name VARCHAR(100) NOT NULL, data TEXT NOT NULL,
+                created_at DATETIME NOT NULL, updated_at DATETIME NOT NULL,
+                UNIQUE KEY uq_templates_name (name)
              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
         ],
     ];

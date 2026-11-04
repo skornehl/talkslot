@@ -25,7 +25,7 @@ check "CLI installer after installation: abort" 'dcx exec -T app php /srv/app/bi
 # Reinstall, this time via the web installer (same credentials as dev/reset.sh). It deletes
 # itself after success; the file is restored afterwards.
 INSTALL_BAK=$(mktemp); cp "$ROOT/public/install.php" "$INSTALL_BAK"
-dcx exec -T db mariadb -uapp -papp-dev-only talkslot -e "SET FOREIGN_KEY_CHECKS=0; DROP TABLE IF EXISTS tp_audit_log, tp_round_translations, tp_sent_summaries, tp_bookings, tp_slots, tp_day_breaks, tp_round_days, tp_rounds, tp_pages, tp_rate_limits, tp_settings, tp_users, tp_admin_users; CREATE TABLE tp_users (id INT)"
+dcx exec -T db mariadb -uapp -papp-dev-only talkslot -e "SET FOREIGN_KEY_CHECKS=0; DROP TABLE IF EXISTS tp_round_templates, tp_audit_log, tp_round_translations, tp_sent_summaries, tp_bookings, tp_slots, tp_day_breaks, tp_round_days, tp_rounds, tp_pages, tp_rate_limits, tp_settings, tp_users, tp_admin_users; CREATE TABLE tp_users (id INT)"
 dcx exec -T app php -r '@unlink("/srv/app/app/var/installed.lock");'
 check "installer reachable while not installed" 'curl -s "$B/install.php" | grep -q "name=\"install_key\""'
 check "CLI installer: different passwords → abort" 'printf "Sehr-Sicheres-Pw-1\nanderes-Passwort-2\n" | dcx exec -T app php /srv/app/bin/install.php sabrina 2>&1 | grep -q "Passwörter stimmen nicht überein"'
@@ -578,6 +578,9 @@ check "migration 15: reminder columns added, existing rounds remind" '[ "$(DBQ "
 DBQ "DROP TABLE tp_audit_log; UPDATE tp_settings SET value = '15' WHERE name = 'schema_version'"
 curl -s -o /dev/null "$B/"
 check "migration 16: log table created" '[ "$(DBQ "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=\"tp_audit_log\"")" = 1 ] && [ "$(DBQ "SELECT value FROM tp_settings WHERE name=\"schema_version\"")" = "$LATEST" ] && [ "$(curl -s -o /dev/null -w "%{http_code}" -b "$J" "$B/admin/log")" = 200 ]'
+DBQ "DROP TABLE tp_round_templates; UPDATE tp_settings SET value = '16' WHERE name = 'schema_version'"
+curl -s -o /dev/null "$B/"
+check "migration 17: template table created" '[ "$(DBQ "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=\"tp_round_templates\"")" = 1 ] && [ "$(DBQ "SELECT value FROM tp_settings WHERE name=\"schema_version\"")" = "$LATEST" ] && [ "$(curl -s -o /dev/null -w "%{http_code}" -b "$J" "$B/admin/templates")" = 200 ]'
 
 echo "Web cron"
 CTOK=$(printf 'cron' | openssl dgst -sha256 -hmac "$(printf 'd%.0s' {1..64})" | sed 's/.*= //')
@@ -981,6 +984,25 @@ check "notice gone with the current template" '! curl -s -b "$J" "$B/admin" | gr
 curl -s -o /dev/null -b "$J" -d "csrf=$T&confirm=1" "$B/admin/round/$RR/delete"
 curl -s -o /dev/null -b "$J" -d "csrf=$T&confirm=1" "$B/admin/round/$RN/delete"
 
+echo "Templates"
+T=$(curl -s -b "$J" "$B/admin" | csrf)
+TPL() { curl -s -b "$J" --data-urlencode "csrf=$T" --data-urlencode "name=$1" -d "start_time=8:00&end_time=16:00&slot_minutes=15&break_start%5B%5D=12:00&break_end%5B%5D=13:00&break_label%5B%5D=Mittagspause&booking_limit=day&remind_parents=1&location=Hauptgeb%C3%A4ude&booking_deadline_hours=48&cancel_deadline_hours=24&delete_after_hours=72" "${@:2}" "$B/admin/templates/new"; }
+TPL "Elternsprechtag ganzer Tag" > /dev/null
+TID=$(DBQ "SELECT id FROM tp_round_templates WHERE name='Elternsprechtag ganzer Tag'")
+check "template saved, listed with a summary" '[ -n "$TID" ] && curl -s -b "$J" "$B/admin/templates" | grep -q "08:00–16:00 Uhr · 15 Min. pro Termin · Mittagspause 12:00–13:00 · ein Termin pro Person und Tag · Ort: Hauptgebäude"'
+check "template: same name, invalid times, no slot → messages, nothing saved" 'TPL "Elternsprechtag ganzer Tag" | grep -q "gibt es bereits" && TPL "Kaputt" -d "start_time=16:00" | grep -q "Bitte gültige Zeiten" && TPL "Leer" -d "start_time=12:00&end_time=13:00" | grep -q "kein einziger Termin" && [ "$(DBQ "SELECT COUNT(*) FROM tp_round_templates")" = 1 ]'
+NF=$(curl -s -b "$J" "$B/admin/round/new?template=$TID")
+check "new round from a template: times, break and settings prefilled" 'echo "$NF" | grep -q "name=\"start_time\" required value=\"08:00\"" && echo "$NF" | grep -q "name=\"end_time\" required value=\"16:00\"" && echo "$NF" | grep -q "value=\"Mittagspause\"" && echo "$NF" | grep -q "<option value=\"day\" selected>" && echo "$NF" | grep -q "id=\"location\" name=\"location\" maxlength=\"200\" value=\"Hauptgebäude\"" && echo "$NF" | grep -q "id=\"booking_deadline_hours\" name=\"booking_deadline_hours\" min=\"0\" max=\"720\" required value=\"48\"" && echo "$NF" | grep -q "<option value=\"$TID\" selected>Elternsprechtag ganzer Tag</option>" && echo "$NF" | grep -q "aus „Elternsprechtag ganzer Tag“ sind eingetragen"'
+check "unknown template: empty form" 'curl -s -b "$J" "$B/admin/round/new?template=999999" | grep -q "name=\"start_time\" required value=\"14:00\""'
+loc=$(curl -s -o /dev/null -w '%{redirect_url}' -b "$J" -d "csrf=$T" "$B/admin/templates/from-round/$RID"); TFR=$(echo "$loc" | grep -o '[0-9]*/edit$' | grep -o '^[0-9]*')
+check "template from a round: times of the first day, settings of the round" '[ -n "$TFR" ] && E=$(curl -s -b "$J" "$B/admin/templates/$TFR/edit"); echo "$E" | grep -q "value=\"$(DBQ "SELECT DATE_FORMAT(start_time, \"%H:%i\") FROM tp_round_days WHERE round_id=$RID ORDER BY day_date, start_time LIMIT 1")\"" && echo "$E" | grep -q "Vorlage aus der Runde erstellt" && [ "$(DBQ "SELECT JSON_VALUE(data, \"$.booking_limit\") FROM tp_round_templates WHERE id=$TFR")" = "$(DBQ "SELECT booking_limit FROM tp_rounds WHERE id=$RID")" ]'
+loc=$(curl -s -o /dev/null -w '%{redirect_url}' -b "$J" -d "csrf=$T" "$B/admin/templates/from-round/$RID"); TFR2=$(echo "$loc" | grep -o '[0-9]*/edit$' | grep -o '^[0-9]*')
+check "second template from the same round gets its own name" '[ "$(DBQ "SELECT name FROM tp_round_templates WHERE id=$TFR2")" = "$(DBQ "SELECT name FROM tp_round_templates WHERE id=$TFR") (2)" ]'
+curl -s -o /dev/null -b "$J" --data-urlencode "csrf=$T" -d "name=Umbenannt&start_time=9:00&end_time=12:00&slot_minutes=20&booking_limit=none&booking_deadline_hours=1&cancel_deadline_hours=1&delete_after_hours=" "$B/admin/templates/$TFR/edit"
+check "template edited (no deletion period = never)" 'E=$(curl -s -b "$J" "$B/admin/templates"); echo "$E" | grep -q "<strong>Umbenannt</strong>" && echo "$E" | grep -q "09:00–12:00 Uhr · 20 Min. pro Termin · Mehrfachbuchungen erlaubt" && [ "$(DBQ "SELECT JSON_TYPE(JSON_EXTRACT(data, \"$.delete_after_hours\")) FROM tp_round_templates WHERE id=$TFR")" = NULL ]'
+curl -s -o /dev/null -b "$J" -d "csrf=$T" "$B/admin/templates/$TFR/delete"; curl -s -o /dev/null -b "$J" -d "csrf=$T" "$B/admin/templates/$TFR2/delete"
+check "template deleted; changes are logged" '[ "$(DBQ "SELECT COUNT(*) FROM tp_round_templates")" = 1 ] && L=$(curl -s -b "$J" "$B/admin/log"); echo "$L" | grep -q "Vorlage „Umbenannt“ gelöscht" && echo "$L" | grep -q "Vorlage „Elternsprechtag ganzer Tag“ angelegt" && echo "$L" | grep -q "Vorlage „Umbenannt“ bearbeitet (bisher"'
+
 echo "Several admins"
 T=$(curl -s -b "$J" "$B/admin/users" | csrf)
 curl -s -o /dev/null -b "$J" -d "csrf=$T&display_name=Frau+Zweitadmin&email=zweitadmin@example.org&role=admin" "$B/admin/users/new"
@@ -1015,6 +1037,7 @@ T=$(curl -s -b "$J" "$B/admin/users" | csrf)
 curl -s -o /dev/null -b "$J" -d "csrf=$T&username=zweitadmin@example.org&display_name=Frau+Zweitadmin&email=zweitadmin@example.org&role=teacher&is_active=1" "$B/admin/users/$UZ/edit"
 check "another admin can take the role away" '[ "$(DBQ "SELECT role FROM tp_users WHERE id=$UZ")" = teacher ] && [ "$(curl -s -o /dev/null -w "%{http_code}" -c "$JV" -b "$JV" "$B/admin/users")" = 404 ] && curl -s -c "$JV" -b "$JV" "$B/admin" | grep -q "Meine Terminrunden" && [ "$(curl -s -o /dev/null -w "%{http_code}" -c "$JV" -b "$JV" "$B/admin/round/$RID")" = 404 ]'
 check "log: only for admins" '[ "$(curl -s -o /dev/null -w "%{http_code}" -c "$JV" -b "$JV" "$B/admin/log")" = 404 ] && ! curl -s -c "$JV" -b "$JV" "$B/admin" | grep -q "href=\"/admin/log\"" && curl -s -b "$J" "$B/admin" | grep -q "href=\"/admin/log\">Protokoll</a>"'
+check "templates: teachers can use them, but not maintain them" '[ "$(curl -s -o /dev/null -w "%{http_code}" -c "$JV" -b "$JV" "$B/admin/templates")" = 404 ] && curl -s -c "$JV" -b "$JV" "$B/admin/round/new?template=$TID" | grep -q "name=\"start_time\" required value=\"08:00\"" && ! curl -s -c "$JV" -b "$JV" "$B/admin/round/$(DBQ "SELECT MAX(id) FROM tp_rounds WHERE user_id=$UZ")" | grep -q "Als Vorlage speichern" && [ "$(curl -s -o /dev/null -w "%{http_code}" -c "$JV" -b "$JV" -d "csrf=$TV" "$B/admin/templates/from-round/$RV")" = 404 ]'
 NLOG=$(DBQ "SELECT COUNT(*) FROM tp_audit_log")
 TV=$(curl -s -c "$JV" -b "$JV" "$B/admin" | csrf)
 loc=$(curl -s -o /dev/null -w '%{redirect_url}' -c "$JV" -b "$JV" --data-urlencode "csrf=$TV" -d "title=Eigene+Runde&booking_deadline_hours=0&cancel_deadline_hours=0&day_dates%5B%5D=$(date -d '+21 day' +%F)&start_time=14:00&end_time=15:00&slot_minutes=15" "$B/admin/round/new")
@@ -1030,6 +1053,7 @@ curl -s -o /dev/null -b "$J" -d "csrf=$T&confirm=1" "$B/admin/users/$UZ/delete"
 curl -s -o /dev/null -b "$J" -d "csrf=$T&confirm=1" "$B/admin/users/$UT/delete"
 curl -s -o /dev/null -b "$J" --data-urlencode "csrf=$T" --data-urlencode $'controller_contact=Sabrina Test\nTeststraße 1\n12345 Teststadt\nE-Mail: sabrina@example.org' "$B/admin/texts/operator"
 check "cleaned up: one admin again, original details" '[ "$(DBQ "SELECT COUNT(*) FROM tp_users WHERE role=\"admin\"")" = 1 ] && curl -s "$B/impressum" | grep -q "Teststraße 1"'
+curl -s -o /dev/null -b "$J" -d "csrf=$T" "$B/admin/templates/$TID/delete"
 check "log: entries of a deleted account stay, marked as deleted" 'curl -s -b "$J" "$B/admin/log" | grep -q "Frau Zweitadmin <span class=\"small muted\">(gelöscht)</span>"'
 check "log: no data of parents (names of bookings)" '[ "$(DBQ "SELECT COUNT(*) FROM tp_audit_log WHERE message LIKE \"%Max Muster%\" OR message LIKE \"%@example.org%\"")" = 0 ] && [ "$(DBQ "SELECT COUNT(*) FROM tp_audit_log WHERE message LIKE \"%: Buchung %\"")" -gt 0 ]'
 DBQ "INSERT INTO tp_audit_log (created_at, user_id, actor, message) SELECT NOW() - INTERVAL 1 DAY, NULL, 'Altlast', CONCAT('Alter Eintrag ', seq) FROM seq_1_to_150; INSERT INTO tp_audit_log (created_at, user_id, actor, message) VALUES (NOW() - INTERVAL 100 DAY, NULL, 'Altlast', 'Abgelaufener Eintrag')"

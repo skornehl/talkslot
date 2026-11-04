@@ -45,6 +45,10 @@ $csrf = Csrf::adminField();
       <button type="submit" class="button"><?= $round['is_active'] ? 'Deaktivieren' : 'Aktivieren' ?></button></form>
     <a class="button" href="<?= e(url('/admin/round/' . $rid . '/print')) ?>" target="_blank" rel="noopener">Druckansicht / PDF</a>
     <a class="button" href="#duplicate" data-open-details="duplicate">Duplizieren …</a>
+    <?php if (App\Auth::isAdmin()): ?>
+    <form method="post" action="<?= e(url('/admin/templates/from-round/' . $rid)) ?>" class="inline" data-once><?= $csrf ?>
+      <button type="submit" class="button">Als Vorlage speichern</button></form>
+    <?php endif; ?>
     <form method="post" action="<?= e(url('/admin/round/' . $rid . '/delete')) ?>" class="inline" data-confirm="Runde „<?= e($round['title']) ?>“ mit allen Tagen und Buchungen endgültig löschen?"><?= $csrf ?>
       <button type="submit" class="button button-danger">Löschen</button></form>
   </div>

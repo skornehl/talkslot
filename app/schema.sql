@@ -131,6 +131,16 @@ CREATE TABLE IF NOT EXISTS settings (
   value TEXT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Templates for new rounds (data: times, breaks and settings as JSON; not "settings", that is a table name), maintained by admins, usable by everybody.
+CREATE TABLE IF NOT EXISTS round_templates (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  data TEXT NOT NULL,
+  created_at DATETIME NOT NULL,
+  updated_at DATETIME NOT NULL,
+  UNIQUE KEY uq_templates_name (name)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Log of the changes made by admins (who, when, what), without data of parents.
 -- Deleted after audit_log_days (default 90). actor: name at the time of the change.
 CREATE TABLE IF NOT EXISTS audit_log (

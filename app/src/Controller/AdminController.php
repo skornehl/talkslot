@@ -76,10 +76,17 @@ final class AdminController
         ['GET', '#^/page/(imprint|privacy)/([a-z]{2})$#', 'pageForm'],
         ['POST', '#^/page/(imprint|privacy)/([a-z]{2})$#', 'pageSave'],
         ['GET', '#^/log$#', 'auditLog'],
+        ['GET', '#^/templates$#', 'templates'],
+        ['GET', '#^/templates/new$#', 'templateForm'],
+        ['POST', '#^/templates/new$#', 'templateSave'],
+        ['GET', '#^/templates/(\d+)/edit$#', 'templateForm'],
+        ['POST', '#^/templates/(\d+)/edit$#', 'templateSave'],
+        ['POST', '#^/templates/(\d+)/delete$#', 'templateDelete'],
+        ['POST', '#^/templates/from-round/(\d+)$#', 'templateFromRound'],
     ];
 
     /** Paths that only the admin role may access */
-    private const ADMIN_ONLY = '#^/(users|texts|page|log)(/|$)#';
+    private const ADMIN_ONLY = '#^/(users|texts|page|log|templates)(/|$)#';
 
     public function dispatch(string $path, string $method): void
     {
@@ -207,6 +214,23 @@ final class AdminController
     private function roundForm(?int $id = null, array $errors = [], ?array $data = null, ?array $dayData = null): void
     {
         $round = $id ? $this->round($id) : null;
+        // New round from a template: times, breaks and settings prefilled (still editable)
+        $template = null;
+        if (!$round && $data === null && ctype_digit(Http::query('template'))) {
+            $row = Db::one('SELECT * FROM round_templates WHERE id = ?', [(int) Http::query('template')]);
+            if ($row) {
+                $template = $row['name'];
+                $s = self::templateSettings($row);
+                $data = [
+                    'title' => '', 'slug' => '', 'description' => $s['description'], 'location' => $s['location'],
+                    'source_lang' => I18n::defaultLanguage(), 'is_active' => 1,
+                    'booking_deadline_hours' => $s['booking_deadline_hours'], 'cancel_deadline_hours' => $s['cancel_deadline_hours'],
+                    'delete_after_hours' => $s['delete_after_hours'], 'random_suffix' => 1, 'code_required' => $s['code_required'],
+                    'booking_limit' => $s['booking_limit'], 'remind_parents' => $s['remind_parents'], 'user_id' => Auth::id(),
+                ];
+                $dayData = ['dates' => [''], 'start' => $s['start'], 'end' => $s['end'], 'minutes' => $s['minutes'], 'breaks' => $s['breaks']];
+            }
+        }
         $data ??= $round ?? [
             'title' => '', 'slug' => '', 'description' => '', 'location' => '', 'source_lang' => I18n::defaultLanguage(), 'is_active' => 1,
             'booking_deadline_hours' => 24, 'cancel_deadline_hours' => 12,
@@ -220,6 +244,8 @@ final class AdminController
             'owners' => Auth::isAdmin() ? self::ownerChoices((int) ($round['user_id'] ?? 0)) : [],
             'dayData' => $dayData ?? self::defaultDayData(),
             'errors' => $errors,
+            'templates' => $round ? [] : Db::all('SELECT id, name FROM round_templates ORDER BY name'),
+            'template' => $template,
         ]);
     }
 
@@ -716,25 +742,8 @@ final class AdminController
             }
         }
         $errors = array_merge($errors, self::timeErrors($start, $end, $minutes));
-
-        $bs = $arr('break_start');
-        $be = $arr('break_end');
-        $bl = $arr('break_label');
-        $breaks = [];
-        foreach ($bs as $i => $s) {
-            $e = $be[$i] ?? '';
-            $label = mb_substr($bl[$i] ?? '', 0, 100);
-            if ($s === '' && $e === '') {
-                continue;
-            }
-            $ns = Time::normalizeTime($s);
-            $ne = Time::normalizeTime($e);
-            if (!$ns || !$ne || $ns >= $ne) {
-                $errors[] = 'Pause ' . ($i + 1) . ': Bitte Start- und Endzeit angeben (Start vor Ende).';
-                continue;
-            }
-            $breaks[] = [$ns, $ne, $label];
-        }
+        [$breaks, $breakErrors] = self::breaksInput();
+        $errors = array_merge($errors, $breakErrors);
 
         $dayData = [
             'dates' => $dates ?: [''],
@@ -753,6 +762,36 @@ final class AdminController
     }
 
     private const NO_SLOTS = 'Mit diesen Zeiten und Pausen entsteht kein einziger Termin.';
+
+    /**
+     * Breaks from the form (break_start[], break_end[], break_label[]); empty rows are skipped.
+     * @return array{0:list<array{0:string,1:string,2:string}>,1:list<string>} [breaks as [start, end, label], errors]
+     */
+    private static function breaksInput(): array
+    {
+        $arr = static fn (string $k): array => array_values(array_map(
+            static fn ($v) => is_string($v) ? trim($v) : '',
+            is_array($_POST[$k] ?? null) ? $_POST[$k] : []
+        ));
+        $be = $arr('break_end');
+        $bl = $arr('break_label');
+        $breaks = [];
+        $errors = [];
+        foreach ($arr('break_start') as $i => $s) {
+            $e = $be[$i] ?? '';
+            if ($s === '' && $e === '') {
+                continue;
+            }
+            $ns = Time::normalizeTime($s);
+            $ne = Time::normalizeTime($e);
+            if (!$ns || !$ne || $ns >= $ne) {
+                $errors[] = 'Pause ' . ($i + 1) . ': Bitte Start- und Endzeit angeben (Start vor Ende).';
+                continue;
+            }
+            $breaks[] = [$ns, $ne, mb_substr($bl[$i] ?? '', 0, 100)];
+        }
+        return [$breaks, $errors];
+    }
 
     /** Shared check of time range and appointment duration (create and edit). */
     private static function timeErrors(?string $start, ?string $end, string $minutes): array
@@ -1579,6 +1618,172 @@ final class AdminController
     }
 
     // ---------------------------------------------------------------- Helpers
+
+    // ---------------------------------------------------------------- Templates for new rounds
+
+    private const TEMPLATE_DEFAULTS = [
+        'start' => '14:00', 'end' => '18:00', 'minutes' => 15, 'breaks' => [],
+        'booking_deadline_hours' => 24, 'cancel_deadline_hours' => 12, 'delete_after_hours' => 24,
+        'booking_limit' => 'round', 'code_required' => 0, 'remind_parents' => 1, 'location' => '', 'description' => '',
+    ];
+
+    /** Settings of a template, completed with the defaults (breaks as [start, end, label] in HH:MM). */
+    private static function templateSettings(array $row): array
+    {
+        $s = json_decode((string) $row['data'], true);
+        return array_replace(self::TEMPLATE_DEFAULTS, array_intersect_key(is_array($s) ? $s : [], self::TEMPLATE_DEFAULTS));
+    }
+
+    /** Short description for the list, e.g. "08:00–16:00 Uhr, 15 Min., 1 Pause". */
+    private static function templateSummary(array $s): string
+    {
+        $parts = [$s['start'] . '–' . $s['end'] . ' Uhr', (int) $s['minutes'] . ' Min. pro Termin'];
+        if ($s['breaks']) {
+            $parts[] = implode(', ', array_map(static fn ($b) => ($b[2] !== '' ? $b[2] . ' ' : 'Pause ') . $b[0] . '–' . $b[1], $s['breaks']));
+        }
+        $parts[] = ['round' => 'ein Termin pro Person', 'day' => 'ein Termin pro Person und Tag'][$s['booking_limit']] ?? 'Mehrfachbuchungen erlaubt';
+        if ($s['location'] !== '') {
+            $parts[] = 'Ort: ' . $s['location'];
+        }
+        return implode(' · ', $parts);
+    }
+
+    private function templates(): void
+    {
+        $rows = Db::all('SELECT * FROM round_templates ORDER BY name');
+        foreach ($rows as &$row) {
+            $row['summary'] = self::templateSummary(self::templateSettings($row));
+        }
+        unset($row);
+        $this->render('admin/templates', ['title' => 'Vorlagen', 'templates' => $rows]);
+    }
+
+    private function template(int $id): array
+    {
+        return Db::one('SELECT * FROM round_templates WHERE id = ?', [$id]) ?? $this->notFound();
+    }
+
+    private function templateForm(?int $id = null, array $errors = [], ?array $data = null): void
+    {
+        $row = $id ? $this->template($id) : null;
+        $data ??= ['name' => $row['name'] ?? ''] + ($row ? self::templateSettings($row) : self::TEMPLATE_DEFAULTS);
+        $this->render('admin/template_form', [
+            'title' => $row ? 'Vorlage bearbeiten' : 'Neue Vorlage',
+            'row' => $row,
+            'data' => $data,
+            'dayData' => ['dates' => [''], 'start' => $data['start'], 'end' => $data['end'], 'minutes' => $data['minutes'], 'breaks' => $data['breaks']],
+            'errors' => $errors,
+        ]);
+    }
+
+    private function templateSave(?int $id = null): void
+    {
+        $row = $id ? $this->template($id) : null;
+        $start = Time::normalizeTime(Http::post('start_time'));
+        $end = Time::normalizeTime(Http::post('end_time'));
+        $minutes = Http::post('slot_minutes');
+        [$breaks, $errors] = self::breaksInput();
+        $deleteAfter = Http::post('delete_after_hours');
+        $data = [
+            'name' => trim(Http::post('name')),
+            'start' => $start ? fmt_time($start) : Http::post('start_time'),
+            'end' => $end ? fmt_time($end) : Http::post('end_time'),
+            'minutes' => (int) $minutes,
+            'breaks' => array_map(static fn ($b) => [fmt_time($b[0]), fmt_time($b[1]), $b[2]], $breaks),
+            'booking_deadline_hours' => Http::post('booking_deadline_hours'),
+            'cancel_deadline_hours' => Http::post('cancel_deadline_hours'),
+            'delete_after_hours' => $deleteAfter,
+            'booking_limit' => in_array(Http::post('booking_limit'), BookingService::LIMITS, true) ? Http::post('booking_limit') : 'round',
+            'code_required' => Http::post('code_required') === '1' ? 1 : 0,
+            'remind_parents' => Http::post('remind_parents') === '1' ? 1 : 0,
+            'location' => trim(Http::post('location')),
+            'description' => trim(str_replace("\r\n", "\n", Http::post('description'))),
+        ];
+        if ($data['name'] === '' || mb_strlen($data['name']) > 100) {
+            $errors[] = 'Bitte einen Namen für die Vorlage angeben (max. 100 Zeichen).';
+        } elseif (Db::value('SELECT id FROM round_templates WHERE name = ? AND id <> ?', [$data['name'], $id ?? 0]) !== null) {
+            $errors[] = 'Eine Vorlage mit diesem Namen gibt es bereits.';
+        }
+        $errors = array_merge($errors, self::timeErrors($start, $end, $minutes));
+        if (!$errors && !SlotGenerator::compute($start, $end, (int) $minutes, array_map(
+            static fn ($b) => ['start_time' => $b[0], 'end_time' => $b[1]], $breaks
+        ))) {
+            $errors[] = self::NO_SLOTS;
+        }
+        foreach (['booking_deadline_hours' => 'Buchungsfrist', 'cancel_deadline_hours' => 'Änderungsfrist'] as $field => $label) {
+            if (!ctype_digit((string) $data[$field]) || (int) $data[$field] > 720) {
+                $errors[] = "$label: ganze Zahl zwischen 0 und 720 Stunden.";
+            }
+        }
+        if ($deleteAfter !== '' && (!ctype_digit($deleteAfter) || (int) $deleteAfter > 8760)) {
+            $errors[] = 'Löschfrist: leer lassen (nie löschen) oder 0–8760 Stunden.';
+        }
+        if (mb_strlen($data['location']) > 200) {
+            $errors[] = 'Ort: höchstens 200 Zeichen.';
+        }
+        if (mb_strlen($data['description']) > 5000) {
+            $errors[] = 'Der Beschreibungstext ist zu lang (max. 5000 Zeichen).';
+        }
+        if ($errors) {
+            $this->templateForm($id, $errors, $data);
+            return;
+        }
+        $settings = ['start' => $data['start'], 'end' => $data['end'], 'minutes' => $data['minutes'], 'breaks' => $data['breaks'],
+            'booking_deadline_hours' => (int) $data['booking_deadline_hours'], 'cancel_deadline_hours' => (int) $data['cancel_deadline_hours'],
+            'delete_after_hours' => $deleteAfter === '' ? null : (int) $deleteAfter] + $data;
+        unset($settings['name']);
+        $json = json_encode($settings, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
+        if ($row) {
+            Db::run('UPDATE round_templates SET name = ?, data = ?, updated_at = ? WHERE id = ?', [$data['name'], $json, Time::nowSql(), $id]);
+            $this->audit('Vorlage „' . $data['name'] . '“ bearbeitet' . ($row['name'] !== $data['name'] ? ' (bisher „' . $row['name'] . '“)' : ''));
+        } else {
+            Db::insert('INSERT INTO round_templates (name, data, created_at, updated_at) VALUES (?, ?, ?, ?)', [$data['name'], $json, Time::nowSql(), Time::nowSql()]);
+            $this->audit('Vorlage „' . $data['name'] . '“ angelegt');
+        }
+        $this->flash('success', 'Vorlage gespeichert. Sie steht jetzt beim Anlegen einer neuen Runde zur Auswahl.');
+        Http::redirect('/admin/templates');
+    }
+
+    private function templateDelete(int $id): void
+    {
+        $row = $this->template($id);
+        Db::run('DELETE FROM round_templates WHERE id = ?', [$id]);
+        $this->audit('Vorlage „' . $row['name'] . '“ gelöscht');
+        $this->flash('success', 'Vorlage gelöscht. Bereits angelegte Runden bleiben unverändert.');
+        Http::redirect('/admin/templates');
+    }
+
+    /** Admin: new template from a round (times and breaks of its first day, settings of the round). */
+    private function templateFromRound(int $roundId): void
+    {
+        $round = $this->round($roundId);
+        $day = Db::one('SELECT * FROM round_days WHERE round_id = ? ORDER BY day_date, start_time LIMIT 1', [$roundId]);
+        $settings = [
+            'booking_deadline_hours' => (int) $round['booking_deadline_hours'], 'cancel_deadline_hours' => (int) $round['cancel_deadline_hours'],
+            'delete_after_hours' => $round['delete_after_hours'] === null ? null : (int) $round['delete_after_hours'],
+            'booking_limit' => (string) $round['booking_limit'], 'code_required' => (int) $round['code_required'],
+            'remind_parents' => (int) $round['remind_parents'], 'location' => (string) ($round['location'] ?? ''),
+            'description' => (string) ($round['description'] ?? ''),
+        ];
+        if ($day) {
+            $settings += ['start' => fmt_time($day['start_time']), 'end' => fmt_time($day['end_time']), 'minutes' => (int) $day['slot_minutes'],
+                'breaks' => array_map(
+                    static fn ($b) => [fmt_time($b['start_time']), fmt_time($b['end_time']), (string) ($b['label'] ?? '')],
+                    Db::all('SELECT * FROM day_breaks WHERE day_id = ? ORDER BY start_time', [$day['id']])
+                )];
+        }
+        $name = mb_substr($round['title'], 0, 90);
+        for ($n = 2; Db::value('SELECT id FROM round_templates WHERE name = ?', [$name]) !== null; $n++) {
+            $name = mb_substr($round['title'], 0, 90) . " ($n)";
+        }
+        $id = Db::insert(
+            'INSERT INTO round_templates (name, data, created_at, updated_at) VALUES (?, ?, ?, ?)',
+            [$name, json_encode($settings + self::TEMPLATE_DEFAULTS, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR), Time::nowSql(), Time::nowSql()]
+        );
+        $this->audit('Vorlage „' . $name . '“ aus der Runde erstellt', $roundId);
+        $this->flash('success', 'Vorlage aus der Runde erstellt (Zeiten und Pausen des ersten Tages, Einstellungen der Runde). Bitte Namen und Angaben prüfen.');
+        Http::redirect('/admin/templates/' . $id . '/edit');
+    }
 
     // ---------------------------------------------------------------- Admin log
 

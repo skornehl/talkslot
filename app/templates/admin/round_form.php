@@ -7,6 +7,22 @@ $action = $round ? url('/admin/round/' . (int) $round['id'] . '/edit') : url('/a
 <h1><?= e($title) ?></h1>
 <?php require __DIR__ . '/_errors.php'; ?>
 
+<?php if (!empty($templates)): ?>
+<form method="get" action="<?= e(url('/admin/round/new')) ?>" class="card inline-form" aria-label="Vorlage">
+  <div>
+    <label for="template">Vorlage</label>
+    <select id="template" name="template">
+      <option value="">– ohne Vorlage –</option>
+      <?php foreach ($templates as $tp): ?>
+        <option value="<?= (int) $tp['id'] ?>"<?= ($template ?? null) === $tp['name'] ? ' selected' : '' ?>><?= e($tp['name']) ?></option>
+      <?php endforeach; ?>
+    </select>
+  </div>
+  <button type="submit" class="button">Übernehmen</button>
+  <?php if (!empty($template)): ?><p class="hint">Zeiten, Pausen und Einstellungen aus „<?= e($template) ?>“ sind eingetragen. Fehlt nur noch Titel und Datum; alles lässt sich noch ändern.</p><?php endif; ?>
+</form>
+<?php endif; ?>
+
 <form method="post" action="<?= e($action) ?>" class="card form-grid" data-once>
   <?= Csrf::adminField() ?>
   <?php if (!empty($owners)): ?>
