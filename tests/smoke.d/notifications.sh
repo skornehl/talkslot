@@ -104,6 +104,7 @@ $cfg = require "$root/config/config.php";
 $broken = ["mail" => ["from_address" => ""] + $cfg["mail"]] + $cfg;
 $id = static fn (string $name): int => (int) App\Db::value("SELECT id FROM bookings WHERE name = ?", [$name]);
 $kinds = static fn (int $booking): string => (string) App\Db::value("SELECT GROUP_CONCAT(kind ORDER BY kind) FROM mail_outbox WHERE booking_id = ?", [$booking]);
+$due = static fn (): string => App\Outbox::due() ? "due" : "-";
 App\Outbox::process();
 $out = [];
 // A reminder that failed and is no longer due (the round stopped reminding) is dropped
@@ -117,26 +118,37 @@ App\Db::run("UPDATE rounds SET remind_parents = 0 WHERE title = 'Outbox Test'");
 App\Db::run("UPDATE mail_outbox SET next_attempt_at = NOW()");
 $out[] = "$queued/$failed/" . App\Outbox::process()["mails_dropped"] . "/" . App\Db::value("SELECT mail_failed_at IS NOT NULL FROM bookings WHERE id = ?", [$id("Outbox Eltern")]);
 App\Db::run("UPDATE rounds SET remind_parents = 1 WHERE title = 'Outbox Test'");
-// Hourly limit used up: reminders wait for the next hour, single mails go out first anyway
+// Hourly limit used up: reminders wait for the next hour (a page request does not start a run for them),
+// single mails go out first anyway
 App\Config::load(["mail_queue" => ["hourly_limit" => 1] + $cfg["mail_queue"]] + $cfg);
 App\Settings::set("mail_hour", App\Time::now()->format("Y-m-d H") . "|1");
 App\Outbox::queueBooking($id("Outbox Warteschlange"), "reminder");
 App\Outbox::queueBooking($id("Outbox Eintrag"), "changed");
-$out[] = App\Outbox::process()["mails_sent"] . "/" . $kinds($id("Outbox Warteschlange")) . "/" . (int) (App\Settings::get("mail_hour") === App\Time::now()->format("Y-m-d H") . "|2");
-App\Db::run("DELETE FROM mail_outbox WHERE booking_id = ?", [$id("Outbox Warteschlange")]);
+$sent = App\Outbox::process()["mails_sent"];
+$heldBack = $due();
 App\Config::load($cfg);
+$out[] = "$sent/" . $kinds($id("Outbox Warteschlange")) . "/" . (int) (App\Settings::get("mail_hour") === App\Time::now()->format("Y-m-d H") . "|2") . "/$heldBack/" . $due();
+App\Db::run("DELETE FROM mail_outbox WHERE booking_id = ?", [$id("Outbox Warteschlange")]);
 // At most that many mails per run, the rest waits for the next one
 App\Outbox::queueBooking($id("Outbox Eltern"), "changed");
 App\Outbox::queueBooking($id("Outbox Nachtrag Neu"), "changed");
 $out[] = App\Outbox::process(1)["mails_sent"] . "/" . App\Db::value("SELECT COUNT(*) FROM mail_outbox WHERE booking_id IN (?, ?)", [$id("Outbox Eltern"), $id("Outbox Nachtrag Neu")]);
 App\Outbox::process();
-// Only one run at a time: while another connection holds the lock, a run sends nothing
+// Only one run at a time: while another connection holds the lock, a run sends nothing (the cron job waits
+// for it a little); the same installation in another database on the server does not block it
 $db = $cfg["db"];
 $other = new PDO("mysql:host={$db["host"]};port={$db["port"]};dbname={$db["name"]}", $db["user"], $db["pass"]);
-$other->query("SELECT GET_LOCK(" . $other->quote(App\Db::table("outbox")) . ", 0)");
+$lock = "SHA1(CONCAT(DATABASE(), '.', " . $other->quote(App\Db::table("outbox")) . "))";
+$other->query("SELECT GET_LOCK($lock, 0)");
 App\Outbox::queueBooking($id("Outbox Nachtrag Neu"), "changed");
-$out[] = json_encode(App\Outbox::process());
+$started = microtime(true);
+$out[] = json_encode(App\Outbox::process()) . "/" . App\Outbox::process(null, null, 1)["mails_sent"] . "/" . (int) (microtime(true) - $started >= 1);
+$other->query("SELECT RELEASE_LOCK($lock)");
+$other->query("USE information_schema");
+$other->query("SELECT GET_LOCK($lock, 0)");
+$out[] = App\Outbox::process()["mails_sent"];
 $other = null;
+App\Outbox::queueBooking($id("Outbox Nachtrag Neu"), "changed");
 // After a page request: only once the response has gone out (PHP-FPM), and not when turned off
 $out[] = App\Outbox::afterResponse(static fn (): bool => false) . "/" . (App\Outbox::due() ? "due" : "-");
 App\Config::load(["mail_queue" => ["after_response" => false] + $cfg["mail_queue"]] + $cfg);
@@ -153,6 +165,22 @@ App\Db::run("UPDATE bookings SET email = NULL WHERE id = ?", [$id("Outbox Ohne M
 App\Outbox::queueBooking($id("Outbox Ohne Mail"), "changed");
 $out[] = json_encode(App\Outbox::process());
 App\Db::run("UPDATE bookings SET email = ? WHERE id = ?", [$address, $id("Outbox Ohne Mail")]);
+// A change notice waiting behind a confirmation of the same run: the confirmation has the current details,
+// so the notice is not sent as well (removed when the confirmation went out, skipped though already read)
+App\Outbox::queueBooking($id("Outbox Eltern"), "booked");
+$now = App\Time::nowSql();
+App\Db::run("INSERT INTO mail_outbox (kind, booking_id, priority, next_attempt_at, created_at) VALUES ('changed', ?, 1, ?, ?)", [$id("Outbox Eltern"), $now, $now]);
+App\Db::run("UPDATE mail_outbox SET next_attempt_at = ? WHERE booking_id = ?", [$now, $id("Outbox Eltern")]);
+$out[] = json_encode(App\Outbox::process()) . "/" . $kinds($id("Outbox Eltern"));
+// Too old to be sent (the next clean-up gives it up): no run after a page request for it
+App\Db::run("INSERT INTO mail_outbox (kind, booking_id, priority, next_attempt_at, created_at) VALUES ('changed', ?, 1, ?, ?)",
+    [$id("Outbox Eintrag"), $now, App\Time::now()->modify("-49 hours")->format("Y-m-d H:i:s")]);
+$out[] = $due();
+App\Db::run("DELETE FROM mail_outbox WHERE booking_id = ?", [$id("Outbox Eintrag")]);
+// A reminder for a booking moved to another day in the meantime is not sent (the right one is queued then)
+$booking = ["remind_parents" => 1, "remind_ok" => 1, "notified_at" => null] + (array) App\BookingService::findById($id("Outbox Eltern"));
+$out[] = var_export(App\Reminders::deliver(["day_date" => App\Time::today()] + $booking), true) . ","
+    . var_export(App\Reminders::deliver(["day_date" => App\Time::now()->modify("+1 day")->format("Y-m-d")] + $booking), true);
 // Summaries from the outbox: only while they are still right
 $uid = (int) App\Db::value("SELECT user_id FROM rounds WHERE title = 'Outbox Test'");
 $day = (int) App\Db::value("SELECT d.id FROM round_days d JOIN rounds r ON r.id = d.round_id WHERE r.title = 'Outbox Test'");
@@ -166,22 +194,41 @@ $out[] = implode(",", array_map(static fn ($r) => var_export($r, true), [
 echo implode("|", $out);
 PHP
 )
-check "outbox: a reminder no longer due is dropped; the hourly limit holds back reminders, not single mails; a limit per run; one run at a time; after a page request only once the response is out; obsolete mails dropped; summaries only while right ($NK)" \
-  '[ "$NK" = "reminder/1/1/1|1/reminder/1|1/1|{\"mails_sent\":0,\"mails_failed\":0,\"mails_dropped\":0}|0/due|0|1/-/closed|{\"mails_sent\":0,\"mails_failed\":0,\"mails_dropped\":2}|NULL,NULL,NULL,true,true" ]'
+check "outbox: a reminder no longer due is dropped; the hourly limit holds back reminders, not single mails (and starts no run for them); a limit per run; one run at a time per database (the cron job waits a little); after a page request only once the response is out; obsolete mails dropped, also a change notice made obsolete in the same run; nothing due that is too old; no reminder for another day; summaries only while right ($NK)" \
+  '[ "$NK" = "reminder/1/1/1|1/reminder/1/-/due|1/1|{\"mails_sent\":0,\"mails_failed\":0,\"mails_dropped\":0}/0/1|1|0/due|0|1/-/closed|{\"mails_sent\":0,\"mails_failed\":0,\"mails_dropped\":2}|{\"mails_sent\":1,\"mails_failed\":0,\"mails_dropped\":1}/|-|NULL,true|NULL,NULL,NULL,true,true" ]'
 
 # Given up after 48 hours (also when no attempt was made, e.g. without a cron job)
 DBQ "INSERT INTO tp_mail_outbox (kind, booking_id, priority, next_attempt_at, created_at) VALUES ('changed', $(n_id "Outbox Ohne Mail"), 1, NOW() - INTERVAL 49 HOUR, NOW() - INTERVAL 49 HOUR)"
 NO=$($DC exec -T app php /srv/app/bin/cron.php -v)
-check "after 48 hours: given up, the entry shows \"E-Mail nicht zugestellt\" without a retry" 'echo "$NO" | grep -qE "mails_expired +1" && [ "$(DBQ "SELECT COUNT(*) FROM tp_mail_outbox WHERE booking_id = $(n_id "Outbox Ohne Mail")")" = 0 ] && curl -s -b "$J" "$B/admin/round/$NR" | grep -q "data-mail-failed title=\"Es folgt kein weiterer Versuch[^\"]*\">E-Mail nicht zugestellt</span>"'
+NG=$(DBQ "SELECT COUNT(*) FROM tp_mail_outbox WHERE booking_id = $(n_id "Outbox Ohne Mail")")
+DBQ "INSERT INTO tp_mail_outbox (kind, booking_id, priority, next_attempt_at, created_at) VALUES ('reminder', $(n_id "Outbox Ohne Mail"), 3, NOW() + INTERVAL 1 HOUR, NOW())"
+check "after 48 hours: given up, the entry shows \"E-Mail nicht zugestellt\" without a retry (also with another mail queued since)" 'echo "$NO" | grep -qE "mails_expired +1" && [ "$NG" = 0 ] && curl -s -b "$J" "$B/admin/round/$NR" | grep -q "data-mail-failed title=\"Es folgt kein weiterer Versuch[^\"]*\">E-Mail nicht zugestellt</span>"'
+DBQ "DELETE FROM tp_mail_outbox WHERE booking_id = $(n_id "Outbox Ohne Mail")"
 DBQ "INSERT INTO tp_mail_outbox (kind, booking_id, priority, attempts, next_attempt_at, created_at) VALUES ('changed', $(n_id "Outbox Eintrag"), 1, 3, NOW() + INTERVAL 1 HOUR, NOW() - INTERVAL 3 HOUR)"
 check "admins see mails waiting for more than two hours (cron job or mail server)" 'curl -s -b "$J" "$B/admin" | has "1 E-Mail(s) warten seit über 2 Stunden auf den Versand"'
 DBQ "DELETE FROM tp_mail_outbox WHERE booking_id = $(n_id "Outbox Eintrag")"
 check "… and no notice without them" '! curl -s -b "$J" "$B/admin" | has "data-mails-late"'
 check "web cron: reports the mails it sent" 'curl -s -X POST -H "X-Cron-Token: $CTOK" "$B/cron" | has "\"mails_sent\":"'
 
+# The reminder turned on later (DS-12): bookings made while the round did not remind get none, neither the
+# parents' own one nor a teacher's entry whose parents got a confirmation then; one made afterwards does
+NL=$(curl -s -o /dev/null -w '%{redirect_url}' -b "$J" --data-urlencode "csrf=$NT" -d "title=Outbox+Spaet&remind_parents_field=1&booking_limit=none&is_active=1&booking_deadline_hours=0&cancel_deadline_hours=0&day_dates%5B%5D=$(date -d '+1 day' +%F)&start_time=09:00&end_time=11:00&slot_minutes=30" "$B/admin/round/new" | grep -o '[0-9]*$')
+NLS=$(slugof "$NL")
+NL1=$(book "$NLS" "Outbox Spaet Eltern" "$(n_addr 6)")
+NLSL=($(curl -s -b "$J" "$B/admin/round/$NL" | grep -o '/admin/slot/[0-9]*/book'))
+curl -s -o /dev/null -b "$J" --data-urlencode "csrf=$NT" -d "name=Outbox+Spaet+Eintrag&email=$(n_addr 7)&lang=de&send_mail=1" "$B${NLSL[0]}"
+check "round without the reminder: parents' booking and teacher's entry confirmed by mail, neither may be reminded" '[[ "$NL1" == 303* ]] && [ "$(n_mails "$(n_addr 6)")" = 1 ] && [ "$(n_mails "$(n_addr 7)")" = 1 ] && [ "$(DBQ "SELECT GROUP_CONCAT(CONCAT(remind_ok, notified_at IS NOT NULL) ORDER BY name) FROM tp_bookings WHERE name IN (\"Outbox Spaet Eltern\", \"Outbox Spaet Eintrag\")")" = "01,01" ]'
+curl -s -o /dev/null -b "$J" --data-urlencode "csrf=$NT" -d "title=Outbox+Spaet&remind_parents_field=1&remind_parents=1&booking_limit=none&is_active=1&booking_deadline_hours=0&cancel_deadline_hours=0" "$B/admin/round/$NL/edit"
+NL2=$(book "$NLS" "Outbox Spaet Neu" "$(n_addr 8)")
+DBQ "UPDATE tp_bookings SET created_at = created_at - INTERVAL 2 DAY, updated_at = updated_at - INTERVAL 2 DAY, notified_at = notified_at - INTERVAL 2 DAY WHERE name LIKE 'Outbox Spaet %'"
+NO=$($DC exec -T app php /srv/app/bin/cron.php -v)
+check "reminder turned on afterwards: the parents who booked before get none, the ones who booked after it do" '[ "$(DBQ "SELECT remind_parents FROM tp_rounds WHERE id = $NL")" = 1 ] && [[ "$NL2" == 303* ]] && [ "$(n_mails "$(n_addr 8)" Erinnerung)" = 1 ] && [ "$(n_mails "$(n_addr 6)" Erinnerung)" = 0 ] && [ "$(DBQ "SELECT GROUP_CONCAT(CONCAT(remind_ok, reminded_at IS NULL) ORDER BY name) FROM tp_bookings WHERE name IN (\"Outbox Spaet Eltern\", \"Outbox Spaet Neu\")")" = "01,10" ]'
+check "… nor the teacher's entry confirmed while the round did not remind" '[ "$(n_mails "$(n_addr 7)" Erinnerung)" = 0 ] && [ "$(DBQ "SELECT CONCAT(remind_ok, reminded_at IS NULL) FROM tp_bookings WHERE name = \"Outbox Spaet Eintrag\"")" = "01" ]'
+curl -s -o /dev/null -b "$J" -d "csrf=$NT&confirm=1" "$B/admin/round/$NL/delete"
+
 # Migration 19 on a database of the version before: parents' bookings remind as their round does, entries by
 # the teacher only after a new confirmation; the last confirmation counts as sent at the last change
-DBQ "DROP TABLE tp_mail_outbox; ALTER TABLE tp_bookings DROP INDEX uq_bookings_mail_token, DROP COLUMN mail_token_hash, DROP COLUMN remind_ok, DROP COLUMN notified_at, DROP COLUMN mail_failed_at; UPDATE tp_settings SET value = '$((LATEST - 1))' WHERE name = 'schema_version'"
+DBQ "DROP TABLE tp_mail_outbox; ALTER TABLE tp_bookings DROP INDEX uq_bookings_mail_token, DROP COLUMN mail_token_hash, DROP COLUMN remind_ok, DROP COLUMN notified_at, DROP COLUMN mail_failed_at; UPDATE tp_settings SET value = '18' WHERE name = 'schema_version'"
 curl -s -o /dev/null "$B/"
-check "migration $LATEST: outbox and booking columns created, bookings carried over" '[ "$(DBQ "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=\"tp_bookings\" AND COLUMN_NAME IN (\"remind_ok\",\"notified_at\",\"mail_failed_at\",\"mail_token_hash\")")" = 4 ] && [ "$(DBQ "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=\"tp_mail_outbox\"")" = 1 ] && [ "$(DBQ "SELECT value FROM tp_settings WHERE name=\"schema_version\"")" = "$LATEST" ] && [ "$(DBQ "SELECT GROUP_CONCAT(CONCAT(remind_ok, notified_at = updated_at) ORDER BY name) FROM tp_bookings WHERE name IN (\"Outbox Eltern\", \"Outbox Eintrag\")")" = "01,11" ] && [ "$(curl -s -o /dev/null -w "%{http_code}" "$N2L")" = 200 ]'
+check "migration 19: outbox and booking columns created, bookings carried over" '[ "$(DBQ "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=\"tp_bookings\" AND COLUMN_NAME IN (\"remind_ok\",\"notified_at\",\"mail_failed_at\",\"mail_token_hash\")")" = 4 ] && [ "$(DBQ "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=\"tp_mail_outbox\"")" = 1 ] && [ "$(DBQ "SELECT value FROM tp_settings WHERE name=\"schema_version\"")" = "$LATEST" ] && [ "$(DBQ "SELECT GROUP_CONCAT(CONCAT(remind_ok, notified_at = updated_at) ORDER BY name) FROM tp_bookings WHERE name IN (\"Outbox Eltern\", \"Outbox Eintrag\")")" = "01,11" ] && [ "$(curl -s -o /dev/null -w "%{http_code}" "$N2L")" = 200 ]'
 curl -s -o /dev/null -b "$J" -d "csrf=$NT&confirm=1" "$B/admin/round/$NR/delete"
