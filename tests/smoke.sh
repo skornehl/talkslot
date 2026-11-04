@@ -1096,6 +1096,13 @@ $DC exec -T app php /srv/app/bin/cron.php >/dev/null
 check "log: entries deleted after 90 days" '[ "$(DBQ "SELECT COUNT(*) FROM tp_audit_log WHERE message = \"Abgelaufener Eintrag\"")" = 0 ] && [ "$(DBQ "SELECT COUNT(*) FROM tp_audit_log WHERE actor = \"Altlast\"")" = 150 ]'
 DBQ "DELETE FROM tp_audit_log WHERE actor = 'Altlast'"
 
+# Further checks in tests/smoke.d/*.sh (one file per topic, sourced here in name order). They run
+# with all helpers and variables of this script (B, J, T, RID, DBQ, DC, check, book, …) and must
+# leave the data as they found it (the cleanup below expects the round $RID).
+for f in "$(dirname "$0")"/smoke.d/*.sh; do
+  [ -f "$f" ] && . "$f"
+done
+
 echo "Cleanup"
 docker compose -f "$(dirname "$0")/../dev/compose.yml" exec -T db mariadb -uapp -papp-dev-only talkslot -e \
   "UPDATE tp_round_days SET day_date = DATE_SUB(CURDATE(), INTERVAL 1 DAY) WHERE round_id = $RID"
