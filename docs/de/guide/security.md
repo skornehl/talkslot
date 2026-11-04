@@ -37,6 +37,10 @@ keine öffentlichen Issues.
 **Tokens**
 - Persönliche Änderungslinks, Einladungs- und Passwortlinks sind 256-Bit-Zufallstokens; gespeichert wird
   nur ihr SHA-256-Hash.
+- Die Seite des Termins gibt den Änderungslink nur als Kopie, als Kalenderdatei auf einen POST-Button hin
+  (keine zusätzliche GET-Adresse mit dem Token) und, wo das Gerät es anbietet, über einen Teilen-Dialog mit
+  Warnhinweis heraus. Eine Bestätigungs-E-Mail an eine dort eingegebene Adresse ist auf zwei pro Buchung
+  innerhalb von 24 Stunden begrenzt.
 - Rundencodes: 8 Zeichen aus 31 Symbolen (31⁸ Kombinationen), Fehlversuche begrenzt auf 30 pro 15 Minuten
   und gekürzter IP-Adresse.
 

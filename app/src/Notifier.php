@@ -31,13 +31,22 @@ final class Notifier
         return self::toParent($b, 'reminder', $token);
     }
 
-    private static function toParent(array $b, string $type, #[\SensitiveParameter] ?string $token): bool
+    /**
+     * The confirmation again, sent from the appointment page to an address entered there (it is not stored),
+     * in the language of the page. The footer says why the mail was sent.
+     */
+    public static function parentConfirmation(array $b, #[\SensitiveParameter] string $token, string $email): bool
+    {
+        return self::toParent(['email' => $email, 'lang' => I18n::lang()] + $b, 'booked', $token, 'mail.footer.copy');
+    }
+
+    private static function toParent(array $b, string $type, #[\SensitiveParameter] ?string $token, string $footer = 'mail.footer'): bool
     {
         $email = (string) ($b['email'] ?? '');
         if ($email === '') {
             return false;
         }
-        return (bool) I18n::with((string) $b['lang'], static function () use ($b, $type, $token, $email): bool {
+        return (bool) I18n::with((string) $b['lang'], static function () use ($b, $type, $token, $email, $footer): bool {
             $b = Translator::localize($b, (int) $b['round_id'], I18n::lang()); // title in the parents' language (also in the .ics)
             $link = $token !== null ? abs_url('/b/' . $token, ['lang' => I18n::lang()]) : '';
             $vars = [
@@ -66,7 +75,7 @@ final class Notifier
                 $body .= "\n\n" . t('mail.ics.hint');
             }
             $replyTo = filter_var((string) ($b['teacher_email'] ?? ''), FILTER_VALIDATE_EMAIL) ? (string) $b['teacher_email'] : null;
-            return Mailer::send($email, t("mail.$type.subject", $vars), $body . "\n\n" . t('mail.footer', $vars), $attachments, $replyTo);
+            return Mailer::send($email, t("mail.$type.subject", $vars), $body . "\n\n" . t($footer, $vars), $attachments, $replyTo);
         });
     }
 }

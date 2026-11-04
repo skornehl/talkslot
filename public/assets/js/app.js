@@ -3,7 +3,8 @@
  *
  * Remember-me entries in the browser (localStorage, key "tp_bookings"):
  * Only stored when parents tick "Remember my appointment on this device" (form.remember):
- * { <round-id>: { u: <link to the booking page>, l: <appointment label> } }.
+ * { <round-id>: [ { u: <link to the booking page>, l: <appointment label>, d: <date YYYY-MM-DD> }, … ] },
+ * one entry per booking (siblings), removed after the day of the appointment.
  * Nothing is sent to the server. Pages also work without JavaScript.
  *
  * Admin area (teacher): translation in the browser via the Translator API; sessionStorage
@@ -30,14 +31,40 @@ var L = (function () {
   'use strict';
 
   var KEY = 'tp_bookings';
+  var MAX_PER_ROUND = 10;
+  // Only links to own bookings on this site (/b/<token>, possibly with subdirectory and language)
+  var OWN_LINK = /^(\/[A-Za-z0-9_-]+)*\/b\/[A-Za-z0-9_-]{43}(\?lang=[a-z]{2})?$/;
 
+  function path(u) {
+    return String(u || '').split('?')[0];
+  }
+
+  function today() {
+    var d = new Date();
+    return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
+  }
+
+  // Remember-me entries as a list per round. The earlier format (one entry per round) is read as a list
+  // of one. Entries of past days are left out: the booking itself is deleted the day after the appointment.
   function load() {
+    var raw;
     try {
-      var data = JSON.parse(window.localStorage.getItem(KEY) || '{}');
-      return data && typeof data === 'object' ? data : {};
+      raw = JSON.parse(window.localStorage.getItem(KEY) || '{}');
     } catch (e) {
-      return {};
+      raw = null;
     }
+    var data = {};
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+      return data;
+    }
+    var now = today();
+    Object.keys(raw).forEach(function (id) {
+      var list = (Array.isArray(raw[id]) ? raw[id] : [raw[id]]).filter(function (e) {
+        return e && typeof e === 'object' && typeof e.u === 'string' && !(typeof e.d === 'string' && e.d < now);
+      });
+      if (list.length) { data[id] = list; }
+    });
+    return data;
   }
 
   function save(data) {
@@ -50,62 +77,104 @@ var L = (function () {
     } catch (e) { /* storage unavailable – no remember-me entry */ }
   }
 
-  // After booking: remember the appointment (only with explicit consent)
+  function entryOf(el) {
+    return { u: el.getAttribute('data-remember-url'), l: el.getAttribute('data-remember-label'), d: el.getAttribute('data-remember-date') };
+  }
+
+  // Removes the entries with this link (from every round)
+  function without(data, u) {
+    Object.keys(data).forEach(function (id) {
+      data[id] = data[id].filter(function (e) { return path(e.u) !== path(u); });
+      if (!data[id].length) { delete data[id]; }
+    });
+    return data;
+  }
+
+  // Expired entries go on every page view, not only when the round is opened again
+  try {
+    if (window.localStorage.getItem(KEY) !== null) { save(load()); }
+  } catch (e) { /* storage unavailable */ }
+
+  // After booking: remember the appointment (only with explicit consent). Each booking gets its own
+  // entry, so that a sibling's booking does not replace the first one.
   var remember = document.querySelector('[data-remember-round]');
   if (remember) {
     var d1 = load();
-    d1[remember.getAttribute('data-remember-round')] = {
-      u: remember.getAttribute('data-remember-url'),
-      l: remember.getAttribute('data-remember-label')
-    };
+    var id1 = remember.getAttribute('data-remember-round');
+    var e1 = entryOf(remember);
+    d1[id1] = (d1[id1] || []).filter(function (e) { return path(e.u) !== path(e1.u); }).concat([e1]).slice(-MAX_PER_ROUND);
     save(d1);
   }
 
-  // Appointment changed: update an existing remember-me entry (never create one)
+  // Appointment page opened or changed: update an existing entry (label, date), never create one
   var update = document.querySelector('[data-update-round]');
   if (update) {
     var d2 = load();
     var id2 = update.getAttribute('data-update-round');
-    // only update the same appointment (same link), never take over someone else's
-    if (d2[id2] && String(d2[id2].u || '').split('?')[0] === String(update.getAttribute('data-remember-url')).split('?')[0]) {
-      d2[id2] = { u: update.getAttribute('data-remember-url'), l: update.getAttribute('data-remember-label') };
+    var e2 = entryOf(update);
+    // only the same appointment (same link), never take over someone else's
+    if ((d2[id2] || []).some(function (e) { return path(e.u) === path(e2.u); })) {
+      d2[id2] = d2[id2].map(function (e) { return path(e.u) === path(e2.u) ? e2 : e; });
       save(d2);
     }
   }
 
-  // Appointment cancelled: remove the remember-me entry
-  var forget = document.querySelector('[data-forget-round]');
+  // Appointment cancelled, or its link leads nowhere any more: remove the entry
+  var forget = document.querySelector('[data-forget-url]');
   if (forget) {
-    var d3 = load();
-    delete d3[forget.getAttribute('data-forget-round')];
-    save(d3);
+    save(without(load(), forget.getAttribute('data-forget-url')));
   }
 
-  // Round page: show your own appointment instead of the slot list
+  // Round page: show the own appointments instead of the slot list. "Book another appointment" shows the
+  // form again without deleting anything; after an error or a language switch the form stays open.
   var round = document.querySelector('[data-round-id]');
-  if (round) {
+  var box = document.getElementById('remembered');
+  var area = document.getElementById('booking-area');
+  if (round && box && area) {
     var roundId = round.getAttribute('data-round-id');
-    var entry = load()[roundId];
-    var box = document.getElementById('remembered');
-    var area = document.getElementById('booking-area');
-    if (entry && entry.u && box && area && !document.getElementById('form-errors')) {
-      box.querySelector('[data-remembered-label]').textContent = entry.l || '';
-      var link = box.querySelector('[data-remembered-link]');
-      // Only allow links to own bookings on this site (/b/<token>, possibly with subdirectory and language)
-      if (/^(\/[A-Za-z0-9_-]+)*\/b\/[A-Za-z0-9_-]{43}(\?lang=[a-z]{2})?$/.test(entry.u)) {
+    var entries = load()[roundId] || [];
+    var list = box.querySelector('[data-remembered-list]');
+    var item = box.querySelector('[data-remembered-item]');
+    var another = box.querySelector('[data-remembered-another]');
+    var showForm = function () {
+      area.hidden = false;
+      another.hidden = true;
+      var first = area.querySelector('input:not([type=hidden]), button');
+      if (first) { first.focus(); }
+    };
+    entries.forEach(function (entry, i) {
+      var li = item.content.firstElementChild.cloneNode(true);
+      var label = li.querySelector('[data-remembered-label]');
+      var link = li.querySelector('[data-remembered-link]');
+      var drop = li.querySelector('[data-remembered-forget]');
+      label.textContent = entry.l || '';
+      label.id = 'remembered-' + i;
+      if (OWN_LINK.test(entry.u)) {
         link.setAttribute('href', entry.u);
+        link.setAttribute('aria-describedby', label.id);
       } else {
         link.hidden = true;
       }
-      box.hidden = false;
-      area.hidden = true;
-      box.querySelector('[data-remembered-forget]').addEventListener('click', function () {
-        var d4 = load();
-        delete d4[roundId];
-        save(d4);
-        box.hidden = true;
-        area.hidden = false;
+      drop.setAttribute('aria-describedby', label.id);
+      drop.addEventListener('click', function () {
+        save(without(load(), entry.u));
+        li.remove();
+        if (list.children.length) {
+          list.querySelector('[data-remembered-forget]').focus();
+        } else {
+          box.hidden = true;
+          showForm();
+        }
       });
+      list.appendChild(li);
+    });
+    if (entries.length) {
+      box.hidden = false;
+      if (!document.getElementById('form-errors') && !area.hasAttribute('data-keep-open')) {
+        area.hidden = true;
+        another.hidden = false;
+        another.addEventListener('click', showForm);
+      }
     }
   }
 
@@ -115,22 +184,38 @@ var L = (function () {
     errors.focus();
   }
 
-  // Copy link (admin)
+  // Copy link (admin, and the parents' appointment page with texts in the page language; there the
+  // button is hidden until JavaScript runs)
   Array.prototype.forEach.call(document.querySelectorAll('[data-copy]'), function (btn) {
+    var original = btn.textContent;
+    var copied = btn.getAttribute('data-copy-done') || L('Kopiert ✓');
+    var ask = btn.getAttribute('data-copy-prompt') || L('Link kopieren:');
+    btn.hidden = false;
     btn.addEventListener('click', function () {
       var text = btn.getAttribute('data-copy');
-      var original = btn.textContent;
       var done = function () {
-        btn.textContent = L('Kopiert ✓');
+        btn.textContent = copied;
         setTimeout(function () { btn.textContent = original; }, 2000);
       };
       if (navigator.clipboard && window.isSecureContext) {
-        navigator.clipboard.writeText(text).then(done, function () { window.prompt(L('Link kopieren:'), text); });
+        navigator.clipboard.writeText(text).then(done, function () { window.prompt(ask, text); });
       } else {
-        window.prompt(L('Link kopieren:'), text);
+        window.prompt(ask, text);
       }
     });
   });
+
+  // Share the appointment link where the device offers it (mostly phones), e.g. to oneself in a
+  // messenger. The page says next to it that whoever has the link can change the appointment.
+  if (typeof navigator.share === 'function') {
+    Array.prototype.forEach.call(document.querySelectorAll('[data-share]'), function (btn) {
+      btn.hidden = false;
+      btn.addEventListener('click', function () {
+        navigator.share({ title: btn.getAttribute('data-share-title') || document.title, text: btn.getAttribute('data-share-text') || '', url: btn.getAttribute('data-share') })
+          .catch(function () { /* cancelled */ });
+      });
+    });
+  }
 
   // Button that opens a <details> section further down (e.g. "Duplizieren …")
   Array.prototype.forEach.call(document.querySelectorAll('[data-open-details]'), function (link) {

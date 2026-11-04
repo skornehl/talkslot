@@ -211,3 +211,67 @@ check('day form: warning with the number of bookings, none without bookings',
     && str_contains($dayForm(0), 'Bereits gebuchte Eltern werden bei einer Änderung NICHT automatisch benachrichtigt.'));
 check('English: the warnings are translated',
     App\AdminI18n::with('en', static fn () => str_contains($dayForm(1), '1 appointment(s) booked on this day. Parents are NOT notified automatically')));
+
+echo "Appointment page: keeping the link (copy, calendar, share, mail), siblings on one device\n";
+$mToken = str_repeat('Tk', 21) . 'x';
+$mBooking = ['id' => 5, 'round_id' => 7, 'title' => 'Elternsprechtag 7b', 'teacher_name' => 'Frau Berger', 'name' => 'Max Muster', 'location' => '',
+    'day_date' => '2030-01-07', 'start_time' => '14:00:00', 'end_time' => '14:15:00', 'cancel_deadline_hours' => 24];
+$manage = static fn (array $vars = []): string => App\View::capture('public/manage', $vars + [
+    'booking' => $mBooking, 'token' => $mToken, 'canChange' => true, 'canMove' => true, 'days' => [], 'csrf' => '1.abc',
+    'done' => '', 'mailed' => false, 'remember' => false, 'errors' => [], 'open' => '', 'mailTo' => '',
+]);
+$mp = $manage(['days' => [['date' => '2030-01-08', 'slots' => [['id' => 9, 'start_time' => '15:00:00', 'end_time' => '15:15:00']]]]]);
+$mLink = abs_url('/b/' . $mToken);
+// One form per action: [action => opening tag of its <details> or '' outside of one]
+$section = static fn (string $html, string $id): string => (string) (preg_match('#<details class="card" id="' . $id . '"[^>]*>.*?</details>#s', $html, $m) ? $m[0] : '');
+check('copy: button with the personal link, hidden until JavaScript runs, texts in the page language',
+    str_contains($mp, '<button type="button" class="button" hidden data-copy="' . e($mLink) . '" data-copy-done="Kopiert ✓" data-copy-prompt="Link kopieren:">Link kopieren</button>')
+    && str_contains(App\I18n::with('en', $manage), 'data-copy-done="Copied ✓" data-copy-prompt="Copy link:">Copy link</button>'));
+check('calendar: a POST button on the appointment link (action=ics with the form token), no address of its own',
+    (bool) preg_match('#<form method="post" action="/b/' . $mToken . '" class="inline" data-calendar>\s*<input type="hidden" name="csrf" value="1\.abc">\s*<input type="hidden" name="action" value="ics">\s*<button type="submit" class="button">In Kalender eintragen</button>#', $mp)
+    && !str_contains($mp, '.ics"'));
+check('share: hidden unless the device offers it, the hint about the link is always shown',
+    str_contains($mp, 'hidden data-share="' . e($mLink) . '" data-share-title="Elternsprechtag 7b" data-share-text="' . e(fmt_slot('2030-01-07', '14:00:00', '14:15:00')) . '" aria-describedby="share-hint">Teilen …</button>')
+    && str_contains($mp, '<p class="small" id="share-hint">Wer diesen Link hat, kann den Termin ändern oder absagen.'));
+check('moving and cancelling are folded away (closed details) below the link',
+    str_contains($section($mp, 'change'), '<details class="card" id="change">') && str_contains($section($mp, 'change'), 'name="action" value="move"')
+    && str_contains($section($mp, 'cancel'), '<details class="card" id="cancel">') && str_contains($section($mp, 'cancel'), 'name="action" value="cancel"')
+    && strpos($mp, 'data-copy=') < strpos($mp, 'id="change"'));
+check('after an error the section of the sent form is open, the others stay closed',
+    str_contains($manage(['open' => 'cancel', 'errors' => ['x']]), '<details class="card" id="cancel" open>') && str_contains($manage(['open' => 'cancel']), '<details class="card" id="change">')
+    && str_contains($manage(['open' => 'move']), '<details class="card" id="change" open>') && str_contains($manage(['open' => 'move']), '<details class="card" id="confirm-mail">'));
+$mailForm = $section($manage(['open' => 'mail', 'mailTo' => 'tippfehler@example', 'errors' => ['x']]), 'confirm-mail');
+check('confirmation by mail: own form (action=mail, required address), entered address kept after an error',
+    str_contains($section($mp, 'confirm-mail'), 'name="action" value="mail"') && str_contains($section($mp, 'confirm-mail'), 'name="email" required maxlength="254"')
+    && str_contains($section($mp, 'confirm-mail'), 'value=""') && str_contains($mailForm, '<details class="card" id="confirm-mail" open>') && str_contains($mailForm, 'value="tippfehler@example"'));
+check('confirmation by mail is offered after the deadline too, moving and cancelling are not',
+    ($locked = $manage(['canChange' => false, 'canMove' => false])) !== '' && str_contains($locked, 'id="confirm-mail"') && str_contains($locked, 'data-calendar')
+    && !str_contains($locked, 'id="cancel"') && !str_contains($locked, 'id="change"'));
+check('message after sending the confirmation; unknown done values show nothing',
+    str_contains($manage(['done' => 'sent']), '<p><strong>Die Bestätigung wurde an die angegebene E-Mail-Adresse gesendet.</strong></p>') && !str_contains($manage(['done' => 'x']), 'alert-success'));
+check('remember-me entry carries the date of the appointment (after booking and when updating)',
+    str_contains($manage(['remember' => true]), '<div hidden data-remember-round="7" data-remember-url="/b/' . $mToken . '" data-remember-label="' . e(fmt_slot('2030-01-07', '14:00:00', '14:15:00')) . '" data-remember-date="2030-01-07"></div>')
+    && str_contains($mp, '<div hidden data-update-round="7" data-remember-url="/b/' . $mToken . '" data-remember-label="') && str_contains($mp, 'data-remember-date="2030-01-07"></div>'));
+check('cancelled booking and a link that leads nowhere: the browser drops the entry of that link',
+    str_contains(App\View::capture('public/cancelled', ['booking' => $mBooking + ['is_active' => 1, 'slug' => 'runde-7b'], 'forgetUrl' => '/b/' . $mToken]), '<div hidden data-forget-url="/b/' . $mToken . '"></div>')
+    && str_contains(App\View::capture('public/notfound', ['title' => 'Nicht gefunden', 'text' => 'weg', 'forgetUrl' => '/b/' . $mToken]), '<div hidden data-forget-url="/b/' . $mToken . '"></div>')
+    && !str_contains(App\View::capture('public/notfound', ['title' => 'Nicht gefunden', 'text' => 'weg']), 'data-forget-url'));
+// Round page: one item per remembered booking (template), "book another" without deleting anything
+$roundPage = static fn (array $old): string => App\View::capture('public/round', [
+    'round' => ['id' => 7, 'slug' => 'runde-7b', 'title' => 'Elternsprechtag 7b', 'teacher_name' => 'Frau Berger', 'booking_limit' => 'round'],
+    'days' => [], 'csrf' => '1.abc', 'access' => '', 'errors' => [], 'old' => $old,
+]);
+$rp = $roundPage([]);
+check('round page: list with an item template per remembered booking, per-item "forget" with the hint that the booking stays',
+    str_contains($rp, '<ul class="remembered-list" data-remembered-list></ul>') && (bool) preg_match('#<template data-remembered-item>\s*<li>.*data-remembered-link.*data-remembered-forget>Merker auf diesem Gerät löschen</button>.*</li>\s*</template>#s', $rp)
+    && str_contains($rp, '<p class="hint">Das löscht nur den Merker auf diesem Gerät. Ihr Termin bleibt bestehen.</p>'));
+check('round page: "book another appointment (sibling)" button, hidden until JavaScript finds an entry',
+    str_contains($rp, '<button type="button" class="button" hidden data-remembered-another>Weiteren Termin buchen (z. B. für ein Geschwisterkind)</button>'));
+check('round page: the form stays open after a submission (language switch, error), not on a plain visit',
+    str_contains($roundPage(['name' => 'Max']), '<div id="booking-area" data-keep-open>') && str_contains($rp, '<div id="booking-area">'));
+$newKeys = ['manage.copy', 'manage.copied', 'manage.calendar', 'manage.share.hint', 'manage.mail', 'manage.mail.text', 'manage.mail.limit', 'mail.footer.copy', 'round.remembered.another', 'round.remembered.forget_hint'];
+$untranslated = array_filter($newKeys, static fn (string $k): bool => count(array_unique(array_map(static fn ($l) => App\I18n::textIn($l, $k), App\I18n::languages()))) !== count(App\I18n::languages()));
+check('new texts of the appointment page exist in every parent language' . ($untranslated ? ' (same text: ' . implode(', ', $untranslated) . ')' : ''), !$untranslated);
+check('mail footer for a confirmation sent from the page: says why and that the address is not stored, same placeholders as the normal one',
+    str_contains(App\I18n::textIn('de', 'mail.footer.copy'), 'auf der Seite Ihres Termins eingegeben') && str_contains(App\I18n::textIn('en', 'mail.footer.copy'), 'is not stored')
+    && array_filter(App\I18n::languages(), static fn ($l) => preg_match_all('/\{\w+\}/', App\I18n::textIn($l, 'mail.footer.copy'), $a) && preg_match_all('/\{\w+\}/', App\I18n::textIn($l, 'mail.footer'), $b) && $a[0] === $b[0]) === App\I18n::languages());

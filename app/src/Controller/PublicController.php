@@ -10,6 +10,7 @@ use App\Config;
 use App\Db;
 use App\Http;
 use App\I18n;
+use App\IcsExport;
 use App\LegalTexts;
 use App\Markdown;
 use App\Notifier;
@@ -100,10 +101,11 @@ final class PublicController
         ]);
     }
 
-    private function notFound(string $text = '', int $status = 404): void
+    /** $forgetUrl: link of a booking that no longer exists – the browser drops its remember-me entry */
+    private function notFound(string $text = '', int $status = 404, string $forgetUrl = ''): void
     {
         http_response_code($status);
-        View::render('public/notfound', ['title' => t('notfound.title'), 'text' => $text !== '' ? $text : t('notfound.text')]);
+        View::render('public/notfound', ['title' => t('notfound.title'), 'text' => $text !== '' ? $text : t('notfound.text'), 'forgetUrl' => $forgetUrl]);
     }
 
     /** Only active rounds of active accounts, and only if the admin has provided the details for legal notice/privacy policy */
@@ -296,7 +298,7 @@ final class PublicController
         }
         $booking = BookingService::findByToken($token);
         if (!$booking) {
-            $this->notFound(t('manage.notfound'));
+            $this->notFound(t('manage.notfound'), 404, url('/b/' . $token));
             return;
         }
         $canChange = BookingService::canChange($booking);
@@ -314,6 +316,9 @@ final class PublicController
             'done' => Http::query('done'),
             'mailed' => Http::query('mail') === '1',
             'remember' => self::rememberValid($token, Http::query('remember')),
+            // After an error, the section of the form that was sent stays open (move, cancel, mail)
+            'open' => $errors ? Http::post('action') : '',
+            'mailTo' => $errors && Http::post('action') === 'mail' ? mb_substr(Http::post('email'), 0, 254) : '',
             'errors' => $errors,
         ]);
     }
@@ -327,12 +332,23 @@ final class PublicController
         }
         $booking = BookingService::findByToken($token);
         if (!$booking) {
-            $this->notFound(t('manage.notfound'));
+            $this->notFound(t('manage.notfound'), 404, url('/b/' . $token));
             return;
         }
-        $csrf = Csrf::checkPublic('manage:' . $booking['id'], $_POST['csrf'] ?? null);
+        $action = Http::post('action');
+        // The calendar file changes nothing: no minimum time, so it also works right after the page has loaded
+        $csrf = Csrf::checkPublic('manage:' . $booking['id'], $_POST['csrf'] ?? null, $action === 'ics' ? 0 : null);
         if ($csrf !== Csrf::OK) {
             $this->manage($token, [t($csrf === Csrf::TOO_FAST ? 'err.too_fast' : 'err.csrf')]);
+            return;
+        }
+        // Calendar file and confirmation mail do not change the booking: also after the deadline for changes
+        if ($action === 'ics') {
+            $this->calendarFile($booking, $token);
+            return;
+        }
+        if ($action === 'mail') {
+            $this->mailConfirmation($booking, $token);
             return;
         }
         if (!BookingService::canChange($booking)) {
@@ -340,7 +356,6 @@ final class PublicController
             return;
         }
 
-        $action = Http::post('action');
         if ($action === 'cancel') {
             if (Http::post('confirm') !== '1') {
                 $this->manage($token, [t('manage.cancel.confirm_required')]);
@@ -348,7 +363,12 @@ final class PublicController
             }
             BookingService::delete($booking);
             Notifier::parentCancelled($booking);
-            View::render('public/cancelled', ['title' => t('cancelled.title'), 'booking' => Translator::localize($booking, (int) $booking['round_id'], I18n::lang()), 'privacyRound' => $booking['slug']]);
+            View::render('public/cancelled', [
+                'title' => t('cancelled.title'),
+                'booking' => Translator::localize($booking, (int) $booking['round_id'], I18n::lang()),
+                'privacyRound' => $booking['slug'],
+                'forgetUrl' => url('/b/' . $token),
+            ]);
             return;
         }
 
@@ -377,6 +397,43 @@ final class PublicController
         }
 
         $this->manage($token);
+    }
+
+    /**
+     * The appointment as a calendar file, like the attachment of the confirmation mail (with the personal
+     * link in the description). Requested by a button (POST), so there is no extra address with the token
+     * that browsers or calendars could fetch or store on their own.
+     */
+    private function calendarFile(array $booking, #[\SensitiveParameter] string $token): void
+    {
+        $booking = Translator::localize($booking, (int) $booking['round_id'], I18n::lang());
+        header('Content-Type: text/calendar; charset=utf-8');
+        header('Content-Disposition: attachment; filename="termin.ics"');
+        echo IcsExport::forParent($booking, t('mail.ics.description', ['link' => abs_url('/b/' . $token, ['lang' => I18n::lang()])]));
+    }
+
+    /**
+     * Sends the confirmation (again) to an address entered on the page, e.g. by parents who gave none when
+     * booking. The address is only used for this mail and not stored. At most twice per booking within
+     * 24 hours, so that a link cannot be used to send mails from the school's address in bulk.
+     */
+    private function mailConfirmation(array $booking, #[\SensitiveParameter] string $token): void
+    {
+        $email = Http::post('email');
+        if (!is_valid_email($email)) {
+            $this->manage($token, [t('err.email')]);
+            return;
+        }
+        [$limit, $window] = RateLimiter::limits('confirm', 2, 86400);
+        if (!RateLimiter::hit('confirm', $limit, $window, 'booking:' . $booking['id'])) {
+            http_response_code(429);
+            $this->manage($token, [t('manage.mail.limit')]);
+            return;
+        }
+        if (Notifier::parentConfirmation($booking, $token, $email)) {
+            Http::redirect('/b/' . $token, ['done' => 'sent']);
+        }
+        $this->manage($token, [t('manage.mail.failed')]);
     }
 
     /** Shared validation for name/email/slot (also used by the admin). */

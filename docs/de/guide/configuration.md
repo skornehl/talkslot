@@ -103,6 +103,7 @@ womöglich eine Adresse (Mobilfunknetze, Schul-WLAN).
 | `attempt` | 150 pro Stunde | alle Buchungsversuche, auch mit Eingabefehlern |
 | `booking` | 30 pro Stunde | erfolgreiche Buchungen |
 | `manage` | 300 pro Stunde | Aufrufe von Änderungslinks |
+| `confirm` | 2 pro 24 Stunden | Bestätigungs-E-Mails, die Eltern sich auf der Seite ihres Termins schicken, pro Buchung statt pro IP-Adresse (das Zeitfenster kann nicht länger als 24 Stunden sein) |
 | `login` | 5 pro 15 Min. | fehlgeschlagene Admin-Anmeldungen |
 | `login_user` | 20 pro Stunde | fehlgeschlagene Anmeldungen **pro Konto** von Geräten, die sich dort noch nie angemeldet haben |
 | `login_device` | 20 pro Stunde | fehlgeschlagene Anmeldungen **pro bekanntem Gerät** (statt `login_user`) |

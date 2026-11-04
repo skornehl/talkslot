@@ -26,6 +26,11 @@ ask how long they are kept and state it in the privacy policy.
 - **Data minimisation:** a free-text name and an optional e-mail address, nothing else.
 - **E-mail address only for the appointment:** confirmation, changes, cancellation and, if the teacher
   turned it on for the round, a reminder the evening before. The privacy template names all of these.
+- **Confirmation by e-mail afterwards:** parents who gave no address when booking can have the
+  confirmation sent from the appointment page to an address they enter there. That address is used for
+  this one mail and not stored; its footer says so. At most twice per booking within 24 hours (rate limit
+  `confirm`, counted per booking), so that a change link cannot turn the school's sender address into a
+  mail relay.
 - **Entries made by the teacher:** the confirmation mail with the change link is ticked by default as soon
   as an address is entered. It is how parents who never saw the booking form learn about the entry, who is
   responsible and where to find the privacy notice (Art. 14 GDPR).
@@ -65,7 +70,13 @@ ask how long they are kept and state it in the privacy policy.
   allowed if it is strictly necessary for a service the user explicitly asked for. Preventing double
   bookings is in the teacher's interest, not the parents', so it would not qualify. That is why the
   "remember my appointment" feature is an **unticked checkbox**. Only when ticked, the browser stores the
-  link and label of the appointment in `localStorage`. Nothing is sent to the server.
+  link, label and date of the appointment in `localStorage`, one entry per booking (siblings). Nothing is
+  sent to the server. Entries are removed after a cancellation, when their link no longer finds a booking
+  and on the first page view after the day of the appointment, the day the booking itself is deleted.
+- **Keeping the change link:** the appointment page offers *Copy link* and *Add to calendar* (the
+  calendar file is answered to a POST button, so there is no second address with the token that browsers
+  or calendars could fetch on their own) and, where the device has it, *Share …* with the hint that anyone
+  holding the link can change the appointment.
 - **Light/dark choice:** only stored when chosen explicitly (`light` or `dark`); strictly necessary for
   that function, so no consent is needed. "Automatic" removes the entry.
 - **Booking limits** only compare with bookings of the same round, using data that is stored anyway. The
