@@ -273,6 +273,15 @@ loc=$(curl -s -o /dev/null -w '%{redirect_url}' -b "$J" -d "csrf=$T" "$B/admin/r
 RC=$(echo "$loc" | grep -o '[0-9]*$')
 check "duplicate round" 'curl -s -b "$J" "$B/admin" | grep -q "(Kopie)"'
 check "copy takes over current translations, nothing pending" 'A=$(curl -s -b "$J" "$B/admin/round/$RC"); echo "$A" | grep -q "(5 von 5 aktuell)" && echo "$A" | grep -q "value=\"\[TR\] Elternsprechtag Größe Übung (Kopie)\"" && echo "$A" | grep -q "data-pending=\"\""'
+# Duplicate with a new first day: all days keep their distance (and their breaks)
+NEWFIRST=$(date -d '+40 day' +%F)
+loc=$(curl -s -o /dev/null -w '%{redirect_url}' -b "$J" -d "csrf=$T&first_date=$NEWFIRST" "$B/admin/round/$RID/duplicate"); RS=$(echo "$loc" | grep -o '[0-9]*$')
+OFFS="SELECT GROUP_CONCAT(DATEDIFF(day_date, (SELECT MIN(day_date) FROM tp_round_days WHERE round_id = %s)), '/', start_time, '/', slot_minutes ORDER BY day_date) FROM tp_round_days WHERE round_id = %s"
+check "duplicate with first day: days shifted together, times and breaks kept, inactive" '[ -n "$RS" ] && [ "$RS" != "$RID" ] && [ "$(DBQ "SELECT MIN(day_date) FROM tp_round_days WHERE round_id=$RS")" = "$NEWFIRST" ] && [ "$(DBQ "$(printf "$OFFS" $RS $RS)")" = "$(DBQ "$(printf "$OFFS" $RID $RID)")" ] && [ "$(DBQ "SELECT COUNT(*) FROM tp_day_breaks k JOIN tp_round_days d ON d.id=k.day_id WHERE d.round_id=$RS")" = "$(DBQ "SELECT COUNT(*) FROM tp_day_breaks k JOIN tp_round_days d ON d.id=k.day_id WHERE d.round_id=$RID")" ] && [ "$(DBQ "SELECT is_active FROM tp_rounds WHERE id=$RS")" = 0 ] && curl -s -b "$J" "$B/admin/round/$RS" | grep -q "erster Tag am"'
+N=$(DBQ "SELECT COUNT(*) FROM tp_rounds")
+X=$(curl -s -L -b "$J" -d "csrf=$T&first_date=2026-02-30" "$B/admin/round/$RID/duplicate")
+check "duplicate with an invalid date: message, nothing created" 'echo "$X" | grep -q "gültiges Datum für den ersten Tag" && [ "$(DBQ "SELECT COUNT(*) FROM tp_rounds")" = "$N" ]'
+curl -s -o /dev/null -b "$J" -d "csrf=$T" "$B/admin/round/$RS/delete"
 
 echo "Regressions from the review"
 # Long title: slug > 80 characters stays unchanged when editing
@@ -931,6 +940,8 @@ check "second admin creates a round for a teacher" '[ -n "$RV" ] && [ "$(DBQ "SE
 curl -s -o /dev/null -c "$JV" -b "$JV" -d "csrf=$TV" "$B/admin/round/$RV/toggle"
 check "second admin activates it" '[ "$(DBQ "SELECT is_active FROM tp_rounds WHERE id=$RV")" = 1 ]'
 check "the first admin sees it too" 'curl -s -b "$J" "$B/admin/round/$RV" | grep -q "Von Zweitadmin"'
+FV=$(curl -s -c "$JV" -b "$JV" "$B/admin/round/$RV/edit")
+check "teacher choice marks only oneself with (Sie), listed first" '[ "$(echo "$FV" | grep -c "(Sie)</option>")" = 1 ] && echo "$FV" | grep -A1 "<select id=\"user_id\"" | grep -q "Frau Zweitadmin (Sie)"'
 curl -s -o /dev/null -c "$JV" -b "$JV" --data-urlencode "csrf=$TV" --data-urlencode $'controller_contact=Gemeinsame Schule\nSchulplatz 4\n12345 Teststadt\nE-Mail: schule@example.org' "$B/admin/texts/operator"
 check "second admin maintains the details for all" 'curl -s "$B/impressum" | grep -q "Schulplatz 4" && curl -s -b "$J" "$B/admin/texts" | grep -q "Schulplatz 4"'
 curl -s -o /dev/null -c "$JV" -b "$JV" -d "csrf=$TV&username=zweitadmin@example.org&display_name=Frau+Zweitadmin&email=zweitadmin@example.org&role=teacher&is_active=1" "$B/admin/users/$UZ/edit"

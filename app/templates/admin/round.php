@@ -43,11 +43,21 @@ $csrf = Csrf::adminField();
     <form method="post" action="<?= e(url('/admin/round/' . $rid . '/toggle')) ?>" class="inline"><?= $csrf ?>
       <button type="submit" class="button"><?= $round['is_active'] ? 'Deaktivieren' : 'Aktivieren' ?></button></form>
     <a class="button" href="<?= e(url('/admin/round/' . $rid . '/print')) ?>" target="_blank" rel="noopener">Druckansicht / PDF</a>
-    <form method="post" action="<?= e(url('/admin/round/' . $rid . '/duplicate')) ?>" class="inline" data-once><?= $csrf ?>
-      <button type="submit" class="button">Duplizieren</button></form>
+    <a class="button" href="#duplicate" data-open-details="duplicate">Duplizieren …</a>
     <form method="post" action="<?= e(url('/admin/round/' . $rid . '/delete')) ?>" class="inline" data-confirm="Runde „<?= e($round['title']) ?>“ mit allen Tagen und Buchungen endgültig löschen?"><?= $csrf ?>
       <button type="submit" class="button button-danger">Löschen</button></form>
   </div>
+  <details id="duplicate">
+    <summary>Runde duplizieren</summary>
+    <form method="post" action="<?= e(url('/admin/round/' . $rid . '/duplicate')) ?>" class="inline-form" data-once><?= $csrf ?>
+      <div>
+        <label for="first_date">Erster Tag der Kopie</label>
+        <input type="date" id="first_date" name="first_date" aria-describedby="dup-hint">
+      </div>
+      <button type="submit" class="button">Duplizieren</button>
+    </form>
+    <p class="hint" id="dup-hint">Übernimmt Tage, Zeiten, Pausen, gesperrte Termine, Einstellungen und Übersetzungen, aber keine Buchungen; die Kopie ist inaktiv. Mit Datum verschieben sich alle Tage um denselben Abstand (z. B. Tage am Di und Do → wieder Di und Do, wenn der erste Tag ein Dienstag ist). Ohne Datum behält die Kopie die bisherigen Daten.</p>
+  </details>
 </div>
 
 <?php if ($conflicts > 0): ?>

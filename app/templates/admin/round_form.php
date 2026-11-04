@@ -14,7 +14,7 @@ $action = $round ? url('/admin/round/' . (int) $round['id'] . '/edit') : url('/a
     <label for="user_id">Lehrkraft</label>
     <select id="user_id" name="user_id" aria-describedby="owner-hint">
       <?php foreach ($owners as $o): ?>
-        <option value="<?= (int) $o['id'] ?>"<?= (int) ($data['user_id'] ?? 0) === (int) $o['id'] ? ' selected' : '' ?>><?= e($o['display_name'] !== '' ? $o['display_name'] : $o['username']) ?><?= $o['role'] === 'admin' ? ' (Sie)' : '' ?><?= !$o['is_active'] ? ' (deaktiviert)' : '' ?></option>
+        <option value="<?= (int) $o['id'] ?>"<?= (int) ($data['user_id'] ?? 0) === (int) $o['id'] ? ' selected' : '' ?>><?= e($o['display_name'] !== '' ? $o['display_name'] : $o['username']) ?><?= (int) $o['id'] === App\Auth::id() ? ' (Sie)' : '' ?><?= !$o['is_active'] ? ' (deaktiviert)' : '' ?></option>
       <?php endforeach; ?>
     </select>
     <p class="hint" id="owner-hint">Die Runde erscheint bei dieser Lehrkraft, Eltern sehen ihren Namen und Zusammenfassungen gehen an sie.</p>

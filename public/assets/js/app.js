@@ -115,6 +115,20 @@
     });
   });
 
+  // Button that opens a <details> section further down (e.g. "Duplizieren …")
+  Array.prototype.forEach.call(document.querySelectorAll('[data-open-details]'), function (link) {
+    link.addEventListener('click', function () {
+      var box = document.getElementById(link.getAttribute('data-open-details'));
+      if (box) {
+        box.open = true;
+        var field = box.querySelector('input, select, button');
+        if (field) {
+          window.setTimeout(function () { field.focus(); }, 0);
+        }
+      }
+    });
+  });
+
   // Confirmation prompt before delete actions
   Array.prototype.forEach.call(document.querySelectorAll('form[data-confirm]'), function (form) {
     form.addEventListener('submit', function (ev) {

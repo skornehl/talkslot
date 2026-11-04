@@ -562,7 +562,18 @@ final class AdminController
     private function roundDuplicate(int $id): void
     {
         $round = $this->round($id);
-        $newId = Db::transaction(function () use ($round): int {
+        // Optional: new date of the first day; all days keep their distance to it
+        $firstDate = Http::post('first_date');
+        $shift = 0;
+        if ($firstDate !== '') {
+            $oldFirst = Db::value('SELECT MIN(day_date) FROM round_days WHERE round_id = ?', [$id]);
+            if (!Time::isDate($firstDate) || $oldFirst === null) {
+                $this->flash('error', $oldFirst === null ? 'Die Runde hat keine Tage, die verschoben werden könnten.' : 'Bitte ein gültiges Datum für den ersten Tag angeben.');
+                Http::redirect('/admin/round/' . $id);
+            }
+            $shift = (int) (new \DateTimeImmutable((string) $oldFirst))->diff(new \DateTimeImmutable($firstDate))->format('%r%a');
+        }
+        $newId = Db::transaction(function () use ($round, $shift): int {
             $now = Time::nowSql();
             $title = rtrim(mb_substr($round['title'] . ' (Kopie)', 0, 200));
             $newId = Db::insert(
@@ -591,7 +602,8 @@ final class AdminController
             foreach (Db::all('SELECT * FROM round_days WHERE round_id = ?', [$round['id']]) as $day) {
                 $dayId = Db::insert(
                     'INSERT INTO round_days (round_id, day_date, start_time, end_time, slot_minutes) VALUES (?, ?, ?, ?, ?)',
-                    [$newId, $day['day_date'], $day['start_time'], $day['end_time'], $day['slot_minutes']]
+                    [$newId, (new \DateTimeImmutable((string) $day['day_date']))->modify(sprintf('%+d days', $shift))->format('Y-m-d'),
+                     $day['start_time'], $day['end_time'], $day['slot_minutes']]
                 );
                 Db::run(
                     'INSERT INTO day_breaks (day_id, start_time, end_time, label) SELECT ?, start_time, end_time, label FROM day_breaks WHERE day_id = ?',
@@ -605,7 +617,9 @@ final class AdminController
             }
             return $newId;
         });
-        $this->flash('success', 'Runde dupliziert (ohne Buchungen, inaktiv). Bitte Titel und Daten anpassen.');
+        $this->flash('success', $firstDate !== ''
+            ? 'Runde dupliziert (ohne Buchungen, inaktiv), erster Tag am ' . fmt_date($firstDate) . '. Bitte den Titel prüfen.'
+            : 'Runde dupliziert (ohne Buchungen, inaktiv). Bitte Titel und Daten anpassen.');
         Http::redirect('/admin/round/' . $newId);
     }
 
@@ -1037,8 +1051,8 @@ final class AdminController
     {
         return Db::all(
             "SELECT id, display_name, username, role, is_active FROM users WHERE is_active = 1 OR id = ?
-              ORDER BY role = 'admin' DESC, display_name, username",
-            [$currentOwner]
+              ORDER BY id = ? DESC, display_name, username",
+            [$currentOwner, Auth::id()]
         );
     }
 
