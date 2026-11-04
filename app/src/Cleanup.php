@@ -88,6 +88,9 @@ final class Cleanup
             [Time::now()->modify('-15 months')->format('Y-m-d H:i:s')]
         );
 
+        // 8. Delete entries of the admin log after audit_log_days (default 90)
+        $stats['audit_log_deleted'] = Db::exec('DELETE FROM audit_log WHERE created_at < ?', [Time::now()->modify('-' . Audit::retentionDays() . ' days')->format('Y-m-d H:i:s')]);
+
         Settings::set('last_cleanup', (string) time());
         return $stats;
     }

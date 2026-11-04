@@ -131,6 +131,18 @@ CREATE TABLE IF NOT EXISTS settings (
   value TEXT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Log of the changes made by admins (who, when, what), without data of parents.
+-- Deleted after audit_log_days (default 90). actor: name at the time of the change.
+CREATE TABLE IF NOT EXISTS audit_log (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  created_at DATETIME NOT NULL,
+  user_id INT UNSIGNED NULL,
+  actor VARCHAR(254) NOT NULL,
+  message VARCHAR(1000) NOT NULL,
+  KEY idx_audit_created (created_at),
+  CONSTRAINT fk_audit_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Delivery log of the summary emails (prevents duplicate sends), without content
 CREATE TABLE IF NOT EXISTS sent_summaries (
   user_id INT UNSIGNED NOT NULL,

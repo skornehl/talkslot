@@ -62,8 +62,11 @@ return [
     'cleanup_on_request' => true,
     'cleanup_interval_minutes' => 15,
 
-    // Daily summary for teachers is sent for the next day from this hour on (local time)
+    // Daily summary for teachers and reminders to parents are sent for the next day from this hour on (local time)
     'summary_evening_hour' => 18,
+
+    // Log of the changes made by admins (Protokoll): entries are deleted after this many days
+    'audit_log_days' => 90,
 
     // Rate limits: [max. count, time window in seconds] per truncated IP (IPv4 /24, IPv6 /48).
     // Generous, because many parents may share a truncated IP (mobile network, school Wi-Fi).

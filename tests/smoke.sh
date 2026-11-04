@@ -25,7 +25,7 @@ check "CLI installer after installation: abort" 'dcx exec -T app php /srv/app/bi
 # Reinstall, this time via the web installer (same credentials as dev/reset.sh). It deletes
 # itself after success; the file is restored afterwards.
 INSTALL_BAK=$(mktemp); cp "$ROOT/public/install.php" "$INSTALL_BAK"
-dcx exec -T db mariadb -uapp -papp-dev-only talkslot -e "SET FOREIGN_KEY_CHECKS=0; DROP TABLE IF EXISTS tp_round_translations, tp_sent_summaries, tp_bookings, tp_slots, tp_day_breaks, tp_round_days, tp_rounds, tp_pages, tp_rate_limits, tp_settings, tp_users, tp_admin_users; CREATE TABLE tp_users (id INT)"
+dcx exec -T db mariadb -uapp -papp-dev-only talkslot -e "SET FOREIGN_KEY_CHECKS=0; DROP TABLE IF EXISTS tp_audit_log, tp_round_translations, tp_sent_summaries, tp_bookings, tp_slots, tp_day_breaks, tp_round_days, tp_rounds, tp_pages, tp_rate_limits, tp_settings, tp_users, tp_admin_users; CREATE TABLE tp_users (id INT)"
 dcx exec -T app php -r '@unlink("/srv/app/app/var/installed.lock");'
 check "installer reachable while not installed" 'curl -s "$B/install.php" | grep -q "name=\"install_key\""'
 check "CLI installer: different passwords → abort" 'printf "Sehr-Sicheres-Pw-1\nanderes-Passwort-2\n" | dcx exec -T app php /srv/app/bin/install.php sabrina 2>&1 | grep -q "Passwörter stimmen nicht überein"'
@@ -575,6 +575,9 @@ check "migration 14: location columns added, rounds still reachable" '[ "$(DBQ "
 DBQ "ALTER TABLE tp_rounds DROP COLUMN remind_parents; ALTER TABLE tp_bookings DROP INDEX uq_bookings_reminder_token, DROP COLUMN reminded_at, DROP COLUMN reminder_token_hash; UPDATE tp_settings SET value = '14' WHERE name = 'schema_version'"
 curl -s -o /dev/null "$B/"
 check "migration 15: reminder columns added, existing rounds remind" '[ "$(DBQ "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND ((TABLE_NAME=\"tp_rounds\" AND COLUMN_NAME=\"remind_parents\") OR (TABLE_NAME=\"tp_bookings\" AND COLUMN_NAME IN (\"reminded_at\",\"reminder_token_hash\")))")" = 3 ] && [ "$(DBQ "SELECT MIN(remind_parents) FROM tp_rounds")" = 1 ] && [ "$(DBQ "SELECT value FROM tp_settings WHERE name=\"schema_version\"")" = "$LATEST" ]'
+DBQ "DROP TABLE tp_audit_log; UPDATE tp_settings SET value = '15' WHERE name = 'schema_version'"
+curl -s -o /dev/null "$B/"
+check "migration 16: log table created" '[ "$(DBQ "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=\"tp_audit_log\"")" = 1 ] && [ "$(DBQ "SELECT value FROM tp_settings WHERE name=\"schema_version\"")" = "$LATEST" ] && [ "$(curl -s -o /dev/null -w "%{http_code}" -b "$J" "$B/admin/log")" = 200 ]'
 
 echo "Web cron"
 CTOK=$(printf 'cron' | openssl dgst -sha256 -hmac "$(printf 'd%.0s' {1..64})" | sed 's/.*= //')
@@ -1000,6 +1003,8 @@ check "second admin creates a round for a teacher" '[ -n "$RV" ] && [ "$(DBQ "SE
 curl -s -o /dev/null -c "$JV" -b "$JV" -d "csrf=$TV" "$B/admin/round/$RV/toggle"
 check "second admin activates it" '[ "$(DBQ "SELECT is_active FROM tp_rounds WHERE id=$RV")" = 1 ]'
 check "the first admin sees it too" 'curl -s -b "$J" "$B/admin/round/$RV" | grep -q "Von Zweitadmin"'
+LOGP=$(curl -s -b "$J" "$B/admin/log")
+check "log: the other admin's changes, with who and what" 'echo "$LOGP" | grep -q "<td>Frau Zweitadmin</td>" && echo "$LOGP" | grep -q "Runde „Von Zweitadmin“ (Frau Fuenf): angelegt" && echo "$LOGP" | grep -q "Runde „Von Zweitadmin“ (Frau Fuenf): aktiviert" && echo "$LOGP" | grep -q "Konto „Frau Zweitadmin“ angelegt (Admin) und eingeladen"'
 FV=$(curl -s -c "$JV" -b "$JV" "$B/admin/round/$RV/edit")
 check "teacher choice marks only oneself with (Sie), listed first" '[ "$(echo "$FV" | grep -c "(Sie)</option>")" = 1 ] && echo "$FV" | grep -A1 "<select id=\"user_id\"" | grep -q "Frau Zweitadmin (Sie)"'
 curl -s -o /dev/null -c "$JV" -b "$JV" --data-urlencode "csrf=$TV" --data-urlencode $'controller_contact=Gemeinsame Schule\nSchulplatz 4\n12345 Teststadt\nE-Mail: schule@example.org' "$B/admin/texts/operator"
@@ -1009,16 +1014,30 @@ check "own role cannot be changed (no locking oneself out)" '[ "$(DBQ "SELECT ro
 T=$(curl -s -b "$J" "$B/admin/users" | csrf)
 curl -s -o /dev/null -b "$J" -d "csrf=$T&username=zweitadmin@example.org&display_name=Frau+Zweitadmin&email=zweitadmin@example.org&role=teacher&is_active=1" "$B/admin/users/$UZ/edit"
 check "another admin can take the role away" '[ "$(DBQ "SELECT role FROM tp_users WHERE id=$UZ")" = teacher ] && [ "$(curl -s -o /dev/null -w "%{http_code}" -c "$JV" -b "$JV" "$B/admin/users")" = 404 ] && curl -s -c "$JV" -b "$JV" "$B/admin" | grep -q "Meine Terminrunden" && [ "$(curl -s -o /dev/null -w "%{http_code}" -c "$JV" -b "$JV" "$B/admin/round/$RID")" = 404 ]'
+check "log: only for admins" '[ "$(curl -s -o /dev/null -w "%{http_code}" -c "$JV" -b "$JV" "$B/admin/log")" = 404 ] && ! curl -s -c "$JV" -b "$JV" "$B/admin" | grep -q "href=\"/admin/log\"" && curl -s -b "$J" "$B/admin" | grep -q "href=\"/admin/log\">Protokoll</a>"'
+NLOG=$(DBQ "SELECT COUNT(*) FROM tp_audit_log")
+TV=$(curl -s -c "$JV" -b "$JV" "$B/admin" | csrf)
+loc=$(curl -s -o /dev/null -w '%{redirect_url}' -c "$JV" -b "$JV" --data-urlencode "csrf=$TV" -d "title=Eigene+Runde&booking_deadline_hours=0&cancel_deadline_hours=0&day_dates%5B%5D=$(date -d '+21 day' +%F)&start_time=14:00&end_time=15:00&slot_minutes=15" "$B/admin/round/new")
+check "log: changes by a teacher in their own rounds are not recorded" '[ -n "$(echo "$loc" | grep -o "[0-9]*$")" ] && [ "$(DBQ "SELECT COUNT(*) FROM tp_audit_log")" = "$NLOG" ]'
 DBQ "UPDATE tp_users SET role = 'admin', is_active = 0 WHERE id = $UZ"
 T=$(curl -s -b "$J" "$B/admin/users" | csrf)
 curl -s -o /dev/null -b "$J" -d "csrf=$T&username=zweitadmin@example.org&display_name=Frau+Zweitadmin&email=zweitadmin@example.org&role=teacher" "$B/admin/users/$UZ/edit"
 check "a deactivated admin can be demoted (one active admin remains)" '[ "$(DBQ "SELECT role FROM tp_users WHERE id=$UZ")" = teacher ]'
+check "log: role changes are recorded" '[ "$(DBQ "SELECT COUNT(*) FROM tp_audit_log WHERE message = \"Konto „Frau Zweitadmin“ bearbeitet: Rolle jetzt Lehrkraft\"")" -ge 2 ]'
 curl -s -o /dev/null -c "$JV" -b "$JV" -d "csrf=$TV" "$B/admin/logout"; rm -f "$JV"
 curl -s -o /dev/null -b "$J" -d "csrf=$T&confirm=1" "$B/admin/round/$RV/delete"
 curl -s -o /dev/null -b "$J" -d "csrf=$T&confirm=1" "$B/admin/users/$UZ/delete"
 curl -s -o /dev/null -b "$J" -d "csrf=$T&confirm=1" "$B/admin/users/$UT/delete"
 curl -s -o /dev/null -b "$J" --data-urlencode "csrf=$T" --data-urlencode $'controller_contact=Sabrina Test\nTeststraße 1\n12345 Teststadt\nE-Mail: sabrina@example.org' "$B/admin/texts/operator"
 check "cleaned up: one admin again, original details" '[ "$(DBQ "SELECT COUNT(*) FROM tp_users WHERE role=\"admin\"")" = 1 ] && curl -s "$B/impressum" | grep -q "Teststraße 1"'
+check "log: entries of a deleted account stay, marked as deleted" 'curl -s -b "$J" "$B/admin/log" | grep -q "Frau Zweitadmin <span class=\"small muted\">(gelöscht)</span>"'
+check "log: no data of parents (names of bookings)" '[ "$(DBQ "SELECT COUNT(*) FROM tp_audit_log WHERE message LIKE \"%Max Muster%\" OR message LIKE \"%@example.org%\"")" = 0 ] && [ "$(DBQ "SELECT COUNT(*) FROM tp_audit_log WHERE message LIKE \"%: Buchung %\"")" -gt 0 ]'
+DBQ "INSERT INTO tp_audit_log (created_at, user_id, actor, message) SELECT NOW() - INTERVAL 1 DAY, NULL, 'Altlast', CONCAT('Alter Eintrag ', seq) FROM seq_1_to_150; INSERT INTO tp_audit_log (created_at, user_id, actor, message) VALUES (NOW() - INTERVAL 100 DAY, NULL, 'Altlast', 'Abgelaufener Eintrag')"
+LOG1=$(curl -s -b "$J" "$B/admin/log"); OLDER=$(echo "$LOG1" | grep -o '/admin/log?before=[0-9]*' | head -1)
+check "log: paged, 100 entries per page" '[ "$(echo "$LOG1" | grep -c "<tr>")" = 101 ] && [ -n "$OLDER" ] && curl -s -b "$J" "$B$OLDER" | grep -q "Zu den neuesten Einträgen"'
+$DC exec -T app php /srv/app/bin/cron.php >/dev/null
+check "log: entries deleted after 90 days" '[ "$(DBQ "SELECT COUNT(*) FROM tp_audit_log WHERE message = \"Abgelaufener Eintrag\"")" = 0 ] && [ "$(DBQ "SELECT COUNT(*) FROM tp_audit_log WHERE actor = \"Altlast\"")" = 150 ]'
+DBQ "DELETE FROM tp_audit_log WHERE actor = 'Altlast'"
 
 echo "Cleanup"
 docker compose -f "$(dirname "$0")/../dev/compose.yml" exec -T db mariadb -uapp -papp-dev-only talkslot -e \

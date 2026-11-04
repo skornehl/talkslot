@@ -82,6 +82,8 @@ check('parent ICS: stable UID, SEQUENCE increases, no email', str_contains($pi, 
 
 echo "Table prefix\n";
 App\Config::load(['db' => ['prefix' => 'tp_']] + (require dirname(__DIR__) . '/config/config.php'));
+preg_match_all('/CREATE TABLE IF NOT EXISTS (\w+)/', (string) file_get_contents(dirname(__DIR__) . '/app/schema.sql'), $m);
+check('every table of schema.sql gets the prefix (Db::TABLES)', $m[1] && !array_diff($m[1], App\Db::TABLES));
 check('tables get prefixed', App\Db::prefix('SELECT b.* FROM bookings b JOIN slots s ON s.id = b.slot_id JOIN round_days d ON d.id = s.day_id') === 'SELECT b.* FROM tp_bookings b JOIN tp_slots s ON s.id = b.slot_id JOIN tp_round_days d ON d.id = s.day_id');
 check('columns/constraints stay unchanged', App\Db::prefix('ALTER TABLE rounds ADD CONSTRAINT fk_rounds_user FOREIGN KEY (user_id) REFERENCES users (id)') === 'ALTER TABLE tp_rounds ADD CONSTRAINT fk_rounds_user FOREIGN KEY (user_id) REFERENCES tp_users (id)');
 check('quoted values unchanged', App\Db::prefix("SELECT value FROM settings WHERE name = 'users'") === "SELECT value FROM tp_settings WHERE name = 'users'");
