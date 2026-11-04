@@ -43,11 +43,12 @@ final class Installer
     public static function validate(string $username, string $password, string $password2, string $email): array
     {
         $errors = [];
-        if (!preg_match('/^[A-Za-z0-9._@+-]{3,254}$/', $username)) {
+        if (!Auth::validUsername($username)) {
             $errors[] = __('Benutzername: 3–254 Zeichen, nur Buchstaben, Ziffern und . _ @ + - (z. B. Ihre E-Mail-Adresse).');
         }
-        if (mb_strlen($password) < 12) {
-            $errors[] = __('Das Passwort muss mindestens 12 Zeichen lang sein.');
+        // The same rules as for every other password (length up to the bcrypt limit, common passwords, …)
+        if (($error = Auth::passwordPolicy($password, $username, $email)) !== null) {
+            $errors[] = $error;
         }
         if ($password !== $password2) {
             $errors[] = __('Die Passwörter stimmen nicht überein.');

@@ -247,8 +247,11 @@ otherwise the legal pages fall back to English.
 - Change links: 256-bit random tokens, only their SHA-256 hash is stored.
 - Admin session: cookie limited to `/admin`, `HttpOnly`, `Secure`, `SameSite=Strict`, idle and absolute
   timeouts, ID regeneration; password changes end all other sessions. No session for anonymous visitors.
-- Brute-force protection per shortened IP and per username; uniform responses and timing;
-  passwords 12 characters up to 72 bytes (bcrypt).
+- Brute-force protection per shortened IP and per account; uniform responses and timing. Devices that signed
+  in before keep a signed cookie (only for `/admin/login`) that exempts them from the per-account limit, so
+  strangers cannot lock teachers out; the account gets an e-mail when its limit is reached.
+- Passwords 12 characters up to 72 bytes (bcrypt), not on a local list of common passwords, no repetitions
+  or keyboard runs, without the username, e-mail address or app name.
 - Spam protection: honeypot, minimum fill-in time, rate limits on bookings, codes and change links.
 - Headers: CSP without `unsafe-inline`, `X-Frame-Options: DENY`, `nosniff`, `Referrer-Policy: no-referrer`,
   HSTS, Permissions-Policy, `Cache-Control: no-store`.
@@ -263,6 +266,7 @@ otherwise the legal pages fall back to English.
 
 - Data minimisation: a free-text name and an optional e-mail address, nothing else.
 - **No cookies on parent pages** (language via `?lang=`, stateless CSRF), so no cookie banner is needed.
+  The admin area uses a session cookie and a known-device cookie, both strictly necessary for signing in.
 - IP addresses only for rate limiting: shortened (IPv4 /24, IPv6 /48), HMAC-hashed, deleted after 24 h.
 - No external resources, fonts, scripts or tracking.
 - Browser storage only on explicit request (§ 25 TDDDG): "remember my appointment" is an unticked checkbox;
@@ -293,6 +297,7 @@ app/              application (outside the document root)
   src/Controller  public area and admin
   templates/      HTML templates, legal page templates (pages/*.md)
   lang/           parent-facing translations
+  data/           list of common passwords (from SecLists, MIT)
   vendor/         PHPMailer (bundled, only for SMTP)
   var/            runtime data: sessions, lock file, error log (no personal data)
   schema.sql      database schema
@@ -317,4 +322,6 @@ Issues and pull requests are welcome. Please:
 TalkSlot is licensed under the [GNU Affero General Public License v3.0](LICENSE). If you run a modified
 version as a service for others, you must make its source code available to them.
 
-PHPMailer (`app/vendor/phpmailer`) is licensed under LGPL-2.1.
+PHPMailer (`app/vendor/phpmailer`) is licensed under LGPL-2.1. The list of common passwords
+(`app/data/common-passwords.txt`) is derived from [SecLists](https://github.com/danielmiessler/SecLists)
+(MIT License, see the file header).

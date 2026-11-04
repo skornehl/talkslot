@@ -88,8 +88,9 @@ under Art. 28 GDPR. The servers are located in Germany.*
 
 ## Rate limits
 
-`rate_limits` holds `[maximum, window in seconds]` per shortened IP address (IPv4 /24, IPv6 /48). They are
-generous on purpose: many parents may share one address (mobile networks, school Wi-Fi).
+`rate_limits` holds `[maximum, window in seconds]` per shortened IP address (IPv4 /24, IPv6 /48), unless
+noted otherwise. They are generous on purpose: many parents may share one address (mobile networks, school
+Wi-Fi).
 
 | Key | Default | Counts |
 |---|---|---|
@@ -97,7 +98,10 @@ generous on purpose: many parents may share one address (mobile networks, school
 | `attempt` | 150 per hour | all booking attempts, including input errors |
 | `booking` | 30 per hour | successful bookings |
 | `manage` | 300 per hour | requests to change links |
-| `login` | 5 per 15 min | failed admin logins (additionally 20 per user name and hour) |
+| `login` | 5 per 15 min | failed admin logins |
+| `login_user` | 20 per hour | failed logins **per account**, from devices that have not signed in to it before |
+| `login_device` | 20 per hour | failed logins **per known device** (instead of `login_user`) |
+| `login_notice` | 1 per day | e-mails to an account whose `login_user` limit was reached |
 
 `csrf_min_age_seconds` (default 2) is the minimum time between loading and submitting a public form, a
 simple brake for bots.

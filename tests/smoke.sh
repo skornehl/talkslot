@@ -1047,9 +1047,9 @@ check "an admin can invite another admin" '[ -n "$UZ" ] && [ "$(DBQ "SELECT role
 VLINK=$($DC exec -T app php -r '$r=json_decode(file_get_contents("http://mail:8025/api/v1/search?query=to:zweitadmin@example.org"),true); echo json_decode(file_get_contents("http://mail:8025/api/v1/message/".$r["messages"][0]["ID"]),true)["Text"];' | grep -o 'http[^ ]*/admin/invite/[A-Za-z0-9_-]\{43\}' | head -1)
 JV=$(mktemp)
 TV=$(curl -s -c "$JV" -b "$JV" "$VLINK" | csrf); sleep 2
-curl -s -o /dev/null -c "$JV" -b "$JV" --data-urlencode "csrf=$TV" -d "new_password=Zweitadmin-Passwort-123&new_password2=Zweitadmin-Passwort-123" "$VLINK"
+curl -s -o /dev/null -c "$JV" -b "$JV" --data-urlencode "csrf=$TV" -d "new_password=Kaffee-Admin-Passwort-123&new_password2=Kaffee-Admin-Passwort-123" "$VLINK"
 TV=$(curl -s -c "$JV" -b "$JV" "$B/admin/login" | csrf)
-curl -s -o /dev/null -c "$JV" -b "$JV" -d "csrf=$TV&username=zweitadmin@example.org&password=Zweitadmin-Passwort-123" "$B/admin/login"
+curl -s -o /dev/null -c "$JV" -b "$JV" -d "csrf=$TV&username=zweitadmin@example.org&password=Kaffee-Admin-Passwort-123" "$B/admin/login"
 DV=$(curl -s -c "$JV" -b "$JV" "$B/admin")
 check "second admin sees the rounds of everybody" 'echo "$DV" | grep -q "Alle Terminrunden" && echo "$DV" | grep -q "<td>Frau Sabrina Test</td>" && [ "$(curl -s -o /dev/null -w "%{http_code}" -c "$JV" -b "$JV" "$B/admin/round/$RID")" = 200 ] && [ "$(curl -s -o /dev/null -w "%{http_code}" -c "$JV" -b "$JV" "$B/admin/round/$RID/edit")" = 200 ]'
 TV=$(echo "$DV" | csrf)

@@ -497,7 +497,8 @@ file_put_contents($log, str_repeat('x', App\ErrorPage::LOG_MAX_BYTES + 1));
 App\ErrorPage::writeLog('neu');
 check('error log is rotated from ' . (App\ErrorPage::LOG_MAX_BYTES >> 20) . ' MB', is_file($log . '.1') && filesize($log) < 1000 && str_contains((string) file_get_contents($log), 'neu'));
 ini_set('error_log', (string) $oldLog); @unlink($log); @unlink($log . '.1');
-check('password: at most 72 bytes (bcrypt)', App\Auth::passwordPolicy(str_repeat('ä', 37)) !== null && App\Auth::passwordPolicy(str_repeat('a', 72)) === null);
+check('password: at most 72 bytes (bcrypt)', App\Auth::passwordPolicy(str_repeat('ä', 37)) !== null
+    && App\Auth::passwordPolicy('Kaffeetasse-Wolkenbruch-Tischlampe-Gartenzaun-Fahrradklingel-Sonnenuhr-7') === null);
 App\Config::load($cfg);
 
 // Every variable that build-config reads must also be passed by the deploy workflow in the build step

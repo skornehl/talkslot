@@ -25,6 +25,14 @@ teachers (invitation, password link, summaries) follow it. Before signing in, th
 `admin_language` sets the default. Parent pages and mails are translated into six languages, because
 parents come from many backgrounds.
 
+## A teacher cannot sign in, although the password is right
+
+After too many failed attempts TalkSlot refuses further ones for a while, even with the right password:
+from the same network (shortened IP address) for 15 minutes, and for an account after 20 failed attempts
+within an hour from devices that never signed in to it. Devices that signed in before are exempt from the
+second limit, and the account gets an e-mail when it is reached. Ways out: wait, use a device that signed
+in before, or set a new password with *Passwort vergessen?*; afterwards that browser can sign in at once.
+
 ## How do I add a language for parents?
 
 Copy `app/lang/en.php`, translate it, add a flag under `public/assets/flags/` and the code to `languages`.
