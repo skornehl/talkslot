@@ -43,9 +43,22 @@ not public issues.
   the login page get no session at all.
 - Changing or resetting a password ends all other sessions of the account. *Alle Sitzungen beenden* (end
   all sessions, under *Benutzer*) ends the sessions of all accounts (a global counter in the settings).
-- Brute-force protection: at most 5 failed logins per shortened IP address in 15 minutes and 20 per
-  username and hour. Responses and timing do not reveal whether an account exists.
-- Passwords from 12 characters up to 72 bytes (the bcrypt limit).
+- Brute-force protection: at most 5 failed logins per shortened IP address in 15 minutes, and 20 per
+  account and hour (counted by account, so different spellings of a name share the counter). Only
+  usernames an account can have (`A–Z a–z 0–9 . _ @ + -`) reach the database: its collation ignores case
+  and accents, so `SÁBRİNA` or a name with a zero-width space would otherwise find `sabrina` under a
+  counter of its own. Responses and timing do not reveal whether an account exists.
+- The per-account limit is a lockout for *new* devices only. A browser that signed in to the account
+  before, or set its password through an e-mailed link, keeps a signed **known-device cookie**
+  (`tp_device_…`, only sent to `/admin/login`, `HttpOnly`, `SameSite=Strict`, 365 days, renewed at every
+  sign-in). With it, only the IP limit and a limit of 20 failed attempts per device apply, so strangers
+  cannot lock teachers out of their own devices. When the account limit is reached, the owner gets an
+  e-mail (at most one a day) explaining the way out: a known device, or *Passwort vergessen?*.
+- Passwords: 12 characters up to 72 bytes (the bcrypt limit), and not easy to guess: no common password
+  from a local list (`app/data/common-passwords.txt`, nothing is sent anywhere), also not as a word with
+  digits or symbols around it (`Sommer2024!!!!`), no repetitions or keyboard runs (`passwortpasswort`,
+  `123456789012`, `1q2w3e4r5t6z`), and neither the username, the e-mail address nor the app name in it.
+  The installer applies the same rules to the first admin account.
 - Every admin route names the role it needs (`teacher` for every account, or `admin`) in the route table of
   `AdminController`. A route without a known role is admin-only, so a forgotten role fails closed.
 - Inviting an admin, giving or taking away admin rights, deactivating, reactivating or deleting an admin
@@ -117,5 +130,10 @@ change nobody made, or entries in *Protokoll* (log) nobody can explain:
 
 - Rate limits work per shortened IP address. Somebody in the same network (e.g. school Wi-Fi) who keeps
   sending wrong passwords blocks logins from that network for 15 minutes.
+- Somebody who knows a username (for new accounts it is the e-mail address, which parents see as the
+  reply address) can use up its per-account limit. For up to an hour, the account can then only be used
+  on devices that signed in to it before, or after setting a new password through *Passwort vergessen?*
+  in that browser. An e-mail to the account's address says so.
+- There is no second factor. Accounts are protected by the password rules and the limits above.
 - The round code is stored in plain text, because teachers need to pass it on. It protects the list of
   slots from strangers, not accounts.

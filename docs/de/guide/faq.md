@@ -27,6 +27,15 @@ E-Mails an Lehrkräfte (Einladung, Passwort-Link, Zusammenfassungen) folgen ihr.
 entscheidet die Sprache des Browsers, `admin_language` legt den Standard fest. Elternseiten und E-Mails an
 Eltern sind in sechs Sprachen übersetzt, weil Eltern ganz unterschiedlicher Herkunft sind.
 
+## Eine Lehrkraft kann sich nicht anmelden, obwohl das Passwort stimmt
+
+Nach zu vielen Fehlversuchen lehnt TalkSlot weitere eine Zeit lang ab, auch mit dem richtigen Passwort: aus
+demselben Netz (gekürzte IP-Adresse) für 15 Minuten, und für ein Konto nach 20 Fehlversuchen innerhalb
+einer Stunde von Geräten, die sich dort noch nie angemeldet haben. Geräte, die sich schon einmal angemeldet
+haben, sind von diesem zweiten Limit ausgenommen, und das Konto bekommt eine E-Mail, wenn es erreicht ist.
+Auswege: warten, ein bekanntes Gerät nutzen oder über *Passwort vergessen?* ein neues Passwort festlegen;
+danach kann sich dieser Browser sofort anmelden.
+
 ## Wie füge ich eine Sprache für Eltern hinzu?
 
 Kopieren Sie `app/lang/en.php`, übersetzen Sie die Datei, legen Sie eine Flagge unter

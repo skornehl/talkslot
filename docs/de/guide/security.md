@@ -47,8 +47,24 @@ keine öffentlichen Issues.
 - Eine Passwortänderung oder -zurücksetzung beendet alle anderen Sessions des Kontos. *Alle Sitzungen
   beenden* (unter *Benutzer*) beendet die Sessions aller Konten (ein globaler Zähler in den Einstellungen).
 - Brute-Force-Schutz: höchstens 5 fehlgeschlagene Logins pro gekürzter IP-Adresse in 15 Minuten und 20 pro
-  Benutzername und Stunde. Antworten und Antwortzeiten verraten nicht, ob ein Konto existiert.
-- Passwörter ab 12 Zeichen bis 72 Byte (die Grenze von bcrypt).
+  Konto und Stunde (gezählt pro Konto, verschiedene Schreibweisen eines Namens teilen sich den Zähler).
+  Nur Benutzernamen, die ein Konto haben kann (`A–Z a–z 0–9 . _ @ + -`), erreichen die Datenbank: Deren
+  Kollation ignoriert Groß-/Kleinschreibung und Akzente, `SÁBRİNA` oder ein Name mit Nullbreiten-Leerzeichen
+  fände sonst `sabrina`, aber mit eigenem Zähler. Antworten und Antwortzeiten verraten nicht, ob ein Konto
+  existiert.
+- Das Limit pro Konto sperrt nur *neue* Geräte. Ein Browser, der sich schon einmal beim Konto angemeldet
+  oder sein Passwort über einen Link aus einer E-Mail festgelegt hat, behält ein signiertes
+  **Geräte-Cookie** (`tp_device_…`, nur an `/admin/login` gesendet, `HttpOnly`, `SameSite=Strict`,
+  365 Tage, bei jeder Anmeldung erneuert). Damit gelten nur das IP-Limit und ein Limit von 20 Fehlversuchen
+  pro Gerät, Fremde können Lehrkräfte also nicht von ihren eigenen Geräten aussperren. Ist das Limit des
+  Kontos erreicht, geht eine E-Mail an die Adresse des Kontos (höchstens eine am Tag) mit dem Ausweg: ein
+  bekanntes Gerät oder *Passwort vergessen?*.
+- Passwörter: 12 Zeichen bis 72 Byte (die Grenze von bcrypt) und nicht leicht zu erraten: kein häufiges
+  Passwort aus einer lokalen Liste (`app/data/common-passwords.txt`, es wird nichts nach außen gesendet),
+  auch nicht als Wort mit Ziffern oder Zeichen davor oder dahinter (`Sommer2024!!!!`), keine Wiederholungen
+  oder Tastaturfolgen (`passwortpasswort`, `123456789012`, `1q2w3e4r5t6z`) und weder Benutzername,
+  E-Mail-Adresse noch Name der Anwendung darin. Der Installer prüft das erste Admin-Konto nach denselben
+  Regeln.
 - Jede Admin-Route nennt in der Routentabelle des `AdminController` die Rolle, die sie braucht (`teacher`
   für jedes Konto oder `admin`). Eine Route ohne bekannte Rolle ist nur für Admins erreichbar; eine
   vergessene Rolle sperrt also, statt zu öffnen.
@@ -129,5 +145,10 @@ erklären kann:
 
 - Rate-Limits gelten pro gekürzter IP-Adresse. Wer im selben Netz (z. B. Schul-WLAN) immer wieder falsche
   Passwörter sendet, sperrt die Logins aus diesem Netz für 15 Minuten.
+- Wer einen Benutzernamen kennt (bei neuen Konten die E-Mail-Adresse, die Eltern als Antwortadresse sehen),
+  kann das Limit dieses Kontos aufbrauchen. Bis zu einer Stunde lang ist das Konto dann nur auf Geräten
+  nutzbar, die sich schon einmal angemeldet haben, oder nachdem in diesem Browser über *Passwort vergessen?*
+  ein neues Passwort festgelegt wurde. Dazu geht eine E-Mail an die Adresse des Kontos.
+- Es gibt keinen zweiten Faktor. Konten schützen die Passwortregeln und die Limits oben.
 - Der Rundencode wird im Klartext gespeichert, weil Lehrkräfte ihn weitergeben müssen. Er schützt die
   Terminliste vor Fremden, nicht Konten.

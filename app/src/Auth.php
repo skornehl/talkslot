@@ -8,9 +8,12 @@ namespace App;
  * - Session cookie only for /admin, HttpOnly, Secure, SameSite=Strict
  * - Inactivity and absolute timeout
  * - Roles: admin (one or more: all rounds, accounts, texts) and teacher (own rounds only)
- * - Brute-force protection: limit on failed logins per (truncated, hashed) IP.
- *   Deliberately no account lockout: otherwise anyone could lock the teacher out permanently
- *   with a few failed attempts. The minimum length of 12 characters protects against distributed guessing.
+ * - Brute-force protection (see attempt()): failed logins are limited per truncated IP and per
+ *   account. The per-account limit slows down guessing from many addresses, but it is a lockout:
+ *   once strangers have used it up, unknown devices cannot sign in to the account until the window
+ *   ends. The owner gets an e-mail then, and devices that signed in to the account before
+ *   (TrustedDevice) are exempt, so the owner can still sign in there.
+ * - Passwords: 12 characters up to 72 bytes, not common, no patterns, nothing personal (passwordPolicy()).
  * - Sessions end when the password of the account changes (users.session_epoch) or when an admin ends
  *   all sessions of all accounts (setting global_session_epoch, see endAllSessions()).
  * - Security-relevant changes ask for the password again (confirmPassword()); wrong entries there and
@@ -19,6 +22,12 @@ namespace App;
  */
 final class Auth
 {
+    /** Allowed usernames (creating, editing, installing, signing in): 3–254 characters, ASCII only. */
+    public static function validUsername(string $username): bool
+    {
+        return preg_match('/^[A-Za-z0-9._@+-]{3,254}\z/', $username) === 1;
+    }
+
     /**
      * Starts the admin session. Without $force only if the browser already has a session cookie:
      * login, "forgot password" and invitation pages do not create a session file for anonymous
@@ -106,36 +115,54 @@ final class Auth
     }
 
     /**
-     * Login. Failed attempts are limited per truncated IP (as before) and additionally per username
-     * (more generously, so that a single IP cannot lock an account, while distributed guessing is
-     * still slowed down). The attempt is counted before the check (no parallel attempts past the limit)
-     * and only taken back on success – a successful login with a different account does not reset
-     * the counter.
+     * Login. Failed attempts are limited
+     * - per truncated IP ("login", 5 per 15 minutes),
+     * - per account ("login_user", 20 per hour, more generous so that a single IP cannot use it up),
+     *   counted by account ID; unknown names by the name in lower case, so that the limit does not
+     *   reveal whether an account exists,
+     * - instead of per account: per device, if the request brings a valid TrustedDevice cookie for
+     *   the account ("login_device", 20 per hour, in case such a cookie is stolen).
+     * An attempt is counted before the check (no parallel attempts past the limit) and only taken back
+     * on success – a successful login with a different account does not reset the counters.
      * @return true|string true on success, otherwise an error message
      */
     public static function attempt(string $username, #[\SensitiveParameter] string $password): bool|string
     {
         [$limit, $window] = RateLimiter::limits('login', 5, 900);
-        [$userLimit, $userWindow] = RateLimiter::limits('login_user', 20, 3600);
         $generic = __('Anmeldung fehlgeschlagen. Bitte prüfen Sie Ihre Eingaben oder versuchen Sie es später erneut.');
-        $subject = 'login:' . mb_strtolower($username);
         // IP first: if it is blocked, nothing is stored for (possibly made-up) usernames
         if (!RateLimiter::hit('login', $limit, $window)) {
             return $generic;
         }
-        if (!RateLimiter::hit('login_user', $userLimit, $userWindow, $subject)) {
-            RateLimiter::undo('login');
+        // Only names that an account can have. The database compares case- and accent-insensitively,
+        // so "SÁBRİNA" or "sabri<zero-width space>na" would find "sabrina" (and sign in with the right
+        // password) while counting under a key of their own. The attempt still counts for the IP.
+        if (!self::validUsername($username)) {
             return $generic;
         }
-
         $user = Db::one('SELECT * FROM users WHERE username = ?', [$username]);
+
+        [$bucket, $subject] = ['login_device', $user ? TrustedDevice::subject((int) $user['id']) : null];
+        [$deviceLimit, $deviceWindow] = RateLimiter::limits('login_device', 20, 3600);
+        if ($subject === null || !RateLimiter::hit($bucket, $deviceLimit, $deviceWindow, $subject)) {
+            [$bucket, $subject] = ['login_user', $user ? 'login:#' . $user['id'] : 'login:' . strtolower($username)];
+            [$userLimit, $userWindow] = RateLimiter::limits('login_user', 20, 3600);
+            if (!RateLimiter::hit($bucket, $userLimit, $userWindow, $subject)) {
+                RateLimiter::undo('login');
+                if ($user) {
+                    self::lockoutNotice($user, $userLimit, $userWindow);
+                }
+                return $generic;
+            }
+        }
+
         // Check a hash even without a user (uniform response time, same cost as real hashes)
         $hash = $user['password_hash'] ?? self::dummyHash();
         $valid = password_verify($password, $hash);
 
         if (!$user || !$valid || !$user['is_active']) {
             if ($user) {
-                // Counter only (visible in the DB), no lockout
+                // Counter only (visible in the DB)
                 Db::run('UPDATE users SET failed_logins = failed_logins + 1 WHERE id = ?', [$user['id']]);
             }
             return $generic;
@@ -146,7 +173,8 @@ final class Auth
             Db::run('UPDATE users SET password_hash = ? WHERE id = ?', [password_hash($password, PASSWORD_DEFAULT), $user['id']]);
         }
         RateLimiter::undo('login');
-        RateLimiter::undo('login_user', $subject);
+        RateLimiter::undo($bucket, $subject);
+        TrustedDevice::remember((int) $user['id']);
         // An open "forgot password" link is settled by logging in
         Db::run('UPDATE users SET access_token_hash = NULL, access_token_expires_at = NULL WHERE id = ?', [$user['id']]);
 
@@ -161,6 +189,33 @@ final class Auth
             'csrf' => bin2hex(random_bytes(32)),
         ];
         return true;
+    }
+
+    /**
+     * E-mail to the account holder when the per-account limit refuses an attempt, at most one per
+     * account and day ("login_notice"). It is sent during the refused attempt: the longer response
+     * shows up only once a day and only for an account whose name the sender knows anyway.
+     */
+    private static function lockoutNotice(array $user, int $limit, int $window): void
+    {
+        [$noticeLimit, $noticeWindow] = RateLimiter::limits('login_notice', 1, 86400);
+        if (!$user['is_active'] || !is_valid_email((string) $user['email'])
+            || !RateLimiter::hit('login_notice', $noticeLimit, $noticeWindow, 'notice:' . $user['id'])) {
+            return;
+        }
+        // In the language of the account
+        AdminI18n::with(AdminI18n::of($user), static function () use ($user, $limit, $window): void {
+            $vars = ['app' => app_name(), 'url' => abs_url('/admin', ['lang' => null]), 'count' => $limit, 'minutes' => (int) ceil($window / 60)];
+            Mailer::send((string) $user['email'], __('Viele fehlgeschlagene Anmeldeversuche bei {app}', $vars), implode("\n", [
+                __('Hallo {name},', ['name' => $user['display_name'] ?: $user['username']]),
+                '',
+                __('für Ihr Konto bei {app} ({url}) gab es viele fehlgeschlagene Anmeldeversuche (mehr als {count}). Zum Schutz Ihres Kontos ist die Anmeldung deshalb für bis zu {minutes} Minuten nur auf Geräten möglich, auf denen Sie sich schon einmal angemeldet haben.', $vars),
+                '',
+                __('Auf einem neuen Gerät hilft „Passwort vergessen?“ auf der Anmeldeseite: Wenn Sie über den Link ein neues Passwort festlegen, können Sie sich in diesem Browser sofort anmelden.'),
+                '',
+                __('Waren Sie das nicht, versucht vermutlich jemand, Ihr Passwort zu erraten. Solange Sie es nirgends sonst verwenden, müssen Sie nichts tun. Bei Fragen wenden Sie sich an einen Admin.'),
+            ]));
+        });
     }
 
     /** Comparison hash with the current default cost (created once per request). */
@@ -263,7 +318,7 @@ final class Auth
         if (($error = $user ? self::verifyOwnPassword($user, $currentPassword, $wrong) : $wrong) !== null) {
             return $error;
         }
-        if (($error = self::passwordPolicy($newPassword)) !== null) {
+        if (($error = self::passwordPolicy($newPassword, (string) $user['username'], (string) $user['email'])) !== null) {
             return $error;
         }
         if (password_verify($newPassword, $user['password_hash'])) {
@@ -279,12 +334,25 @@ final class Auth
         return true;
     }
 
-    /** At least 12 characters; at most 72 bytes, because bcrypt ignores everything beyond that. */
-    public static function passwordPolicy(#[\SensitiveParameter] string $password): ?string
+    /**
+     * At least 12 characters; at most 72 bytes, because bcrypt ignores everything beyond that; not on
+     * the list of common passwords, no repetitions or runs, and none of the personal values (username,
+     * e-mail address) or the app name in it (PasswordRules).
+     */
+    public static function passwordPolicy(#[\SensitiveParameter] string $password, string ...$personal): ?string
     {
         if (mb_strlen($password) < 12) {
             return __('Das Passwort muss mindestens 12 Zeichen lang sein.');
         }
-        return strlen($password) > 72 ? __('Das Passwort darf höchstens 72 Byte lang sein (etwa 72 Zeichen, Umlaute zählen doppelt).') : null;
+        if (strlen($password) > 72) {
+            return __('Das Passwort darf höchstens 72 Byte lang sein (etwa 72 Zeichen, Umlaute zählen doppelt).');
+        }
+        if (PasswordRules::containsPersonal($password, [...$personal, app_name(), 'TalkSlot'])) {
+            return __('Das Passwort darf weder den Benutzernamen noch die E-Mail-Adresse oder den Namen der Anwendung enthalten.');
+        }
+        if (PasswordRules::isPattern($password) || PasswordRules::isCommon($password)) {
+            return __('Dieses Passwort ist zu leicht zu erraten (häufig verwendet, ein Wort mit Ziffern, Wiederholungen oder Tastenfolgen). Gut geeignet sind z. B. drei oder vier zufällige Wörter.');
+        }
+        return null;
     }
 }

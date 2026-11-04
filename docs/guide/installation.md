@@ -53,9 +53,10 @@ passwords and the secret. The dashboard warns admins as long as every user of th
 ## 3. Install
 
 Open `https://your-site/install.php`, enter the install key and create the admin account (username,
-password with at least 12 characters, e-mail address). The installer creates the tables, copies the
-imprint and privacy templates into the database, locks itself and tries to delete itself. Delete
-`public/install.php` yourself if it is still there.
+password with 12 characters up to 72 bytes that is not easy to guess, e-mail address; the same
+[password rules]({{ '/guide/security/' | relative_url }}) apply as for every account). The installer
+creates the tables, copies the imprint and privacy templates into the database, locks itself and tries
+to delete itself. Delete `public/install.php` yourself if it is still there.
 
 With shell access you can install from the command line instead:
 
