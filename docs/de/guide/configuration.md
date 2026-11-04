@@ -23,6 +23,7 @@ Beim Deployment mit GitHub Actions wird die Datei aus Repository-Variablen und -
 Eine Änderung von `secret` betrifft nur Kurzlebiges: Formulare, die in diesem Moment geöffnet sind,
 Zugänge, die in den letzten Stunden per Rundencode freigeschaltet wurden, und das Web-Cron-Token.
 Buchungen, Änderungslinks, Einladungs- und Passwortlinks sind Zufallstokens und funktionieren weiter.
+Abgemeldet wird dadurch niemand; dafür gibt es *Benutzer → Alle Sitzungen beenden*.
 
 ## Datenbank
 
@@ -101,6 +102,7 @@ IPv6 /48). Die Werte sind bewusst großzügig: Viele Eltern teilen sich womögli
 | `booking` | 30 pro Stunde | erfolgreiche Buchungen |
 | `manage` | 300 pro Stunde | Aufrufe von Änderungslinks |
 | `login` | 5 pro 15 Min. | fehlgeschlagene Admin-Anmeldungen (zusätzlich 20 pro Benutzername und Stunde) |
+| `reauth` | 5 pro 15 Min. | falsche Passwörter beim Bestätigen einer Änderung von Admin-Rechten oder E-Mail-Adressen, beim Beenden aller Sitzungen und beim Ändern des eigenen Passworts (ein Zähler pro Anmeldung, nicht pro IP-Adresse) |
 
 `csrf_min_age_seconds` (Standard 2) ist die Mindestzeit zwischen dem Laden und dem Absenden eines
 öffentlichen Formulars, eine einfache Bremse für Bots.

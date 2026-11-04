@@ -22,7 +22,8 @@ When you deploy with GitHub Actions, the file is generated from repository varia
 
 Changing `secret` only affects short-lived things: forms that are open at that moment, access granted by
 a round code in the last hours, and the web cron token. Bookings, change links, invitation and password
-links are random tokens and keep working.
+links are random tokens and keep working. It does not sign anybody out of the admin area; for that, use
+*Benutzer → Alle Sitzungen beenden*.
 
 ## Database
 
@@ -98,6 +99,7 @@ generous on purpose: many parents may share one address (mobile networks, school
 | `booking` | 30 per hour | successful bookings |
 | `manage` | 300 per hour | requests to change links |
 | `login` | 5 per 15 min | failed admin logins (additionally 20 per user name and hour) |
+| `reauth` | 5 per 15 min | wrong passwords when confirming a change of admin rights, an e-mail address or ending all sessions, and when changing the own password (one counter per sign-in, not per IP address) |
 
 `csrf_min_age_seconds` (default 2) is the minimum time between loading and submitting a public form, a
 simple brake for bots.

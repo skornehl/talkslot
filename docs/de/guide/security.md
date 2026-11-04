@@ -38,13 +38,29 @@ keine öffentlichen Issues.
 - Session-Cookie nur für `/admin`, `HttpOnly`, `Secure`, `SameSite=Strict`, Strict Mode, eigenes
   Session-Verzeichnis, 30 Minuten Inaktivitäts- und 8 Stunden absolutes Timeout, neue Session-ID beim
   Login. Anonyme Besucher der Login-Seite erhalten überhaupt keine Session.
-- Eine Passwortänderung oder -zurücksetzung beendet alle anderen Sessions des Kontos.
+- Eine Passwortänderung oder -zurücksetzung beendet alle anderen Sessions des Kontos. *Alle Sitzungen
+  beenden* (unter *Benutzer*) beendet die Sessions aller Konten (ein globaler Zähler in den Einstellungen).
 - Brute-Force-Schutz: höchstens 5 fehlgeschlagene Logins pro gekürzter IP-Adresse in 15 Minuten und 20 pro
   Benutzername und Stunde. Antworten und Antwortzeiten verraten nicht, ob ein Konto existiert.
 - Passwörter ab 12 Zeichen bis 72 Byte (die Grenze von bcrypt).
-- Das Ändern der E-Mail-Adresse erfordert das aktuelle Passwort und benachrichtigt die alte Adresse.
-  „Passwort vergessen“ antwortet auf jede Eingabe gleich und ersetzt keinen Link, der jünger als 15 Minuten
-  ist.
+- Einen Admin einladen, Admin-Rechte vergeben oder entziehen, ein Admin-Konto deaktivieren, wieder
+  aktivieren oder löschen, eine E-Mail-Adresse ändern (eigene oder fremde) und alle Sitzungen beenden
+  fragen das Passwort des handelnden Kontos erneut ab. Fehleingaben dort und beim Ändern des eigenen
+  Passworts zählen gemeinsam, höchstens 5 in 15 Minuten pro Anmeldung (Konto und Sitzung). Eine neue
+  Anmeldung braucht das Passwort: Eine übernommene Sitzung allein genügt für diese Änderungen also nicht,
+  und auch über die Passwortänderung kann sie nicht unbegrenzt raten. Den Kontoinhaber kann sie davon
+  nicht aussperren, seine eigene Anmeldung hat einen eigenen Zähler.
+- Sicherheitsmails: an den Kontoinhaber, wenn sein Passwort geändert oder festgelegt wurde, an die bisherige
+  Adresse, wenn E-Mail-Adresse oder Benutzername geändert wurden, an alle aktiven Admins und die betroffene
+  Person, wenn sich Admin-Rechte ändern und wenn alle Sitzungen beendet wurden.
+- Mindestens ein aktiver Admin bleibt immer: Prüfung und Änderung laufen in einer Transaktion, die die
+  Zeilen der aktiven Admins sperrt (`SELECT … FOR UPDATE`). Zwei Admins, die sich im selben Moment
+  gegenseitig herabstufen, können also nicht beide Erfolg haben.
+- Passwortlinks gehen nur per E-Mail hinaus und werden nie angezeigt, auch nicht, wenn der Versand
+  scheitert. „Passwort vergessen“ antwortet auf jede Eingabe gleich und ersetzt keinen Link, der jünger als
+  15 Minuten ist.
+- Passwort- und Token-Parameter sind mit `#[\SensitiveParameter]` markiert: Sie erscheinen nie in
+  Stacktraces, auch nicht mit `debug` (ein Unit-Test prüft jeden solchen Parameter).
 
 **Betrieb**
 - Keine Fehlerdetails im Produktivbetrieb; `public/.user.ini` verbirgt auch Fehler, die vor dem Start der
@@ -59,6 +75,30 @@ keine öffentlichen Issues.
   würde sonst Passwörter im Klartext bedeuten) und liefert den Installer nach der Installation nie aus.
 - CI und Deployment verwenden keine GitHub Actions von Drittanbietern; Code wird mit einfachem `git` geholt,
   und das Token wird nur in einem Request-Header gesendet.
+
+## Bei Verdacht auf Missbrauch
+
+Zum Beispiel ein verlorenes Gerät, das angemeldet war, ein Admin-Konto, das niemand kennt, eine
+Sicherheitsmail über eine Änderung, die niemand gemacht hat, oder Einträge im *Protokoll*, die niemand
+erklären kann:
+
+1. **Alle Sitzungen beenden:** *Benutzer → Alle Sitzungen beenden* (mit Ihrem Passwort). Alle Konten müssen
+   sich neu anmelden; ein neues App-Secret allein würde niemanden abmelden.
+2. **Konten prüfen:** unter *Benutzer* unbekannte Admins und geänderte E-Mail-Adressen, im *Protokoll* die
+   letzten Änderungen. Unbekannte Konten deaktivieren, nicht benötigte Admin-Rechte entziehen.
+3. **Neue Passwörter:** das eigene Passwort ändern; für betroffene Konten *Link zum Zurücksetzen senden*
+   (das bisherige Passwort gilt dann sofort nicht mehr).
+4. **Zugang zum Server:** Wenn Hosting, Datenbank, FTP oder GitHub betroffen sein könnten, diese Passwörter
+   und `APP_SECRET` ändern. Das Secret signiert nur Kurzlebiges (offene Formulare, Freischaltung per
+   Rundencode, Schlüssel der Rate-Limits); die persönlichen Links der Eltern sind bewusst als reiner
+   SHA-256-Hash gespeichert und funktionieren weiter.
+5. **Spuren sichern:** die Einträge im *Protokoll* (werden nach `audit_log_days` gelöscht, Standard 90
+   Tage), die Sicherheitsmails und `app/var/php-error.log` sichern und beim Webhoster die Zugriffslogs
+   erfragen.
+6. **Melden:** Könnten Unbefugte personenbezogene Daten gesehen haben, muss der Betreiber (meist die
+   Schule) das bewerten und binnen 72 Stunden der Datenschutz-Aufsichtsbehörde melden (Art. 33 DSGVO) und
+   bei hohem Risiko die Betroffenen informieren (Art. 34 DSGVO). Beziehen Sie Ihre Datenschutzbeauftragte
+   bzw. Ihren Datenschutzbeauftragten ein.
 
 ## Bekannte Einschränkungen
 

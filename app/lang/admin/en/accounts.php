@@ -77,7 +77,6 @@ return [
     'Admin – sieht und bearbeitet alle Runden, legt Runden für Lehrkräfte an, verwaltet Benutzer sowie Impressum und Datenschutz' => 'Admin – sees and edits all rounds, creates rounds for teachers, manages users as well as imprint and privacy policy',
     'Konto aktiv (deaktiviert: kein Login, Runden öffentlich nicht erreichbar)' => 'Account active (deactivated: no sign-in, rounds not publicly available)',
     'Rolle: {role} (die eigene Rolle kann nur ein anderer Admin ändern).' => 'Role: {role} (only another admin can change your own role).',
-    'Beim Speichern erhält die Person eine Einladung per E-Mail mit einem Link, über den sie ihr Passwort selbst festlegt (einmalig nutzbar, {hours} Stunden gültig). Danach kann sie ihre Terminrunden selbst verwalten; Sie können Runden auch für sie anlegen. Kann die Mail nicht versendet werden, wird der Link einmalig angezeigt.' => 'When you save, the person receives an invitation by email with a link for setting their password themselves (single use, valid for {hours} hours). After that they can manage their rounds themselves; you can also create rounds for them. If the email cannot be sent, the link is shown once.',
     'Abbrechen' => 'Cancel',
     'Einladung erneut senden' => 'Resend invitation',
     'Passwort zurücksetzen' => 'Reset password',

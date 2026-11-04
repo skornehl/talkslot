@@ -13,8 +13,9 @@ final class Mailer
     /**
      * @param list<array{name:string,type:string,content:string}> $attachments e.g. an .ics file
      * @param ?string $replyTo reply address (e.g. the teacher); otherwise config mail.reply_to
+     * $body carries invitation, password and booking links: never in stack traces.
      */
-    public static function send(string $to, string $subject, string $body, array $attachments = [], ?string $replyTo = null): bool
+    public static function send(string $to, string $subject, #[\SensitiveParameter] string $body, array $attachments = [], ?string $replyTo = null): bool
     {
         if (!filter_var($to, FILTER_VALIDATE_EMAIL)) {
             return false;

@@ -10,12 +10,12 @@ namespace App;
 final class Notifier
 {
     /** @param array $b booking from BookingService::findById/findByToken */
-    public static function parentBooked(array $b, string $token): bool
+    public static function parentBooked(array $b, #[\SensitiveParameter] string $token): bool
     {
         return self::toParent($b, 'booked', $token);
     }
 
-    public static function parentChanged(array $b, ?string $token): bool
+    public static function parentChanged(array $b, #[\SensitiveParameter] ?string $token): bool
     {
         return self::toParent($b, 'changed', $token);
     }
@@ -26,12 +26,12 @@ final class Notifier
     }
 
     /** Reminder the evening before (see Reminders), with the link of its own token. */
-    public static function parentReminder(array $b, string $token): bool
+    public static function parentReminder(array $b, #[\SensitiveParameter] string $token): bool
     {
         return self::toParent($b, 'reminder', $token);
     }
 
-    private static function toParent(array $b, string $type, ?string $token): bool
+    private static function toParent(array $b, string $type, #[\SensitiveParameter] ?string $token): bool
     {
         $email = (string) ($b['email'] ?? '');
         if ($email === '') {
