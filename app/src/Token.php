@@ -17,12 +17,12 @@ final class Token
         return [$plain, self::hash($plain)];
     }
 
-    public static function hash(string $plain): string
+    public static function hash(#[\SensitiveParameter] string $plain): string
     {
         return hash('sha256', $plain);
     }
 
-    public static function isWellFormed(string $plain): bool
+    public static function isWellFormed(#[\SensitiveParameter] string $plain): bool
     {
         return (bool) preg_match('/^[A-Za-z0-9_-]{43}$/', $plain);
     }

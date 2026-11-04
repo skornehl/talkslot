@@ -22,7 +22,8 @@ When you deploy with GitHub Actions, the file is generated from repository varia
 
 Changing `secret` only affects short-lived things: forms that are open at that moment, access granted by
 a round code in the last hours, and the web cron token. Bookings, change links, invitation and password
-links are random tokens and keep working.
+links are random tokens and keep working. It does not sign anybody out of the admin area; for that, use
+*Benutzer → Alle Sitzungen beenden*.
 
 ## Database
 
@@ -37,7 +38,7 @@ links are random tokens and keep working.
 
 | Option | Default | Meaning | Deployment |
 |---|---|---|---|
-| `languages` | `de, en, pl, ru, uk, tr` | parent-facing languages, in the order of the flags | `LANGUAGES`, e.g. `de,en,tr` |
+| `languages` | `de, en, pl, ru, uk, tr` | parent-facing languages, in the order of the language choice at the top of the page | `LANGUAGES`, e.g. `de,en,tr` |
 | `default_language` | `de` | shown until the visitor picks a language; must be in `languages` | `DEFAULT_LANGUAGE` |
 
 The build aborts if a language has no file in `app/lang/` or the default is not offered.
@@ -47,8 +48,9 @@ The admin area is in German or English, chosen per account under *Mein Profil*. 
 and for the login page when the browser asks for neither language. Entries in the admin log are written in
 this language.
 
-**Adding a language:** copy `app/lang/en.php` to e.g. `app/lang/it.php` and translate it, add a flag
-`public/assets/flags/it.svg` and the code to `languages`. Optionally add
+**Adding a language:** copy `app/lang/en.php` to e.g. `app/lang/it.php` and translate it (`lang.name` is
+the language's own name, shown in the language choice), add a flag `public/assets/flags/it.svg` (used in
+the translation form of the admin area) and the code to `languages`. Optionally add
 `app/templates/pages/imprint.it.md` and `privacy.it.md`; without them the legal pages fall back to English.
 Please have native speakers review translations.
 
@@ -98,6 +100,7 @@ generous on purpose: many parents may share one address (mobile networks, school
 | `booking` | 30 per hour | successful bookings |
 | `manage` | 300 per hour | requests to change links |
 | `login` | 5 per 15 min | failed admin logins (additionally 20 per user name and hour) |
+| `reauth` | 5 per 15 min | wrong passwords when confirming a change of admin rights, an e-mail address or ending all sessions, and when changing the own password (one counter per sign-in, not per IP address) |
 
 `csrf_min_age_seconds` (default 2) is the minimum time between loading and submitting a public form, a
 simple brake for bots.

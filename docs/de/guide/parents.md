@@ -11,8 +11,10 @@ Benutzerkonto brauchen Sie nicht.
 1. **Öffnen Sie den Link** – oder rufen Sie die Startseite der Terminvergabe Ihrer Schule auf und geben
    Sie den Code ein (zum Beispiel `K7MP-3QXA`; Bindestriche sowie Groß- und Kleinschreibung spielen keine
    Rolle).
-2. **Wählen Sie eine Sprache**, wenn Sie möchten, mit den Flaggen unten auf der Seite: Deutsch, Englisch,
-   Polnisch, Russisch, Ukrainisch oder Türkisch (je nach Schule).
+2. **Wählen Sie eine Sprache**, wenn Sie möchten, ganz oben auf der Seite: Deutsch, English, Polski,
+   Русский, Українська oder Türkçe (je nach Schule). Ist Ihr Browser auf eine dieser Sprachen eingestellt,
+   bietet ein Link über der Seite sie an; von selbst wechselt die Seite nicht. Einladungen der Lehrkraft
+   enthalten meist für jede Sprache einen direkten Link.
 3. **Wählen Sie einen freien Termin.** Es werden nur freie Termine angezeigt, nach Tagen geordnet.
 4. **Geben Sie einen Namen ein**, meist den Vor- und Nachnamen Ihres Kindes. Die **E-Mail-Adresse ist
    freiwillig**: Wenn Sie eine angeben, erhalten Sie eine Bestätigung mit Ihrem persönlichen Link und

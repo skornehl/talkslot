@@ -9,7 +9,8 @@ schools (GDPR/DSGVO, TDDDG) and multilingual families.
 
 - **For parents:** open a link or enter a short round code, pick a free slot, done. Change or cancel via a
   personal link; optional confirmation mail with a calendar file. Parent pages in German, English,
-  Polish, Russian, Ukrainian and Turkish.
+  Polish, Russian, Ukrainian and Turkish, chosen at the top of every page; the invitation text carries a
+  direct link per language.
 - **For teachers:** any number of booking rounds with several days, breaks and a live preview; see who
   booked when, move or add bookings, print lists, get a summary mail the evening before.
 - **For the school:** admins invite the teachers, see all rounds and maintain the legal pages for the
@@ -62,9 +63,11 @@ schools (GDPR/DSGVO, TDDDG) and multilingual families.
 - Rounds: several days, first/last slot, duration, any number of breaks, live preview; add days later;
   location (per round, optionally per day); block single slots; duplicate with a new first day; templates
   (e.g. "parent-teacher day, 08:00–16:00, 15 minutes"); deadlines for booking and changes; ready-to-copy
-  invitation text.
-- Bookings: overview, edit, move, delete, add manually (optionally with mail). Changed times never delete
-  bookings, conflicts are flagged with ⚠. Print view per round or day.
+  invitation text with a direct link per parent language and the round's rule on multiple bookings.
+- Bookings: overview, edit, move, delete, add manually (with a mail to the parents, ticked as soon as an
+  address is entered). Changed times never delete bookings, conflicts are flagged with ⚠. Dialogs, hints
+  and messages say clearly that parents are not notified automatically of deletions, of a new date or
+  location for a day and of a new location or teacher for the round. Print view per round or day.
 - Translation of title and description **in the teacher's browser** (Chrome/Edge Translator API with a
   local model, no text leaves the device), manually editable.
 - Summary mails: evening before a day and after the booking deadline (time and name only).
@@ -128,16 +131,19 @@ App: <http://localhost:8080>, admin: <http://localhost:8080/admin>. Mails end up
    `POST /cron` with header `X-Cron-Token: <HMAC-SHA256 of "cron" with your secret>`; the included
    workflow `.github/workflows/cron.yml` does exactly that.
 5. **Legal texts:** log in as admin, fill in *Texte → Angaben für Impressum und Datenschutz*, then
-   check *Texte*: replace the remaining `[PLACEHOLDERS]` (server log retention, supervisory authority).
+   check *Texte*: the privacy policy is installed for a public school (a template for private operators can
+   be loaded on the text form). Replace the remaining `[PLACEHOLDERS]` (data protection officer, provisions
+   of your state, server log retention, supervisory authority); until then no round can be activated.
    The web host comes from `hosting` in `config.php`. The templates cover Art. 13 GDPR but do not replace legal advice.
 
 ### Go-live checklist
 
 - [ ] HTTPS active, `http://` redirects
-- [ ] `install.php` no longer reachable (404); `config/config.php` not readable by others (600/640)
+- [ ] `install.php` no longer reachable (404); `config/config.php` not readable by others (600/640; the
+  dashboard warns admins otherwise)
 - [ ] `debug` is `false`; `alert_email` set
 - [ ] Test booking with e-mail: mail arrives (not in spam)
-- [ ] Admin contact details, imprint and privacy policy (all languages) complete
+- [ ] Admin contact details, imprint and privacy policy (all languages) complete, no `[PLACEHOLDERS]` left
 - [ ] Data processing agreement (DPA/AVV) with your web host
 - [ ] Teacher invitation tested; test round booked, moved and cancelled on a phone, then deleted
 
@@ -147,11 +153,14 @@ Optional, for shared hosting with FTPS. Every push to `main` runs the tests, upl
 switches over **atomically**:
 
 1. The new version is uploaded completely into its own directory (`<APP_DIR>/releases/<name>/`, assets to
-   `<WEB_DIR>/v/<name>/`) while the old one keeps running, and checked for completeness.
+   `<WEB_DIR>/v/<name>/`) while the old one keeps running, and checked for completeness. Right after the
+   code, its `config.php` gets the permissions `600` (variable `CONFIG_MODE`: `640` or `keep` if PHP runs
+   as a different user than FTP; a server without `chmod` only causes a warning).
 2. A pointer file `<APP_DIR>/current` is replaced in one step. Old and new code never run side by side.
 3. The site is checked (login page, start page, CSS). On failure it switches straight back and the run
    fails.
-4. The last five versions are kept for rollbacks.
+4. The last five versions are kept for rollbacks; once the check has passed, their `config.php` gets the
+   same permissions.
 
 ```
 <APP_DIR>/current            name of the active version
@@ -170,7 +179,8 @@ bin/setup-secrets.sh    # asks for host, directories, FTP and DB credentials; ge
 This sets the variables `BASE_URL`, `FTP_HOST`, `WEB_DIR`, `APP_DIR`, `DB_HOST` and the secrets
 `FTP_USERNAME`, `FTP_PASSWORD`, `DB_USER`, `DB_PASS`, `DB_NAME`, `APP_SECRET`, `INSTALL_KEY`. Optional
 variables: `APP_NAME`, `HOSTING_DE`, `HOSTING_EN` (web host for the privacy policy), `LANGUAGES` (e.g. `de,en,tr`) and `DEFAULT_LANGUAGE` (e.g. `en`), `ALERT_EMAIL`, `MAIL_FROM`, `MAIL_FROM_NAME`, `MAIL_REPLY_TO`, `MAIL_TRANSPORT=smtp` with
-`SMTP_HOST`, `SMTP_PORT`, `SMTP_ENCRYPTION` and the secrets `SMTP_USER`, `SMTP_PASS`, `DB_PREFIX`.
+`SMTP_HOST`, `SMTP_PORT`, `SMTP_ENCRYPTION` and the secrets `SMTP_USER`, `SMTP_PASS`, `DB_PREFIX`; the
+variable `CONFIG_MODE` sets the permissions of `config.php` on the server (default `600`).
 Without `FTP_HOST` the deploy, cron and switch workflows do nothing.
 
 Recommended: put the secrets into an environment `production` that only `main` may use
@@ -182,7 +192,17 @@ Recommended: put the secrets into an environment `production` that only `main` m
 ```bash
 gh workflow run "Switch version"                         # one version back
 gh workflow run "Switch version" -f target=list          # show available versions
+gh workflow run "Switch version" -f target=prune         # delete all versions except the active one
 ```
+
+After changing secrets (database or SMTP password, `APP_SECRET`) run `prune`: older versions keep the old
+values in their `config.php`.
+
+**Upgrading from a version without `CONFIG_MODE`:** until then `config.php` kept the FTP server's default
+permissions (often `644`) in every version on the server. The first deployment after the update restricts
+all of them. If other users of your server could read the file (ask your web host how customers are
+separated), change the secrets as described in
+[Changing secrets](https://skornehl.github.io/talkslot/guide/operations/#changing-secrets).
 
 The database is not rolled back. That is why migrations (`app/src/Migrations.php`) must only **add**
 columns with defaults and tables, so an older version keeps working with a newer schema.
@@ -224,7 +244,7 @@ All options are documented in [`config/config.sample.php`](config/config.sample.
 | Option | Default | Meaning |
 |---|---|---|
 | `app_name` | `TalkSlot` | name in header, mails and alert subjects |
-| `languages` | `de, en, pl, ru, uk, tr` | parent-facing languages, in the order of the flags (variable `LANGUAGES`) |
+| `languages` | `de, en, pl, ru, uk, tr` | parent-facing languages, in the order of the language choice (variable `LANGUAGES`) |
 | `default_language` | `de` | language shown until the visitor picks one; must be in `languages` (variable `DEFAULT_LANGUAGE`) |
 | `timezone` | `Europe/Berlin` | |
 | `alert_email` | – | recipient of error alerts (else the admin's address) |
@@ -234,7 +254,7 @@ All options are documented in [`config/config.sample.php`](config/config.sample.
 | `rate_limits` | see file | generous, since many parents share an IP (mobile CGNAT, school Wi-Fi) |
 
 **Adding a language:** copy `app/lang/en.php` to e.g. `app/lang/it.php`, translate it, add the code to
-`languages` and a flag `public/assets/flags/it.svg`. Optionally add `app/templates/pages/{imprint,privacy}.it.md`;
+`languages` and a flag `public/assets/flags/it.svg` (admin translation form). Optionally add `app/templates/pages/{imprint,privacy}.it.md`;
 otherwise the legal pages fall back to English.
 
 ## Security
@@ -248,7 +268,11 @@ otherwise the legal pages fall back to English.
 - Double bookings prevented twice: `SELECT … FOR UPDATE` in a transaction and `UNIQUE(slot_id)`.
 - Change links: 256-bit random tokens, only their SHA-256 hash is stored.
 - Admin session: cookie limited to `/admin`, `HttpOnly`, `Secure`, `SameSite=Strict`, idle and absolute
-  timeouts, ID regeneration; password changes end all other sessions. No session for anonymous visitors.
+  timeouts, ID regeneration; password changes end all other sessions, an admin can end all sessions of all
+  accounts. No session for anonymous visitors.
+- Admin rights and e-mail addresses change only with the password of the acting admin; security mails to
+  the account holder, the previous address and all admins; at least one active admin under a row lock;
+  password links are never shown on screen. Password and token parameters are `#[\SensitiveParameter]`.
 - Brute-force protection per shortened IP and per username; uniform responses and timing;
   passwords 12 characters up to 72 bytes (bcrypt).
 - Spam protection: honeypot, minimum fill-in time, rate limits on bookings, codes and change links.
@@ -265,6 +289,7 @@ otherwise the legal pages fall back to English.
 
 - Data minimisation: a free-text name and an optional e-mail address, nothing else.
 - **No cookies on parent pages** (language via `?lang=`, stateless CSRF), so no cookie banner is needed.
+  The browser language only offers a link to that language; the page never switches by itself.
 - IP addresses only for rate limiting: shortened (IPv4 /24, IPv6 /48), HMAC-hashed, deleted after 24 h.
 - No external resources, fonts, scripts or tracking.
 - Admin area and print view are marked `translate="no"`, so browsers do not offer their cloud page

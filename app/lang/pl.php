@@ -14,7 +14,8 @@ return [
     'theme.auto' => 'Automatycznie',
     'theme.light' => 'Jasny',
     'theme.dark' => 'Ciemny',
-    'footer.language' => 'Język',
+    'lang.label' => 'Język',
+    'lang.suggest' => 'Wyświetl tę stronę po polsku',
 
     'home.title' => 'Rezerwacja terminów',
     'home.text' => 'Prosimy skorzystać z linku z zaproszenia lub wpisać tutaj kod z zaproszenia.',

@@ -20,6 +20,7 @@
 <?php endforeach; ?>
 <section class="card">
   <p><?= __h('Diese Texte gelten für die gesamte Plattform. In Impressum und Datenschutzerklärung wird die Stelle {controller} automatisch durch die Angaben oben ersetzt. {hoster} in der Datenschutzerklärung wird durch die Angaben zum Hoster aus der Konfiguration ersetzt.', ['controller' => '<code>[[VERANTWORTLICHE]]</code>', 'hoster' => '<code>[[HOSTER]]</code>']) ?></p>
+  <p><?= __h('Die Datenschutzerklärung gibt es als Vorlage für öffentliche Schulen (installiert) und für private Träger; die passende laden Sie beim jeweiligen Text über „Vorlage laden“. Angaben in eckigen Klammern wie {example} müssen Sie selbst ersetzen – vorher lässt sich keine Runde aktivieren.', ['example' => '<code>[ZUSTÄNDIGE LANDESDATENSCHUTZBEHÖRDE MIT ADRESSE]</code>']) ?></p>
   <ul class="link-list">
     <?php foreach ($languages as $l): ?>
       <li><a href="<?= e(url('/admin/page/imprint/' . $l)) ?>"><?= e(__('Impressum ({lang})', ['lang' => strtoupper($l)])) ?></a></li>

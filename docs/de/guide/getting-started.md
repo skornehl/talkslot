@@ -34,16 +34,18 @@ Stand möchten.
 ## Ein erster Rundgang
 
 1. **Melden Sie sich** als `sabrina` an. Sie ist Admin. Öffnen Sie *Texte* und sehen Sie sich
-   *Angaben für Impressum und Datenschutz* an: Ohne diese Angaben ist keine Terminrunde öffentlich
-   (`dev/demo.sh` hat sie bereits ausgefüllt).
+   *Angaben für Impressum und Datenschutz* an: Ohne diese Angaben ist keine Terminrunde öffentlich, und
+   solange die Datenschutzerklärung noch Platzhalter in eckigen Klammern enthält, lässt sich keine Runde
+   aktivieren (`dev/demo.sh` hat beides mit Beispielwerten ausgefüllt; nach `dev/reset.sh` allein
+   erledigen Sie das zuerst unter *Texte*).
 2. **Öffnen Sie eine Terminrunde** auf dem Dashboard (*Alle Runden*). Sie sehen den Link für Eltern, den
    Rundencode, den Einladungstext und die Buchungen jedes Tages.
 3. **Buchen Sie als Elternteil:** Klicken Sie neben dem Link auf *Öffnen*, wählen Sie einen Termin, geben
    Sie einen Namen ein und setzen Sie den Haken bei der Datenschutz-Checkbox. Die Bestätigungsseite zeigt
    den persönlichen Änderungslink. Mit E-Mail-Adresse kommt die Bestätigung in Mailpit an, inklusive
    Kalenderdatei.
-4. **Wechseln Sie die Sprache** über die Flaggen in der Fußzeile und probieren Sie den hellen und dunklen
-   Modus aus.
+4. **Wechseln Sie die Sprache** ganz oben auf der Seite und probieren Sie in der Fußzeile den hellen und
+   dunklen Modus aus.
 5. **Legen Sie eine eigene Terminrunde an** mit *+ Neue Runde*: Wählen Sie ein oder mehrere Daten, den
    ersten und letzten Termin, die Dauer und Pausen. Die Vorschau zeigt die entstehenden Zeitfenster,
    bevor Sie speichern.

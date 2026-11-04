@@ -47,7 +47,6 @@ return [
     'Alternativ können Sie auf {url} nur diesen Code eingeben.' => 'Alternatively, you can just enter this code at {url}.',
     'Bitte geben Sie Link und Code nicht weiter.' => 'Please do not pass on the link and code.',
     'Alternativ können Sie auf {url} den Code der Terminvergabe {code} eingeben.' => 'Alternatively, you can enter the booking code {code} at {url}.',
-    'Bitte buchen Sie nur einen Termin. Nach der Buchung erhalten Sie einen persönlichen Link, über den Sie den Termin ändern oder absagen können.' => 'Please book only one appointment. After booking, you will receive a personal link that you can use to change or cancel the appointment.',
     'Viele Grüße' => 'Kind regards',
 
     // Days, breaks, slots
@@ -129,7 +128,6 @@ return [
     'Einladung' => 'Invitation',
     'Link zum Festlegen eines neuen Passworts' => 'Link to set a new password',
     '{what} an {email} gesendet (gültig {hours} Stunden, einmalig nutzbar).' => '{what} sent to {email} (valid for {hours} hours, single use).',
-    '{what} konnte nicht an {email} gesendet werden. Link (wird nur jetzt angezeigt, bitte persönlich weitergeben): {link}' => '{what} could not be sent to {email}. Link (shown only now, please pass it on in person): {link}',
     'Link ungültig' => 'Invalid link',
     'Dieser Link ist abgelaufen, wurde bereits verwendet oder ist ungültig. Bitte fordern Sie über „Passwort vergessen?“ auf der Anmeldeseite einen neuen Link an.' => 'This link has expired, has already been used or is invalid. Please request a new link via “Forgot password?” on the sign-in page.',
     'Passwort festlegen' => 'Set password',

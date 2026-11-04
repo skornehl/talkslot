@@ -24,7 +24,9 @@ die anderen warten kurz. Neuinstallationen erhalten das neueste Schema direkt au
 Migrationen fügen nur Spalten (mit Standardwerten) und Tabellen hinzu, sodass ein Rollback auf eine ältere
 Version weiter funktioniert. Texte für Impressum und Datenschutzerklärung, die nie bearbeitet wurden, werden
 automatisch durch neuere Vorlagen ersetzt; bearbeitete Texte bleiben unverändert, und Admins sehen unter
-*Texte* einen Hinweis, wenn etwas zu tun ist.
+*Texte* einen Hinweis, wenn etwas zu tun ist. Bringt eine neue Vorlage neue Platzhalter in eckigen Klammern
+mit, bleiben bereits aktive Runden erreichbar; das Dashboard nennt die Platzhalter, und die nächste Runde
+lässt sich erst aktivieren, wenn sie ausgefüllt sind.
 
 ## Fehlermeldungen
 
@@ -60,6 +62,44 @@ enthält nur Sessions, den Zähler für Fehlermeldungen und Logs und braucht kei
 Bedenken Sie, dass Buchungen personenbezogene Daten mit kurzer Lebensdauer sind: Spielen Sie ein Backup nur
 so weit wie nötig zurück und lassen Sie anschließend die Bereinigung laufen.
 
+## Secrets austauschen {#changing-secrets}
+
+Tauschen Sie die Passwörter und den geheimen Schlüssel aus `config.php` aus, wenn sie in falsche Hände
+gelangt sein könnten, etwa wenn die Übersicht gewarnt hat, dass alle Benutzer des Servers die Datei lesen
+können, wenn jemand mit FTP-Zugang ausgeschieden ist oder wenn ein altes Backup verloren gegangen ist.
+
+1. **Neue Werte an der Quelle setzen:** ein neues Datenbank-Passwort beim Hoster, ein neues SMTP-Passwort
+   beim Mail-Anbieter, ein neues `APP_SECRET` (`openssl rand -hex 32`). Zwischen dem neuen
+   Datenbank-Passwort und dem Deployment erreicht die Seite die Datenbank nicht; wählen Sie dafür eine
+   ruhige Zeit.
+2. **Secrets dort ändern, wo sie liegen, und neu ausspielen.** Im empfohlenen Environment `production`:
+   `gh secret set DB_PASS --env production`, ebenso `SMTP_PASS` und `APP_SECRET`. Lassen Sie `--env` nur
+   weg, wenn Ihre Secrets im Repository liegen; beim Deployment aus einem
+   [eigenen Repository]({{ '/de/guide/deployment/' | relative_url }}#deploying-from-your-own-repository)
+   setzen Sie sie dort. Ein Secret im Environment hat Vorrang vor einem gleichnamigen Repository-Secret;
+   wer das falsche ändert, ändert also nichts. `gh secret list --env production` zeigt, wann jedes zuletzt
+   geändert wurde. Danach neu ausspielen (*Actions → Deploy → Run workflow*). Ohne GitHub Actions
+   bearbeiten Sie stattdessen `config/config.php`.
+3. **Alte Versionen löschen.** Beim atomaren Deployment behält jede Version auf dem Server ihre eigene
+   `config.php` mit den alten Werten. *Actions → Switch version* mit der Eingabe `prune` (oder
+   `bin/deploy.sh prune`) löscht alle Versionen außer der aktiven. Ein Rollback auf eine ältere Version ist
+   danach nicht mehr möglich (mit geändertem Datenbank-Passwort würde sie ohnehin nicht laufen).
+4. **Backups prüfen:** Ersetzen oder löschen Sie alte Sicherungen von `config.php`.
+5. **Falls das Datenbank-Passwort gelesen worden sein könnte:** Prüfen Sie unter *Benutzer*, ob dort
+   unbekannte Konten stehen, und melden Sie alle ab, indem Sie die Dateien in `app/var/sessions/` löschen
+   (beim Deployment: `<APP_DIR>/app/var/sessions/`). Die Datenbank enthält die Konten der Lehrkräfte und die
+   Buchungen der Eltern. Die Schule muss deshalb bewerten, ob eine Verletzung des Schutzes
+   personenbezogener Daten vorliegt: Sie dokumentiert jede Verletzung (Art. 33 Abs. 5 DSGVO) und meldet sie
+   binnen 72 Stunden der Aufsichtsbehörde, es sei denn, sie führt voraussichtlich nicht zu einem Risiko
+   für die Betroffenen; bei hohem Risiko sind auch diese zu benachrichtigen (Art. 33, 34 DSGVO).
+
+Ein neues `APP_SECRET` ändert das Token für den Web-Cron. Das mitgelieferte `cron.yml` leitet es aus
+demselben Secret ab; ein externer Cron-Dienst braucht das neue Token (siehe
+[Web-Cron]({{ '/de/guide/installation/' | relative_url }})), sonst läuft die Bereinigung nur noch bei
+Seitenaufrufen. Außerdem werden die Rate-Limits zurückgesetzt, und Eltern müssen ein offenes
+Buchungsformular neu laden oder einen Rundencode erneut eingeben. Admin-Sitzungen, Änderungslinks und
+Buchungen bleiben gültig.
+
 ## Löschfristen
 
 | Was | Wann |
@@ -92,3 +132,12 @@ statt `mail` und achten Sie auf die Meldung „Mailversand fehlgeschlagen“.
 
 **Die Datenschutzerklärung zeigt `[HOSTER MIT ANSCHRIFT]`.** Setzen Sie `hosting` (bzw.
 `HOSTING_DE`/`HOSTING_EN`); siehe [Datenschutz und Recht]({{ '/de/guide/privacy/' | relative_url }}).
+
+**Eine Einladung oder ein Passwortlink konnte nicht gesendet werden.** Der Admin sieht nur einen Hinweis;
+der Link wird nie angezeigt. Bringen Sie den Mailversand in Ordnung (siehe oben) und senden Sie ihn dann
+unter *Benutzer → Bearbeiten* erneut.
+
+**Ein Gerät ist verloren gegangen oder ein Konto könnte missbraucht sein.** Siehe
+[Bei Verdacht auf Missbrauch]({{ '/de/guide/security/' | relative_url }}#bei-verdacht-auf-missbrauch):
+alle Sitzungen beenden, Konten und Protokoll prüfen, Passwörter ändern und, wenn personenbezogene Daten
+betroffen sein könnten, rechtzeitig melden.

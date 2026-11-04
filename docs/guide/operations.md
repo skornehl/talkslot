@@ -22,7 +22,9 @@ briefly. Fresh installations get the newest schema directly from `app/schema.sql
 
 Migrations only add columns (with defaults) and tables, so a rollback to an older version keeps working.
 Imprint and privacy texts that were never edited are replaced by newer templates automatically; edited
-texts stay untouched and admins see a hint under *Texte* when something needs attention.
+texts stay untouched and admins see a hint under *Texte* when something needs attention. If a new template
+brings new `[PLACEHOLDERS]`, rounds that are already active stay online; the dashboard lists the
+placeholders, and the next round can only be activated once they are filled in.
 
 ## Error alerts
 
@@ -56,6 +58,41 @@ holds sessions, the alert counter and logs and does not need a backup.
 Keep in mind that bookings are personal data with a short life: restore a backup only as far as
 necessary and let the clean-up run afterwards.
 
+## Changing secrets {#changing-secrets}
+
+Change the passwords and the secret in `config.php` if they may have got out, for example when the
+dashboard warned that every user of the server could read the file, someone with FTP access has left,
+or an old backup is lost.
+
+1. **Set new values at the source:** a new database password at your web host, a new SMTP password at
+   your mail provider, a new `APP_SECRET` (`openssl rand -hex 32`). Between the new database password and
+   the deployment the site cannot reach the database, so choose a quiet time.
+2. **Update the secrets where they are stored and deploy.** In the recommended environment `production`:
+   `gh secret set DB_PASS --env production`, likewise `SMTP_PASS` and `APP_SECRET`. Leave out `--env` only
+   if your secrets are repository secrets; if you deploy from your
+   [own repository]({{ '/guide/deployment/' | relative_url }}#deploying-from-your-own-repository), set
+   them there. A secret in the environment takes precedence over a repository secret of the same name, so
+   updating the wrong one changes nothing: `gh secret list --env production` shows when each one was last
+   updated. Then deploy (*Actions → Deploy → Run workflow*). Without GitHub Actions edit
+   `config/config.php` instead.
+3. **Delete the old versions.** With the atomic deployment every version on the server keeps its own
+   `config.php` with the old values. *Actions → Switch version* with the input `prune` (or
+   `bin/deploy.sh prune`) deletes all versions except the active one. A rollback to an older version is
+   no longer possible (with a changed database password it would not work anyway).
+4. **Check your backups** of `config.php` and replace or delete the old ones.
+5. **If the database password may have been read:** look for accounts you do not know under *Benutzer*,
+   and sign everyone out by deleting the files in `app/var/sessions/` (with the deployment:
+   `<APP_DIR>/app/var/sessions/`). The database holds the teachers' accounts and the parents' bookings, so
+   the school has to assess whether this is a personal data breach: it documents every breach
+   (Art. 33(5) GDPR) and reports it to the supervisory authority within 72 hours unless it is unlikely to
+   put the people concerned at risk; at a high risk they have to be told as well (Art. 33, 34 GDPR).
+
+A new `APP_SECRET` changes the web cron token. The included `cron.yml` derives it from the same secret; an
+external cron service needs the new token (see [web cron]({{ '/guide/installation/' | relative_url }})),
+otherwise the clean-up only runs on page views. It also resets the rate limits, and parents have to
+reload an open booking form or enter a round code again. Admin sessions, change links and bookings stay
+valid.
+
 ## Clean-up schedule
 
 | What | When |
@@ -86,3 +123,10 @@ look for the alert "Mailversand fehlgeschlagen".
 
 **The privacy policy shows `[HOSTER MIT ANSCHRIFT]`.** Set `hosting` (or `HOSTING_DE`/`HOSTING_EN`); see
 [Privacy and legal]({{ '/guide/privacy/' | relative_url }}).
+
+**An invitation or password link could not be sent.** The admin only sees a hint; the link is never shown
+on screen. Fix the mail delivery (see above), then send it again under *Benutzer → Bearbeiten*.
+
+**A device was lost or an account may be misused.** See
+[If you suspect misuse]({{ '/guide/security/' | relative_url }}#if-you-suspect-misuse): end all sessions,
+check the accounts and the log, change passwords and, if personal data may be affected, report it in time.

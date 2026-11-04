@@ -14,13 +14,15 @@ Variable `FTP_HOST` tun die Workflows für Deployment, Cronjob und Rollback nich
    Werte brechen den Lauf ab, bevor etwas hochgeladen wird.
 2. **Hochladen neben die laufende Version.** Die neue Version kommt in ein eigenes Verzeichnis
    (`<APP_DIR>/releases/<name>/`, Assets nach `<WEB_DIR>/v/<name>/`). Die Live-Seite bleibt unberührt.
-   Anschließend wird jede Datei auf dem Server geprüft.
+   Direkt nach dem Code wird ihre `config.php` nur für den Eigentümer lesbar gemacht
+   ([Dateirechte](#permissions-of-configphp)). Anschließend wird jede Datei auf dem Server geprüft.
 3. **Umschalten in einem Schritt.** Die Zeigerdatei `<APP_DIR>/current` wird ersetzt (als `current.new`
    hochgeladen, dann umbenannt). Ab diesem Moment beantwortet die neue Version jede Anfrage. Alter und neuer
    Code laufen nie gleichzeitig und können daher keine inkonsistenten Daten schreiben.
 4. **Prüfen.** Login-Seite, Startseite und das CSS der neuen Version werden abgerufen. Schlägt das fehl,
    schaltet der Workflow sofort auf die vorherige Version zurück, löscht die defekte und schlägt fehl.
-5. **Aufräumen.** Die fünf neuesten Versionen bleiben für Rollbacks auf dem Server.
+5. **Aufräumen.** Die fünf neuesten Versionen bleiben für Rollbacks auf dem Server; ihre `config.php`
+   bekommt dieselben Rechte wie die neue.
 
 ```
 <APP_DIR>/current            Name der aktiven Version, z. B. 20261102-153012-v1.1.0
@@ -67,6 +69,34 @@ Die Sessions liegen im gemeinsamen `app/var/`, daher wird durch ein Deployment n
 | `MAIL_FROM`, `MAIL_FROM_NAME`, `MAIL_REPLY_TO`, `ALERT_EMAIL` | Variablen | | E-Mail-Einstellungen |
 | `MAIL_TRANSPORT`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_ENCRYPTION` | Variablen | | für SMTP |
 | `SMTP_USER`, `SMTP_PASS` | Secrets | | für SMTP |
+| `CONFIG_MODE` | Variable | | Dateirechte von `config.php` auf dem Server: `600` (Standard), `640` oder `keep`; Rechte, die andere lesen lassen, werden abgelehnt; siehe unten |
+
+### Dateirechte von config.php {#permissions-of-configphp}
+
+`config.php` enthält das Datenbank- und das SMTP-Passwort sowie `APP_SECRET`. Beim Hochladen per FTP
+bekommt jede Datei die Standardrechte des Servers, oft `644`: Auf einem geteilten Server könnte dann jeder
+andere Benutzer sie lesen. Das Deployment führt deshalb direkt nach dem Hochladen des Codes `chmod 600` auf
+die `config.php` der neuen Version aus. Hat die neue Version die Prüfung bestanden (PHP kann eine Datei mit
+diesen Rechten lesen), bekommen auch die älteren Versionen auf dem Server diese Rechte: Sie enthalten
+dieselben Secrets.
+
+- Unterstützt Ihr FTP-Server kein `chmod`, zeigt der Lauf eine Warnung und macht weiter. Jedes Deployment
+  lädt dann eine neue Kopie mit den Standardrechten hoch. Setzen Sie deshalb nach jedem Deployment die
+  Rechte von `<APP_DIR>/releases/<name>/config/config.php` im Dateimanager Ihres Hosters, für jede Version
+  auf dem Server. Die Übersicht von TalkSlot warnt die Admins und nennt jede Kopie, die alle Benutzer des
+  Servers lesen können.
+- Läuft PHP unter einem anderen Benutzer als Ihr FTP-Zugang (bei Shared Hosting selten), kann PHP eine
+  Datei mit `600` nicht lesen. Die Prüfung nach dem Umschalten schlägt dann mit HTTP 500 fehl, und die
+  vorherige Version bleibt aktiv. Setzen Sie die Variable `CONFIG_MODE` auf `640` (PHP liest die Datei über
+  seine Gruppe) oder, falls auch das nicht reicht, auf `keep` (Rechte bestimmt der Server):
+  `gh variable set CONFIG_MODE --body 640`. `640` schützt die Datei nur, wenn kein anderer Kunde in ihrer
+  Gruppe ist (manche Hoster stecken alle Kunden in eine Gruppe oder lassen PHP für alle unter demselben
+  Benutzer laufen). Die Übersicht kann das nicht erkennen; fragen Sie Ihren Hoster.
+
+**Update von einer Version ohne `CONFIG_MODE`:** Bis dahin hatte `config.php` in jeder Version auf dem
+Server die Standardrechte. Das erste Deployment nach dem Update schränkt sie in allen Versionen ein. Konnten
+andere Benutzer des Servers die Datei bis dahin lesen (fragen Sie Ihren Hoster, wie die Kunden voneinander
+getrennt sind), [tauschen Sie die Secrets aus]({{ '/de/guide/operations/' | relative_url }}#changing-secrets).
 
 ## Rollback
 
@@ -77,10 +107,12 @@ Die Sessions liegen im gemeinsamen `app/var/`, daher wird durch ein Deployment n
 | `previous` | eine Version zurück (Standard) |
 | `list` | nur die Versionen auf dem Server anzeigen |
 | ein Versionsname | genau diese Version, z. B. `20261102-153012-v1.1.0` |
+| `prune` | alle Versionen außer der aktiven löschen, z. B. nach dem [Austausch von Secrets]({{ '/de/guide/operations/' | relative_url }}#changing-secrets); danach ist kein Rollback mehr möglich |
 
 ```bash
 gh workflow run "Switch version"                      # eine Version zurück
 gh workflow run "Switch version" -f target=list       # verfügbare Versionen anzeigen
+gh workflow run "Switch version" -f target=prune      # nur die aktive Version behalten
 ```
 
 Auch nach dem Umschalten wird die Seite geprüft. Der nächste Push auf `main` spielt wieder den neuesten
@@ -118,7 +150,7 @@ on:
   workflow_dispatch:
     inputs:
       target:
-        description: 'previous, list or version name'
+        description: 'previous, list, prune or version name'
         required: true
         default: previous
 permissions:

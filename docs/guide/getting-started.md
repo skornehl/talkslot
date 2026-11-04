@@ -33,13 +33,15 @@ dev/demo.sh        # optional: three demo rounds with bookings
 ## A first tour
 
 1. **Log in** as `sabrina`. She is an admin. Open *Texte* and look at *Angaben für Impressum und
-   Datenschutz*: without these details no round is public (`dev/demo.sh` filled them in).
+   Datenschutz*: without these details no round is public, and no round can be activated while the privacy
+   policy still contains `[PLACEHOLDERS]` (`dev/demo.sh` filled in both with example values; after
+   `dev/reset.sh` alone, do that under *Texte* first).
 2. **Open a round** on the dashboard (*Alle Runden*). You see the link for parents, the round code, the
    invitation text and the bookings of each day.
 3. **Book as a parent:** click *Öffnen* next to the link, choose a slot, enter a name and tick the
    privacy checkbox. The confirmation page shows the personal change link. With an e-mail address the
    confirmation arrives in Mailpit, including a calendar file.
-4. **Switch the language** with the flags in the footer, and try light and dark mode.
+4. **Switch the language** at the top of the page, and try light and dark mode in the footer.
 5. **Create your own round** with *+ Neue Runde*: pick one or more dates, the first and last slot, the
    duration and breaks. The preview shows the resulting slots before you save.
 

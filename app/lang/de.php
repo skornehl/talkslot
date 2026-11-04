@@ -17,7 +17,8 @@ return [
     'theme.auto' => 'Automatisch',
     'theme.light' => 'Hell',
     'theme.dark' => 'Dunkel',
-    'footer.language' => 'Sprache',
+    'lang.label' => 'Sprache',
+    'lang.suggest' => 'Diese Seite auf Deutsch anzeigen',
 
     'home.title' => 'Terminvergabe',
     'home.text' => 'Bitte verwenden Sie den Link aus Ihrer Einladung oder geben Sie hier den Code der Terminvergabe ein.',

@@ -42,6 +42,7 @@ final class App
         }
 
         self::initPublicLanguage();
+        header('Vary: Accept-Language'); // the browser language decides whether a link to it is offered
         (new PublicController())->dispatch($path, Http::method());
     }
 

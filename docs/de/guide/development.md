@@ -43,7 +43,8 @@ Nach einem vollständigen Durchlauf darf keine Fehler-E-Mail verschickt worden s
 Der Browser-Test steuert Headless-Chrome (Node 22+, ohne Abhängigkeiten) durch das JavaScript: Zeitfelder und
 Terminvorschau (abgeglichen mit den Terminen, die der Server erzeugt), Datums- und Pausenfelder, Schutz vor
 doppeltem Absenden und Löschbestätigungen, Link kopieren, die Übersetzung im Browser (mit nachgebildeter
-Translator-API, einschließlich Sprachpaket-Downloads, Neuübersetzung und Fehlerfällen), „Termin auf diesem Gerät merken“ einschließlich abgewiesener fremder Links, Fehlerfokus und
+Translator-API, einschließlich Sprachpaket-Downloads, Neuübersetzung und Fehlerfällen), „Termin auf diesem Gerät merken“ einschließlich abgewiesener fremder Links, die Sprachwahl in Handybreite
+(Enter bucht weiterhin, ein Wechsel behält die Eingaben, Hinweis auf die Browsersprache), Fehlerfokus und
 den Hell/Dunkel-Schalter.
 
 Die Sicherheitsinvarianten (Rollen in der Routentabelle, keine Datenänderung durch GET, Sperre auf jedem

@@ -14,7 +14,8 @@ return [
     'theme.auto' => 'Otomatik',
     'theme.light' => 'Açık',
     'theme.dark' => 'Koyu',
-    'footer.language' => 'Dil',
+    'lang.label' => 'Dil',
+    'lang.suggest' => 'Bu sayfayı Türkçe görüntüle',
 
     'home.title' => 'Randevu alma',
     'home.text' => 'Lütfen davetiyenizdeki bağlantıyı kullanın veya davetiyedeki kodu buraya girin.',
