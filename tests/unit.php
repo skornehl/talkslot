@@ -217,6 +217,9 @@ App\Config::load($cfg);
 check('quote (>) as blockquote, also after a paragraph and before a list',
     Markdown::toHtml("Text\n> Zitat\n> zwei\n- Punkt\n> neu") === "<p>Text</p>\n<blockquote>Zitat<br>zwei</blockquote>\n<ul><li>Punkt</li></ul>\n<blockquote>neu</blockquote>");
 check('paragraph after quote is separated', Markdown::toHtml("> Zitat\nText") === "<blockquote>Zitat</blockquote>\n<p>Text</p>");
+check('Markdown: letters containing the byte 0x85 stay intact (х, ą, Å)',
+    Markdown::toHtml("Хабибуллина\nDąbrowska Ångström") === "<p>Хабибуллина<br>Dąbrowska Ångström</p>");
+check('Markdown: invalid UTF-8 does not empty the text', str_contains(Markdown::toHtml("A\xC3\nB"), 'B'));
 App\Config::load(['csrf_min_age_seconds' => 2, 'csrf_max_age_seconds' => 4 * 3600] + $cfg);
 $tok = App\Csrf::publicToken('x');
 check('public CSRF token: too fast, wrong context, broken, expired',
@@ -302,6 +305,27 @@ check('sending via mail(): sender, Reply-To, attachment, umlauts', $rc === 0 && 
     && str_contains($mail, 'Reply-To: lehrkraft@example.org') && str_contains($mail, 'Content-Type: multipart/mixed') && str_contains($mail, base64_encode('BEGIN:VCALENDAR'))
     && str_contains($mail, 'Hallo =C3=84'));
 check('sending via mail(): no header injection via the subject', $mail !== '' && !preg_match('/^Bcc:/mi', $mail));
+
+// Every parent language through mail(): the text must arrive unchanged. '/\R/' without /u used to split
+// lines at the byte 0x85, which is part of х, ą, Å … (Russian, Ukrainian and Polish mails were broken)
+foreach (App\I18n::languages() as $lang) {
+    $mailFile = tempnam(sys_get_temp_dir(), 'mail');
+    file_put_contents($sendmail = tempnam(sys_get_temp_dir(), 'sendmail'), "#!/bin/sh\ncat > " . escapeshellarg($mailFile) . "\n");
+    chmod($sendmail, 0700);
+    $code = 'require "app/bootstrap.php";
+        App\Config::load(["mail" => ["transport" => "mail", "from_address" => "absender@example.org", "from_name" => "", "reply_to" => ""]] + (require "config/config.php"));
+        $body = App\I18n::with(' . var_export($lang, true) . ', static fn () => t("mail.booked.body", ["title" => "Хабибуллина, Dąbrowska, Їжак", "teacher" => "Frau Ä", "when" => "х", "name" => "Łukasz Ąę", "link" => "https://example.org/b/x"]) . "\n\n" . t("mail.footer", ["app" => "TalkSlot", "controller" => "Schule"]));
+        file_put_contents(' . var_export($mailFile . '.expected', true) . ', $body);
+        exit(App\Mailer::send("eltern@example.org", "Test", $body) ? 0 : 1);';
+    [$rc] = $run(['-d', 'sendmail_path=' . $sendmail, '-r', $code]);
+    $raw = (string) file_get_contents($mailFile);
+    $expected = (string) @file_get_contents($mailFile . '.expected');
+    $raw = str_replace("\r\n", "\n", $raw);
+    $decoded = quoted_printable_decode(substr($raw, (int) strpos($raw, "\n\n") + 2));
+    check("mail() in $lang: text arrives unchanged and valid UTF-8", $rc === 0 && $expected !== '' && mb_check_encoding($decoded, 'UTF-8')
+        && rtrim($decoded, "\n") === str_replace("\r\n", "\n", $expected));
+    @unlink($mailFile); @unlink($mailFile . '.expected'); @unlink($sendmail);
+}
 
 [$rc, , $err] = $run(['-d', 'sendmail_path=/bin/false', '-r', '
     require "app/bootstrap.php";
@@ -433,6 +457,16 @@ foreach (array_merge(glob(dirname(__DIR__) . '/app/src/*.php'), glob(dirname(__D
 }
 $unexpected = array_diff_key($found, $allowed);
 check('SQL text without embedded variables (only reviewed exceptions' . ($unexpected ? '; new: ' . implode(', ', array_map(static fn ($k, $l) => "$k line $l", array_keys($unexpected), $unexpected)) : '') . ')', !$unexpected);
+$badR = [];
+foreach (array_merge(glob(dirname(__DIR__) . '/app/src/*.php'), glob(dirname(__DIR__) . '/app/src/Controller/*.php'), [dirname(__DIR__) . '/app/helpers.php'], glob(dirname(__DIR__) . '/bin/*.php')) as $f) {
+    foreach (token_get_all((string) file_get_contents($f)) as $tok) {
+        // A pattern literal with \R but without the u modifier splits UTF-8 characters at the byte 0x85
+        if (is_array($tok) && $tok[0] === T_CONSTANT_ENCAPSED_STRING && preg_match('@^[\'"]([/#~]).*\\\\R.*\1([a-zA-Z]*)[\'"]$@s', $tok[1], $m) === 1 && !str_contains($m[2], 'u')) {
+            $badR[] = basename($f) . ':' . $tok[2];
+        }
+    }
+}
+check('no regex with \R without the u modifier' . ($badR ? ' (' . implode(', ', $badR) . ')' : ''), !$badR);
 check('SQL: table prefix replaces only table names, not quoted values',
     App\Db::prefix("SELECT * FROM rounds r WHERE r.title = 'rounds' AND x = \"users\"") === "SELECT * FROM tp_rounds r WHERE r.title = 'rounds' AND x = \"users\"");
 check('email: unusual forms rejected', is_valid_email('x.y+z@schule.example.org') && !is_valid_email('"a b"@example.org') && !is_valid_email('"<svg>"@x.yz') && !is_valid_email("a\n@b.de"));

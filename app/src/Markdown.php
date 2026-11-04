@@ -12,7 +12,7 @@ final class Markdown
 {
     public static function toHtml(string $text): string
     {
-        $lines = preg_split('/\R/', $text) ?: [];
+        $lines = preg_split('/\r\n|\r|\n/', $text) ?: []; // not '/\R/': see Mailer::viaMail()
         $html = [];
         $para = [];
         $list = [];
