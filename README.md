@@ -265,6 +265,8 @@ otherwise the legal pages fall back to English.
 - **No cookies on parent pages** (language via `?lang=`, stateless CSRF), so no cookie banner is needed.
 - IP addresses only for rate limiting: shortened (IPv4 /24, IPv6 /48), HMAC-hashed, deleted after 24 h.
 - No external resources, fonts, scripts or tracking.
+- Admin area and print view are marked `translate="no"`, so browsers do not offer their cloud page
+  translation for booking lists; parent pages stay translatable.
 - Browser storage only on explicit request (§ 25 TDDDG): "remember my appointment" is an unticked checkbox;
   the light/dark choice stores only `light`/`dark`.
 - The mandatory checkbox is worded as *acknowledgement* of the privacy notice, not as consent (Art. 13 GDPR).

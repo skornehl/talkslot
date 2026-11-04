@@ -37,6 +37,12 @@ Datenschutzerklärung.
 - **Keine Drittanbieter:** keine CDNs, Webfonts, Analysetools oder externen Skripte. Übersetzungen des
   Titels einer Runde entstehen im Browser der Lehrkraft mit einem lokalen Modell; es wird kein Text an
   einen Übersetzungsdienst gesendet.
+- **Keine Seitenübersetzung von Buchungslisten:** Admin-Bereich und Druckansicht tragen
+  `translate="no"`, `class="notranslate"` und `<meta name="google" content="notranslate">`. Browser bieten
+  dort deshalb ihre Seitenübersetzung nicht an, die Namen und E-Mail-Adressen an einen Cloud-Dienst
+  schicken würde (eine Übermittlung in ein Drittland, die die Datenschutzerklärung ausschließt). Die
+  Elternseiten bleiben bewusst übersetzbar: Eltern brauchen womöglich eine andere als die sechs
+  angebotenen Sprachen und sehen dort nur ihre eigenen Daten.
 - **Auf diesem Gerät merken** (§ 25 TDDDG): Etwas ohne Einwilligung im Browser zu speichern, ist nur
   erlaubt, wenn es für einen vom Nutzer ausdrücklich gewünschten Dienst unbedingt erforderlich ist.
   Doppelbuchungen zu verhindern, liegt im Interesse der Lehrkraft, nicht der Eltern, und würde diese
