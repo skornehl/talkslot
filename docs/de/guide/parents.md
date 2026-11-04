@@ -18,7 +18,9 @@ Benutzerkonto brauchen Sie nicht.
 3. **Wählen Sie einen freien Termin.** Es werden nur freie Termine angezeigt, nach Tagen geordnet.
 4. **Geben Sie einen Namen ein**, meist den Vor- und Nachnamen Ihres Kindes. Die **E-Mail-Adresse ist
    freiwillig**: Wenn Sie eine angeben, erhalten Sie eine Bestätigung mit Ihrem persönlichen Link und
-   einer Kalenderdatei und meist am Vorabend eine Erinnerung.
+   einer Kalenderdatei und meist am Vorabend eine Erinnerung. Kann die Bestätigung gerade nicht verschickt
+   werden, sagt die Seite das, und sie kommt automatisch nach (mit einem eigenen persönlichen Link; der Link
+   auf der Seite bleibt gültig).
 5. Bestätigen Sie mit einem Häkchen, dass Sie die **Datenschutzhinweise** gelesen haben, und buchen Sie.
 
 ![Buchungsseite auf dem Handy]({{ '/assets/img/parent-round-mobile-dark.webp' | relative_url }}){: style="max-width: 320px"}
