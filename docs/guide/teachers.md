@@ -86,8 +86,10 @@ von Titel und Beschreibung* you can:
 - enter or correct translations by hand, confirm an outdated one as still correct, or leave a language
   untranslated on purpose (empty title).
 
-Missing or outdated translations show the original. Please do not use the browser's own "Translate page"
-feature in the admin area: it sends the whole page, including bookings, to Google or Microsoft.
+Missing or outdated translations show the original. The admin area and the print view are marked
+`translate="no"`, so browsers do not offer their own "Translate page" feature there: it would send the
+whole page, including bookings, to Google or Microsoft. Browsers or add-ons that ignore this mark could
+still do so, so please do not translate admin pages by other means either.
 
 ## Summary mails
 

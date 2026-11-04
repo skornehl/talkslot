@@ -5,11 +5,15 @@ use App\Csrf;
 
 // Imprint and privacy policy in the admin language, if the public pages offer it
 $legalQuery = ['lang' => App\AdminI18n::lang() !== 'de' && App\I18n::lang() === App\AdminI18n::lang() ? App\I18n::lang() : null];
+
+// translate="no" plus class/meta "notranslate": browsers do not offer their page translation, which
+// would send the whole page with names and e-mail addresses to a cloud service (Translator API unaffected)
 ?>
 <!doctype html>
-<html lang="<?= e(App\AdminI18n::lang()) ?>">
+<html lang="<?= e(App\AdminI18n::lang()) ?>" translate="no" class="notranslate">
 <head>
 <meta charset="utf-8">
+<meta name="google" content="notranslate">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
 <meta name="robots" content="noindex, nofollow">

@@ -1,10 +1,12 @@
 <?php
 /** Print view (standalone page, can be saved as PDF in the browser). @var array $round @var array $days @var bool $showEmail @var int $dayFilter */
+// translate="no" plus class/meta "notranslate": no browser page translation of the list (see admin/layout.php)
 ?>
 <!doctype html>
-<html lang="<?= e(App\AdminI18n::lang()) ?>">
+<html lang="<?= e(App\AdminI18n::lang()) ?>" translate="no" class="notranslate">
 <head>
 <meta charset="utf-8">
+<meta name="google" content="notranslate">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title><?= e(__('{title} – Terminliste', ['title' => $round['title']])) ?></title>
