@@ -65,7 +65,8 @@ or an old backup is lost.
 1. **Set new values at the source:** a new database password at your web host, a new SMTP password at
    your mail provider, a new `APP_SECRET` (`openssl rand -hex 32`). With GitHub Actions update the secrets
    (`gh secret set DB_PASS`, `gh secret set SMTP_PASS`, `gh secret set APP_SECRET`) and deploy
-   (*Actions → Deploy → Run workflow*); otherwise edit `config/config.php`.
+   (*Actions → Deploy → Run workflow*); otherwise edit `config/config.php`. Between the new database
+   password and the deployment the site cannot reach the database, so choose a quiet time.
 2. **Delete the old versions.** With the atomic deployment every version on the server keeps its own
    `config.php` with the old values. *Actions → Switch version* with the input `prune` (or
    `bin/deploy.sh prune`) deletes all versions except the active one. A rollback to an older version is

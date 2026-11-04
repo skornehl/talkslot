@@ -69,7 +69,9 @@ können, wenn jemand mit FTP-Zugang ausgeschieden ist oder wenn ein altes Backup
 1. **Neue Werte an der Quelle setzen:** ein neues Datenbank-Passwort beim Hoster, ein neues SMTP-Passwort
    beim Mail-Anbieter, ein neues `APP_SECRET` (`openssl rand -hex 32`). Mit GitHub Actions aktualisieren
    Sie die Secrets (`gh secret set DB_PASS`, `gh secret set SMTP_PASS`, `gh secret set APP_SECRET`) und
-   spielen neu aus (*Actions → Deploy → Run workflow*); sonst bearbeiten Sie `config/config.php`.
+   spielen neu aus (*Actions → Deploy → Run workflow*); sonst bearbeiten Sie `config/config.php`. Zwischen
+   dem neuen Datenbank-Passwort und dem Deployment erreicht die Seite die Datenbank nicht; wählen Sie dafür
+   eine ruhige Zeit.
 2. **Alte Versionen löschen.** Beim atomaren Deployment behält jede Version auf dem Server ihre eigene
    `config.php` mit den alten Werten. *Actions → Switch version* mit der Eingabe `prune` (oder
    `bin/deploy.sh prune`) löscht alle Versionen außer der aktiven. Ein Rollback auf eine ältere Version ist
