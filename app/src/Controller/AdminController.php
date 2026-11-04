@@ -1601,7 +1601,8 @@ final class AdminController
             ? __('Konto {account} gelöscht (mit {count} Runde(n))', ['account' => self::accountLabel($user), 'count' => $rounds])
             : __('Konto {account} gelöscht', ['account' => self::accountLabel($user)]));
         if ($user['role'] === 'admin') {
-            AccountSecurity::adminChange(AccountSecurity::DELETED, $user, Auth::user());
+            $me = Auth::user();
+            $this->withoutSession(static fn () => AccountSecurity::adminChange(AccountSecurity::DELETED, $user, $me));
         }
         $this->flash('success', __('Benutzer „{name}“ mit allen Runden und Buchungen gelöscht.', ['name' => $user['username']]));
         $this->parentsNotNotified($bookings);
@@ -1647,7 +1648,8 @@ final class AdminController
         }
         Auth::endAllSessions();
         $this->audit(fn () => __('Alle Sitzungen beendet'));
-        AccountSecurity::adminChange(AccountSecurity::SESSIONS_ENDED, null, Auth::user());
+        $me = Auth::user();
+        $this->withoutSession(static fn () => AccountSecurity::adminChange(AccountSecurity::SESSIONS_ENDED, null, $me));
         $this->flash('success', __('Alle Sitzungen beendet: Alle Konten müssen sich auf allen Geräten neu anmelden, nur diese Sitzung bleibt bestehen.'));
         Http::redirect('/admin/users');
     }
