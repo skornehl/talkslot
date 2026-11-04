@@ -8,9 +8,9 @@ use App\BookingService;
 use App\Csrf;
 use App\Config;
 use App\Db;
-use App\Hosting;
 use App\Http;
 use App\I18n;
+use App\LegalTexts;
 use App\Markdown;
 use App\Notifier;
 use App\Operator;
@@ -89,9 +89,9 @@ final class PublicController
         }
         $slug = is_string($_GET['r'] ?? null) ? (string) $_GET['r'] : '';
         if ($content !== null) {
-            // The admin is the controller for all rounds (and named in the legal notice)
-            $content = Operator::fill((string) $content, t('privacy.controller.generic'));
-            $content = Hosting::fill($content, $contentLang); // hosting provider from the configuration
+            // The operator is the controller for all rounds (and named in the legal notice); the web host
+            // comes from the configuration
+            $content = LegalTexts::render((string) $content, $contentLang, t('privacy.controller.generic'));
         }
         View::render('public/page', [
             'title' => t('footer.' . $key),

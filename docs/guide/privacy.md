@@ -71,21 +71,63 @@ ask how long they are kept and state it in the privacy policy.
 ## Legal templates
 
 Imprint and privacy policy templates in German and English are copied into the database at installation
-and can be edited by admins under *Texte*. The privacy template covers the information required by
-Art. 13 GDPR: controller, purposes, legal bases including legitimate interests, recipients, third
-countries, retention, rights of data subjects including the right to object, right to lodge a complaint,
-whether providing data is required, and automated decision-making.
+and can be edited by admins under *Texte* (*Texts*). The privacy template covers the information required
+by Art. 13 GDPR: controller, data protection officer, purposes, legal bases, recipients, third countries,
+retention, rights of data subjects including the right to object, right to lodge a complaint, whether
+providing data is required, and automated decision-making.
+
+The privacy policy comes in two variants. On the text form, *Vorlage laden* (*Load template*) puts the
+matching one into the form; it only replaces the stored text when you save.
+
+| Variant | For | Legal bases |
+|---|---|---|
+| *Öffentliche Schule* (*Public school*), installed | a state school as controller | Art. 6(1)(e) and (3) GDPR in conjunction with the school act of your state (bookings, mails, summaries) and its data protection act (abuse protection, server logs); right to object under Art. 21, no right to data portability (Art. 20(3)) |
+| *Privater Träger* (*Private operator*) | e.g. an independent school or a parents' association | Art. 6(1)(b) and (f) GDPR; right to object for (f), right to data portability |
+
+A public authority cannot rely on legitimate interests (Art. 6(1), second subparagraph, GDPR), and meetings
+at a state school are part of its statutory tasks, not of a contract. That is why the public school variant
+cites the law of your state. Which provisions apply differs from state to state, so the template leaves them
+as placeholders.
 
 Before going live:
 
-1. **Controller:** fill in *Texte → Angaben für Impressum und Datenschutz*. It replaces
-   `[[VERANTWORTLICHE]]`; without it no round is public.
-2. **Web host:** set `hosting` in the configuration (or `HOSTING_DE`/`HOSTING_EN` when deploying). It
-   replaces `[[HOSTER]]`. Unset, the page shows a visible placeholder and admins see a hint.
-3. **Remaining placeholders** in square brackets: retention of the web server logs (ask your web host) and
-   the competent data protection supervisory authority.
-4. **Data processing agreement** (DPA, *AVV*) with your web host.
-5. If teachers use the platform: the operator (usually the school) is responsible for all rounds, the
-   teachers act on its behalf and instructions.
+1. **Who is responsible:** at a state school the school is the controller, and the school management
+   decides to use TalkSlot. If someone else runs the server for the school (e.g. a volunteer with their own
+   hosting contract), the school needs an agreement under Art. 28 GDPR with that person (instructions,
+   confidentiality, the web host as sub-processor, handover of all access, deletion when operation ends),
+   or the school (or its school authority) concludes the hosting contract itself.
+2. **Controller:** fill in *Texte → Angaben für Impressum und Datenschutz*. These details replace
+   `[[VERANTWORTLICHE]]`; without them no round is public.
+3. **Web host:** set `hosting` in the configuration (or `HOSTING_DE`/`HOSTING_EN` when deploying). It
+   replaces `[[HOSTER]]`. Unset, the page shows the placeholders `[HOSTER MIT ANSCHRIFT]` and `[LAND]`
+   (English: `[WEB HOST WITH ADDRESS]`, `[COUNTRY]`), and admins see a hint.
+4. **Remaining placeholders** in square brackets, in every language you keep a text for: contact details of
+   the data protection officer, the provisions of your state (school act, data protection act), the
+   retention of the web server logs (ask your web host) and the competent supervisory authority. The
+   school's data protection officer can tell you the provisions.
+5. **Data processing agreement** (DPA, *AVV*) with your web host.
+6. **Admin accounts** only for school staff or for persons bound to confidentiality in writing: the privacy
+   policy tells parents that, apart from the teacher, only such persons can see their bookings.
 
-Have the texts reviewed by someone who knows your situation; the templates do not replace legal advice.
+### No activation while placeholders are open
+
+TalkSlot checks the stored imprint and privacy policy of every offered language as parents see them, i.e.
+with the controller details and the web host filled in. An open placeholder is text in square brackets
+without lower-case letters, at least four characters long, such as `[LAND]`. A Markdown link like
+`[PDF](https://…)` or mixed-case text like `[Hinweis]` does not count. As long as one is left:
+
+- **No round can be activated:** neither a new active round, nor *Aktivieren* (*Activate*), nor assigning an
+  active round to another teacher. The message names the affected texts.
+- **Admins** see on the dashboard and under *Texte* which placeholders are open in which text and language.
+  **Teachers** see that the admins still have to fill in the texts.
+- **Rounds that are already active stay online**, and parents can still use their change links. An
+  existing installation therefore does not go offline after an update: the dashboard announces the open
+  placeholders, and only the next activation waits for them.
+
+On an update, texts that were never edited are replaced by the new templates (see
+[Operations]({{ '/guide/operations/' | relative_url }})), new placeholders included. Edited texts stay as
+they are. If they still contain the old sentences about a "private service" without a data protection
+officer or about cancelling "at any time", a hint asks you to compare them with the new template.
+
+Have the texts reviewed by someone who knows your situation, ideally the school's data protection officer;
+the templates do not replace legal advice.

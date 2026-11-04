@@ -69,6 +69,17 @@ curl -s -o /dev/null -b "$J" --data-urlencode "csrf=$T" \
 check "details for legal notice/privacy policy saved on their own page, no notice left" 'curl -s -b "$J" "$B/admin/texts" | grep -q "Teststraße 1" && ! curl -s -b "$J" "$B/admin" | grep -q "Angaben für Impressum und Datenschutz fehlen"'
 LONG=$(curl -s -L -b "$J" --data-urlencode "csrf=$T" --data-urlencode "controller_contact=$(printf 'x%.0s' $(seq 2001))" "$B/admin/texts/operator")
 check "details longer than 2000 characters rejected, stored details unchanged" 'echo "$LONG" | grep -q "Die Angaben sind zu lang" && curl -s -b "$J" "$B/admin/texts" | grep -q "Teststraße 1"'
+# Rounds can only be activated once the privacy policy has no open [PLACEHOLDERS] (an unconfigured web host
+# counts as well): fill them in like an admin, from the template of the variant $1 (tests/smoke.d/parents.sh)
+SMOKE_HOST='Beispiel Hosting GmbH, Serverweg 1, 12345 Serverstadt'
+legal_fill() {
+  local l t
+  t=$(curl -s -b "$J" "$B/admin" | csrf)
+  for l in de en; do
+    curl -s -o /dev/null -b "$J" --data-urlencode "csrf=$t" --data-urlencode "content=$(perl -CSD -pe 's/\[\[HOSTER\]\]/'"$SMOKE_HOST"'/g; s/(?<!\[)\[\p{Lu}[^\[\]\p{Ll}\n]{3,}\](?![\](])/Testangabe/g' "$ROOT/app/templates/pages/${1:-privacy}.$l.md")" "$B/admin/page/privacy/$l"
+  done
+}
+legal_fill
 
 TOMORROW=$(date -d '+3 day' +%F)
 loc=$(curl -s -o /dev/null -w '%{redirect_url}' -b "$J" --data-urlencode "csrf=$T" --data-urlencode "title=Elternsprechtag Größe Übung" \
@@ -246,6 +257,7 @@ php -r '$p = new PDO("mysql:host=127.0.0.1;dbname=" . (getenv("TP_DB") ?: "talks
 DBQ "UPDATE tp_settings SET value = 'alt' WHERE name = 'pages_version'"
 curl -s -o /dev/null "$B/"
 check "unedited old privacy policy is replaced, even without a schema step" '! curl -s "$B/datenschutz" | grep -q "DeepL" && curl -s "$B/datenschutz" | grep -q "Translator API" && [ "$(DBQ "SELECT value FROM tp_settings WHERE name=\"pages_version\"")" != alt ]'
+legal_fill # the new template has open placeholders again
 
 echo "Admin actions"
 T=$(curl -s -b "$J" "$B/admin/round/$RID" | csrf)
@@ -466,8 +478,10 @@ S4=$(curl -s -c "$J2" -b "$J2" "$B/admin/round/$R4" | grep -o 'data-copy="[^"]*"
 P4=$(curl -s "$B/$S4")
 check "round page names the teacher" 'echo "$P4" | grep -q "Gesprächstermine bei Herr Zwei"'
 curl -s -o /dev/null --data-urlencode "csrf=$(echo "$P4" | csrf)" -d "slot_id=$(echo "$P4" | grep -o 'value="[0-9]*" required' | head -1 | grep -o '[0-9]*')&name=Kind+Zwei&email=eltern-zwei@example.org&privacy=1" "$B/$S4"
+DBQ "UPDATE tp_pages SET content = REPLACE(content, '$SMOKE_HOST', '[[HOSTER]]') WHERE page_key='privacy' AND lang='de'"
 PRIV=$(curl -s "$B/datenschutz?r=$S4")
 check "without web host in the configuration: visible placeholder, notice in the admin area" 'echo "$PRIV" | grep -qF "[HOSTER MIT ANSCHRIFT]" && ! echo "$PRIV" | grep -qF "[[HOSTER]]" && curl -s -b "$J" "$B/admin/texts" | grep -q "fehlen die Angaben zum Hoster"'
+DBQ "UPDATE tp_pages SET content = REPLACE(content, '[[HOSTER]]', '$SMOKE_HOST') WHERE page_key='privacy' AND lang='de'"
 check "privacy notice names the admin as controller (also for a round of teacher 2)" 'echo "$PRIV" | grep -q "Teststraße 1" && ! echo "$PRIV" | grep -q "Schulweg 2" && ! echo "$PRIV" | grep -q "Auftragsverarbeiterin"'
 check "privacy notice without round and imprint: also the admin's details" 'curl -s "$B/datenschutz" | grep -q "Teststraße 1" && curl -s "$B/impressum" | grep -q "Teststraße 1" && ! curl -s "$B/impressum" | grep -q "VORNAME NACHNAME"'
 check "details only on the admins' texts page, not in any profile" '! curl -s -c "$J2" -b "$J2" "$B/admin/profile" | grep -q "name=\"controller_contact\"" && ! curl -s -b "$J" "$B/admin/profile" | grep -q "name=\"controller_contact\"" && curl -s -b "$J" "$B/admin/texts" | grep -q "name=\"controller_contact\"" && [ "$(curl -s -o /dev/null -w "%{http_code}" -c "$J2" -b "$J2" "$B/admin/texts")" = 404 ]'

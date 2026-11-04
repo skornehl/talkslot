@@ -24,7 +24,9 @@ die anderen warten kurz. Neuinstallationen erhalten das neueste Schema direkt au
 Migrationen fügen nur Spalten (mit Standardwerten) und Tabellen hinzu, sodass ein Rollback auf eine ältere
 Version weiter funktioniert. Texte für Impressum und Datenschutzerklärung, die nie bearbeitet wurden, werden
 automatisch durch neuere Vorlagen ersetzt; bearbeitete Texte bleiben unverändert, und Admins sehen unter
-*Texte* einen Hinweis, wenn etwas zu tun ist.
+*Texte* einen Hinweis, wenn etwas zu tun ist. Bringt eine neue Vorlage neue Platzhalter in eckigen Klammern
+mit, bleiben bereits aktive Runden erreichbar; das Dashboard nennt die Platzhalter, und die nächste Runde
+lässt sich erst aktivieren, wenn sie ausgefüllt sind.
 
 ## Fehlermeldungen
 
