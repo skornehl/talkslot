@@ -63,19 +63,33 @@ dashboard warned that every user of the server could read the file, someone with
 or an old backup is lost.
 
 1. **Set new values at the source:** a new database password at your web host, a new SMTP password at
-   your mail provider, a new `APP_SECRET` (`openssl rand -hex 32`). With GitHub Actions update the secrets
-   (`gh secret set DB_PASS`, `gh secret set SMTP_PASS`, `gh secret set APP_SECRET`) and deploy
-   (*Actions → Deploy → Run workflow*); otherwise edit `config/config.php`. Between the new database
-   password and the deployment the site cannot reach the database, so choose a quiet time.
-2. **Delete the old versions.** With the atomic deployment every version on the server keeps its own
+   your mail provider, a new `APP_SECRET` (`openssl rand -hex 32`). Between the new database password and
+   the deployment the site cannot reach the database, so choose a quiet time.
+2. **Update the secrets where they are stored and deploy.** In the recommended environment `production`:
+   `gh secret set DB_PASS --env production`, likewise `SMTP_PASS` and `APP_SECRET`. Leave out `--env` only
+   if your secrets are repository secrets; if you deploy from your
+   [own repository]({{ '/guide/deployment/' | relative_url }}#deploying-from-your-own-repository), set
+   them there. A secret in the environment takes precedence over a repository secret of the same name, so
+   updating the wrong one changes nothing: `gh secret list --env production` shows when each one was last
+   updated. Then deploy (*Actions → Deploy → Run workflow*). Without GitHub Actions edit
+   `config/config.php` instead.
+3. **Delete the old versions.** With the atomic deployment every version on the server keeps its own
    `config.php` with the old values. *Actions → Switch version* with the input `prune` (or
    `bin/deploy.sh prune`) deletes all versions except the active one. A rollback to an older version is
    no longer possible (with a changed database password it would not work anyway).
-3. **Check your backups** of `config.php` and replace or delete the old ones.
+4. **Check your backups** of `config.php` and replace or delete the old ones.
+5. **If the database password may have been read:** look for accounts you do not know under *Benutzer*,
+   and sign everyone out by deleting the files in `app/var/sessions/` (with the deployment:
+   `<APP_DIR>/app/var/sessions/`). The database holds the teachers' accounts and the parents' bookings, so
+   the school has to assess whether this is a personal data breach: it documents every breach
+   (Art. 33(5) GDPR) and reports it to the supervisory authority within 72 hours unless it is unlikely to
+   put the people concerned at risk; at a high risk they have to be told as well (Art. 33, 34 GDPR).
 
-A new `APP_SECRET` changes the web cron token (the included `cron.yml` derives it from the same secret),
-resets the rate limits, and parents have to reload an open booking form or enter a round code again.
-Admin sessions, change links and bookings stay valid.
+A new `APP_SECRET` changes the web cron token. The included `cron.yml` derives it from the same secret; an
+external cron service needs the new token (see [web cron]({{ '/guide/installation/' | relative_url }})),
+otherwise the clean-up only runs on page views. It also resets the rate limits, and parents have to
+reload an open booking form or enter a round code again. Admin sessions, change links and bookings stay
+valid.
 
 ## Clean-up schedule
 
