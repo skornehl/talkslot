@@ -26,6 +26,7 @@ CREATE TABLE IF NOT EXISTS users (
   UNIQUE KEY uq_users_access_token (access_token_hash)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- location: where the meetings take place (e.g. a room); a day can override it.
 CREATE TABLE IF NOT EXISTS rounds (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   user_id INT UNSIGNED NOT NULL,
@@ -35,6 +36,7 @@ CREATE TABLE IF NOT EXISTS rounds (
   code_required TINYINT(1) NOT NULL DEFAULT 0,
   booking_limit VARCHAR(5) NOT NULL DEFAULT 'none',
   description TEXT NULL,
+  location VARCHAR(200) NULL,
   source_lang VARCHAR(5) NOT NULL DEFAULT 'de',
   is_active TINYINT(1) NOT NULL DEFAULT 0,
   booking_deadline_hours INT UNSIGNED NOT NULL DEFAULT 24,
@@ -56,6 +58,7 @@ CREATE TABLE IF NOT EXISTS round_days (
   start_time TIME NOT NULL,
   end_time TIME NOT NULL,
   slot_minutes SMALLINT UNSIGNED NOT NULL,
+  location VARCHAR(200) NULL,
   KEY idx_days_round (round_id, day_date),
   CONSTRAINT fk_days_round FOREIGN KEY (round_id) REFERENCES rounds (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

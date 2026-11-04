@@ -167,6 +167,7 @@ code { font-family: var(--mono); font-size: .9em; background: var(--neutral-soft
 .bt-updated { box-shadow: 0 0 0 3px var(--success-soft); border-color: var(--success); transition: box-shadow .3s; }
 .description { margin-bottom: 1rem; }
 .teacher { font-size: 1.1rem; color: var(--muted); margin-top: -.4rem; }
+.location { margin-top: -.6rem; color: var(--muted); }
 .muted { color: var(--muted); }
 .small { font-size: .9rem; }
 .hint { color: var(--muted); font-size: .92rem; margin: .3rem 0 0; }

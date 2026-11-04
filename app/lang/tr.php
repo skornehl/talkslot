@@ -30,6 +30,7 @@ return [
     'page.missing' => 'Bu metin henüz eklenmedi.',
 
     'round.teacher' => 'Görüşme randevuları: {name}',
+    'round.location' => 'Yer: {location}',
     'round.one_only' => 'Lütfen yalnızca bir randevu alın.',
     'round.limit_round' => 'Kişi başına yalnızca bir randevu alınabilir. Kardeşler için lütfen her çocuğun adıyla ayrı randevu alın.',
     'round.limit_day' => 'Kişi başına günde yalnızca bir randevu alınabilir. Kardeşler için lütfen her çocuğun adıyla ayrı randevu alın.',
@@ -96,6 +97,7 @@ return [
     'manage.round' => 'Randevu',
     'manage.teacher' => 'Görüşme yapılacak kişi',
     'manage.when' => 'Saat',
+    'manage.location' => 'Yer',
     'manage.name' => 'Ad',
     'manage.change' => 'Randevuyu değiştir',
     'manage.change.text' => 'Başka bir boş saat seçin. Mevcut saatiniz o zaman serbest bırakılır.',

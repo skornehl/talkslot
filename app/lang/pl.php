@@ -30,6 +30,7 @@ return [
     'page.missing' => 'Ten tekst nie został jeszcze dodany.',
 
     'round.teacher' => 'Terminy rozmów: {name}',
+    'round.location' => 'Miejsce: {location}',
     'round.one_only' => 'Prosimy zarezerwować tylko jeden termin.',
     'round.limit_round' => 'Możliwy jest tylko jeden termin na osobę. W przypadku rodzeństwa prosimy rezerwować z imieniem każdego dziecka.',
     'round.limit_day' => 'Możliwy jest tylko jeden termin na osobę dziennie. W przypadku rodzeństwa prosimy rezerwować z imieniem każdego dziecka.',
@@ -96,6 +97,7 @@ return [
     'manage.round' => 'Rezerwacja',
     'manage.teacher' => 'Rozmowa z',
     'manage.when' => 'Termin',
+    'manage.location' => 'Miejsce',
     'manage.name' => 'Imię i nazwisko',
     'manage.change' => 'Zmień termin',
     'manage.change.text' => 'Wybierz inny wolny termin. Dotychczasowy termin zostanie wtedy zwolniony.',

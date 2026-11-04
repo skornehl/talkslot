@@ -30,6 +30,7 @@ return [
     'page.missing' => 'This text has not been added yet.',
 
     'round.teacher' => 'Appointments with {name}',
+    'round.location' => 'Location: {location}',
     'round.one_only' => 'Please book only one appointment.',
     'round.limit_round' => 'Only one appointment per person. For siblings, please book with each child’s name.',
     'round.limit_day' => 'Only one appointment per person and day. For siblings, please book with each child’s name.',
@@ -96,6 +97,7 @@ return [
     'manage.round' => 'Booking',
     'manage.teacher' => 'Meeting with',
     'manage.when' => 'Appointment',
+    'manage.location' => 'Location',
     'manage.name' => 'Name',
     'manage.change' => 'Change appointment',
     'manage.change.text' => 'Choose another free time slot. Your current slot will then be released.',

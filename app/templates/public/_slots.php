@@ -7,7 +7,7 @@
 ?>
 <?php foreach ($days as $day): ?>
 <fieldset class="day">
-  <legend><?= e(fmt_date($day['date'])) ?></legend>
+  <legend><?= e(fmt_date($day['date'])) ?><?php if (trim((string) ($day['location'] ?? '')) !== ''): ?> · <?= e(t('round.location', ['location' => trim((string) $day['location'])])) ?><?php endif; ?></legend>
   <div class="slot-grid">
     <?php foreach ($day['slots'] as $s): $sid = 'slot-' . (int) $s['id']; ?>
     <div class="slot">

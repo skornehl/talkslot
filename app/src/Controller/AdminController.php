@@ -206,7 +206,7 @@ final class AdminController
     {
         $round = $id ? $this->round($id) : null;
         $data ??= $round ?? [
-            'title' => '', 'slug' => '', 'description' => '', 'source_lang' => I18n::defaultLanguage(), 'is_active' => 1,
+            'title' => '', 'slug' => '', 'description' => '', 'location' => '', 'source_lang' => I18n::defaultLanguage(), 'is_active' => 1,
             'booking_deadline_hours' => 24, 'cancel_deadline_hours' => 12,
             'delete_after_hours' => 24, 'random_suffix' => 1,
             'code_required' => 0, 'booking_limit' => 'round', 'user_id' => Auth::id(),
@@ -229,6 +229,8 @@ final class AdminController
             'title' => Http::post('title'),
             'slug' => Http::post('slug'),
             'description' => str_replace("\r\n", "\n", Http::post('description')),
+            // If the field is missing (form opened before the update), the previous value stays
+            'location' => isset($_POST['location']) ? trim(Http::post('location')) : (string) ($round['location'] ?? ''),
             'source_lang' => in_array(Http::post('source_lang'), I18n::languages(), true) ? Http::post('source_lang') : I18n::defaultLanguage(),
             'is_active' => Http::post('is_active') === '1' ? 1 : 0,
             'booking_deadline_hours' => Http::post('booking_deadline_hours'),
@@ -259,6 +261,9 @@ final class AdminController
         }
         if (mb_strlen($data['description']) > 5000) {
             $errors[] = 'Der Beschreibungstext ist zu lang (max. 5000 Zeichen).';
+        }
+        if (mb_strlen($data['location']) > 200) {
+            $errors[] = 'Ort: höchstens 200 Zeichen.';
         }
         foreach (['booking_deadline_hours' => 'Buchungsfrist', 'cancel_deadline_hours' => 'Änderungsfrist'] as $field => $label) {
             if (!ctype_digit((string) $data[$field]) || (int) $data[$field] > 720) {
@@ -303,14 +308,15 @@ final class AdminController
 
         $now = Time::nowSql();
         $values = [
-            $data['title'], $slug, $data['description'] !== '' ? $data['description'] : null, $data['source_lang'],
+            $data['title'], $slug, $data['description'] !== '' ? $data['description'] : null,
+            $data['location'] !== '' ? $data['location'] : null, $data['source_lang'],
             $data['code_required'], $data['booking_limit'], $data['is_active'],
             (int) $data['booking_deadline_hours'], (int) $data['cancel_deadline_hours'],
             $deleteAfter === '' ? null : (int) $deleteAfter, $now,
         ];
         if ($round) {
             Db::run(
-                'UPDATE rounds SET title = ?, slug = ?, description = ?, source_lang = ?, code_required = ?, booking_limit = ?, is_active = ?, booking_deadline_hours = ?,
+                'UPDATE rounds SET title = ?, slug = ?, description = ?, location = ?, source_lang = ?, code_required = ?, booking_limit = ?, is_active = ?, booking_deadline_hours = ?,
                         cancel_deadline_hours = ?, delete_after_hours = ?, updated_at = ?,
                         expired_at = IF(? = 1, NULL, expired_at), user_id = ?
                   WHERE id = ? AND user_id = ?',
@@ -332,9 +338,9 @@ final class AdminController
             $ownerId = (int) $owner['id'];
             [$id, $count] = Db::transaction(function () use ($values, $now, $dayData, $ownerId): array {
                 $id = Db::insert(
-                    'INSERT INTO rounds (title, slug, description, source_lang, code_required, booking_limit, is_active, booking_deadline_hours,
+                    'INSERT INTO rounds (title, slug, description, location, source_lang, code_required, booking_limit, is_active, booking_deadline_hours,
                                          cancel_deadline_hours, delete_after_hours, updated_at, created_at, user_id, code)
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                     [...$values, $now, $ownerId, RoundCode::unique()]
                 );
                 return [$id, $this->createDays($id, $dayData)];
@@ -428,6 +434,10 @@ final class AdminController
             'über den folgenden Link können Sie einen Gesprächstermin für „' . $round['title'] . '“ bei ' . ($owner['display_name'] ?: 'mir') . ' buchen:',
             abs_url('/' . $round['slug']),
         ];
+        if (trim((string) ($round['location'] ?? '')) !== '') {
+            $lines[] = '';
+            $lines[] = 'Ort: ' . trim((string) $round['location']);
+        }
         $code = RoundCode::format($round['code'] ?? null);
         if ($code !== '' && RoundAccess::required($round)) {
             $lines[] = '';
@@ -577,10 +587,10 @@ final class AdminController
             $now = Time::nowSql();
             $title = rtrim(mb_substr($round['title'] . ' (Kopie)', 0, 200));
             $newId = Db::insert(
-                'INSERT INTO rounds (title, slug, description, source_lang, code_required, booking_limit, is_active, booking_deadline_hours,
+                'INSERT INTO rounds (title, slug, description, location, source_lang, code_required, booking_limit, is_active, booking_deadline_hours,
                                      cancel_deadline_hours, delete_after_hours, created_at, updated_at, user_id, code)
-                 VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?)',
-                [$title, Slug::unique(Slug::withSuffix(Slug::fromText($title))), $round['description'], $round['source_lang'],
+                 VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?)',
+                [$title, Slug::unique(Slug::withSuffix(Slug::fromText($title))), $round['description'], $round['location'], $round['source_lang'],
                  (int) $round['code_required'], (string) $round['booking_limit'],
                  $round['booking_deadline_hours'], $round['cancel_deadline_hours'],
                  $round['delete_after_hours'], $now, $now, (int) $round['user_id'], RoundCode::unique()]
@@ -601,9 +611,9 @@ final class AdminController
             }
             foreach (Db::all('SELECT * FROM round_days WHERE round_id = ?', [$round['id']]) as $day) {
                 $dayId = Db::insert(
-                    'INSERT INTO round_days (round_id, day_date, start_time, end_time, slot_minutes) VALUES (?, ?, ?, ?, ?)',
+                    'INSERT INTO round_days (round_id, day_date, start_time, end_time, slot_minutes, location) VALUES (?, ?, ?, ?, ?, ?)',
                     [$newId, (new \DateTimeImmutable((string) $day['day_date']))->modify(sprintf('%+d days', $shift))->format('Y-m-d'),
-                     $day['start_time'], $day['end_time'], $day['slot_minutes']]
+                     $day['start_time'], $day['end_time'], $day['slot_minutes'], $day['location']]
                 );
                 Db::run(
                     'INSERT INTO day_breaks (day_id, start_time, end_time, label) SELECT ?, start_time, end_time, label FROM day_breaks WHERE day_id = ?',
@@ -791,8 +801,8 @@ final class AdminController
             return;
         }
         Db::run(
-            'UPDATE round_days SET day_date = ?, start_time = ?, end_time = ?, slot_minutes = ? WHERE id = ?',
-            [$in['date'], $in['start'], $in['end'], $in['minutes'], $id]
+            'UPDATE round_days SET day_date = ?, start_time = ?, end_time = ?, slot_minutes = ?, location = ? WHERE id = ?',
+            [$in['date'], $in['start'], $in['end'], $in['minutes'], $in['location'] !== '' ? $in['location'] : null, $id]
         );
         // As with "Tag hinzufügen": a day from today on lifts the expiry (otherwise the round including
         // its bookings would be deleted after the deletion period)
@@ -856,9 +866,13 @@ final class AdminController
         $start = Time::normalizeTime(Http::post('start_time'));
         $end = Time::normalizeTime(Http::post('end_time'));
         $minutes = Http::post('slot_minutes');
+        $location = trim(Http::post('location'));
         $errors = Time::isDate($date) ? [] : ['Bitte ein gültiges Datum angeben.'];
         $errors = array_merge($errors, self::timeErrors($start, $end, $minutes));
-        return [['date' => $date, 'start' => $start, 'end' => $end, 'minutes' => (int) $minutes], $errors];
+        if (mb_strlen($location) > 200) {
+            $errors[] = 'Ort: höchstens 200 Zeichen.';
+        }
+        return [['date' => $date, 'start' => $start, 'end' => $end, 'minutes' => (int) $minutes, 'location' => $location], $errors];
     }
 
     // ---------------------------------------------------------------- Slots & bookings

@@ -21,7 +21,7 @@
 <?php foreach ($days as $i => $day): ?>
 <section class="print-day<?= $i > 0 ? ' page-break' : '' ?>">
   <h1><?= e($round['title']) ?></h1>
-  <h2><?= e(fmt_date($day['day_date'])) ?> · <?= e(fmt_range($day['start_time'], $day['end_time'])) ?> Uhr</h2>
+  <h2><?= e(fmt_date($day['day_date'])) ?> · <?= e(fmt_range($day['start_time'], $day['end_time'])) ?> Uhr<?php if (($where = location_of($day, $round)) !== ''): ?> · <?= e($where) ?><?php endif; ?></h2>
   <table>
     <thead><tr><th class="col-time">Zeit</th><th>Name</th><?php if ($showEmail): ?><th>E-Mail</th><?php endif; ?><th class="col-notes">Notizen</th></tr></thead>
     <tbody>

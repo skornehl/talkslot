@@ -35,6 +35,7 @@ $csrf = Csrf::adminField();
     <summary>Einladungstext ansehen</summary>
     <pre class="invitation"><?= e($invitation) ?></pre>
   </details>
+  <?php if (trim((string) ($round['location'] ?? '')) !== ''): ?><p>Ort: <strong><?= e(trim((string) $round['location'])) ?></strong></p><?php endif; ?>
   <p class="small muted"><?= ['round' => 'Ein Termin pro Person', 'day' => 'Ein Termin pro Person und Tag'][$round['booking_limit'] ?? 'none'] ?? 'Mehrfachbuchungen erlaubt' ?> · Buchungsschluss <?= (int) $round['booking_deadline_hours'] ?> h vorher · Ändern/Absagen bis <?= (int) $round['cancel_deadline_hours'] ?> h vorher ·
     <?= $round['delete_after_hours'] === null ? 'Runde wird nicht automatisch gelöscht' : 'Runde wird ' . (int) $round['delete_after_hours'] . ' h nach Ablauf gelöscht' ?></p>
   <div class="actions">
@@ -109,7 +110,7 @@ $csrf = Csrf::adminField();
 <section class="card day-card" id="day-<?= $did ?>">
   <div class="page-head">
     <h2><?= e(fmt_date($day['day_date'])) ?></h2>
-    <p class="muted"><?= e(fmt_range($day['start_time'], $day['end_time'])) ?> Uhr · <?= (int) $day['slot_minutes'] ?> Min. pro Termin</p>
+    <p class="muted"><?= e(fmt_range($day['start_time'], $day['end_time'])) ?> Uhr · <?= (int) $day['slot_minutes'] ?> Min. pro Termin<?php if (trim((string) ($day['location'] ?? '')) !== ''): ?> · Ort: <strong><?= e(trim((string) $day['location'])) ?></strong><?php endif; ?></p>
   </div>
   <div class="actions">
     <a class="button button-small" href="<?= e(url('/admin/day/' . $did . '/edit')) ?>">Tag bearbeiten</a>

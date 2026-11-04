@@ -11,6 +11,11 @@
     <div class="field"><label for="end_time">Bis</label><input type="text" inputmode="numeric" pattern="[0-9]{1,2}([:.][0-9]{2})?|[0-9]{3,4}" maxlength="5" placeholder="HH:MM" autocomplete="off" class="time-input" data-time id="end_time" name="end_time" required value="<?= e(fmt_time($day['end_time'])) ?>"></div>
     <div class="field"><label for="slot_minutes">Minuten pro Termin</label><input type="number" id="slot_minutes" name="slot_minutes" required min="5" max="240" value="<?= (int) $day['slot_minutes'] ?>"></div>
   </div>
+  <div class="field">
+    <label for="location">Ort an diesem Tag (optional)</label>
+    <input type="text" id="location" name="location" maxlength="200" value="<?= e($day['location'] ?? '') ?>" placeholder="<?= e(trim((string) ($round['location'] ?? '')) !== '' ? 'wie die Runde: ' . trim((string) $round['location']) : 'z. B. Raum 2.14') ?>" aria-describedby="dloc-hint">
+    <p class="hint" id="dloc-hint">Nur ausfüllen, wenn der Tag nicht am Ort der Runde stattfindet. Bereits gebuchte Eltern werden nicht benachrichtigt.</p>
+  </div>
   <div class="actions">
     <button type="submit" class="button button-primary">Speichern</button>
     <a class="button" href="<?= e(url('/admin/round/' . (int) $round['id'])) ?>">Abbrechen</a>

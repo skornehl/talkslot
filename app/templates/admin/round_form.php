@@ -78,7 +78,13 @@ $action = $round ? url('/admin/round/' . (int) $round['id'] . '/edit') : url('/a
 
   <div class="field">
     <label for="description">Beschreibungstext (optional)</label>
-    <textarea id="description" name="description" rows="4" maxlength="5000" placeholder="z. B. Bitte nur einen Termin pro Kind buchen. Die Gespräche finden in Raum 1.12 statt."><?= e($data['description'] ?? '') ?></textarea>
+    <textarea id="description" name="description" rows="4" maxlength="5000" placeholder="z. B. Bitte nur einen Termin pro Kind buchen. Bringen Sie gern das letzte Zeugnis mit."><?= e($data['description'] ?? '') ?></textarea>
+  </div>
+
+  <div class="field">
+    <label for="location">Ort (optional)</label>
+    <input type="text" id="location" name="location" maxlength="200" value="<?= e($data['location'] ?? '') ?>" placeholder="z. B. Raum 1.12, Hauptgebäude" aria-describedby="loc-hint">
+    <p class="hint" id="loc-hint">Steht auf der Buchungsseite, in der Bestätigung, in der Kalenderdatei und im Einladungstext. Findet ein Tag woanders statt, ändern Sie das unter „Tag bearbeiten“.</p>
   </div>
 
   <div class="field-row">

@@ -36,7 +36,8 @@ final class Notifier
             $link = $token !== null ? abs_url('/b/' . $token, ['lang' => I18n::lang()]) : '';
             $vars = [
                 'title' => $b['title'],
-                'when' => fmt_slot($b['day_date'], $b['start_time'], $b['end_time']),
+                'when' => fmt_slot($b['day_date'], $b['start_time'], $b['end_time'])
+                    . (trim((string) ($b['location'] ?? '')) !== '' ? "\n" . t('round.location', ['location' => trim((string) $b['location'])]) : ''),
                 'name' => $b['name'],
                 'link' => $link !== '' ? $link : t('mail.link_unchanged'),
                 'app' => app_name(),

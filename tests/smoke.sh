@@ -546,28 +546,32 @@ check "round of a deactivated teacher cannot be activated" 'echo "$TG" | grep -q
 rm -f "$J2"
 
 echo "Single admin (migration 9) and old legal texts"
+LATEST=$(grep -o 'LATEST = [0-9]*' "$(dirname "$0")/../app/src/Migrations.php" | grep -o '[0-9]*$')
 DBQ() { docker compose -f "$(dirname "$0")/../dev/compose.yml" exec -T db mariadb -uapp -papp-dev-only talkslot -Ne "$1"; }
 DBQ "UPDATE tp_pages SET content = CONCAT(content, '\n\nVerantwortlich ist jeweils die Lehrkraft, bei der Sie buchen.') WHERE page_key='privacy' AND lang='de'"
 check "admin notice: privacy policy in the old model" 'curl -s -b "$J" "$B/admin" | grep -q "(DE) beschreibt noch das alte Modell"'
 DBQ "UPDATE tp_pages SET content = REPLACE(content, '\n\nVerantwortlich ist jeweils die Lehrkraft, bei der Sie buchen.', '') WHERE page_key='privacy' AND lang='de'"
 DBQ "INSERT INTO tp_users (username, password_hash, role, display_name, email, is_active, created_at) VALUES ('alt-admin-inaktiv', 'x', 'admin', 'Alt', 'a@example.org', 0, NOW()), ('alt-admin-aktiv', 'x', 'admin', 'Neu', 'b@example.org', 1, NOW()); UPDATE tp_users SET controller_contact = 'Alte Lehrkraft-Adresse' WHERE username = 'zwei@example.org'; UPDATE tp_settings SET value = '8' WHERE name = 'schema_version'"
 curl -s -o /dev/null "$B/"
-check "migration 9 (and following): only the oldest active admin account stays admin, old teacher contact details deleted" '[ "$(DBQ "SELECT GROUP_CONCAT(username) FROM tp_users WHERE role=\"admin\"")" = sabrina ] && [ "$(DBQ "SELECT COUNT(*) FROM tp_users WHERE role<>\"admin\" AND controller_contact IS NOT NULL")" = 0 ] && [ "$(DBQ "SELECT value FROM tp_settings WHERE name=\"schema_version\"")" = 13 ] && curl -s "$B/datenschutz" | grep -q "Teststraße 1"'
+check "migration 9 (and following): only the oldest active admin account stays admin, old teacher contact details deleted" '[ "$(DBQ "SELECT GROUP_CONCAT(username) FROM tp_users WHERE role=\"admin\"")" = sabrina ] && [ "$(DBQ "SELECT COUNT(*) FROM tp_users WHERE role<>\"admin\" AND controller_contact IS NOT NULL")" = 0 ] && [ "$(DBQ "SELECT value FROM tp_settings WHERE name=\"schema_version\"")" = "$LATEST" ] && curl -s "$B/datenschutz" | grep -q "Teststraße 1"'
 DBQ "ALTER TABLE tp_rounds ADD COLUMN access_pin VARCHAR(12) NULL; UPDATE tp_rounds SET code_required = 0; UPDATE tp_rounds SET access_pin = '123456' WHERE id = $RID; UPDATE tp_rounds SET access_pin = '' WHERE id = $R2; UPDATE tp_settings SET value = '9' WHERE name = 'schema_version'"
 curl -s -o /dev/null "$B/"
-check "migration 10: only rounds with an old PIN become 'round code only' (empty/NULL stay open)" '[ "$(DBQ "SELECT code_required FROM tp_rounds WHERE id=$RID")" = 1 ] && [ "$(DBQ "SELECT SUM(code_required) FROM tp_rounds")" = 1 ] && [ "$(DBQ "SELECT value FROM tp_settings WHERE name=\"schema_version\"")" = 13 ]'
+check "migration 10: only rounds with an old PIN become 'round code only' (empty/NULL stay open)" '[ "$(DBQ "SELECT code_required FROM tp_rounds WHERE id=$RID")" = 1 ] && [ "$(DBQ "SELECT SUM(code_required) FROM tp_rounds")" = 1 ] && [ "$(DBQ "SELECT value FROM tp_settings WHERE name=\"schema_version\"")" = "$LATEST" ]'
 
 DBQ "ALTER TABLE tp_rounds DROP COLUMN booking_limit; UPDATE tp_settings SET value = '10' WHERE name = 'schema_version'"
 curl -s -o /dev/null "$B/"
-check "migration 11: existing rounds without limit (as before), new column present" '[ "$(DBQ "SELECT COUNT(*) FROM tp_rounds WHERE booking_limit <> \"none\"")" = 0 ] && [ "$(DBQ "SELECT COUNT(*) FROM tp_rounds")" -gt 0 ] && [ "$(DBQ "SELECT value FROM tp_settings WHERE name=\"schema_version\"")" = 13 ]'
+check "migration 11: existing rounds without limit (as before), new column present" '[ "$(DBQ "SELECT COUNT(*) FROM tp_rounds WHERE booking_limit <> \"none\"")" = 0 ] && [ "$(DBQ "SELECT COUNT(*) FROM tp_rounds")" -gt 0 ] && [ "$(DBQ "SELECT value FROM tp_settings WHERE name=\"schema_version\"")" = "$LATEST" ]'
 
 # Migration 13: the details move from the admin's profile into the settings (before that they are read from the profile)
 DBQ "DELETE FROM tp_settings WHERE name = 'controller_contact'; UPDATE tp_users SET controller_contact = 'Alte Schule\nAlter Weg 1\nalt@example.org' WHERE username = 'sabrina'; UPDATE tp_settings SET value = '12' WHERE name = 'schema_version'"
 curl -s -o /dev/null "$B/"
-check "migration 13: details taken over from the admin's profile" '[ "$(DBQ "SELECT SUBSTRING_INDEX(value, CHAR(10), 1) FROM tp_settings WHERE name=\"controller_contact\"")" = "Alte Schule" ] && curl -s "$B/impressum" | grep -q "Alter Weg 1" && [ "$(DBQ "SELECT value FROM tp_settings WHERE name=\"schema_version\"")" = 13 ]'
+check "migration 13: details taken over from the admin's profile" '[ "$(DBQ "SELECT SUBSTRING_INDEX(value, CHAR(10), 1) FROM tp_settings WHERE name=\"controller_contact\"")" = "Alte Schule" ] && curl -s "$B/impressum" | grep -q "Alter Weg 1" && [ "$(DBQ "SELECT value FROM tp_settings WHERE name=\"schema_version\"")" = "$LATEST" ]'
 T=$(curl -s -b "$J" "$B/admin" | csrf)
 curl -s -o /dev/null -b "$J" --data-urlencode "csrf=$T" --data-urlencode $'controller_contact=Sabrina Test\nTeststraße 1\n12345 Teststadt\nE-Mail: sabrina@example.org' "$B/admin/texts/operator"
 check "saving the details also updates the admin's profile (read by older versions after a rollback)" '[ "$(DBQ "SELECT SUBSTRING_INDEX(controller_contact, CHAR(10), 1) FROM tp_users WHERE username=\"sabrina\"")" = "Sabrina Test" ] && curl -s "$B/impressum" | grep -q "Teststraße 1"'
+DBQ "ALTER TABLE tp_rounds DROP COLUMN location; ALTER TABLE tp_round_days DROP COLUMN location; UPDATE tp_settings SET value = '13' WHERE name = 'schema_version'"
+curl -s -o /dev/null "$B/"
+check "migration 14: location columns added, rounds still reachable" '[ "$(DBQ "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND COLUMN_NAME=\"location\" AND TABLE_NAME IN (\"tp_rounds\",\"tp_round_days\")")" = 2 ] && [ "$(DBQ "SELECT value FROM tp_settings WHERE name=\"schema_version\"")" = "$LATEST" ] && [ "$(curl -s -o /dev/null -w "%{http_code}" -b "$J" "$B/admin/round/$RID")" = 200 ]'
 
 echo "Web cron"
 CTOK=$(printf 'cron' | openssl dgst -sha256 -hmac "$(printf 'd%.0s' {1..64})" | sed 's/.*= //')
@@ -917,6 +921,26 @@ DBQ "UPDATE tp_users SET last_login_at = NOW() - INTERVAL 2 YEAR WHERE username 
 $DC exec -T app php /srv/app/bin/cron.php >/dev/null
 check "cleanup: round with a future day stays despite expired deadline" '[ -n "$(DBQ "SELECT id FROM tp_rounds WHERE id=$SQ")" ]'
 check "cleanup: long inactive accounts without rounds deleted, with rounds kept" '[ -z "$(DBQ "SELECT id FROM tp_users WHERE username=\"alt-inaktiv@example.org\"")" ] && [ -n "$(DBQ "SELECT id FROM tp_users WHERE username=\"zwei@example.org\"")" ]'
+
+echo "Location"
+T=$(curl -s -b "$J" "$B/admin" | csrf)
+OD1=$(date -d '+12 day' +%F); OD2=$(date -d '+13 day' +%F)
+RO=$(curl -s -o /dev/null -w '%{redirect_url}' -b "$J" --data-urlencode "csrf=$T" -d "title=Ortstest&location=Raum+1.12&booking_limit=none&is_active=1&booking_deadline_hours=0&cancel_deadline_hours=0&day_dates%5B%5D=$OD1&day_dates%5B%5D=$OD2&start_time=09:00&end_time=10:00&slot_minutes=30" "$B/admin/round/new" | grep -o '[0-9]*$')
+ROS=$(slugof "$RO")
+check "location: on the round page, in the admin view and in the invitation text" 'curl -s "$B/$ROS" | grep -q "<p class=\"location\">Ort: Raum 1.12</p>" && A=$(curl -s -b "$J" "$B/admin/round/$RO"); echo "$A" | grep -q "Ort: <strong>Raum 1.12</strong>" && echo "$A" | grep -qx "Ort: Raum 1.12"'
+OD2ID=$(DBQ "SELECT id FROM tp_round_days WHERE round_id=$RO AND day_date='$OD2'")
+curl -s -o /dev/null -b "$J" --data-urlencode "csrf=$T" -d "day_date=$OD2&start_time=09:00&end_time=10:00&slot_minutes=30&location=Turnhalle" "$B/admin/day/$OD2ID/edit"
+check "day with its own location: shown for that day only" 'P=$(curl -s "$B/$ROS"); [ "$(echo "$P" | grep -c "· Ort: Turnhalle</legend>")" = 1 ] && [ "$(echo "$P" | grep -c "</legend>")" = 2 ] && curl -s -b "$J" "$B/admin/day/$OD2ID/edit" | grep -q "placeholder=\"wie die Runde: Raum 1.12\""'
+OB=$(book "$ROS" "Ort Kind" "ort-eltern@example.org" 3)
+check "confirmation page shows the location of the booked day" '[[ "$OB" == 303* ]] && curl -s "${OB#* }" | grep -q "<dd>Turnhalle</dd>"'
+OM=$($DC exec -T app php -r '$r=json_decode(file_get_contents("http://mail:8025/api/v1/search?query=to:ort-eltern@example.org"),true); $id=$r["messages"][0]["ID"]; $m=json_decode(file_get_contents("http://mail:8025/api/v1/message/".$id),true); echo $m["Text"], "\n---ICS---\n", file_get_contents("http://mail:8025/api/v1/message/".$id."/part/".$m["Attachments"][0]["PartID"]);')
+check "mail and calendar file contain the location" 'echo "$OM" | grep -q "^Ort: Turnhalle" && echo "$OM" | grep -q "^LOCATION:Turnhalle"'
+check "print view: location per day" 'PR=$(curl -s -b "$J" "$B/admin/round/$RO/print"); echo "$PR" | grep -q "Uhr · Raum 1.12</h2>" && echo "$PR" | grep -q "Uhr · Turnhalle</h2>"'
+X=$(curl -s -b "$J" --data-urlencode "csrf=$T" --data-urlencode "location=$(printf 'x%.0s' $(seq 201))" -d "title=Ortstest&booking_limit=none&is_active=1&booking_deadline_hours=0&cancel_deadline_hours=0&user_id=$(DBQ "SELECT user_id FROM tp_rounds WHERE id=$RO")" "$B/admin/round/$RO/edit")
+check "location longer than 200 characters rejected" 'echo "$X" | grep -q "Ort: höchstens 200 Zeichen" && [ "$(DBQ "SELECT location FROM tp_rounds WHERE id=$RO")" = "Raum 1.12" ]'
+curl -s -o /dev/null -b "$J" -d "csrf=$T" -d "title=Ortstest&booking_limit=none&is_active=1&booking_deadline_hours=0&cancel_deadline_hours=0&user_id=$(DBQ "SELECT user_id FROM tp_rounds WHERE id=$RO")" "$B/admin/round/$RO/edit"
+check "form without the field (opened before the update) keeps the location" '[ "$(DBQ "SELECT location FROM tp_rounds WHERE id=$RO")" = "Raum 1.12" ]'
+curl -s -o /dev/null -b "$J" -d "csrf=$T&confirm=1" "$B/admin/round/$RO/delete"
 
 echo "Several admins"
 T=$(curl -s -b "$J" "$B/admin/users" | csrf)

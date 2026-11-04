@@ -33,6 +33,7 @@ return [
     'page.missing' => 'Dieser Text wurde noch nicht hinterlegt.',
 
     'round.teacher' => 'Gesprächstermine bei {name}',
+    'round.location' => 'Ort: {location}',
     'round.one_only' => 'Bitte buchen Sie nur einen Termin.',
     'round.limit_round' => 'Pro Person ist nur ein Termin möglich. Für Geschwister buchen Sie bitte jeweils mit dem Namen des Kindes.',
     'round.limit_day' => 'Pro Person ist nur ein Termin pro Tag möglich. Für Geschwister buchen Sie bitte jeweils mit dem Namen des Kindes.',
@@ -99,6 +100,7 @@ return [
     'manage.round' => 'Terminvergabe',
     'manage.teacher' => 'Gespräch mit',
     'manage.when' => 'Termin',
+    'manage.location' => 'Ort',
     'manage.name' => 'Name',
     'manage.change' => 'Termin ändern',
     'manage.change.text' => 'Wählen Sie einen anderen freien Termin. Ihr bisheriger Termin wird dann freigegeben.',

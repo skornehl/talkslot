@@ -97,6 +97,13 @@ function fmt_slot(string $date, string $start, string $end): string
     return fmt_date($date) . ', ' . fmt_range($start, $end) . t('time_suffix');
 }
 
+/** Location of a day: its own, otherwise the round's ('' = none given). */
+function location_of(array $day, array $round): string
+{
+    $own = trim((string) ($day['location'] ?? ''));
+    return $own !== '' ? $own : trim((string) ($round['location'] ?? ''));
+}
+
 function app_name(): string
 {
     return (string) Config::get('app_name', 'TalkSlot');

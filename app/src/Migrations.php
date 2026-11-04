@@ -10,7 +10,7 @@ namespace App;
  */
 final class Migrations
 {
-    public const LATEST = 13;
+    public const LATEST = 14;
 
     /** Version => SQL statements */
     private const STEPS = [
@@ -97,6 +97,11 @@ final class Migrations
         13 => [
             "INSERT IGNORE INTO settings (name, value) SELECT 'controller_contact', controller_contact FROM users
                WHERE role = 'admin' AND is_active = 1 AND COALESCE(controller_contact, '') <> '' ORDER BY id LIMIT 1",
+        ],
+        // 14: location of the meetings (e.g. a room) per round, optionally different per day
+        14 => [
+            'ALTER TABLE rounds ADD COLUMN IF NOT EXISTS location VARCHAR(200) NULL AFTER description',
+            'ALTER TABLE round_days ADD COLUMN IF NOT EXISTS location VARCHAR(200) NULL AFTER slot_minutes',
         ],
     ];
 

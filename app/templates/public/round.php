@@ -7,6 +7,7 @@
 <article class="round" data-round-id="<?= (int) $round['id'] ?>">
   <h1><?= e($round['title']) ?></h1>
   <p class="teacher"><?= e(t('round.teacher', ['name' => $round['teacher_name']])) ?></p>
+  <?php if (trim((string) ($round['location'] ?? '')) !== ''): ?><p class="location"><?= e(t('round.location', ['location' => trim((string) $round['location'])])) ?></p><?php endif; ?>
   <?php if (!empty($round['description'])): ?>
     <div class="description"><?= nl2br(e($round['description'])) ?></div>
   <?php endif; ?>
