@@ -370,6 +370,44 @@ try {
   check('"Drucken" opens the print dialog', await js('window.__printed === true'));
   await cdp.send('Page.removeScriptToEvaluateOnNewDocument', { identifier: printStub.identifier });
 
+  section('Admin: parents are not notified automatically');
+  await goto(demoRound);
+  // Delete dialog of a booking (cancelled, nothing is deleted): $1 name of the booking
+  const deleteDialog = async (name) => {
+    cdp.dialogs = [];
+    cdp.acceptDialogs = false;
+    await js(`[...document.querySelectorAll('form[data-confirm][action*="/booking/"]')].find(f => f.closest('tr').textContent.includes(${JSON.stringify(name)})).requestSubmit()`);
+    await sleep(300);
+    cdp.acceptDialogs = true;
+    return cdp.dialogs.map((d) => d.message).join(' | ');
+  };
+  const withMail = await deleteDialog('Familie Yılmaz (Elif)');
+  check('deleting a booking: the dialog says the parents are NOT notified', withMail.startsWith('Eintrag von „Familie Yılmaz (Elif)“ löschen?')
+    && withMail.endsWith('\n\nDie Eltern werden NICHT automatisch benachrichtigt – bitte selbst informieren.'), withMail);
+  const noMail = await deleteDialog('Lukas Schmidt');
+  check('… without an e-mail address: please inform them in person', noMail.endsWith('Für diesen Eintrag ist keine E-Mail-Adresse hinterlegt – bitte persönlich informieren.'), noMail);
+  check('"Abbrechen" keeps both bookings', await js(`location.pathname`) === demoRound
+    && await js(`['Familie Yılmaz (Elif)', 'Lukas Schmidt'].every(n => document.querySelector('main').textContent.includes(n))`));
+
+  const mailBox = `document.querySelector('#send_mail')`;
+  const setEmail = (value) => js(`(e => { e.value = ${JSON.stringify(value)}; e.dispatchEvent(new Event('input', { bubbles: true })); })(document.querySelector('#email'))`);
+  await goto(await js(`document.querySelector('a[href$="/book"]').getAttribute('href')`));
+  check('new entry without an address: mail option unticked and disabled', await js(`${mailBox}.disabled && !${mailBox}.checked`));
+  await type('#email', 'eltern@example.org');
+  check('address entered: confirmation mail ticked', await js(`!${mailBox}.disabled && ${mailBox}.checked`));
+  await js(`${mailBox}.click()`);
+  await setEmail('');
+  await type('#email', 'eltern@example.org');
+  check('unticked by hand: stays unticked when the address is retyped', await js(`!${mailBox}.disabled && !${mailBox}.checked`));
+  const editOf = (name) => js(`[...document.querySelectorAll('.slots-table tr')].find(tr => tr.textContent.includes(${JSON.stringify(name)})).querySelector('a[href$="/edit"]').getAttribute('href')`);
+  await goto(demoRound);
+  await goto(await editOf('Familie Yılmaz (Elif)'));
+  check('editing a booking with an address: change mail ticked', await js(`!${mailBox}.disabled && ${mailBox}.checked`));
+  await goto(demoRound);
+  await goto(await editOf('Lukas Schmidt'));
+  check('editing a booking without an address: off until one is entered', await js(`${mailBox}.disabled && !${mailBox}.checked`)
+    && (await setEmail('lukas@example.org'), await js(`!${mailBox}.disabled && ${mailBox}.checked`)));
+
   section('Admin: JavaScript texts in English');
   const setLang = async (lang) => {
     await goto('/admin/profile');

@@ -155,6 +155,22 @@ var L = (function () {
     });
   });
 
+  // Mail option of a manual entry: ticked as soon as an e-mail address is entered, unticked and
+  // disabled without one (nothing to send). A choice made by hand is kept.
+  Array.prototype.forEach.call(document.querySelectorAll('input[data-mail-for]'), function (box) {
+    var email = document.getElementById(box.getAttribute('data-mail-for'));
+    if (!email) { return; }
+    var wanted = box.checked;
+    box.addEventListener('change', function () { wanted = box.checked; });
+    function follow() {
+      var hasAddress = email.value.trim() !== '';
+      box.disabled = !hasAddress;
+      box.checked = hasAddress && wanted;
+    }
+    email.addEventListener('input', follow);
+    follow();
+  });
+
   // Prevent double submission (e.g. double click while the translation is running).
   // After "Back" from the browser cache, submitting is allowed again.
   Array.prototype.forEach.call(document.querySelectorAll('form[data-once]'), function (form) {

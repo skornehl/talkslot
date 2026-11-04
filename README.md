@@ -64,8 +64,10 @@ schools (GDPR/DSGVO, TDDDG) and multilingual families.
   location (per round, optionally per day); block single slots; duplicate with a new first day; templates
   (e.g. "parent-teacher day, 08:00–16:00, 15 minutes"); deadlines for booking and changes; ready-to-copy
   invitation text with a direct link per parent language and the round's rule on multiple bookings.
-- Bookings: overview, edit, move, delete, add manually (optionally with mail). Changed times never delete
-  bookings, conflicts are flagged with ⚠. Print view per round or day.
+- Bookings: overview, edit, move, delete, add manually (with a mail to the parents, ticked as soon as an
+  address is entered). Changed times never delete bookings, conflicts are flagged with ⚠. Dialogs, hints
+  and messages say clearly that parents are not notified automatically of deletions, of a new date or
+  location for a day and of a new location or teacher for the round. Print view per round or day.
 - Translation of title and description **in the teacher's browser** (Chrome/Edge Translator API with a
   local model, no text leaves the device), manually editable.
 - Summary mails: evening before a day and after the booking deadline (time and name only).
@@ -135,7 +137,8 @@ App: <http://localhost:8080>, admin: <http://localhost:8080/admin>. Mails end up
 ### Go-live checklist
 
 - [ ] HTTPS active, `http://` redirects
-- [ ] `install.php` no longer reachable (404); `config/config.php` not readable by others (600/640)
+- [ ] `install.php` no longer reachable (404); `config/config.php` not readable by others (600/640; the
+  dashboard warns admins otherwise)
 - [ ] `debug` is `false`; `alert_email` set
 - [ ] Test booking with e-mail: mail arrives (not in spam)
 - [ ] Admin contact details, imprint and privacy policy (all languages) complete
@@ -148,11 +151,14 @@ Optional, for shared hosting with FTPS. Every push to `main` runs the tests, upl
 switches over **atomically**:
 
 1. The new version is uploaded completely into its own directory (`<APP_DIR>/releases/<name>/`, assets to
-   `<WEB_DIR>/v/<name>/`) while the old one keeps running, and checked for completeness.
+   `<WEB_DIR>/v/<name>/`) while the old one keeps running, and checked for completeness. Right after the
+   code, its `config.php` gets the permissions `600` (variable `CONFIG_MODE`: `640` or `keep` if PHP runs
+   as a different user than FTP; a server without `chmod` only causes a warning).
 2. A pointer file `<APP_DIR>/current` is replaced in one step. Old and new code never run side by side.
 3. The site is checked (login page, start page, CSS). On failure it switches straight back and the run
    fails.
-4. The last five versions are kept for rollbacks.
+4. The last five versions are kept for rollbacks; once the check has passed, their `config.php` gets the
+   same permissions.
 
 ```
 <APP_DIR>/current            name of the active version
@@ -171,7 +177,8 @@ bin/setup-secrets.sh    # asks for host, directories, FTP and DB credentials; ge
 This sets the variables `BASE_URL`, `FTP_HOST`, `WEB_DIR`, `APP_DIR`, `DB_HOST` and the secrets
 `FTP_USERNAME`, `FTP_PASSWORD`, `DB_USER`, `DB_PASS`, `DB_NAME`, `APP_SECRET`, `INSTALL_KEY`. Optional
 variables: `APP_NAME`, `HOSTING_DE`, `HOSTING_EN` (web host for the privacy policy), `LANGUAGES` (e.g. `de,en,tr`) and `DEFAULT_LANGUAGE` (e.g. `en`), `ALERT_EMAIL`, `MAIL_FROM`, `MAIL_FROM_NAME`, `MAIL_REPLY_TO`, `MAIL_TRANSPORT=smtp` with
-`SMTP_HOST`, `SMTP_PORT`, `SMTP_ENCRYPTION` and the secrets `SMTP_USER`, `SMTP_PASS`, `DB_PREFIX`.
+`SMTP_HOST`, `SMTP_PORT`, `SMTP_ENCRYPTION` and the secrets `SMTP_USER`, `SMTP_PASS`, `DB_PREFIX`; the
+variable `CONFIG_MODE` sets the permissions of `config.php` on the server (default `600`).
 Without `FTP_HOST` the deploy, cron and switch workflows do nothing.
 
 Recommended: put the secrets into an environment `production` that only `main` may use
@@ -183,7 +190,17 @@ Recommended: put the secrets into an environment `production` that only `main` m
 ```bash
 gh workflow run "Switch version"                         # one version back
 gh workflow run "Switch version" -f target=list          # show available versions
+gh workflow run "Switch version" -f target=prune         # delete all versions except the active one
 ```
+
+After changing secrets (database or SMTP password, `APP_SECRET`) run `prune`: older versions keep the old
+values in their `config.php`.
+
+**Upgrading from a version without `CONFIG_MODE`:** until then `config.php` kept the FTP server's default
+permissions (often `644`) in every version on the server. The first deployment after the update restricts
+all of them. If other users of your server could read the file (ask your web host how customers are
+separated), change the secrets as described in
+[Changing secrets](https://skornehl.github.io/talkslot/guide/operations/#changing-secrets).
 
 The database is not rolled back. That is why migrations (`app/src/Migrations.php`) must only **add**
 columns with defaults and tables, so an older version keeps working with a newer schema.

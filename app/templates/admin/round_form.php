@@ -107,7 +107,7 @@ $action = $round ? url('/admin/round/' . (int) $round['id'] . '/edit') : url('/a
   <div class="field">
     <label for="location"><?= e(__('Ort (optional)')) ?></label>
     <input type="text" id="location" name="location" maxlength="200" value="<?= e($data['location'] ?? '') ?>" placeholder="<?= e(__('z. B. Raum 1.12, Hauptgebäude')) ?>" aria-describedby="loc-hint">
-    <p class="hint" id="loc-hint"><?= e(__('Steht auf der Buchungsseite, in der Bestätigung, in der Kalenderdatei und im Einladungstext. Findet ein Tag woanders statt, ändern Sie das unter „Tag bearbeiten“.')) ?></p>
+    <p class="hint" id="loc-hint"><?= e(__('Steht auf der Buchungsseite, in der Bestätigung, in der Kalenderdatei und im Einladungstext. Findet ein Tag woanders statt, ändern Sie das unter „Tag bearbeiten“.')) ?><?= $round ? ' ' . e(__('Bereits gebuchte Eltern werden bei einer Änderung NICHT automatisch benachrichtigt.')) : '' ?></p>
   </div>
 
   <div class="field-row">
