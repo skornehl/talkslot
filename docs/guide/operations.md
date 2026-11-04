@@ -94,8 +94,9 @@ or an old backup is lost.
    (Art. 33(5) GDPR) and reports it to the supervisory authority within 72 hours unless it is unlikely to
    put the people concerned at risk; at a high risk they have to be told as well (Art. 33, 34 GDPR).
 
-A new `APP_SECRET` changes the web cron token. The included `cron.yml` derives it from the same secret; an
-external cron service needs the new token (see [web cron]({{ '/guide/installation/' | relative_url }})),
+A new `APP_SECRET` changes the web cron token and the key of the
+[health check]({{ '/guide/deployment/' | relative_url }}#health-check). The included workflows derive both
+from the same secret; an external cron service needs the new token (see [web cron]({{ '/guide/installation/' | relative_url }})),
 otherwise the clean-up only runs on page views. It also resets the rate limits, and parents have to
 reload an open booking form or enter a round code again. Admin sessions, change links and bookings stay
 valid.

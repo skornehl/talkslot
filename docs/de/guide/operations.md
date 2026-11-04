@@ -100,8 +100,9 @@ können, wenn jemand mit FTP-Zugang ausgeschieden ist oder wenn ein altes Backup
    binnen 72 Stunden der Aufsichtsbehörde, es sei denn, sie führt voraussichtlich nicht zu einem Risiko
    für die Betroffenen; bei hohem Risiko sind auch diese zu benachrichtigen (Art. 33, 34 DSGVO).
 
-Ein neues `APP_SECRET` ändert das Token für den Web-Cron. Das mitgelieferte `cron.yml` leitet es aus
-demselben Secret ab; ein externer Cron-Dienst braucht das neue Token (siehe
+Ein neues `APP_SECRET` ändert das Token für den Web-Cron und den Schlüssel für den
+[Health-Check]({{ '/de/guide/deployment/' | relative_url }}#health-check). Die mitgelieferten Workflows
+leiten beide aus demselben Secret ab; ein externer Cron-Dienst braucht das neue Token (siehe
 [Web-Cron]({{ '/de/guide/installation/' | relative_url }})), sonst läuft die Bereinigung nur noch bei
 Seitenaufrufen. Außerdem werden die Rate-Limits zurückgesetzt, und Eltern müssen ein offenes
 Buchungsformular neu laden oder einen Rundencode erneut eingeben. Admin-Sitzungen, Änderungslinks und

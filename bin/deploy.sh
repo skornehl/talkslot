@@ -40,9 +40,9 @@ for v in "$FTP_URL" "$APP_DIR" "$WEB_DIR" "$BUILD_DIR"; do [[ $v =~ $SAFE_RX ]] 
 # deliberate exception, the admin area then warns if needed)
 [[ $CONFIG_MODE =~ ^(0?[4-7][0-7]0|keep)$ ]] || die "CONFIG_MODE must be 600, 640 (owner may read, others may not) or keep"
 FTP_USER=$(printf '%s' "${FTP_USER:-}" | tr -d '\r\n')
+[[ $FTP_USER != *"'"* ]] || die "Invalid FTP user name"
 # For the health check (like build-config.php: without line breaks and surrounding spaces)
 SECRET=$(printf '%s' "${APP_SECRET:-}" | tr -d '\r\n' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
-[[ $FTP_USER != *"'"* ]] || die "Invalid FTP user name"
 TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT
 
