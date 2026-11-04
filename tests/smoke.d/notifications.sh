@@ -57,7 +57,7 @@ PHP
 )
 NQ_ROWS=$(DBQ "SELECT GROUP_CONCAT(CONCAT(b.name, ':', o.kind, ':', o.attempts, ':', o.next_attempt_at > NOW()) ORDER BY b.name SEPARATOR ',') FROM tp_mail_outbox o JOIN tp_bookings b ON b.id = o.booking_id WHERE b.name LIKE 'Outbox %'")
 check "mail refused: queued for a retry in some minutes (a change notice waits behind the confirmation), the booking page goes on ($NQ)" '[ "$NQ" = "queued|queued|queued|NULL|303|booked:1" ] && [ "$NQ_ROWS" = "Outbox Eintrag:booked:1:1,Outbox Eltern:changed:1:1,Outbox Warteschlange:booked:1:1" ]'
-check "the outbox holds references only: no address, text or link" '[ "$(DBQ "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=\"tp_mail_outbox\" AND COLUMN_NAME NOT IN (\"id\",\"kind\",\"booking_id\",\"user_id\",\"ref\",\"priority\",\"attempts\",\"next_attempt_at\",\"created_at\")")" = 0 ]'
+check "the outbox holds references only: no address, text or link" '[ "$(DBQ "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=\"tp_mail_outbox\"")" = "id,kind,booking_id,user_id,ref,priority,attempts,next_attempt_at,created_at" ]'
 NA=$(curl -s -b "$J" "$B/admin/round/$NR")
 check "booking list: \"E-Mail nicht zugestellt – neuer Versuch folgt\" at the three entries" '[ "$(echo "$NA" | grep -c "data-mail-failed")" = 3 ] && [ "$(echo "$NA" | grep -c "E-Mail nicht zugestellt – neuer Versuch folgt</span>")" = 3 ]'
 check "appointment page after booking with the mail queued: says it follows" 'curl -s "$N1L?done=booked&mail=queued" | has "<p data-mail-queued>Die Bestätigung konnte gerade nicht gesendet werden." && ! curl -s "$N1L?done=booked&mail=1" | has "data-mail-queued" && curl -s "$N1L?done=changed&mail=queued&lang=en" | has "It will be sent to your e-mail address automatically"'
@@ -88,8 +88,8 @@ check "… also for the parent who booked while the server refused, without a re
 check "teacher's entry: after the confirmation it may be reminded, confirmation noted" '[ "$(DBQ "SELECT CONCAT(remind_ok, notified_at IS NOT NULL, mail_failed_at IS NULL) FROM tp_bookings WHERE name=\"Outbox Eintrag\"")" = 111 ]'
 
 # Reminders the evening before: per booking, filtered by the last confirmation (not by any edit)
+DBQ "UPDATE tp_bookings SET created_at = created_at - INTERVAL 2 DAY, updated_at = updated_at - INTERVAL 2 DAY, notified_at = notified_at - INTERVAL 2 DAY WHERE name LIKE 'Outbox %'"
 curl -s -o /dev/null -b "$J" --data-urlencode "csrf=$NT" -d "name=Outbox+Nachtrag+Neu&email=$(n_addr 4)&lang=de" "$B/admin/booking/$(n_id "Outbox Nachtrag")/edit"
-DBQ "UPDATE tp_bookings SET notified_at = notified_at - INTERVAL 2 DAY WHERE name LIKE 'Outbox %'"
 NO=$($DC exec -T app php /srv/app/bin/cron.php -v)
 check "reminders queued and sent by the cron job" 'echo "$NO" | grep -qE "reminders_queued +3" && echo "$NO" | grep -qE "mails_sent +[3-9]"'
 check "reminder: also after the teacher corrected the name the evening before (no mail), and for an entry whose parents got a confirmation" '[ "$(n_mails "$(n_addr 4)" Erinnerung)" = 1 ] && n_text "$(n_addr 4)" Erinnerung | has "Name: Outbox Nachtrag Neu" && [ "$(n_mails "$(n_addr 2)" Erinnerung)" = 1 ] && [ "$(n_mails "$(n_addr 1)" Erinnerung)" = 1 ]'
