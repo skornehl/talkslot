@@ -47,7 +47,6 @@ return [
     'Alternativ können Sie auf {url} nur diesen Code eingeben.' => 'Alternatively, you can just enter this code at {url}.',
     'Bitte geben Sie Link und Code nicht weiter.' => 'Please do not pass on the link and code.',
     'Alternativ können Sie auf {url} den Code der Terminvergabe {code} eingeben.' => 'Alternatively, you can enter the booking code {code} at {url}.',
-    'Bitte buchen Sie nur einen Termin. Nach der Buchung erhalten Sie einen persönlichen Link, über den Sie den Termin ändern oder absagen können.' => 'Please book only one appointment. After booking, you will receive a personal link that you can use to change or cancel the appointment.',
     'Viele Grüße' => 'Kind regards',
 
     // Days, breaks, slots

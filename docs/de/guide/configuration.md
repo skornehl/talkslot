@@ -37,7 +37,7 @@ Buchungen, Änderungslinks, Einladungs- und Passwortlinks sind Zufallstokens und
 
 | Option | Standard | Bedeutung | Deployment |
 |---|---|---|---|
-| `languages` | `de, en, pl, ru, uk, tr` | Sprachen für Eltern, in der Reihenfolge der Flaggen | `LANGUAGES`, z. B. `de,en,tr` |
+| `languages` | `de, en, pl, ru, uk, tr` | Sprachen für Eltern, in der Reihenfolge der Sprachwahl oben auf der Seite | `LANGUAGES`, z. B. `de,en,tr` |
 | `default_language` | `de` | wird angezeigt, bis Besucher eine Sprache wählen; muss in `languages` enthalten sein | `DEFAULT_LANGUAGE` |
 
 Der Build bricht ab, wenn eine Sprache keine Datei in `app/lang/` hat oder die Standardsprache nicht
@@ -49,7 +49,9 @@ ohne eigene Wahl und für die Anmeldeseite, wenn der Browser keine der beiden Sp
 Protokoll werden in dieser Sprache geschrieben.
 
 **Sprache hinzufügen:** Kopieren Sie `app/lang/en.php` z. B. nach `app/lang/it.php` und übersetzen Sie
-die Datei, legen Sie eine Flagge `public/assets/flags/it.svg` an und tragen Sie den Code in `languages`
+die Datei (`lang.name` ist der Name der Sprache in ihr selbst, so steht er in der Sprachwahl), legen Sie
+eine Flagge `public/assets/flags/it.svg` an (für das Übersetzungsformular im Adminbereich) und tragen Sie
+den Code in `languages`
 ein. Optional ergänzen Sie `app/templates/pages/imprint.it.md` und `privacy.it.md`; ohne diese Dateien
 zeigen die Rechtsseiten die englische Fassung. Bitte lassen Sie Übersetzungen von Muttersprachlern
 prüfen.

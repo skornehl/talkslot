@@ -471,7 +471,14 @@ final class AdminController
         return $t ? hash('sha256', $t['title'] . "\0" . ($t['description'] ?? '') . "\0" . $t['source_hash']) : '';
     }
 
-    /** Text to pass on to parents (link and access code if applicable). */
+    /**
+     * Text to pass on to parents (link and access code if applicable), in the admin language. Below the link
+     * one line per further parent language with its own name and a direct link (?lang=), so that parents
+     * with little German find their language before they open the page; the plain link shows the default
+     * language. Names rather than sentences keep the text short enough for "Als E-Mail öffnen" (some mail
+     * programs cut mailto: links after about 2,000 characters). The sentence on multiple bookings is the
+     * one the round page shows.
+     */
     private static function invitationText(array $round, array $owner): string
     {
         $lines = [
@@ -480,6 +487,13 @@ final class AdminController
             __('über den folgenden Link können Sie einen Gesprächstermin für „{title}“ bei {teacher} buchen:', ['title' => $round['title'], 'teacher' => $owner['display_name'] ?: __('mir')]),
             abs_url('/' . $round['slug']),
         ];
+        $other = array_diff(I18n::languages(), [I18n::defaultLanguage()]);
+        if ($other) {
+            $lines[] = '';
+            foreach ($other as $lang) {
+                $lines[] = I18n::name($lang) . ': ' . abs_url('/' . $round['slug'], ['lang' => $lang]);
+            }
+        }
         if (trim((string) ($round['location'] ?? '')) !== '') {
             $lines[] = '';
             $lines[] = __('Ort: {location}', ['location' => trim((string) $round['location'])]);
@@ -494,7 +508,8 @@ final class AdminController
             $lines[] = __('Alternativ können Sie auf {url} den Code der Terminvergabe {code} eingeben.', ['url' => abs_url('/'), 'code' => $code]);
         }
         $lines[] = '';
-        $lines[] = __('Bitte buchen Sie nur einen Termin. Nach der Buchung erhalten Sie einen persönlichen Link, über den Sie den Termin ändern oder absagen können.');
+        $lines[] = I18n::textIn(AdminI18n::lang(), BookingService::limitNotice($round)) . ' '
+            . __('Nach der Buchung erhalten Sie einen persönlichen Link, über den Sie den Termin ändern oder absagen können.');
         $lines[] = '';
         $lines[] = __('Viele Grüße');
         return implode("\n", $lines);

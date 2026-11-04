@@ -2,6 +2,36 @@
 /** Layout of the public pages. @var string $content @var string $title */
 use App\Http;
 use App\I18n;
+
+/*
+ * Language choice at the top of every page, as text in each language's own name: flags stand for
+ * countries, not languages, and a switch at the end of a long page is found too late by exactly those
+ * who need it. A control switches the language the way the page allows: a button of the booking form
+ * keeps everything entered so far (switch_lang), a small form keeps the access to a round protected by
+ * its code, otherwise a plain link with ?lang= (no cookie).
+ */
+$switchForm = (string) ($langSwitchForm ?? '');
+$switchAccess = $switchForm === '' && !empty($langSwitchAccess) ? $langSwitchAccess : null;
+// Language links only for harmless paths (otherwise e.g. /\\host → foreign domain), else home page
+$langPath = preg_match('#^/(?:[A-Za-z0-9._~-]+(?:/[A-Za-z0-9._~-]+)*)?$#', Http::path()) ? Http::path() : '/';
+$langRound = in_array(Http::path(), ['/datenschutz', '/privacy'], true) ? ($privacyRound ?? null) : null;
+$langControl = static function (string $code, string $label) use ($switchForm, $switchAccess, $langPath, $langRound): string {
+    $attrs = ' lang="' . e($code) . '"' . ($code === I18n::lang() ? ' aria-current="true"' : '');
+    if ($switchForm !== '') {
+        return '<button type="submit" form="' . e($switchForm) . '" name="switch_lang" value="' . e($code) . '" formnovalidate class="button-link"' . $attrs . '>' . e($label) . '</button>';
+    }
+    if ($switchAccess !== null) {
+        return '<form method="post" action="' . e($switchAccess['action']) . '" class="inline">'
+            . '<input type="hidden" name="step" value="switch">'
+            . '<input type="hidden" name="access" value="' . e($switchAccess['access']) . '">'
+            . '<input type="hidden" name="lang" value="' . e($code) . '">'
+            . '<button type="submit" class="button-link"' . $attrs . '>' . e($label) . '</button></form>';
+    }
+    return '<a href="' . e(url($langPath, ['lang' => $code, 'r' => $langRound])) . '" hreflang="' . e($code) . '"' . $attrs . '>' . e($label) . '</a>';
+};
+$multilingual = count(I18n::languages()) > 1;
+// Browser language offered, if the visitor has not chosen one: only a link, the page does not switch by itself
+$suggested = $multilingual ? I18n::suggested() : null;
 ?>
 <!doctype html>
 <html lang="<?= e(I18n::lang()) ?>">
@@ -18,10 +48,28 @@ use App\I18n;
 </head>
 <body>
 <a class="skip-link" href="#main"><?= e(t('a11y.skip')) ?></a>
+<?php if ($multilingual && $switchForm !== ''):
+  // The language buttons above belong to the booking form too. Enter in a field submits with the form's
+  // first submit button, so this invisible one has to come first: it books instead of switching. ?>
+<button type="submit" form="<?= e($switchForm) ?>" class="visually-hidden" tabindex="-1" aria-hidden="true" data-default-submit><?= e(t('form.submit')) ?></button>
+<?php endif; ?>
 <header class="site-header">
-  <div class="wrap"><a class="brand" href="<?= e(url('/')) ?>"><?= e(app_name()) ?></a></div>
+  <div class="wrap header-inner">
+    <a class="brand" href="<?= e(url('/')) ?>"><?= e(app_name()) ?></a>
+    <?php if ($multilingual): ?>
+    <nav aria-label="<?= e(t('lang.label')) ?>" class="lang-switch">
+      <svg class="lang-icon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z"/></svg>
+<?php foreach (I18n::languages() as $code) {
+    echo '      ', $langControl($code, I18n::name($code)), "\n";
+} ?>
+    </nav>
+    <?php endif; ?>
+  </div>
 </header>
 <main id="main" class="wrap" tabindex="-1">
+<?php if ($suggested !== null): ?>
+<div class="alert alert-info lang-hint" lang="<?= e($suggested) ?>"><?= $langControl($suggested, I18n::textIn($suggested, 'lang.suggest')) ?></div>
+<?php endif; ?>
 <?= $content ?>
 </main>
 <footer class="site-footer">
@@ -31,30 +79,6 @@ use App\I18n;
       <a href="<?= e(url('/datenschutz', ['r' => $privacyRound ?? null])) ?>"><?= e(t('footer.privacy')) ?></a>
       <?php require __DIR__ . '/_powered_by.php'; ?>
     </nav>
-    <?php if (count(I18n::languages()) > 1):
-      // Language links only for harmless paths (otherwise e.g. /\\host → foreign domain), else home page
-      $langPath = preg_match('#^/(?:[A-Za-z0-9._~-]+(?:/[A-Za-z0-9._~-]+)*)?$#', Http::path()) ? Http::path() : '/'; ?>
-    <nav aria-label="<?= e(t('footer.language')) ?>" class="lang-switch">
-      <?php foreach (I18n::languages() as $code):
-        // Flag with language name (for screen readers and as a tooltip in that language)
-        $langName = I18n::name($code);
-        $flag = is_file(asset_file('flags/' . $code . '.svg'))
-            ? '<img src="' . e(asset('flags/' . $code . '.svg')) . '" alt="" width="28" height="19" class="flag"><span class="visually-hidden">' . e($langName) . '</span>'
-            : e(strtoupper($code)); ?>
-        <?php if (!empty($langSwitchForm)): ?>
-        <button type="submit" form="<?= e($langSwitchForm) ?>" name="switch_lang" value="<?= e($code) ?>" formnovalidate class="button-link" lang="<?= e($code) ?>" title="<?= e($langName) ?>"<?= $code === I18n::lang() ? ' aria-current="true"' : '' ?>><?= $flag ?></button>
-        <?php continue; elseif (!empty($langSwitchAccess)): ?>
-        <form method="post" action="<?= e($langSwitchAccess['action']) ?>" class="inline">
-          <input type="hidden" name="step" value="switch">
-          <input type="hidden" name="access" value="<?= e($langSwitchAccess['access']) ?>">
-          <input type="hidden" name="lang" value="<?= e($code) ?>">
-          <button type="submit" class="button-link" lang="<?= e($code) ?>" title="<?= e($langName) ?>"<?= $code === I18n::lang() ? ' aria-current="true"' : '' ?>><?= $flag ?></button>
-        </form>
-        <?php continue; endif; ?>
-        <a href="<?= e(url($langPath, ['lang' => $code, 'r' => in_array(Http::path(), ['/datenschutz', '/privacy'], true) ? ($privacyRound ?? null) : null])) ?>" lang="<?= e($code) ?>" title="<?= e($langName) ?>"<?= $code === I18n::lang() ? ' aria-current="true"' : '' ?>><?= $flag ?></a>
-      <?php endforeach; ?>
-    </nav>
-    <?php endif; ?>
     <?php require __DIR__ . '/_theme_switch.php'; ?>
   </div>
 </footer>

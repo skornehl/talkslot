@@ -437,6 +437,36 @@ try {
   await js(`document.querySelector('[data-remembered-forget]').click()`);
   check('"vergessen" removes the entry and shows the slot list again', await js(`document.getElementById('remembered').hidden && !document.getElementById('booking-area').hidden && localStorage.getItem('${KEY}') === null`));
 
+  section('Parents: language choice at the top (phone width)');
+  await cdp.send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
+  const ua = await js('navigator.userAgent');
+  await cdp.send('Emulation.setUserAgentOverride', { userAgent: ua, acceptLanguage: 'de-DE,de' });
+  await goto(`/${slug}`);
+  const top = await js(`(n => ({ bottom: n.getBoundingClientRect().bottom, names: [...n.querySelectorAll('button')].map(b => b.textContent).join(' '),
+    h1: document.querySelector('h1').getBoundingClientRect().top, wide: document.documentElement.scrollWidth }))(document.querySelector('.lang-switch'))`);
+  check('390 px: all language names in their own language above the heading, no horizontal scrolling',
+    top.names === 'Deutsch English Polski Русский Українська Türkçe' && top.bottom <= top.h1 && top.bottom < 200 && top.wide <= 390, JSON.stringify(top));
+  await js(`${firstFree}.checked = true; document.querySelector('#name').value = 'Browser Enter'; document.querySelector('#privacy').checked = true; document.querySelector('#name').focus();`);
+  const entered = cdp.once('Page.loadEventFired');
+  await cdp.send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13, text: '\r' });
+  await cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
+  await entered;
+  check('Enter in the name field books (the language buttons above do not take it over)',
+    /^\/b\/[A-Za-z0-9_-]{43}$/.test(await js('location.pathname')) && await js('document.documentElement.lang') === 'de', await js('location.href'));
+  await goto(`/${slug}`);
+  await js(`document.querySelector('#name').value = 'Browser Sprache'; document.querySelector('#privacy').checked = true;`);
+  await navigating(`[...document.querySelectorAll('.lang-switch button')].find(b => b.textContent === 'Türkçe').click()`);
+  check('a language at the top switches the page and keeps the input', await js('document.documentElement.lang') === 'tr'
+    && await js(`document.querySelector('#name').value === 'Browser Sprache' && document.querySelector('#privacy').checked`));
+  await cdp.send('Emulation.setUserAgentOverride', { userAgent: ua, acceptLanguage: 'uk-UA,uk;q=0.9' });
+  await goto(`/${slug}`);
+  check('browser in Ukrainian: page stays German, a hint in Ukrainian above the heading', await js('document.documentElement.lang') === 'de'
+    && await js(`(h => !!h && h.textContent.trim() === 'Відкрити цю сторінку українською' && h.getBoundingClientRect().bottom <= document.querySelector('h1').getBoundingClientRect().top)(document.querySelector('.lang-hint'))`));
+  await navigating(`document.querySelector('.lang-hint button').click()`);
+  check('the hint opens the page in Ukrainian and then disappears', await js('document.documentElement.lang') === 'uk' && await js(`!document.querySelector('.lang-hint')`));
+  await cdp.send('Emulation.setUserAgentOverride', { userAgent: ua, acceptLanguage: 'de-DE,de' });
+  await cdp.send('Emulation.clearDeviceMetricsOverride');
+
   section('Parents: errors and appearance');
   await js(`localStorage.setItem('${KEY}', JSON.stringify({ ${JSON.stringify(roundId)}: { u: '/b/${fake}', l: 'x' } }))`);
   await goto(`/${slug}`);

@@ -40,6 +40,15 @@ final class BookingService
                                   JOIN rounds r ON r.id = d.round_id
                                   JOIN users u ON u.id = r.user_id';
 
+    /**
+     * Key of the parents' notice on multiple bookings (app/lang/*.php): the same sentence on the round page
+     * and in the invitation text, so that both name the rule that the round really applies.
+     */
+    public static function limitNotice(array $round): string
+    {
+        return ['round' => 'round.limit_round', 'day' => 'round.limit_day'][$round['booking_limit'] ?? 'none'] ?? 'round.one_only';
+    }
+
     public static function slotStart(array $row): DateTimeImmutable
     {
         return new DateTimeImmutable($row['day_date'] . ' ' . $row['start_time']);

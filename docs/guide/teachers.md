@@ -46,7 +46,13 @@ The round page shows everything you need:
 - the **link for parents** (*Link kopieren*, *Öffnen*),
 - the **round code**, e.g. `3MMP-WYA9`. Parents can enter it on the start page instead of using the link,
   handy for paper invitations. Typos like `0`/`O`, dashes and case do not matter.
-- a ready-made **invitation text** with link and code (*Einladungstext kopieren*, *Als E-Mail öffnen*).
+- a ready-made **invitation text** (*Einladungstext kopieren*, *Als E-Mail öffnen*) with the link, a direct
+  link for every further parent language (`Türkçe: …?lang=tr`), the location and code if any, and the
+  same sentence on multiple bookings that parents see on the round page (for example the sibling rule).
+
+Parents choose their language at the top of every page, by its own name (*Deutsch, English, Polski,
+Русский, Українська, Türkçe*). If their browser is set to another offered language, a link to it appears
+above the page.
 
 With *Nur mit Rundencode* the link alone shows only a code prompt; the title and slots stay hidden from
 strangers. A new code (when editing) makes the old one invalid immediately; existing bookings stay
