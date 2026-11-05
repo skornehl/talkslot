@@ -11,9 +11,9 @@ check('outbox in schema.sql: references only, deleted with the booking or accoun
     && str_contains($outboxTable[1], 'FOREIGN KEY (booking_id) REFERENCES bookings (id) ON DELETE CASCADE')
     && str_contains($outboxTable[1], 'FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE'));
 $steps = (new ReflectionClassConstant(App\Migrations::class, 'STEPS'))->getValue();
-$created = implode("\n", array_filter($steps[19] ?? [], static fn (string $sql): bool => str_contains($sql, 'CREATE TABLE IF NOT EXISTS mail_outbox')));
+$created = implode("\n", array_filter($steps[20] ?? [], static fn (string $sql): bool => str_contains($sql, 'CREATE TABLE IF NOT EXISTS mail_outbox')));
 $norm = static fn (string $s): string => (string) preg_replace('/\s+/', ' ', $s);
-check('migration 19 creates the same outbox (columns, keys, cascades)', $created !== '' && !array_filter(
+check('migration 20 creates the same outbox (columns, keys, cascades)', $created !== '' && !array_filter(
     array_map('trim', explode(",\n", $outboxTable[1] ?? '')),
     static fn (string $definition): bool => !str_contains($norm($created), $norm($definition))
 ));

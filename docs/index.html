@@ -69,7 +69,7 @@ description: TalkSlot is a free, privacy-friendly booking tool for parent-teache
         <ul>
           <li>Runs on shared hosting with PHP 8.3+</li>
           <li>Zero-downtime deployment via GitHub Actions</li>
-          <li>One-click rollback, automatic migrations</li>
+          <li>Automatic migrations; rollback by itself if the site or its database fails the check, or in one click</li>
           <li>Error alerts by mail, without personal data</li>
           <li>Mail queue with retries: reminders and summaries sent by the cron job, undelivered mails shown to admins</li>
         </ul>
@@ -100,6 +100,7 @@ description: TalkSlot is a free, privacy-friendly booking tool for parent-teache
         <p>Each round shows its link, round code and invitation text, then every day with its breaks and all bookings. Slots can be blocked, bookings edited, moved or added by hand. Before deleting and when a day is moved, dialogs and hints say clearly that the parents still need to be told.</p>
         <ul>
           <li>Changing times never deletes a booking; conflicts are flagged</li>
+          <li>Deleting a round with bookings needs an extra tick; expired rounds show when they will be deleted, drafts are kept</li>
           <li>Print view per round or day, also as PDF</li>
           <li>Titles and descriptions translated in the teacher's browser, without sending text anywhere</li>
         </ul>

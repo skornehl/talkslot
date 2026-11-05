@@ -69,7 +69,7 @@ description: TalkSlot ist ein freies, datenschutzfreundliches Buchungstool für 
         <ul>
           <li>Läuft auf Shared Hosting mit PHP 8.3+</li>
           <li>Deployment ohne Ausfallzeit per GitHub Actions</li>
-          <li>Rollback mit einem Klick, automatische Migrationen</li>
+          <li>Automatische Migrationen; Rollback von selbst, wenn Seite oder Datenbank die Prüfung nicht bestehen, oder per Klick</li>
           <li>Fehlermeldungen per E-Mail, ohne personenbezogene Daten</li>
           <li>Mail-Warteschlange mit neuen Versuchen: Erinnerungen und Zusammenfassungen per Cronjob, nicht zugestellte E-Mails sehen Admins</li>
         </ul>
@@ -100,6 +100,7 @@ description: TalkSlot ist ein freies, datenschutzfreundliches Buchungstool für 
         <p>Jede Terminrunde zeigt Link, Rundencode und Einladungstext, darunter jeden Tag mit seinen Pausen und allen Buchungen. Termine lassen sich sperren, Buchungen bearbeiten, verschieben oder von Hand eintragen. Vor dem Löschen und beim Verlegen eines Tages sagen Dialoge und Hinweise klar, dass die Eltern noch selbst informiert werden müssen.</p>
         <ul>
           <li>Geänderte Zeiten löschen nie eine Buchung; Konflikte werden markiert</li>
+          <li>Eine Runde mit Buchungen lässt sich nur mit zusätzlichem Haken löschen; abgelaufene Runden zeigen, wann sie gelöscht werden, Entwürfe bleiben</li>
           <li>Druckansicht pro Runde oder Tag, auch als PDF</li>
           <li>Titel und Beschreibungen werden im Browser der Lehrkraft übersetzt, ohne Text irgendwohin zu senden</li>
         </ul>

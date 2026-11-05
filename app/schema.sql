@@ -29,6 +29,8 @@ CREATE TABLE IF NOT EXISTS users (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- location: where the meetings take place (e.g. a room); a day can override it.
+-- was_used: activated at least once or booked by the teacher. Only such rounds expire after their last
+-- day (see Cleanup); a draft that was never used, e.g. a copy with the old dates, is kept.
 CREATE TABLE IF NOT EXISTS rounds (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   user_id INT UNSIGNED NOT NULL,
@@ -42,6 +44,7 @@ CREATE TABLE IF NOT EXISTS rounds (
   location VARCHAR(200) NULL,
   source_lang VARCHAR(5) NOT NULL DEFAULT 'de',
   is_active TINYINT(1) NOT NULL DEFAULT 0,
+  was_used TINYINT(1) NOT NULL DEFAULT 0,
   booking_deadline_hours INT UNSIGNED NOT NULL DEFAULT 24,
   cancel_deadline_hours INT UNSIGNED NOT NULL DEFAULT 12,
   delete_after_hours INT UNSIGNED NULL DEFAULT 24,

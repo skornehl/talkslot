@@ -10,7 +10,7 @@ namespace App;
  */
 final class Migrations
 {
-    public const LATEST = 19;
+    public const LATEST = 20;
 
     /** Version => SQL statements */
     private const STEPS = [
@@ -131,13 +131,22 @@ final class Migrations
         18 => [
             'ALTER TABLE users ADD COLUMN IF NOT EXISTS lang VARCHAR(5) NULL AFTER email',
         ],
-        // 19: mail queue (outbox, references only: the text and a new link are made when sending) and per
+        // 19: only rounds that were in use expire automatically (activated at least once or with an entry
+        //     by the teacher); a draft such as a copy that keeps the old dates stays. Existing rounds count
+        //     as used if they are active, already expired or booked. Additive: the version before ignores it.
+        19 => [
+            'ALTER TABLE rounds ADD COLUMN IF NOT EXISTS was_used TINYINT(1) NOT NULL DEFAULT 0 AFTER is_active',
+            'UPDATE rounds r SET r.was_used = 1
+              WHERE r.is_active = 1 OR r.expired_at IS NOT NULL
+                 OR EXISTS (SELECT 1 FROM round_days d JOIN slots s ON s.day_id = d.id JOIN bookings b ON b.slot_id = s.id WHERE d.round_id = r.id)',
+        ],
+        // 20: mail queue (outbox, references only: the text and a new link are made when sending) and per
         //     booking: may it be reminded (remind_ok), the last confirmation or change notice (notified_at,
         //     the reminder skips that day instead of looking at updated_at), a failed mail (mail_failed_at)
         //     and the link of a confirmation sent later from the outbox (mail_token_hash). Existing bookings
         //     of parents remind as their round does; entries by the teacher only after a new confirmation or
         //     change notice, as nobody knows whether the parents got one (they never saw the booking form).
-        19 => [
+        20 => [
             'ALTER TABLE bookings
                 ADD COLUMN IF NOT EXISTS remind_ok TINYINT(1) NOT NULL DEFAULT 0 AFTER source,
                 ADD COLUMN IF NOT EXISTS notified_at DATETIME NULL AFTER remind_ok,
@@ -241,7 +250,7 @@ final class Migrations
         // and the expiry of the remember-me entry (interim state on main after v1.5.0)
         'ac8cf4d882a13a6e127476ab13de02524316d343a746b4b8ff055c3aa0d09347',
         '320c437da7fbf0e1ab24328e555348c160b1ac8bc551dfcb7229ae0593de2683',
-        // Privacy policy de/en for public schools without the mail queue (outbox; up to schema version 18)
+        // Privacy policy de/en for public schools without the mail queue (outbox; up to schema version 19)
         '12d249130ce60c94e7cd8f430e6cea2809d121351ab59090db0e0cc014eb4afe',
         '53be37d7c9c6697144d9400fe8a4536dee767f9ee22fe2636224d2484d04390a',
     ];

@@ -20,6 +20,11 @@ There is nothing to run by hand. On the first request after an update TalkSlot r
 by step (`app/src/Migrations.php`). A database lock makes sure only one request migrates; the others wait
 briefly. Fresh installations get the newest schema directly from `app/schema.sql`.
 
+A migration that fails is reported by alert mail; pages keep being served. With the atomic deployment the
+[health check]({{ '/guide/deployment/' | relative_url }}#health-check) after switching runs the migrations
+first and switches back to the previous version if one fails, if the database cannot be reached or if it
+is not MariaDB 10.6 or newer.
+
 Migrations only add columns (with defaults) and tables, so a rollback to an older version keeps working.
 Imprint and privacy texts that were never edited are replaced by newer templates automatically; edited
 texts stay untouched and admins see a hint under *Texte* when something needs attention. If a new template
@@ -53,7 +58,9 @@ writing. The log is rotated at 5 MB (one previous file `php-error.log.1`).
 ## Backups
 
 Back up the **database** (e.g. `mysqldump --single-transaction`) and `config/config.php`. `app/var/` only
-holds sessions, the alert counter and logs and does not need a backup.
+holds sessions, the alert counter and logs and does not need a backup. Take a fresh database backup
+before an update whose release notes mention a database migration: a rollback switches the code, not the
+database.
 
 Keep in mind that bookings are personal data with a short life: restore a backup only as far as
 necessary and let the clean-up run afterwards.
@@ -87,8 +94,9 @@ or an old backup is lost.
    (Art. 33(5) GDPR) and reports it to the supervisory authority within 72 hours unless it is unlikely to
    put the people concerned at risk; at a high risk they have to be told as well (Art. 33, 34 GDPR).
 
-A new `APP_SECRET` changes the web cron token. The included `cron.yml` derives it from the same secret; an
-external cron service needs the new token (see [web cron]({{ '/guide/installation/' | relative_url }})),
+A new `APP_SECRET` changes the web cron token and the key of the
+[health check]({{ '/guide/deployment/' | relative_url }}#health-check). The included workflows derive both
+from the same secret; an external cron service needs the new token (see [web cron]({{ '/guide/installation/' | relative_url }})),
 otherwise the clean-up only runs on page views and queued mails wait. It also resets the rate limits, and parents have to
 reload an open booking form or enter a round code again. Admin sessions, change links and bookings stay
 valid.
@@ -98,9 +106,9 @@ valid.
 | What | When |
 |---|---|
 | Bookings (name, e-mail) of a day | from 0:00 of the following day |
-| Rounds | deactivated after their last day, deleted 24 h later by default (per round, empty = never) |
+| Rounds | deactivated after their last day, deleted 24 h later by default (per round, empty = never); only rounds that were in use (active at some point or with an entry by the teacher); drafts that were never active stay |
 | Rate-limit data | after 24 hours at the latest |
-| Inactive teacher accounts without rounds | 15 months after the last login |
+| Inactive teacher accounts without rounds in use | 15 months after the last login, together with their drafts |
 | Admin log (*Protokoll*) | after 90 days (`audit_log_days`) |
 | Mail queue entries (no address or content) | once the mail is sent; mails that could not be sent after 48 hours |
 

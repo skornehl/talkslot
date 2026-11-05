@@ -15,7 +15,7 @@ This page explains the design decisions; it is not legal advice.
 | Mail queue entry: which mail is due for which booking or account (no address, text or link) | database | once sent, after 48 hours at the latest, with the booking |
 | Shortened, HMAC-hashed IP addresses; HMAC hashes of account IDs and known-device cookies with failed logins | database (rate limiting) | after 24 hours at the latest |
 | Known-device cookie of an admin or teacher account (random number, time, signature) | that person's browser | after 365 days, renewed at every sign-in |
-| Teacher accounts | database | by an admin; inactive accounts without rounds 15 months after the last login |
+| Teacher accounts | database | by an admin; inactive accounts without rounds in use 15 months after the last login, together with their drafts |
 | Summary mails to teachers (time and name, no e-mail addresses) | teacher's mailbox | the privacy policy promises at most 15 months |
 | Log of admin changes (who, when, what; no data of parents) | database | after 90 days (`audit_log_days`) |
 

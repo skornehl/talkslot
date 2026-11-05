@@ -29,7 +29,11 @@ the German ones, with the English label in brackets.
 - **Deadlines**: booking closes *N* hours before a slot (*Buchungsschluss*), parents can change or cancel
   until *N* hours before (*Ändern/Absagen bis*).
 - **Delete after** (*Runde löschen nach Ablauf*): hours after the last day, 24 by default, empty = never.
-  Bookings are deleted the day after the appointment either way.
+  Bookings are deleted the day after the appointment either way. Only a round that was in use expires:
+  one that was active at some point or got an entry from you. A round that was never active, e.g. a copy
+  that still has the old dates, is kept until you use or delete it (*Noch nie aktiv: wird nicht
+  automatisch gelöscht*). The round page shows the date of the deletion (*Runde wird am … gelöscht*); an
+  expired round also says how to keep it: add a day from today on, or clear this field.
 - **Reminder** (*Eltern am Vorabend an ihren Termin erinnern*, on by default): parents who gave an e-mail
   address get a reminder the evening before, with the link to cancel. Who got a confirmation or change
   notice on that same day gets none (editing a name without a mail does not count). It applies to bookings
@@ -97,11 +101,19 @@ account; beyond that the message asks you to save again later). Before deleting 
 print view: afterwards nobody can see who had booked. To move a conflicting booking, edit it and leave
 *Änderung per E-Mail mitteilen* ticked.
 
-Further actions on the round: edit, deactivate, **print view / PDF** (*Druckansicht / PDF*), delete, and
+Further actions on the round: edit, deactivate, **print view / PDF** (*Druckansicht / PDF*), and
 **duplicate** (*Duplizieren …*): a copy with new link and code, including times, breaks, blocked slots,
 settings and translations, but no bookings; the copy is inactive. Enter the **first day of the copy** and
 all days move by the same distance (days on Tuesday and Thursday stay on Tuesday and Thursday), handy for
-the next term. Without a date the copy keeps the old dates.
+the next term. Without a date the copy keeps the old dates; as it was never active, it is not deleted
+automatically, so you can prepare it at your own pace.
+
+**Delete a round** in its own section at the end of the round page (*Runde löschen*; *Löschen …* among the
+actions jumps there). It deletes the round with all its days, breaks, translations and bookings and
+cannot be undone. If the round has bookings, tick *inkl. N Buchung(en)* (incl. N bookings) first: without
+the tick nothing is deleted, even if your browser does not show the confirmation dialog. If you only want
+to stop new bookings, choose *Stattdessen deaktivieren* (deactivate instead): days and bookings are kept,
+and parents can still cancel.
 
 ## Translations
 

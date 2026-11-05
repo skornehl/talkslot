@@ -59,10 +59,12 @@ final class Cleanup
               WHERE s.is_conflict = 1 AND b.id IS NULL'
         );
 
-        // 3. Deactivate rounds whose last day is over and mark them as expired
+        // 3. Deactivate rounds whose last day is over and mark them as expired. Only rounds that were in
+        //    use (active, or was_used: activated before or booked by the teacher): a draft that was never
+        //    used, e.g. a copy that still has the old dates, stays until somebody uses or deletes it
         $stats['rounds_expired'] = Db::exec(
             'UPDATE rounds r SET r.is_active = 0, r.expired_at = ?
-              WHERE r.expired_at IS NULL
+              WHERE r.expired_at IS NULL AND (r.is_active = 1 OR r.was_used = 1)
                 AND EXISTS (SELECT 1 FROM round_days d WHERE d.round_id = r.id)
                 AND NOT EXISTS (SELECT 1 FROM round_days d WHERE d.round_id = r.id AND d.day_date >= ?)',
             [$now, $today]
@@ -83,12 +85,13 @@ final class Cleanup
         // 6. Delete the summary delivery log (contains no content) after 60 days
         $stats['summary_log_deleted'] = Db::exec('DELETE FROM sent_summaries WHERE sent_at < ?', [Time::now()->modify('-60 days')->format('Y-m-d H:i:s')]);
 
-        // 7. Delete deactivated teacher accounts without rounds after 15 months without login
-        //    (name, email, last login are no longer needed then)
+        // 7. Delete deactivated teacher accounts without rounds in use after 15 months without login
+        //    (name, email, last login are no longer needed then). Drafts that were never used go with
+        //    them, as they no longer expire on their own (step 3)
         $stats['accounts_deleted'] = Db::exec(
             "DELETE FROM users WHERE role <> 'admin' AND is_active = 0
                 AND COALESCE(last_login_at, created_at) < ?
-                AND NOT EXISTS (SELECT 1 FROM rounds r WHERE r.user_id = users.id)",
+                AND NOT EXISTS (SELECT 1 FROM rounds r WHERE r.user_id = users.id AND (r.is_active = 1 OR r.was_used = 1))",
             [Time::now()->modify('-15 months')->format('Y-m-d H:i:s')]
         );
 
@@ -100,5 +103,24 @@ final class Cleanup
 
         Settings::set('last_cleanup', (string) time());
         return $stats;
+    }
+
+    /**
+     * When steps 3 and 4 delete a round, for the admin pages: from 0:00 after its last day plus
+     * delete_after_hours (from expired_at once it has expired), never while a day is still ahead.
+     * null = not automatically: no deletion period, no days, or a draft that was never used.
+     *
+     * @param array{is_active:int,was_used:int,expired_at:?string,delete_after_hours:?int} $round
+     * @param ?string $lastDay date of its last day (Y-m-d)
+     */
+    public static function deletionAt(array $round, ?string $lastDay): ?\DateTimeImmutable
+    {
+        if ($round['delete_after_hours'] === null || $lastDay === null
+            || ($round['expired_at'] === null && !$round['is_active'] && !$round['was_used'])) {
+            return null;
+        }
+        $over = (new \DateTimeImmutable($lastDay))->modify('+1 day');
+        $from = $round['expired_at'] !== null ? new \DateTimeImmutable((string) $round['expired_at']) : $over;
+        return max($from->modify('+' . (int) $round['delete_after_hours'] . ' hours'), $over);
     }
 }

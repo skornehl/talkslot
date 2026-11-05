@@ -216,6 +216,9 @@ textarea.mono { font-family: var(--mono); font-size: .92rem; line-height: 1.45; 
 form.inline { display: inline; }
 .inline-delete { display: inline-flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
 .inline-delete label { display: inline-flex; gap: .35rem; align-items: center; }
+/* Deleting a round: own section at the end of the round page, apart from the everyday actions */
+.danger-zone { border-color: var(--danger); }
+.danger-zone h2 { color: var(--danger); }
 .input-prefix { display: flex; align-items: stretch; }
 .input-prefix span { padding: .6rem .5rem; background: var(--neutral-soft); border: 1px solid var(--input-border); border-right: 0; border-radius: 8px 0 0 8px; font-size: .9rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 45%; }
 .input-prefix input { border-radius: 0 8px 8px 0; }
@@ -313,7 +316,7 @@ details.card > summary h2 { display: inline; margin: 0; font-size: 1.2rem; }
 }
 
 @media print {
-  .site-header, .site-footer, .actions, .row-actions, .inline-form, .skip-link, form { display: none !important; }
+  .site-header, .site-footer, .actions, .row-actions, .inline-form, .skip-link, form, .danger-zone { display: none !important; }
   body { background: #fff; }
   .card { border: 0; padding: 0; }
 }
