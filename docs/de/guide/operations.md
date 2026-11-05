@@ -121,8 +121,10 @@ Außer bei den sofort verschickten Bestätigungen (unten) wartet niemand beim Se
 Mailserver: Seitenaufrufe führen nur die Datenbankschritte der Bereinigung aus, und Erinnerungen,
 Zusammenfassungen und fehlgeschlagene E-Mails kommen in eine **Mail-Warteschlange** (Outbox), die der
 **Cronjob** verschickt (`bin/cron.php` oder der Web-Cron). Pro Lauf
-sind das höchstens 100 E-Mails in etwa 20 Sekunden über eine SMTP-Verbindung; Bestätigungen und
-Änderungsmitteilungen an Eltern gehen vor, dann Zusammenfassungen, dann Erinnerungen
+sind das höchstens 100 E-Mails in etwa 20 Sekunden über eine SMTP-Verbindung; einzelne Bestätigungen,
+Änderungsmitteilungen und Absagen an Eltern gehen vor, dann die E-Mails an viele Eltern nach einer Änderung
+durch eine Lehrkraft (ein Tag oder eine Runde gelöscht oder verlegt) und Zusammenfassungen, dann
+Erinnerungen
 (siehe [Konfiguration]({{ '/de/guide/configuration/' | relative_url }}#mail-warteschlange), auch für eine
 Grenze pro Stunde). Es verschickt immer nur ein Lauf, und zwar je Datenbank: Installationen auf demselben
 Datenbankserver halten sich nicht gegenseitig auf. Der Cronjob wartet bis zu 15 Sekunden auf einen
@@ -137,6 +139,13 @@ laufenden Lauf.
   Bestätigung bekommt einen eigenen, neuen persönlichen Link (der erste bleibt gültig); die Warteschlange
   enthält also weder Adresse noch Link. Einträge verschwinden mit ihrer Buchung und werden nach dem Versand
   gelöscht, spätestens nach 48 Stunden.
+- **Ausnahme: Absagen durch die Lehrkraft.** Löscht eine Lehrkraft eine Buchung, einen Tag, eine Runde oder
+  ein Admin ein Konto mit angehaktem *Eltern per E-Mail informieren*, ist die Buchung schon gelöscht, bevor
+  die Absage hinausgeht. Ein solcher Eintrag enthält deshalb, was genau diese E-Mail braucht (Adresse,
+  Sprache, Name, Termin und Lehrkraft, als JSON in `mail_outbox.payload`, Schemaversion 20), nie einen Link
+  oder Token, und wird wie die anderen gelöscht: nach dem Versand, spätestens nach 48 Stunden. Eine Absage,
+  deren Termin inzwischen begonnen hat, wird verworfen. Ältere Versionen verwerfen solche Einträge
+  ungesendet; ein Rollback verliert also höchstens die Absagen, die gerade noch warten.
 - **Nichts geht unbemerkt verloren.** Die Buchungsliste zeigt *E-Mail nicht zugestellt* bei einem Eintrag,
   dessen E-Mail nicht verschickt werden konnte (mit *neuer Versuch folgt*, solange sie wiederholt wird), und
   Admins sehen in der Übersicht einen Hinweis, wenn E-Mails länger als zwei Stunden warten, meist weil der

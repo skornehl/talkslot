@@ -1,5 +1,5 @@
 <?php
-/** @var ?array $round @var array $data @var array $dayData @var array $errors */
+/** @var ?array $round @var array $data @var array $dayData @var array $errors @var array $parents upcoming bookings of the round, how many can be mailed */
 use App\Csrf;
 $action = $round ? url('/admin/round/' . (int) $round['id'] . '/edit') : url('/admin/round/new');
 ?>
@@ -107,8 +107,15 @@ $action = $round ? url('/admin/round/' . (int) $round['id'] . '/edit') : url('/a
   <div class="field">
     <label for="location"><?= e(__('Ort (optional)')) ?></label>
     <input type="text" id="location" name="location" maxlength="200" value="<?= e($data['location'] ?? '') ?>" placeholder="<?= e(__('z. B. Raum 1.12, Hauptgebäude')) ?>" aria-describedby="loc-hint">
-    <p class="hint" id="loc-hint"><?= e(__('Steht auf der Buchungsseite, in der Bestätigung, in der Kalenderdatei und im Einladungstext. Findet ein Tag woanders statt, ändern Sie das unter „Tag bearbeiten“.')) ?><?= $round ? ' ' . e(__('Bereits gebuchte Eltern werden bei einer Änderung NICHT automatisch benachrichtigt.')) : '' ?></p>
+    <p class="hint" id="loc-hint"><?= e(__('Steht auf der Buchungsseite, in der Bestätigung, in der Kalenderdatei und im Einladungstext. Findet ein Tag woanders statt, ändern Sie das unter „Tag bearbeiten“.')) ?><?= $round && $parents['upcoming'] > 0 && $parents['mailable'] === 0 ? ' ' . e(__('Bereits gebuchte Eltern werden bei einer Änderung NICHT automatisch benachrichtigt.')) : '' ?></p>
   </div>
+  <?php if ($round && $parents['mailable'] > 0): /* ticked unless unticked before an error */ ?>
+  <div class="check">
+    <input type="checkbox" id="notify" name="notify" value="1"<?= ($data['notify'] ?? true) ? ' checked' : '' ?> aria-describedby="notify-hint">
+    <label for="notify"><?= e(__('Eltern per E-Mail informieren')) ?></label>
+  </div>
+  <p class="hint hint-indent" id="notify-hint"><?= e(__('Ändern sich Ort oder Lehrkraft der Runde, erhalten die Eltern gebuchter Termine die neuen Daten per E-Mail in ihrer Sprache.')) ?><?= $parents['upcoming'] > $parents['mailable'] ? ' ' . e(__('{count} Buchung(en) ohne E-Mail an die Eltern – bitte persönlich informieren.', ['count' => $parents['upcoming'] - $parents['mailable']])) : '' ?></p>
+  <?php endif; ?>
 
   <div class="field-row">
     <div class="field">

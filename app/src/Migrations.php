@@ -10,7 +10,7 @@ namespace App;
  */
 final class Migrations
 {
-    public const LATEST = 19;
+    public const LATEST = 20;
 
     /** Version => SQL statements */
     private const STEPS = [
@@ -157,6 +157,11 @@ final class Migrations
                 CONSTRAINT fk_outbox_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
         ],
+        // 20: cancellations by the teacher (booking, day, round or account deleted) wait in the outbox with
+        //     what the mail needs, as the booking is gone (additive: older code drops such rows unsent)
+        20 => [
+            'ALTER TABLE mail_outbox ADD COLUMN IF NOT EXISTS payload TEXT NULL AFTER ref',
+        ],
     ];
 
     /**
@@ -166,10 +171,10 @@ final class Migrations
     public const CURRENT_PAGE_HASHES = [
         'imprint.de' => '557dbb64b5ab373144a29e23a36056355fe02bdc7ff70a43d690d6acb8a74672',
         'imprint.en' => '0692f22c0bb7dd3c6f76c96c51f3dc78e25af54f97b4c556fb7268b8e372fa3f',
-        'privacy.de' => 'a45b94275b4e42f8635ab7a601e6c52a8e3562c155865e349edf2a3502cedb8d',
-        'privacy.en' => 'b1186539d1140945417e257cc4e04f764be96db65c95e67c6b22e27b44be5e45',
-        'privacy-private.de' => '4214ed9b61089be04b820467e61ac06319cd5152a1c9fab2b8c4069f9cdac21c',
-        'privacy-private.en' => '0d7cd119cc674671238f4aad67cef56baa057647a71d0e8655b475ba35513fdf',
+        'privacy.de' => '6a3e56b92970cd83352b6d4fbff9ff64fbb6765bf8d622c9c66cd5bb8812f374',
+        'privacy.en' => '5c1350ac669db8120b946879389dd3cfb6bb1720a86aa523d6df95520c2b7878',
+        'privacy-private.de' => '47c6e2a09756b3fd45840c2eca28ccab265ce3f1913bca70e8a6972e60324bbe',
+        'privacy-private.en' => '02f09a8774e42c1b7c17ac6818f92a79879865e114456f36d0974f86f55d3b4b',
     ];
 
     /**
@@ -244,6 +249,9 @@ final class Migrations
         // Privacy policy de/en for public schools without the mail queue (outbox; up to schema version 18)
         '12d249130ce60c94e7cd8f430e6cea2809d121351ab59090db0e0cc014eb4afe',
         '53be37d7c9c6697144d9400fe8a4536dee767f9ee22fe2636224d2484d04390a',
+        // Privacy policy de/en for public schools without the cancellation by the teacher (schema version 19)
+        'a45b94275b4e42f8635ab7a601e6c52a8e3562c155865e349edf2a3502cedb8d',
+        'b1186539d1140945417e257cc4e04f764be96db65c95e67c6b22e27b44be5e45',
     ];
 
     public static function run(): void

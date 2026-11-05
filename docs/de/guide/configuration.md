@@ -93,15 +93,16 @@ Auftragsverarbeiter nach Art. 28 DSGVO. Die Server stehen in Deutschland.*
 
 ## Mail-Warteschlange
 
-Erinnerungen, Zusammenfassungen und Bestätigungen, die nicht sofort verschickt werden konnten, warten in
-einer Mail-Warteschlange (Outbox), die der Cronjob abarbeitet; siehe
+Erinnerungen, Zusammenfassungen, E-Mails an Eltern nach einer Änderung durch eine Lehrkraft und
+Bestätigungen, die nicht sofort verschickt werden konnten, warten in einer Mail-Warteschlange (Outbox), die
+der Cronjob abarbeitet; siehe
 [Betrieb]({{ '/de/guide/operations/' | relative_url }}#mail-warteschlange).
 
 | Option | Standard | Bedeutung |
 |---|---|---|
 | `mail_queue.batch` | `100` | höchstens so viele E-Mails pro Cron-Lauf |
 | `mail_queue.seconds` | `20` | Zeitbudget pro Cron-Lauf (eine begonnene E-Mail wird noch fertig verschickt) |
-| `mail_queue.hourly_limit` | `0` | höchstens so viele Erinnerungen und Zusammenfassungen pro Stunde, z. B. das Mail-Kontingent Ihres Hosters (`0` = keine Grenze); Bestätigungen und Änderungsmitteilungen gehen vor und werden nie zurückgehalten |
+| `mail_queue.hourly_limit` | `0` | höchstens so viele Erinnerungen, Zusammenfassungen und E-Mails an viele Eltern nach einer Änderung durch eine Lehrkraft pro Stunde, z. B. das Mail-Kontingent Ihres Hosters (`0` = keine Grenze); einzelne Bestätigungen, Änderungsmitteilungen und Absagen gehen vor und werden nie zurückgehalten |
 | `mail_queue.after_response` | `true` | mit PHP-FPM oder LiteSpeed verschickt auch ein Seitenaufruf bis zu 10 fällige E-Mails, nachdem seine Antwort beim Browser ist |
 
 ## Rate-Limits {#rate-limits}

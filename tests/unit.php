@@ -436,6 +436,8 @@ $allowed = [
     'Installer.php:$stmt' => 'statements from app/schema.sql',
     'Migrations.php:$sql' => 'fixed statements from Migrations::STEPS',
     'Summaries.php:$where' => 'fixed conditions from callers in the same class',
+    'ScheduleService.php:$where' => 'fixed conditions from ScheduleService::SCOPES',
+    'ScheduleService.php:$sql' => 'fixed statements from ScheduleService::LOCKS',
     'AdminController.php:$all' => 'boolean (admin or not)',
 ];
 $found = [];

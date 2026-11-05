@@ -191,12 +191,15 @@ CREATE TABLE IF NOT EXISTS round_translations (
 -- Mails waiting to be sent (see App\Outbox): references only (booking or account, kind, for summaries the
 -- day), no address, text or link – they are created from the booking or account when sending. Deleted once
 -- sent, together with the booking or account, and after at most 48 hours if sending keeps failing.
+-- payload: only for the cancellation of a booking the teacher deleted (kind 'cancelled'): the booking is gone,
+-- so the row keeps what that mail needs (address, language, name, appointment as JSON; no link or token).
 CREATE TABLE IF NOT EXISTS mail_outbox (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   kind VARCHAR(20) NOT NULL,
   booking_id INT UNSIGNED NULL,
   user_id INT UNSIGNED NULL,
   ref VARCHAR(40) NULL,
+  payload TEXT NULL,
   priority TINYINT UNSIGNED NOT NULL,
   attempts SMALLINT UNSIGNED NOT NULL DEFAULT 0,
   next_attempt_at DATETIME NOT NULL,

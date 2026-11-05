@@ -1,4 +1,4 @@
-<?php /** @var ?array $user @var array $data @var array $errors @var bool $isSelf @var int $bookings */ use App\Csrf; ?>
+<?php /** @var ?array $user @var array $data @var array $errors @var bool $isSelf @var array $parents upcoming bookings in the account's rounds, how many can be mailed */ use App\Csrf; ?>
 <p class="breadcrumb"><a href="<?= e(url('/admin/users')) ?>"><?= e(__('Benutzer')) ?></a></p>
 <h1><?= e($title) ?></h1>
 <?php require __DIR__ . '/_errors.php'; ?>
@@ -75,9 +75,19 @@
 <section class="card">
   <h2><?= e(__('Benutzer löschen')) ?></h2>
   <p><?= __h('Löscht das Konto {bold} dieser Person. Das kann nicht rückgängig gemacht werden. Alternative: Konto deaktivieren.', ['bold' => '<strong>' . e(__('mit allen Terminrunden und Buchungen')) . '</strong>']) ?></p>
-  <form method="post" action="<?= e(url('/admin/users/' . (int) $user['id'] . '/delete')) ?>" class="inline-delete" data-confirm="<?= e(__('Konto „{username}“ mit allen Runden und Buchungen endgültig löschen?', ['username' => $user['username']]) . ($bookings ? "\n\n" . __('Die Eltern von {count} Buchung(en) werden NICHT automatisch benachrichtigt – bitte selbst informieren.', ['count' => $bookings]) : '')) ?>">
+  <?php
+  // What happens to the parents of upcoming appointments, with the box ticked (data-confirm) or not (data-confirm-off)
+  $question = __('Konto „{username}“ mit allen Runden und Buchungen endgültig löschen?', ['username' => $user['username']]);
+  $off = $parents['upcoming'] > 0 ? "\n\n" . __('Die Eltern von {count} Buchung(en) werden NICHT automatisch benachrichtigt – bitte selbst informieren.', ['count' => $parents['upcoming']]) : '';
+  $on = $parents['mailable'] > 0 ? "\n\n" . __('Die Eltern von {count} Buchung(en) erhalten eine Absage per E-Mail.', ['count' => $parents['mailable']])
+      . ($parents['upcoming'] > $parents['mailable'] ? ' ' . __('{count} Buchung(en) ohne E-Mail an die Eltern – bitte persönlich informieren; die Namen stehen danach in der Meldung.', ['count' => $parents['upcoming'] - $parents['mailable']]) : '') : $off;
+  ?>
+  <form method="post" action="<?= e(url('/admin/users/' . (int) $user['id'] . '/delete')) ?>" class="inline-delete" data-confirm="<?= e($question . $on) ?>" data-confirm-off="<?= e($question . $off) ?>">
     <?= Csrf::adminField() ?>
     <label class="small"><input type="checkbox" name="confirm" value="1" required> <?= e(__('Ja, endgültig löschen')) ?></label>
+    <?php if ($parents['mailable'] > 0): ?>
+    <label class="small"><input type="checkbox" name="notify" value="1" checked> <?= e(__('Eltern per E-Mail informieren')) ?></label>
+    <?php endif; ?>
     <?php if ($user['role'] === 'admin'): ?>
     <label class="small" for="delete_password"><?= e(__('Ihr Passwort (zur Bestätigung)')) ?></label>
     <input type="password" id="delete_password" name="current_password" required autocomplete="current-password">

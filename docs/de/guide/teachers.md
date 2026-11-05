@@ -92,17 +92,31 @@ Pro Tag sehen Sie alle Termine mit den Buchungen:
 Wenn Sie Zeiten oder Pausen ändern, werden **gebuchte Termine nie gelöscht**; Termine, die nicht mehr
 passen, werden mit ⚠ markiert, damit Sie sie verschieben können.
 
-**Die Eltern werden nicht automatisch benachrichtigt**, wenn Sie eine Buchung, einen Tag oder eine Runde
-löschen, wenn ein Tag ein anderes Datum oder einen anderen Ort bekommt, die Runde einen anderen Ort oder
-(durch einen Admin) eine andere Lehrkraft, oder wenn eine Buchung zum Konflikt wird; ebenso, wenn ein
-Admin ein Konto löscht. Darauf weisen die Bestätigungsdialoge, die Hinweise in den Formularen und die
-Meldung danach hin, jeweils mit der Zahl der betroffenen Buchungen. Bitte informieren Sie die Eltern
-selbst, persönlich, wenn keine E-Mail-Adresse hinterlegt ist. Besteht die Buchung noch, geht es am
-einfachsten über den Eintrag: *Bearbeiten* öffnen und mit *Änderung per E-Mail mitteilen* speichern, dann
-erhalten Eltern mit E-Mail-Adresse die neuen Daten in ihrer Sprache (höchstens 30 E-Mails pro Stunde aus
-Ihrem Konto; darüber hinaus bittet die Meldung, später erneut zu speichern). Öffnen Sie vor dem Löschen
-eines Tages oder einer Runde die Druckansicht: Danach ist nicht mehr zu sehen, wer gebucht hatte. Um einen
-Konflikt umzubuchen, bearbeiten Sie die Buchung und lassen *Änderung per E-Mail mitteilen* angehakt.
+**Die Eltern erfahren Ihre Änderungen per E-Mail.** Wenn Sie eine Buchung, einen Tag oder eine Runde
+löschen, einem Tag ein anderes Datum, eine andere Uhrzeit oder einen anderen Ort geben oder der Runde einen
+anderen Ort oder (als Admin) eine andere Lehrkraft, ist im Dialog bzw. Formular ***Eltern per E-Mail
+informieren*** angehakt. Die Eltern erhalten dann eine E-Mail in ihrer Sprache:
+
+- eine **Absage**, wenn ihre Buchung gelöscht wird, mit einer Kalenderdatei, die den Termin aus ihrem
+  Kalender entfernt, und dem Link zur Seite der Runde, um neu zu buchen, falls die Runde noch Buchungen
+  annimmt. Sie enthält keinen persönlichen Link, denn die Buchung gibt es nicht mehr. Ein einzelner Eintrag
+  geht sofort hinaus; mehrere (ein Tag, eine Runde) gehen über die
+  [Mail-Warteschlange]({{ '/de/guide/operations/' | relative_url }}#mail-warteschlange) hinaus, mit dem
+  nächsten Lauf des Cronjobs oder, mit PHP-FPM, gleich nach der Seite;
+- eine **Änderungsmitteilung** mit aktuellem Datum, Uhrzeit, Ort und Lehrkraft, wenn sich davon etwas
+  geändert hat (über die Mail-Warteschlange). Ihr persönlicher Link bleibt gültig.
+
+E-Mails gehen an Eltern, die selbst mit E-Mail-Adresse gebucht haben, und an Ihre eigenen Einträge, sobald
+deren Eltern eine Bestätigung oder Änderungsmitteilung von TalkSlot erhalten haben. Alle anderen, und alle,
+wenn Sie das Häkchen herausnehmen, werden **nicht** benachrichtigt: Dialoge und Formulare nennen ihre Zahl,
+und die Meldung danach nennt sie mit Datum, Uhrzeit und Adresse (einmalig; nach dem Löschen zeigt sie sonst
+nichts mehr an), damit Sie sie persönlich informieren können. Vergangene Termine betrifft das nicht.
+
+Buchungen, die nach einer Änderung von Zeiten oder Pausen nicht mehr passen, werden zu **Konflikten** (⚠).
+Deren Eltern erhalten noch keine E-Mail: Sie erfahren davon, wenn Sie die Buchung umbuchen (*Bearbeiten*,
+*Änderung per E-Mail mitteilen* angehakt) oder löschen (*Eltern per E-Mail informieren* angehakt). Ein
+Eintrag, den Sie mit *Änderung per E-Mail mitteilen* speichern, schickt die aktuellen Daten auch ohne
+Änderung (höchstens 30 E-Mails pro Stunde aus Ihrem Konto).
 
 Weitere Aktionen für die Runde: bearbeiten, deaktivieren, ***Druckansicht / PDF***, löschen und
 ***Duplizieren …***: eine Kopie mit neuem Link und Code, mit Zeiten, Pausen, gesperrten Terminen,

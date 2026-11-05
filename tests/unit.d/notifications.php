@@ -5,15 +5,17 @@ $cfg = (static function (): array { return require dirname(__DIR__, 2) . '/confi
 $schema = (string) file_get_contents(APP_ROOT . '/app/schema.sql');
 preg_match('/CREATE TABLE IF NOT EXISTS mail_outbox \((.*?)\n\) ENGINE/s', $schema, $outboxTable);
 preg_match_all('/^  ([a-z_]+) [A-Z]/m', $outboxTable[1] ?? '', $outboxColumns);
-// Data minimisation: no address, subject, text or token in the queue; it goes with the booking or account
-check('outbox in schema.sql: references only, deleted with the booking or account',
-    $outboxColumns[1] === ['id', 'kind', 'booking_id', 'user_id', 'ref', 'priority', 'attempts', 'next_attempt_at', 'created_at']
+// Data minimisation: no address, subject, text or token in the queue; it goes with the booking or account.
+// Only the cancellation of a deleted booking keeps what its mail needs (payload, see Notifier::cancellationData())
+check('outbox in schema.sql: references only (a payload only for cancellations), deleted with the booking or account',
+    $outboxColumns[1] === ['id', 'kind', 'booking_id', 'user_id', 'ref', 'payload', 'priority', 'attempts', 'next_attempt_at', 'created_at']
     && str_contains($outboxTable[1], 'FOREIGN KEY (booking_id) REFERENCES bookings (id) ON DELETE CASCADE')
     && str_contains($outboxTable[1], 'FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE'));
 $steps = (new ReflectionClassConstant(App\Migrations::class, 'STEPS'))->getValue();
-$created = implode("\n", array_filter($steps[19] ?? [], static fn (string $sql): bool => str_contains($sql, 'CREATE TABLE IF NOT EXISTS mail_outbox')));
+$created = implode("\n", array_filter(array_merge($steps[19] ?? [], $steps[20] ?? []),
+    static fn (string $sql): bool => str_contains($sql, 'CREATE TABLE IF NOT EXISTS mail_outbox') || str_contains($sql, 'ALTER TABLE mail_outbox')));
 $norm = static fn (string $s): string => (string) preg_replace('/\s+/', ' ', $s);
-check('migration 19 creates the same outbox (columns, keys, cascades)', $created !== '' && !array_filter(
+check('migrations 19 and 20 create the same outbox (columns, keys, cascades)', $created !== '' && !array_filter(
     array_map('trim', explode(",\n", $outboxTable[1] ?? '')),
     static fn (string $definition): bool => !str_contains($norm($created), $norm($definition))
 ));
@@ -97,3 +99,68 @@ check('batch: returns the result of the run', App\Mailer::batch(static fn (): st
 App\Alert::$transport = null;
 App\Alert::$stateFile = null;
 App\Config::load($cfg);
+
+echo "Parents told about changes by the teacher\n";
+// Calendar files: the title names the teacher; a cancellation removes the entry (same UID, METHOD:CANCEL)
+App\Config::load(['mail' => ['from_address' => 'termine@example.org'] + $cfg['mail'], 'app_name' => 'Schule "am See"'] + $cfg);
+$created = date('Y-m-d H:i:s', time() - 3600);
+$pBooking = ['id' => 3, 'title' => 'Elternsprechtag 3b', 'teacher_name' => 'Frau Berger', 'name' => 'Max Muster', 'location' => 'Raum 1',
+    'day_date' => '2030-12-02', 'start_time' => '14:00:00', 'end_time' => '14:15:00', 'created_at' => $created, 'updated_at' => date('Y-m-d H:i:s', strtotime($created) + 300)];
+$prop = static fn (string $ics, string $name): ?string => preg_match('/^' . $name . '([:;].*)$/m', str_replace(["\r\n ", "\r"], '', $ics), $m) ? $m[1] : null;
+$published = App\IcsExport::forParent($pBooking, 'Ändern: https://example.org/b/abc');
+$cancelIcs = App\IcsExport::cancelForParent($pBooking);
+check('calendar file: title = round and teacher (several teachers on one evening), only the round without a teacher name',
+    $prop($published, 'SUMMARY') === ':Elternsprechtag 3b – Frau Berger' && $prop($published, 'X-WR-CALNAME') === ':Elternsprechtag 3b'
+    && $prop(App\IcsExport::forParent(['teacher_name' => ' '] + $pBooking), 'SUMMARY') === ':Elternsprechtag 3b');
+check('cancellation as calendar file: METHOD:CANCEL, same UID and title, STATUS:CANCELLED, a SEQUENCE above the last change',
+    $prop($cancelIcs, 'METHOD') === ':CANCEL' && $prop($published, 'METHOD') === ':PUBLISH' && $prop($cancelIcs, 'UID') === $prop($published, 'UID')
+    && $prop($cancelIcs, 'SUMMARY') === ':Elternsprechtag 3b – Frau Berger' && $prop($cancelIcs, 'STATUS') === ':CANCELLED' && $prop($published, 'STATUS') === null
+    && (int) substr((string) $prop($cancelIcs, 'SEQUENCE'), 1) > (int) substr((string) $prop($published, 'SEQUENCE'), 1)
+    && $prop($cancelIcs, 'DTSTART') === $prop($published, 'DTSTART'));
+check('cancellation: organizer is the sender address of the installation (quotes removed from the name), no address of a person',
+    $prop($cancelIcs, 'ORGANIZER') === ';CN="Schule am See":mailto:termine@example.org' && $prop($published, 'ORGANIZER') === null
+    && !str_contains($cancelIcs, 'example.org/b/'));
+App\Config::load(['mail' => ['from_address' => ''] + $cfg['mail']] + $cfg);
+check('cancellation without a sender address: no organizer line', $prop(App\IcsExport::cancelForParent($pBooking), 'ORGANIZER') === null);
+App\Config::load($cfg);
+
+// Who is mailed: parents who booked themselves, or got a mail about the teacher's entry; appointments still ahead
+$entry = ['email' => 'eltern@example.org', 'source' => 'admin', 'notified_at' => null];
+check('mailable: parents who booked with an address, and entries by the teacher once a mail reached the parents',
+    App\ScheduleService::mailable(['source' => 'parent'] + $entry) && App\ScheduleService::mailable(['notified_at' => '2030-01-01 10:00:00'] + $entry)
+    && !App\ScheduleService::mailable($entry) && !App\ScheduleService::mailable(['email' => '', 'source' => 'parent'] + $entry)
+    && !App\ScheduleService::mailable(['email' => null, 'notified_at' => '2030-01-01 10:00:00'] + $entry));
+$now = App\Time::now();
+check('upcoming: an appointment later today counts, one that has begun does not',
+    App\ScheduleService::upcoming(['day_date' => $now->format('Y-m-d'), 'start_time' => $now->modify('+1 minute')->format('H:i:s')])
+    && !App\ScheduleService::upcoming(['day_date' => $now->format('Y-m-d'), 'start_time' => $now->modify('-1 minute')->format('H:i:s')])
+    && !App\ScheduleService::upcoming(['day_date' => '2020-01-01', 'start_time' => '23:59:00']));
+
+// What a cancellation keeps once the booking is gone: what the mail needs, no token, no link, no description
+$data = App\Notifier::cancellationData($pBooking + ['round_id' => 7, 'email' => 'eltern@example.org', 'lang' => 'de', 'source_lang' => 'de',
+    'description' => 'Beschreibung', 'teacher_email' => 'berger@example.org', 'token_hash' => str_repeat('a', 64), 'reminder_token_hash' => str_repeat('b', 64),
+    'mail_token_hash' => null, 'source' => 'parent', 'slug' => 'runde-3b', 'code' => 'K7MP3QXA']);
+check('cancellation data: only what the mail needs (address, language, name, appointment, teacher), no hash, link or code',
+    array_keys($data) === ['booking_id', 'round_id', 'email', 'lang', 'name', 'title', 'auto_translated', 'source_lang', 'teacher_name', 'teacher_email', 'day_date', 'start_time', 'end_time', 'location', 'created_at']
+    && $data['booking_id'] === 3 && $data['title'] === 'Elternsprechtag 3b' && $data['auto_translated'] === false
+    && !array_filter($data, static fn ($v): bool => is_string($v) && (str_contains($v, 'aaaa') || str_contains($v, 'bbbb') || str_contains($v, 'runde-3b') || str_contains($v, 'K7MP'))));
+check('outbox: a single cancellation goes first like other single mails, bulk mails after them but before reminders',
+    App\Outbox::KINDS['cancelled'] === App\Outbox::KINDS['booked'] && App\Outbox::BULK > App\Outbox::KINDS['changed']
+    && App\Outbox::BULK <= App\Outbox::KINDS['summary_evening'] && App\Outbox::BULK < App\Outbox::KINDS['reminder']);
+
+// Mail texts of the cancellation by the teacher: in every parent language, translated, the same placeholders
+$cancelKeys = ['mail.cancelled_teacher.subject', 'mail.cancelled_teacher.body', 'mail.cancelled_teacher.rebook', 'mail.ics.cancel_hint'];
+$placeholders = static fn (string $s): array => preg_match_all('/\{\w+\}/', $s, $m) ? $m[0] : [];
+$badTexts = [];
+foreach ($cancelKeys as $key) {
+    foreach (App\I18n::languages() as $l) {
+        $text = App\I18n::textIn($l, $key);
+        if ($text === $key || $placeholders($text) !== $placeholders(App\I18n::textIn('de', $key)) || ($l !== 'de' && $text === App\I18n::textIn('de', $key))) {
+            $badTexts[] = "$l:$key";
+        }
+    }
+}
+check('cancellation by the teacher: mail texts in every parent language, translated, same placeholders' . ($badTexts ? ' (' . implode(', ', $badTexts) . ')' : ''), !$badTexts);
+check('cancellation mail: no link of the booking (it is gone), the name of the booking, the teacher',
+    !str_contains(App\I18n::textIn('de', 'mail.cancelled_teacher.body'), '{link}') && str_contains(App\I18n::textIn('de', 'mail.cancelled_teacher.body'), 'Name: {name}')
+    && str_contains(App\I18n::textIn('en', 'mail.cancelled_teacher.body'), 'the teacher has cancelled your appointment'));

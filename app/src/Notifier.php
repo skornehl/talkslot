@@ -7,6 +7,8 @@ namespace App;
  * Email notifications to parents – only if they voluntarily provided an address.
  * Replies go to the teacher (Reply-To). Summaries for teachers: see Summaries.
  * Mails to the address stored with the booking record their result there (BookingService::mailResult()).
+ * Changes by the teacher (ScheduleService) send change notices and cancellations; a cancellation is sent once
+ * the booking is gone, from what cancellationData() kept of it.
  */
 final class Notifier
 {
@@ -29,6 +31,36 @@ final class Notifier
     public static function parentCancelled(array $b): bool
     {
         return self::toParent($b, 'cancelled', null);
+    }
+
+    /**
+     * What the cancellation by the teacher needs once the booking is deleted (kept in the outbox until it is
+     * sent): address, language, name and appointment, the title already in the parents' language (the
+     * translations may go with the round). No link and no token: the booking is gone.
+     * @param array $b booking from BookingService::findById() (DETAIL_SQL)
+     */
+    public static function cancellationData(array $b): array
+    {
+        $lang = (string) $b['lang'];
+        $title = Translator::localize($b, (int) $b['round_id'], $lang);
+        return [
+            'booking_id' => (int) $b['id'], 'round_id' => (int) $b['round_id'], 'email' => (string) $b['email'], 'lang' => $lang,
+            'name' => (string) $b['name'], 'title' => (string) $title['title'], 'auto_translated' => (bool) $title['auto_translated'],
+            'source_lang' => (string) $b['source_lang'], 'teacher_name' => (string) ($b['teacher_name'] ?? ''),
+            'teacher_email' => (string) ($b['teacher_email'] ?? ''), 'day_date' => (string) $b['day_date'],
+            'start_time' => (string) $b['start_time'], 'end_time' => (string) $b['end_time'],
+            'location' => trim((string) ($b['location'] ?? '')), 'created_at' => (string) $b['created_at'],
+        ];
+    }
+
+    /**
+     * Cancellation by the teacher (booking, day or round deleted), from cancellationData(). If the round still
+     * takes bookings, the mail offers its page to book another appointment (the public link, no token).
+     */
+    public static function teacherCancelled(array $data): bool
+    {
+        $round = Db::one('SELECT r.slug FROM rounds r JOIN users u ON u.id = r.user_id WHERE r.id = ? AND r.is_active = 1 AND u.is_active = 1', [(int) ($data['round_id'] ?? 0)]);
+        return self::toParent(['id' => $data['booking_id'] ?? 0, 'localized' => true, 'rebook' => $round['slug'] ?? null] + $data, 'cancelled_teacher', null);
     }
 
     /** Reminder the evening before (see Reminders), with the link of its own token. */
@@ -79,7 +111,9 @@ final class Notifier
             return false;
         }
         return (bool) I18n::with((string) $b['lang'], static function () use ($b, $type, $token, $email, $footer): bool {
-            $b = Translator::localize($b, (int) $b['round_id'], I18n::lang()); // title in the parents' language (also in the .ics)
+            if (empty($b['localized'])) {
+                $b = Translator::localize($b, (int) $b['round_id'], I18n::lang()); // title in the parents' language (also in the .ics)
+            }
             $link = $token !== null ? abs_url('/b/' . $token, ['lang' => I18n::lang()]) : '';
             $vars = [
                 'title' => $b['title'],
@@ -92,12 +126,15 @@ final class Notifier
                 'controller' => Operator::name() !== '' ? Operator::name() : (string) ($b['teacher_name'] ?? ''),
             ];
             $body = t("mail.$type.body", $vars);
+            if (!empty($b['rebook'])) {
+                $body .= "\n\n" . t('mail.cancelled_teacher.rebook', ['url' => abs_url('/' . $b['rebook'], ['lang' => I18n::lang()])]);
+            }
             if (!empty($b['auto_translated'])) {
                 $body .= "\n\n" . t('round.auto_translated', ['source' => I18n::name((string) $b['source_lang'])]);
             }
             $attachments = [];
             if ($type === 'booked' || $type === 'changed') {
-                // Appointment as calendar file; title = name of the round, description = personal link
+                // Appointment as calendar file; title = name of the round and teacher, description = personal link
                 $description = $link !== '' ? t('mail.ics.description', ['link' => $link]) : '';
                 $attachments[] = [
                     'name' => 'termin.ics',
@@ -105,6 +142,14 @@ final class Notifier
                     'content' => IcsExport::forParent($b, $description),
                 ];
                 $body .= "\n\n" . t('mail.ics.hint');
+            } elseif ($type === 'cancelled' || $type === 'cancelled_teacher') {
+                // Same UID as the appointment's calendar file: calendars remove it or mark it as cancelled
+                $attachments[] = [
+                    'name' => 'termin.ics',
+                    'type' => 'text/calendar; charset=utf-8; method=CANCEL',
+                    'content' => IcsExport::cancelForParent($b),
+                ];
+                $body .= "\n\n" . t('mail.ics.cancel_hint');
             }
             $replyTo = filter_var((string) ($b['teacher_email'] ?? ''), FILTER_VALIDATE_EMAIL) ? (string) $b['teacher_email'] : null;
             return Mailer::send($email, t("mail.$type.subject", $vars), $body . "\n\n" . t($footer, $vars), $attachments, $replyTo);

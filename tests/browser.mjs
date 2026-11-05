@@ -370,24 +370,44 @@ try {
   check('"Drucken" opens the print dialog', await js('window.__printed === true'));
   await cdp.send('Page.removeScriptToEvaluateOnNewDocument', { identifier: printStub.identifier });
 
-  section('Admin: parents are not notified automatically');
+  section('Admin: parents told about a deletion, or that they are not');
   await goto(demoRound);
   // Delete dialog of a booking (cancelled, nothing is deleted): $1 name of the booking
+  const bookingForm = (name) => `[...document.querySelectorAll('form[data-confirm][action*="/booking/"]')].find(f => f.closest('tr').textContent.includes(${JSON.stringify(name)}))`;
   const deleteDialog = async (name) => {
     cdp.dialogs = [];
     cdp.acceptDialogs = false;
-    await js(`[...document.querySelectorAll('form[data-confirm][action*="/booking/"]')].find(f => f.closest('tr').textContent.includes(${JSON.stringify(name)})).requestSubmit()`);
+    await js(`${bookingForm(name)}.requestSubmit()`);
     await sleep(300);
     cdp.acceptDialogs = true;
     return cdp.dialogs.map((d) => d.message).join(' | ');
   };
   const withMail = await deleteDialog('Familie Yılmaz (Elif)');
-  check('deleting a booking: the dialog says the parents are NOT notified', withMail.startsWith('Eintrag von „Familie Yılmaz (Elif)“ löschen?')
-    && withMail.endsWith('\n\nDie Eltern werden NICHT automatisch benachrichtigt – bitte selbst informieren.'), withMail);
+  check('deleting a booking with an address: box ticked, the dialog says a cancellation goes out by e-mail', withMail.startsWith('Eintrag von „Familie Yılmaz (Elif)“ löschen?')
+    && withMail.endsWith('\n\nDie Eltern erhalten eine Absage per E-Mail.') && await js(`${bookingForm('Familie Yılmaz (Elif)')}.querySelector('input[name="notify"]').checked`), withMail);
+  await js(`${bookingForm('Familie Yılmaz (Elif)')}.querySelector('input[name="notify"]').click()`);
+  const unticked = await deleteDialog('Familie Yılmaz (Elif)');
+  check('… box unticked: the dialog says the parents are NOT notified', unticked.endsWith('\n\nDie Eltern werden NICHT automatisch benachrichtigt – bitte selbst informieren.'), unticked);
   const noMail = await deleteDialog('Lukas Schmidt');
-  check('… without an e-mail address: please inform them in person', noMail.endsWith('Für diesen Eintrag ist keine E-Mail-Adresse hinterlegt – bitte persönlich informieren.'), noMail);
+  check('… without an e-mail address: please inform them in person, no box', noMail.endsWith('Für diesen Eintrag ist keine E-Mail-Adresse hinterlegt – bitte persönlich informieren.')
+    && await js(`!${bookingForm('Lukas Schmidt')}.querySelector('input[name="notify"]')`), noMail);
   check('"Abbrechen" keeps both bookings', await js(`location.pathname`) === demoRound
     && await js(`['Familie Yılmaz (Elif)', 'Lukas Schmidt'].every(n => document.querySelector('main').textContent.includes(n))`));
+  // Deleting a day: the same box next to the required "inkl. N Buchung(en)"
+  const dayForm = `document.querySelector('form[data-confirm][action*="/day/"]')`;
+  cdp.dialogs = [];
+  cdp.acceptDialogs = false;
+  await js(`${dayForm}.querySelector('input[name="confirm"]').checked = true; ${dayForm}.requestSubmit()`);
+  await sleep(300);
+  const dayTicked = cdp.dialogs.map((d) => d.message).join(' | ');
+  await js(`${dayForm}.querySelector('input[name="notify"]').click(); ${dayForm}.requestSubmit()`);
+  await sleep(300);
+  cdp.acceptDialogs = true;
+  const dayUnticked = cdp.dialogs.slice(1).map((d) => d.message).join(' | ');
+  check('deleting a day: with the box a cancellation for the parents with an address and the others in person, without it NOT notified',
+    /erhalten eine Absage per E-Mail\. \d+ Buchung\(en\) ohne E-Mail an die Eltern – bitte persönlich informieren/.test(dayTicked)
+    && dayUnticked.includes('Die Eltern werden NICHT automatisch benachrichtigt – bitte selbst informieren. Vorher in der Druckansicht nachsehen')
+    && await js('location.pathname') === demoRound, `${dayTicked} || ${dayUnticked}`);
 
   const mailBox = `document.querySelector('#send_mail')`;
   const setEmail = (value) => js(`(e => { e.value = ${JSON.stringify(value)}; e.dispatchEvent(new Event('input', { bubbles: true })); })(document.querySelector('#email'))`);

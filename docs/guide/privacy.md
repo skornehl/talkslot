@@ -13,6 +13,7 @@ This page explains the design decisions; it is not legal advice.
 | Name and optional e-mail address of a booking | database | from 0:00 the day after the appointment, or immediately on cancellation |
 | Hash of the personal change link (and of the links in the reminder and in a confirmation sent later) | database | with the booking |
 | Mail queue entry: which mail is due for which booking or account (no address, text or link) | database | once sent, after 48 hours at the latest, with the booking |
+| Cancellation by the teacher in the mail queue: address, language, name, appointment and teacher of the deleted booking (no link) | database | once sent, after 48 hours at the latest |
 | Shortened, HMAC-hashed IP addresses; HMAC hashes of account IDs and known-device cookies with failed logins | database (rate limiting) | after 24 hours at the latest |
 | Known-device cookie of an admin or teacher account (random number, time, signature) | that person's browser | after 365 days, renewed at every sign-in |
 | Teacher accounts | database | by an admin; inactive accounts without rounds 15 months after the last login |
@@ -31,7 +32,9 @@ ask how long they are kept and state it in the privacy policy.
   queue that the cron job sends. An entry holds no address, text or link: they are created from the booking
   when sending, a confirmation sent later with a new link of its own (only its hash is stored, like the
   reminder's). Entries are deleted once sent, after 48 hours at the latest and with their booking; the
-  privacy template says so.
+  privacy template says so. The only exception is a cancellation by the teacher: the booking is already
+  deleted then, so the entry keeps what this one mail needs (address, language, name, appointment,
+  teacher; no link, token or description) until it is sent, at most 48 hours. The template says so too.
 - **Reminders only where the parents know about them:** parents who book get the reminder if the round
   had it turned on when they booked (the form says so). Entries made by the teacher get it only once a
   confirmation or change notice reached the parents, as that mail tells them about the entry and the
@@ -46,12 +49,17 @@ ask how long they are kept and state it in the privacy policy.
   responsible and where to find the privacy notice (Art. 14 GDPR).
 - **Changes made by the teacher:** when the teacher edits or moves a single booking, a mail with the
   current details goes to the parents by default (if an address is stored; the box can be unticked).
-  Deleting a booking, a day, a round or an account, a new date or location for a day and a new location or
-  teacher for the round send no mail to the parents yet; confirmation dialogs, form hints and the message
-  afterwards say so. A `mailto:` link to the parents was deliberately left out, so that their addresses do
-  not end up in private mailboxes through the browser's mail program. After deleting a booking, the
-  message names the parents with their address once (the round page showed both before), so that the
-  teacher can inform them, ideally from the school's mail account.
+  Deleting a booking, a day, a round or an account sends a cancellation, a new date, time or location for a
+  day and a new location or teacher for the round a change notice, each in the parents' language and with
+  *Eltern per E-Mail informieren* ticked by default. That is what the address was given for (the privacy
+  policy names changes and cancellations). Mails only go to parents who booked themselves, or whose entry
+  by the teacher already got a confirmation or change notice; parents who never got a mail from TalkSlot
+  get no cancellation either (the rule of the reminder). This also keeps an account from mailing arbitrary
+  addresses by adding entries with them and deleting the day. The admin log only gives the number of
+  parents notified. A `mailto:` link to the parents was deliberately left out, so that their addresses do
+  not end up in private mailboxes through the browser's mail program. Whoever gets no mail is named once
+  in the message afterwards, with the appointment and the address if there is one (the round page showed
+  both before), so that the teacher can tell them in person, ideally from the school's mail account.
 - **Admin log without monitoring teachers:** only changes made by admin accounts are logged, so it shows
   who among several admins did what. What teachers do in their own rounds is not recorded, and bookings
   appear only as date and time. Depending on your state, a log of staff actions may still be a matter for
