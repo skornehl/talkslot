@@ -1,0 +1,169 @@
+parameters:
+	ignoreErrors:
+		-
+			message: '#^Method App\\Controller\\AdminController\:\:bookingCreate\(\) invoked with 0 parameters, 1 required\.$#'
+			identifier: arguments.count
+			count: 1
+			path: ../app/src/Controller/AdminController.php
+
+		-
+			message: '#^Method App\\Controller\\AdminController\:\:bookingDelete\(\) invoked with 0 parameters, 1 required\.$#'
+			identifier: arguments.count
+			count: 1
+			path: ../app/src/Controller/AdminController.php
+
+		-
+			message: '#^Method App\\Controller\\AdminController\:\:bookingEdit\(\) invoked with 0 parameters, 1\-3 required\.$#'
+			identifier: arguments.count
+			count: 1
+			path: ../app/src/Controller/AdminController.php
+
+		-
+			message: '#^Method App\\Controller\\AdminController\:\:bookingNew\(\) invoked with 0 parameters, 1\-3 required\.$#'
+			identifier: arguments.count
+			count: 1
+			path: ../app/src/Controller/AdminController.php
+
+		-
+			message: '#^Method App\\Controller\\AdminController\:\:bookingUpdate\(\) invoked with 0 parameters, 1 required\.$#'
+			identifier: arguments.count
+			count: 1
+			path: ../app/src/Controller/AdminController.php
+
+		-
+			message: '#^Method App\\Controller\\AdminController\:\:breakAdd\(\) invoked with 0 parameters, 1 required\.$#'
+			identifier: arguments.count
+			count: 1
+			path: ../app/src/Controller/AdminController.php
+
+		-
+			message: '#^Method App\\Controller\\AdminController\:\:breakDelete\(\) invoked with 0 parameters, 1 required\.$#'
+			identifier: arguments.count
+			count: 1
+			path: ../app/src/Controller/AdminController.php
+
+		-
+			message: '#^Method App\\Controller\\AdminController\:\:dayAdd\(\) invoked with 0 parameters, 1 required\.$#'
+			identifier: arguments.count
+			count: 1
+			path: ../app/src/Controller/AdminController.php
+
+		-
+			message: '#^Method App\\Controller\\AdminController\:\:dayDelete\(\) invoked with 0 parameters, 1 required\.$#'
+			identifier: arguments.count
+			count: 1
+			path: ../app/src/Controller/AdminController.php
+
+		-
+			message: '#^Method App\\Controller\\AdminController\:\:dayForm\(\) invoked with 0 parameters, 1\-3 required\.$#'
+			identifier: arguments.count
+			count: 1
+			path: ../app/src/Controller/AdminController.php
+
+		-
+			message: '#^Method App\\Controller\\AdminController\:\:daySave\(\) invoked with 0 parameters, 1 required\.$#'
+			identifier: arguments.count
+			count: 1
+			path: ../app/src/Controller/AdminController.php
+
+		-
+			message: '#^Method App\\Controller\\AdminController\:\:pageForm\(\) invoked with 0 parameters, 2 required\.$#'
+			identifier: arguments.count
+			count: 1
+			path: ../app/src/Controller/AdminController.php
+
+		-
+			message: '#^Method App\\Controller\\AdminController\:\:pageSave\(\) invoked with 0 parameters, 2 required\.$#'
+			identifier: arguments.count
+			count: 1
+			path: ../app/src/Controller/AdminController.php
+
+		-
+			message: '#^Method App\\Controller\\AdminController\:\:printView\(\) invoked with 0 parameters, 1 required\.$#'
+			identifier: arguments.count
+			count: 1
+			path: ../app/src/Controller/AdminController.php
+
+		-
+			message: '#^Method App\\Controller\\AdminController\:\:roundDelete\(\) invoked with 0 parameters, 1 required\.$#'
+			identifier: arguments.count
+			count: 1
+			path: ../app/src/Controller/AdminController.php
+
+		-
+			message: '#^Method App\\Controller\\AdminController\:\:roundDuplicate\(\) invoked with 0 parameters, 1 required\.$#'
+			identifier: arguments.count
+			count: 1
+			path: ../app/src/Controller/AdminController.php
+
+		-
+			message: '#^Method App\\Controller\\AdminController\:\:roundShow\(\) invoked with 0 parameters, 1\-3 required\.$#'
+			identifier: arguments.count
+			count: 1
+			path: ../app/src/Controller/AdminController.php
+
+		-
+			message: '#^Method App\\Controller\\AdminController\:\:roundToggle\(\) invoked with 0 parameters, 1 required\.$#'
+			identifier: arguments.count
+			count: 1
+			path: ../app/src/Controller/AdminController.php
+
+		-
+			message: '#^Method App\\Controller\\AdminController\:\:slotToggleBlock\(\) invoked with 0 parameters, 1 required\.$#'
+			identifier: arguments.count
+			count: 1
+			path: ../app/src/Controller/AdminController.php
+
+		-
+			message: '#^Method App\\Controller\\AdminController\:\:templateDelete\(\) invoked with 0 parameters, 1 required\.$#'
+			identifier: arguments.count
+			count: 1
+			path: ../app/src/Controller/AdminController.php
+
+		-
+			message: '#^Method App\\Controller\\AdminController\:\:templateFromRound\(\) invoked with 0 parameters, 1 required\.$#'
+			identifier: arguments.count
+			count: 1
+			path: ../app/src/Controller/AdminController.php
+
+		-
+			message: '#^Method App\\Controller\\AdminController\:\:translationsAuto\(\) invoked with 0 parameters, 1 required\.$#'
+			identifier: arguments.count
+			count: 1
+			path: ../app/src/Controller/AdminController.php
+
+		-
+			message: '#^Method App\\Controller\\AdminController\:\:translationsSave\(\) invoked with 0 parameters, 1 required\.$#'
+			identifier: arguments.count
+			count: 1
+			path: ../app/src/Controller/AdminController.php
+
+		-
+			message: '#^Method App\\Controller\\AdminController\:\:userDelete\(\) invoked with 0 parameters, 1 required\.$#'
+			identifier: arguments.count
+			count: 1
+			path: ../app/src/Controller/AdminController.php
+
+		-
+			message: '#^Method App\\Controller\\AdminController\:\:userResetPassword\(\) invoked with 0 parameters, 1 required\.$#'
+			identifier: arguments.count
+			count: 1
+			path: ../app/src/Controller/AdminController.php
+
+		-
+			message: '#^If condition is always false\.$#'
+			identifier: if.alwaysFalse
+			count: 3
+			path: ../app/src/Markdown.php
+
+		-
+			message: '#^Variable \$password might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: ../bin/install.php
+
+		-
+			message: '#^Variable \$type might not be defined\.$#'
+			identifier: variable.undefined
+			count: 1
+			path: ../bin/install.php

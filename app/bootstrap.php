@@ -66,15 +66,15 @@ set_exception_handler(static function (Throwable $e): void {
     App\ErrorPage::show($e);
 });
 
-// Log warnings and notices sanitized, additionally report warnings (usually bugs, e.g. a missing
+// Log warnings, notices and deprecations sanitized, additionally report warnings (usually bugs, e.g. a missing
 // array key). Not for places suppressed with @. false: display as
-// configured (only with debug).
+// configured (only with debug). The tests fail on every such line (tests/php-errors.sh).
 set_error_handler(static function (int $type, string $message, string $file, int $line): bool {
     if (!(error_reporting() & $type)) {
         return false;
     }
-    App\ErrorPage::writeLog(sprintf('PHP %s: %s (%s:%d)', in_array($type, [E_WARNING, E_USER_WARNING], true) ? 'Warning' : 'Notice',
-        App\ErrorPage::sanitize($message), str_replace(APP_ROOT, '', $file), $line));
+    $kind = in_array($type, [E_WARNING, E_USER_WARNING], true) ? 'Warning' : (in_array($type, [E_DEPRECATED, E_USER_DEPRECATED], true) ? 'Deprecated' : 'Notice');
+    App\ErrorPage::writeLog(sprintf('PHP %s: %s (%s:%d)', $kind, App\ErrorPage::sanitize($message), str_replace(APP_ROOT, '', $file), $line));
     if (in_array($type, [E_WARNING, E_USER_WARNING], true)) {
         App\Alert::phpError($type, $message, $file, $line);
     }

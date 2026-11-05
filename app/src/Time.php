@@ -8,9 +8,23 @@ use DateTimeImmutable;
 /** Time functions; all times in the configured time zone (Europe/Berlin). */
 final class Time
 {
+    /** Fixed clock of the tests (setNow()), null = real time */
+    private static ?DateTimeImmutable $fixed = null;
+
     public static function now(): DateTimeImmutable
     {
-        return new DateTimeImmutable('now');
+        return self::$fixed ?? new DateTimeImmutable('now');
+    }
+
+    /**
+     * Test hook (tests/integration.php, unit tests): Time::now(), nowSql() and today() return this moment
+     * until it is reset with null, so deadlines, reminders and deletion periods can be tested without moving
+     * timestamps in the database. A string is read like "2026-11-30 17:59" in the configured time zone. The
+     * app never calls it.
+     */
+    public static function setNow(DateTimeImmutable|string|null $now): void
+    {
+        self::$fixed = is_string($now) ? new DateTimeImmutable($now) : $now;
     }
 
     public static function nowSql(): string

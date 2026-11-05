@@ -14,6 +14,15 @@ use App\SlotGenerator;
 use App\Slug;
 use App\Token;
 
+// Warnings, notices and deprecations fail the run (expert review P1-14): the app only logs them, so they
+// would pass unnoticed. Places suppressed with @ stay quiet, as in the app.
+set_error_handler(static function (int $type, string $message, string $file, int $line): bool {
+    if (!(error_reporting() & $type)) {
+        return false;
+    }
+    throw new ErrorException($message . ' in ' . str_replace(dirname(__DIR__), '', $file) . ':' . $line, 0, $type, $file, $line);
+});
+
 $fail = 0;
 function check(string $name, bool $ok): void
 {
@@ -463,16 +472,7 @@ foreach (array_merge(glob(dirname(__DIR__) . '/app/src/*.php'), glob(dirname(__D
 }
 $unexpected = array_diff_key($found, $allowed);
 check('SQL text without embedded variables (only reviewed exceptions' . ($unexpected ? '; new: ' . implode(', ', array_map(static fn ($k, $l) => "$k line $l", array_keys($unexpected), $unexpected)) : '') . ')', !$unexpected);
-$badR = [];
-foreach (array_merge(glob(dirname(__DIR__) . '/app/src/*.php'), glob(dirname(__DIR__) . '/app/src/Controller/*.php'), [dirname(__DIR__) . '/app/helpers.php'], glob(dirname(__DIR__) . '/bin/*.php')) as $f) {
-    foreach (token_get_all((string) file_get_contents($f)) as $tok) {
-        // A pattern literal with \R but without the u modifier splits UTF-8 characters at the byte 0x85
-        if (is_array($tok) && $tok[0] === T_CONSTANT_ENCAPSED_STRING && preg_match('@^[\'"]([/#~]).*\\\\R.*\1([a-zA-Z]*)[\'"]$@s', $tok[1], $m) === 1 && !str_contains($m[2], 'u')) {
-            $badR[] = basename($f) . ':' . $tok[2];
-        }
-    }
-}
-check('no regex with \R without the u modifier' . ($badR ? ' (' . implode(', ', $badR) . ')' : ''), !$badR);
+// Regular expressions without the u modifier: tests/unit.d/quality.php
 check('SQL: table prefix replaces only table names, not quoted values',
     App\Db::prefix("SELECT * FROM rounds r WHERE r.title = 'rounds' AND x = \"users\"") === "SELECT * FROM tp_rounds r WHERE r.title = 'rounds' AND x = \"users\"");
 check('email: unusual forms rejected', is_valid_email('x.y+z@schule.example.org') && !is_valid_email('"a b"@example.org') && !is_valid_email('"<svg>"@x.yz') && !is_valid_email("a\n@b.de"));

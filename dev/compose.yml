@@ -16,7 +16,9 @@ services:
     image: axllent/mailpit:v1.27
     ports: ["127.0.0.1:8025:8025"] # web interface showing all mails sent by the app
   app:
-    build: .
+    build:
+      context: .
+      args: { COVERAGE: "${COVERAGE:-0}" } # 1: line coverage with PCOV (tests/coverage/report.php)
     ports: ["127.0.0.1:8080:80"]
     volumes: ["..:/srv/app"]
     depends_on:

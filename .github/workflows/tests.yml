@@ -1,6 +1,7 @@
-# Lint and unit tests on all supported PHP versions (without a database), plus the end-to-end
-# tests (tests/smoke.sh), browser tests (tests/browser.mjs) and the deployment test (tests/deploy.sh)
-# against the Docker environment from dev/.
+# Lint and unit tests on all supported PHP versions (without a database), static analysis (PHPStan), plus the
+# end-to-end tests (tests/smoke.sh with tests/integration.php), browser tests (tests/browser.mjs) and the
+# deployment test (tests/deploy.sh) against the Docker environment from dev/, with line coverage. Every run
+# fails on PHP warnings, notices and deprecations of the app (tests/php-errors.sh).
 name: Tests
 
 on:
@@ -38,6 +39,7 @@ jobs:
             set -e
             find . -name "*.php" -not -path "./app/vendor/*" -print0 | xargs -0 -n1 php -l > /dev/null
             php tests/unit.php'
+          tests/php-errors.sh # also from the PHP processes the unit tests start
 
       # A web host or a cron job on an older PHP must get the explanation of App\Platform, not a syntax error or a
       # blank page: the entry points and what they load before the check parse on PHP 7.4 (once is enough)
@@ -53,8 +55,8 @@ jobs:
             done
           done
 
-  e2e:
-    name: End-to-end and browser tests
+  static-analysis:
+    name: Static analysis (PHPStan)
     runs-on: ubuntu-latest
     steps:
       - name: Fetch code
@@ -69,11 +71,40 @@ jobs:
           git checkout -q --detach "FETCH_HEAD^{commit}"
           git log -1 --format='Checked out: %h %s'
 
+      # The pinned PHAR with its checksum (dev/phpstan.sh), level and baseline in tests/phpstan.neon
+      - name: PHPStan
+        run: PHPSTAN_DOCKER=1 dev/phpstan.sh
+
+  e2e:
+    name: End-to-end and browser tests
+    runs-on: ubuntu-latest
+    env:
+      COVERAGE: '1' # dev/compose.yml: PCOV in the app container, see tests/coverage/
+      COVERAGE_MIN: '96.0' # the line coverage must not go below this (raise it when the coverage rises)
+    steps:
+      # Two commits deep: for a pull request, HEAD^1 is the target branch (the changed lines in the coverage)
+      - name: Fetch code
+        env:
+          REPO: ${{ github.repository }}
+          REF: ${{ github.sha }}
+          TOKEN: ${{ github.token }}
+        run: |
+          git init -q . && git remote add origin "https://github.com/$REPO.git"
+          AUTH="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$TOKEN" | base64 -w0)"
+          git -c http.extraheader="$AUTH" fetch -q --depth=2 origin "$REF"
+          git checkout -q --detach "FETCH_HEAD^{commit}"
+          git log -1 --format='Checked out: %h %s'
+
       - name: Start the Docker environment
         run: |
           cp dev/config.dev.php config/config.php
           docker compose -f dev/compose.yml up -d --build --wait --quiet-pull
           for i in $(seq 1 60); do [ "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/)" != 000 ] && break; sleep 1; done
+
+      - name: Unit tests in the app container (for the coverage)
+        run: |
+          docker compose -f dev/compose.yml exec -T app php tests/unit.php > unit.log 2>&1 || { grep -v '✓' unit.log; exit 1; }
+          tail -1 unit.log
 
       - name: Smoke tests
         run: dev/reset.sh && tests/smoke.sh
@@ -88,6 +119,23 @@ jobs:
         run: |
           docker compose -f dev/compose.yml exec -T -e DEBIAN_FRONTEND=noninteractive app sh -c 'apt-get update -qq && apt-get install -y -qq lftp > /dev/null'
           docker compose -f dev/compose.yml exec -T -w /srv/app app tests/deploy.sh
+
+      - name: No PHP warnings, notices or deprecations in the error log
+        run: tests/php-errors.sh
+
+      # Coverage of all the tests above, in the job summary; for a pull request also the changed lines that no
+      # test executes (as annotations). Fails below COVERAGE_MIN or for a file no test loads.
+      - name: Line coverage
+        env:
+          EVENT: ${{ github.event_name }}
+        run: |
+          ARGS=(--min="$COVERAGE_MIN" --github --markdown=/srv/app/app/var/coverage.md)
+          if [ "$EVENT" = pull_request ]; then ARGS+=(--diff=-); fi
+          rc=0
+          { if [ "$EVENT" = pull_request ]; then git diff HEAD^1 HEAD; fi; } \
+            | docker compose -f dev/compose.yml exec -T app php tests/coverage/report.php "${ARGS[@]}" || rc=$?
+          cat app/var/coverage.md >> "$GITHUB_STEP_SUMMARY"
+          exit $rc
 
       - name: Server log
         if: failure()

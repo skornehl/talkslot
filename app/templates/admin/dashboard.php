@@ -39,7 +39,7 @@
   <div class="alert alert-warning" role="status" data-foreign-addresses><p><?= e(__('Aktive Konten mit einer Adresse außerhalb von „allowed_account_domains“: {count}. An diese Adressen gehen keine Zusammenfassungen und keine Antworten der Eltern. Bitte ändern Sie die Adressen.', ['count' => $foreignAddresses])) ?> <a href="<?= e(url('/admin/users')) ?>"><?= e(__('Zu den Benutzern')) ?></a></p></div>
 <?php endif; ?>
 <?php if ($profileHints): ?>
-  <div class="alert alert-warning" role="status">
+  <div class="alert alert-warning" role="status" data-profile-hints>
     <p><strong><?= __h('Bitte ergänzen Sie {link}:', ['link' => '<a href="' . e(url('/admin/profile')) . '">' . e(__('Ihr Profil')) . '</a>']) ?></strong></p>
     <ul><?php foreach ($profileHints as $h): ?><li><?= e($h) ?></li><?php endforeach; ?></ul>
   </div>

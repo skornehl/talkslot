@@ -231,7 +231,7 @@ $mBooking = ['id' => 5, 'round_id' => 7, 'title' => 'Elternsprechtag 7b', 'teach
     'day_date' => '2030-01-07', 'start_time' => '14:00:00', 'end_time' => '14:15:00', 'cancel_deadline_hours' => 24];
 $manage = static fn (array $vars = []): string => App\View::capture('public/manage', $vars + [
     'booking' => $mBooking, 'token' => $mToken, 'canChange' => true, 'canMove' => true, 'days' => [], 'csrf' => '1.abc',
-    'done' => '', 'mailed' => false, 'remember' => false, 'errors' => [], 'open' => '', 'mailTo' => '',
+    'done' => '', 'mailed' => false, 'mailQueued' => false, 'remember' => false, 'errors' => [], 'open' => '', 'mailTo' => '',
 ]);
 $mp = $manage(['days' => [['date' => '2030-01-08', 'slots' => [['id' => 9, 'start_time' => '15:00:00', 'end_time' => '15:15:00']]]]]);
 $mLink = abs_url('/b/' . $mToken);
