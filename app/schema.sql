@@ -95,6 +95,10 @@ CREATE TABLE IF NOT EXISTS slots (
 -- UNIQUE(slot_id) prevents double bookings at database level.
 -- token_hash: SHA-256 of the change token; the plain text is not stored.
 -- reminder_token_hash: a second change token, for the link in the reminder mail (see Reminders).
+-- mail_token_hash: a third one, for the link in a confirmation sent later from the outbox (see Outbox).
+-- remind_ok: may get the reminder (parents: as the round said when booking; entries by the teacher: once
+-- the parents got a confirmation or change notice). notified_at: last confirmation or change notice sent
+-- to the address (no reminder on that day). mail_failed_at: a mail to the address could not be sent.
 CREATE TABLE IF NOT EXISTS bookings (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   slot_id INT UNSIGNED NOT NULL,
@@ -103,13 +107,18 @@ CREATE TABLE IF NOT EXISTS bookings (
   token_hash CHAR(64) NOT NULL,
   lang VARCHAR(5) NOT NULL DEFAULT 'de',
   source ENUM('parent','admin') NOT NULL DEFAULT 'parent',
+  remind_ok TINYINT(1) NOT NULL DEFAULT 0,
+  notified_at DATETIME NULL,
+  mail_failed_at DATETIME NULL,
   reminded_at DATETIME NULL,
   reminder_token_hash CHAR(64) NULL,
+  mail_token_hash CHAR(64) NULL,
   created_at DATETIME NOT NULL,
   updated_at DATETIME NOT NULL,
   UNIQUE KEY uq_bookings_slot (slot_id),
   UNIQUE KEY uq_bookings_token (token_hash),
   UNIQUE KEY uq_bookings_reminder_token (reminder_token_hash),
+  UNIQUE KEY uq_bookings_mail_token (mail_token_hash),
   CONSTRAINT fk_bookings_slot FOREIGN KEY (slot_id) REFERENCES slots (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -180,4 +189,24 @@ CREATE TABLE IF NOT EXISTS round_translations (
   updated_at DATETIME NOT NULL,
   PRIMARY KEY (round_id, lang),
   CONSTRAINT fk_translations_round FOREIGN KEY (round_id) REFERENCES rounds (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Mails waiting to be sent (see App\Outbox): references only (booking or account, kind, for summaries the
+-- day), no address, text or link – they are created from the booking or account when sending. Deleted once
+-- sent, together with the booking or account, and after at most 48 hours if sending keeps failing.
+CREATE TABLE IF NOT EXISTS mail_outbox (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  kind VARCHAR(20) NOT NULL,
+  booking_id INT UNSIGNED NULL,
+  user_id INT UNSIGNED NULL,
+  ref VARCHAR(40) NULL,
+  priority TINYINT UNSIGNED NOT NULL,
+  attempts SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+  next_attempt_at DATETIME NOT NULL,
+  created_at DATETIME NOT NULL,
+  UNIQUE KEY uq_outbox_booking (booking_id, kind),
+  UNIQUE KEY uq_outbox_account (user_id, kind, ref),
+  KEY idx_outbox_due (next_attempt_at),
+  CONSTRAINT fk_outbox_booking FOREIGN KEY (booking_id) REFERENCES bookings (id) ON DELETE CASCADE,
+  CONSTRAINT fk_outbox_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

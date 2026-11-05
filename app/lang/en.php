@@ -99,6 +99,7 @@ return [
     'manage.save_link' => 'Important: you can only change or cancel your appointment later with this link. Keep it safe, for example as a bookmark, in your notes or in your calendar.',
     'manage.link_label' => 'Your personal link',
     'manage.mail_sent' => 'A confirmation with this link has been sent to your e-mail address.',
+    'manage.mail_queued' => 'The confirmation could not be sent just now. It will be sent to your e-mail address automatically as soon as that is possible again. Please keep your link anyway.',
     'manage.copy' => 'Copy link',
     'manage.copied' => 'Copied ✓',
     'manage.copy.prompt' => 'Copy link:',

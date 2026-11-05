@@ -29,6 +29,8 @@ final class App
             if ($endpoint === '' && Installer::isInstalled()) {
                 Migrations::run();
                 Cleanup::maybeRun();
+                // Mail queue fallback after the response (not for the web cron and the health check)
+                register_shutdown_function(self::afterResponse(...));
             }
         } catch (\Throwable $e) {
             Alert::exception($e, 'Migration/Bereinigung'); // must not block the page
@@ -83,6 +85,16 @@ final class App
         View::render('public/notfound', ['title' => t('crosssite.title'), 'text' => t('crosssite.text')]);
     }
 
+    /** At the end of a page request: send due mails once the response is out (see Outbox::afterResponse()). */
+    private static function afterResponse(): void
+    {
+        try {
+            Outbox::afterResponse(Http::finishResponse(...));
+        } catch (\Throwable $e) {
+            Alert::exception($e, 'Mailversand nach der Antwort');
+        }
+    }
+
     /** Key for the web cron, derived from the app secret (no separate secret needed). */
     public static function cronToken(): string
     {
@@ -92,7 +104,7 @@ final class App
     /**
      * Web cron as a replacement for a cron job on the server: POST /cron with header
      * "X-Cron-Token". The key never appears in the URL (no entry in access logs).
-     * Response: counts only, no personal data.
+     * Response: counts only, no personal data. Sends the due mails of the outbox (limited in number and time).
      */
     private static function webCron(): void
     {
@@ -105,7 +117,8 @@ final class App
             return;
         }
         Migrations::run();
-        echo json_encode(['status' => 'ok'] + Cleanup::run() + Summaries::run() + Reminders::run());
+        set_time_limit((int) Config::get('mail_queue.seconds', 20) + 60);
+        echo json_encode(['status' => 'ok'] + Cleanup::run() + Summaries::run() + Reminders::run() + Outbox::process(wait: Outbox::CRON_WAIT));
     }
 
     /**

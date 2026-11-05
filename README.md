@@ -76,7 +76,9 @@ schools (GDPR/DSGVO, TDDDG) and multilingual families.
   local model, no text leaves the device), manually editable.
 - Summary mails: evening before a day and after the booking deadline (time and name only).
 - Reminder to parents the evening before, with the link to cancel (only with an e-mail address; can be
-  turned off per round).
+  turned off per round; entries made by the teacher only after the parents got a confirmation).
+- A mail the mail server refused is retried from a **mail queue** and marked *E-Mail nicht zugestellt*
+  in the booking list; admins see mails that wait too long.
 - Imprint and privacy policy per language, editable (simple Markdown). The school's details replace
   `[[VERANTWORTLICHE]]` automatically; no round is public until they are filled in.
 
@@ -87,7 +89,14 @@ schools (GDPR/DSGVO, TDDDG) and multilingual families.
   active, e.g. a copy with the old dates, stays. The round page shows the date of the deletion.
 - Rate-limit data after 24 h, inactive teacher accounts without rounds in use (with their drafts) after
   15 months, admin log entries after 90 days.
-- Runs hourly via cron (or the included GitHub workflow), plus as a fallback on page views.
+- Runs hourly via cron (or the included GitHub workflow), plus as a fallback on page views (database steps
+  only; no visitor waits for the mail server).
+
+**Mail queue**
+- Reminders, summaries and mails that failed are sent by the cron job in batches over one SMTP connection,
+  confirmations to parents first, failed ones retried with growing pauses for up to 48 hours.
+- The queue holds references only (which mail for which booking), no address, text or link; a confirmation
+  sent later gets a new link of its own. With PHP-FPM or LiteSpeed page views send a few after the response.
 
 **Operations**
 - Errors are caught, logged without personal data and **mailed to the operator** (throttled), including
@@ -259,6 +268,7 @@ All options are documented in [`config/config.sample.php`](config/config.sample.
 | `hosting` | – | web host per language, replaces `[[HOSTER]]` in the privacy policy |
 | `access_link_hours` | `48` | validity of invitation/reset links |
 | `summary_evening_hour` | `18` | time of the evening summary |
+| `mail_queue` | see file | mails per cron run (`batch`), seconds per run (`seconds`), reminders and summaries per hour (`hourly_limit`, `0` = no limit), sending after the response with PHP-FPM (`after_response`) |
 | `rate_limits` | see file | generous, since many parents share an IP (mobile CGNAT, school Wi-Fi) |
 
 **Adding a language:** copy `app/lang/en.php` to e.g. `app/lang/it.php`, translate it, add the code to

@@ -6,10 +6,14 @@ namespace App;
 /**
  * Automatic data deletion.
  * Runs via cron job (bin/cron.php) and additionally as a fallback on page requests.
+ * Mails are not sent here: summaries and reminders are only queued (see Outbox).
  */
 final class Cleanup
 {
-    /** Fallback: run at most every N minutes on a page request. */
+    /**
+     * Fallback: run at most every N minutes on a page request. Database steps only (deleting, queueing
+     * summaries and reminders); the visitor never waits for the mail server.
+     */
     public static function maybeRun(): void
     {
         if (!Config::get('cleanup_on_request', true)) {
@@ -93,6 +97,9 @@ final class Cleanup
 
         // 8. Delete entries of the admin log after audit_log_days (default 90)
         $stats['audit_log_deleted'] = Db::exec('DELETE FROM audit_log WHERE created_at < ?', [Time::now()->modify('-' . Audit::retentionDays() . ' days')->format('Y-m-d H:i:s')]);
+
+        // 9. Give up mails in the outbox that could not be sent within 48 hours
+        $stats['mails_expired'] = Outbox::expire();
 
         Settings::set('last_cleanup', (string) time());
         return $stats;

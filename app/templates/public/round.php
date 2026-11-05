@@ -24,8 +24,8 @@
 
     <?php if (!$days): ?>
       <p class="alert"><?= e(t('round.no_slots')) ?></p>
-    <?php else: ?>
-    <form method="post" action="<?= e(url('/' . $round['slug'])) ?>" class="booking-form" id="booking-form" novalidate>
+    <?php else: /* data-once: a second click while the booking is on its way would end on "already taken" instead of the page with the link */ ?>
+    <form method="post" action="<?= e(url('/' . $round['slug'])) ?>" class="booking-form" id="booking-form" novalidate data-once>
       <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
       <input type="hidden" name="lang" value="<?= e(App\I18n::lang()) ?>">
       <?php if ($access !== ''): ?><input type="hidden" name="access" value="<?= e($access) ?>"><?php endif; ?>

@@ -99,6 +99,7 @@ return [
     'manage.save_link' => 'Ważne: tylko przez ten link można później zmienić lub odwołać termin. Prosimy go dobrze przechować, np. jako zakładkę, w notatkach lub w kalendarzu.',
     'manage.link_label' => 'Twój osobisty link',
     'manage.mail_sent' => 'Potwierdzenie z tym linkiem zostało wysłane na Państwa adres e-mail.',
+    'manage.mail_queued' => 'Nie udało się teraz wysłać potwierdzenia. Zostanie ono automatycznie wysłane na Państwa adres e-mail, gdy tylko będzie to znów możliwe. Mimo to prosimy zachować swój link.',
     'manage.copy' => 'Kopiuj link',
     'manage.copied' => 'Skopiowano ✓',
     'manage.copy.prompt' => 'Skopiuj link:',

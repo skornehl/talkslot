@@ -104,7 +104,7 @@ Ein neues `APP_SECRET` ändert das Token für den Web-Cron und den Schlüssel f�
 [Health-Check]({{ '/de/guide/deployment/' | relative_url }}#health-check). Die mitgelieferten Workflows
 leiten beide aus demselben Secret ab; ein externer Cron-Dienst braucht das neue Token (siehe
 [Web-Cron]({{ '/de/guide/installation/' | relative_url }})), sonst läuft die Bereinigung nur noch bei
-Seitenaufrufen. Außerdem werden die Rate-Limits zurückgesetzt, und Eltern müssen ein offenes
+Seitenaufrufen, und E-Mails in der Warteschlange bleiben liegen. Außerdem werden die Rate-Limits zurückgesetzt, und Eltern müssen ein offenes
 Buchungsformular neu laden oder einen Rundencode erneut eingeben. Admin-Sitzungen, Änderungslinks und
 Buchungen bleiben gültig.
 
@@ -117,9 +117,43 @@ Buchungen bleiben gültig.
 | Rate-Limit-Daten | spätestens nach 24 Stunden |
 | Inaktive Konten von Lehrkräften ohne Runden in Gebrauch | 15 Monate nach dem letzten Login, zusammen mit ihren Entwürfen |
 | *Protokoll* der Admin-Änderungen | nach 90 Tagen (`audit_log_days`) |
+| Einträge der Mail-Warteschlange (ohne Adresse und Inhalt) | sobald die E-Mail verschickt ist; nicht zustellbare nach 48 Stunden |
 
 Die Bereinigung läuft im Cronjob und ersatzweise bei Seitenaufrufen, höchstens alle 15 Minuten. Dieselben
-Läufe verschicken die Zusammenfassungen an Lehrkräfte und die Erinnerungen an Eltern.
+Läufe stellen die Zusammenfassungen an Lehrkräfte und die Erinnerungen an Eltern in die Warteschlange; der
+Cronjob verschickt sie.
+
+## Mail-Warteschlange
+
+Außer bei den sofort verschickten Bestätigungen (unten) wartet niemand beim Seitenaufruf auf den
+Mailserver: Seitenaufrufe führen nur die Datenbankschritte der Bereinigung aus, und Erinnerungen,
+Zusammenfassungen und fehlgeschlagene E-Mails kommen in eine **Mail-Warteschlange** (Outbox), die der
+**Cronjob** verschickt (`bin/cron.php` oder der Web-Cron). Pro Lauf
+sind das höchstens 100 E-Mails in etwa 20 Sekunden über eine SMTP-Verbindung; Bestätigungen und
+Änderungsmitteilungen an Eltern gehen vor, dann Zusammenfassungen, dann Erinnerungen
+(siehe [Konfiguration]({{ '/de/guide/configuration/' | relative_url }}#mail-warteschlange), auch für eine
+Grenze pro Stunde). Es verschickt immer nur ein Lauf, und zwar je Datenbank: Installationen auf demselben
+Datenbankserver halten sich nicht gegenseitig auf. Der Cronjob wartet bis zu 15 Sekunden auf einen
+laufenden Lauf.
+
+- **Bestätigungen bleiben sofort.** Buchen oder verschieben Eltern einen Termin oder speichert eine Lehrkraft
+  einen Eintrag mit E-Mail, geht die E-Mail sofort hinaus. Lehnt der Mailserver sie ab, kommt sie in die
+  Warteschlange, und die Seite sagt, dass die Bestätigung folgt. Die Warteschlange versucht es nach 5, 15,
+  30, 60 und 120 Minuten erneut, danach alle 240 Minuten.
+- **Nur Verweise.** Ein Eintrag der Warteschlange sagt nur, welche E-Mail für welche Buchung oder welches
+  Konto aussteht. Adresse und Text entstehen erst beim Versand aus der Buchung, und eine später verschickte
+  Bestätigung bekommt einen eigenen, neuen persönlichen Link (der erste bleibt gültig); die Warteschlange
+  enthält also weder Adresse noch Link. Einträge verschwinden mit ihrer Buchung und werden nach dem Versand
+  gelöscht, spätestens nach 48 Stunden.
+- **Nichts geht unbemerkt verloren.** Die Buchungsliste zeigt *E-Mail nicht zugestellt* bei einem Eintrag,
+  dessen E-Mail nicht verschickt werden konnte (mit *neuer Versuch folgt*, solange sie wiederholt wird), und
+  Admins sehen in der Übersicht einen Hinweis, wenn E-Mails länger als zwei Stunden warten, meist weil der
+  Cronjob nicht läuft oder der Mailserver sie weiter ablehnt.
+- **Ohne Cronjob** können E-Mails nur bei Seitenaufrufen hinausgehen, wenn PHP als PHP-FPM oder LiteSpeed
+  läuft: Die Seite wird zuerst ausgeliefert, danach gehen bis zu 10 fällige E-Mails hinaus
+  (`mail_queue.after_response`). Mit Apaches mod_php geht das nicht; richten Sie deshalb den Cronjob ein,
+  das mitgelieferte `cron.yml` startet ihn stündlich. Ohne ihn gehen dort keine Erinnerungen und
+  Zusammenfassungen hinaus, und wartende E-Mails werden nach 48 Stunden verworfen.
 
 ## Fehlersuche
 
@@ -136,7 +170,9 @@ Schul-WLAN). Erhöhen Sie die [Rate-Limits]({{ '/de/guide/configuration/' | rela
 wenn das in einer stark ausgelasteten Buchungsphase passiert.
 
 **E-Mails kommen nicht an.** Prüfen Sie die SPF- und DKIM-Einträge der Absenderdomain, versuchen Sie `smtp`
-statt `mail` und achten Sie auf die Meldung „Mailversand fehlgeschlagen“.
+statt `mail` und achten Sie auf die Meldung „Mailversand fehlgeschlagen“. Erinnerungen und
+Zusammenfassungen verschickt der Cronjob: Meldet die Übersicht wartende E-Mails, prüfen Sie, ob er läuft
+(`php bin/cron.php -v` gibt `mails_sent` aus).
 
 **Die Datenschutzerklärung zeigt `[HOSTER MIT ANSCHRIFT]`.** Setzen Sie `hosting` (bzw.
 `HOSTING_DE`/`HOSTING_EN`); siehe [Datenschutz und Recht]({{ '/de/guide/privacy/' | relative_url }}).

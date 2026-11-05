@@ -164,3 +164,7 @@ standardmäßig ab 18:00 Uhr) mit einem Link zum Absagen. Sie lässt sich pro Ru
 Vorabend an ihren Termin erinnern*). Die Vorlage der Datenschutzerklärung nennt die Erinnerung als Zweck der
 E-Mail-Adresse; haben Sie Ihre Datenschutzerklärung bearbeitet, bittet ein Hinweis in der Übersicht, das
 zu ergänzen.
+
+Zusammenfassungen und Erinnerungen verschickt der Cronjob über die
+[Mail-Warteschlange]({{ '/de/guide/operations/' | relative_url }}#mail-warteschlange); die Übersicht weist
+Admins darauf hin, wenn E-Mails länger als zwei Stunden warten.
