@@ -32,7 +32,7 @@ with PHP-FPM or LiteSpeed a page view sends up to 10 waiting mails after its res
 
 ## How do I notice that the cron job has stopped?
 
-Once no cron run has completed for 3 hours, admins see a warning on the dashboard and the operator gets an
+Once no cron run has completed for 12 hours (configurable), admins see a warning on the dashboard and the operator gets an
 alert mail, repeated daily while it lasts. A common cause: GitHub disables scheduled workflows in public
 repositories after 60 days without activity. See
 [cron monitoring]({{ '/guide/operations/' | relative_url }}#cron-monitoring).

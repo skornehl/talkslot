@@ -81,33 +81,45 @@ gehen womöglich gar nicht hinaus (siehe [Mail-Warteschlange](#mail-warteschlang
 oder dem Web-Cron (`last_cron` in der Tabelle `settings`, getrennt von `last_cleanup`, das auch
 Seitenaufrufe setzen) und prüft ihn bei Seitenaufrufen:
 
-- **Seit 3 Stunden kein vollständiger Lauf** (`cron_alert_hours`): Beim stündlichen Takt sind das zwei
-  ausgefallene Läufe, ein einzelner Lauf, den GitHub verzögert oder auslässt, löst also noch nichts aus.
-  Admins sehen in der Übersicht eine Warnung mit der Zeit des letzten Laufs und einem Link auf diesen
+- **Seit 12 Stunden kein vollständiger Lauf** (`cron_alert_hours`, Deploy-Variable `CRON_ALERT_HOURS`):
+  GitHub startet geplante Workflows bei hoher Last verspätet, in der Praxis oft nur alle 4 bis 8 Stunden statt
+  stündlich. Mit dem mitgelieferten Workflow *Cron* würde ein kürzerer Wert also ständig Alarm schlagen. Mit
+  einem stündlichen Cronjob auf dem Server passen 3 Stunden (zwei ausgefallene Läufe). Admins sehen in der
+  Übersicht eine Warnung mit der Zeit des letzten Laufs und einem Link auf diesen
   Abschnitt, und der Betreiber erhält die Warnmeldung *Cronjob läuft nicht* (Empfänger wie bei den
   Fehlermeldungen oben). Sie kommt einmal pro Ausfall und alle 24 Stunden erneut, solange er anhält, mit der
   Zeit des letzten Laufs und den Punkten, die zu prüfen sind; ohne personenbezogene Daten. Der nächste
   vollständige Lauf beendet die Warnung.
 - **Noch gar kein vollständiger Lauf verzeichnet** (neue Installation, Update, während der Cronjob schon
-  ausgefallen war, oder ein Cronjob, der jedes Mal scheitert): 3 Stunden nach Beginn der Überwachung bittet
+  ausgefallen war, oder ein Cronjob, der jedes Mal scheitert): `cron_alert_hours` Stunden nach Beginn der
+  Überwachung bittet
   die Übersicht die Admins, den Cronjob einzurichten oder mit `php bin/cron.php -v` nachzusehen, woran er
   scheitert.
   Eine E-Mail gibt es dafür nicht, damit Installationen, die bewusst auf Seitenaufrufe setzen (mit PHP-FPM
   oder LiteSpeed, siehe [Mail-Warteschlange](#mail-warteschlange)), nicht jeden Tag daran erinnert werden.
 - **`cron_alert_hours = 0`** schaltet beides ab.
 
+**Pünktliche Erinnerungen brauchen einen pünktlichen Cronjob.** Die Erinnerungen am Vorabend, die
+Zusammenfassungen und weitere Versuche für E-Mails gehen hinaus, wenn der Cronjob läuft. Mit dem
+GitHub-Workflow können sie deshalb Stunden zu spät kommen, z. B. eine Erinnerung für 18 Uhr erst nachts. Ist
+das wichtig, richten Sie beim Webhoster einen Cronjob ein, der stündlich `php bin/cron.php` ausführt (oder den
+[Web-Cron]({{ '/de/guide/installation/' | relative_url }}) per `POST /cron` mit dem Header `X-Cron-Token`
+aufruft, z. B. mit `curl`; ein reiner Aufruf der Adresse genügt nicht), und setzen Sie `CRON_ALERT_HOURS`
+(ohne GitHub-Deployment `cron_alert_hours` in `config/config.php`) auf 3.
+
 Geprüft wird bei Seitenaufrufen: Eine Seite, die niemand aufruft, kann nichts melden, aber jeder Aufruf,
 auch durch Eltern, verschickt die Warnmeldung, wenn sie fällig ist. Lehrkräfte sehen die Warnung nicht;
 beheben lassen können sie nur Admins.
 
-Fällt ein reparierter Cronjob später erneut aus, ist das ein neuer Ausfall: Er wird gemeldet, sobald die
-3 Stunden um sind, auch wenn die letzte Meldung noch keinen Tag zurückliegt.
+Fällt ein reparierter Cronjob später erneut aus, ist das ein neuer Ausfall: Er wird gemeldet, sobald
+`cron_alert_hours` Stunden um sind, auch wenn die letzte Meldung noch keinen Tag zurückliegt.
 
 **Fehlalarm nach einem Rollback oder einem eingespielten Backup:** Eine Version von vor der Überwachung
 speichert ihre Läufe nicht, und ein Datenbank-Backup enthält das `last_cron` seiner Zeit. Nach einem
 [Rollback]({{ '/de/guide/deployment/' | relative_url }}#rollback) auf eine solche Version und dem nächsten Deployment oder nach dem Einspielen
 eines Backups meldet der erste Seitenaufruf deshalb womöglich einen Ausfall, obwohl der Cronjob die ganze
-Zeit lief. Der nächste Lauf beendet ihn (spätestens nach einer Stunde); um die E-Mail zu vermeiden, starten
+Zeit lief. Der nächste Lauf beendet ihn (mit einem stündlichen Cronjob auf dem Server spätestens nach einer Stunde, mit dem
+GitHub-Workflow womöglich erst Stunden später); um die E-Mail zu vermeiden, starten
 Sie den Cronjob direkt nach einem solchen Schritt einmal von Hand (`php bin/cron.php`, *Run workflow* oder
 `gh workflow run cron.yml`).
 
@@ -117,14 +129,16 @@ Nutzen Sie das mitgelieferte `cron.yml` in einem **öffentlichen** Repository (F
 [Repository nur mit Konfiguration]({{ '/de/guide/deployment/' | relative_url }}#deploying-from-your-own-repository)),
 schaltet GitHub geplante Workflows ab, wenn es im Repository 60 Tage lang keine Aktivität gab. In einem
 Fork sind geplante Workflows von Anfang an aus. Der Workflow schlägt dann nicht fehl, er läuft einfach nicht
-mehr, deshalb kommt von GitHub keine Fehlermeldung; die Überwachung bemerkt es nach 3 Stunden.
+mehr, deshalb kommt von GitHub keine Fehlermeldung; die Überwachung bemerkt es nach `cron_alert_hours`
+(Standard 12 Stunden).
 
 Er bleibt aus, bis Sie ihn wieder einschalten: *Actions → Cron → Enable workflow* oder
 `gh workflow enable cron.yml`. Starten Sie ihn danach einmal von Hand, um ihn zu prüfen (*Run workflow* oder
 `gh workflow run cron.yml`); die Warnung in der Übersicht verschwindet nach dem ersten vollständigen Lauf.
 
 Außerdem verzögert GitHub geplante Läufe bei hoher Last, besonders zur vollen Stunde, und lässt einzelne
-ganz aus. Deshalb startet `cron.yml` zur Minute 17, und die Überwachung wartet zwei ausgefallene Läufe ab.
+ganz aus. Deshalb startet `cron.yml` zur Minute 17. Weil Läufe trotzdem oft Stunden zu spät kommen, warnt die
+Überwachung standardmäßig erst nach 12 Stunden.
 
 ## Logs
 
@@ -233,7 +247,8 @@ laufenden Lauf.
   auf eine davon verliert also die Absagen, die gerade noch warten.
 - **Nichts geht unbemerkt verloren.** Die Buchungsliste zeigt *E-Mail nicht zugestellt* bei einem Eintrag,
   dessen E-Mail nicht verschickt werden konnte (mit *neuer Versuch folgt*, solange sie wiederholt wird), und
-  Admins sehen in der Übersicht einen Hinweis, wenn E-Mails länger als zwei Stunden warten, meist weil der
+  Admins sehen in der Übersicht einen Hinweis, wenn E-Mails länger als `cron_alert_hours` (mindestens zwei
+  Stunden) warten, meist weil der
   Cronjob nicht läuft oder der Mailserver sie weiter ablehnt. Ausnahme sind Absagen: Ihre Buchung gibt es
   nicht mehr, eine nach 48 Stunden verworfene Absage hinterlässt also keine Markierung bei einem Eintrag,
   nur den Hinweis in der Übersicht, solange sie wartet.

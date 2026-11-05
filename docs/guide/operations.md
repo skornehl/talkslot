@@ -76,29 +76,40 @@ reminders and summaries may not go out at all (see [mail queue](#mail-queue)). S
 records every completed run of `bin/cron.php` or the web cron (`last_cron` in the `settings` table, apart
 from `last_cleanup`, which page views set as well) and checks it on page views:
 
-- **No completed run for 3 hours** (`cron_alert_hours`): with the hourly schedule that is two missed runs,
-  so a single run that GitHub delays or skips is no alarm yet. Admins see a warning on the dashboard with
+- **No completed run for 12 hours** (`cron_alert_hours`, deployment variable `CRON_ALERT_HOURS`): GitHub
+  starts scheduled workflows late when it is busy, in practice often only every 4 to 8 hours instead of
+  hourly, so with the included workflow *Cron* a shorter limit would raise alarms all the time. With the
+  server's own hourly cron job, 3 hours fit (two missed runs). Admins see a warning on the dashboard with
   the time of the last run and a link to this section, and the operator gets the alert mail *Cronjob läuft
   nicht* (same recipient as the error alerts above). It is sent once per outage and again every 24 hours
   while the outage lasts, with the time of the last run and what to check; no personal data. The next
   completed run ends the warning.
 - **No completed run recorded at all** (a new installation, an update while the cron job was already down,
-  or a cron job that fails every time): 3 hours after the monitoring began, the dashboard asks the admins
+  or a cron job that fails every time): `cron_alert_hours` hours after the monitoring began, the dashboard
+  asks the admins
   to set up the cron job, or to look with `php bin/cron.php -v` where it fails. There is no
   mail for this, so that installations relying on page views on purpose (with PHP-FPM or LiteSpeed, see
   [mail queue](#mail-queue)) are not reminded every day.
 - **`cron_alert_hours = 0`** turns both off.
 
+**Punctual reminders need a punctual cron job.** Reminders the evening before, the summaries and retries of
+mails go out when the cron job runs. With the GitHub workflow they can therefore arrive hours late, e.g. a
+reminder for 18:00 only at night. If that matters, set up a cron job at your web host that runs
+`php bin/cron.php` every hour (or calls the [web cron]({{ '/guide/installation/' | relative_url }}) with `POST /cron` and the header `X-Cron-Token`,
+e.g. with `curl`; just calling the address is not enough), and set `CRON_ALERT_HOURS` (without the GitHub
+deployment: `cron_alert_hours` in `config/config.php`) to 3.
+
 The check runs on page views: a site nobody visits cannot report anything, but any visit, by parents as
 well, sends the alert mail when it is due. Teachers do not see the warning; only admins can have it fixed.
 
-A cron job that is repaired and stops again later counts as a new outage: it is mailed as soon as the
-3 hours have passed, even if the last mail is less than a day old.
+A cron job that is repaired and stops again later counts as a new outage: it is mailed as soon as
+`cron_alert_hours` hours have passed, even if the last mail is less than a day old.
 
 **False alarm after a rollback or a restored backup:** a version from before the cron monitoring does not
 record its runs, and a database backup holds the `last_cron` of its time. After a [rollback]({{ '/guide/deployment/' | relative_url }}#rollback)
 to such a version and the next deployment, or after restoring a backup, the first page view may therefore
-report an outage although the cron job kept running. The next run ends it (at the latest after an hour);
+report an outage although the cron job kept running. The next run ends it (with the server's own hourly cron job at the latest after an hour, with the GitHub
+workflow possibly hours later);
 to avoid the mail, start the cron job once by hand right after such a step (`php bin/cron.php`,
 *Run workflow* or `gh workflow run cron.yml`).
 
@@ -108,14 +119,16 @@ If you use the included `cron.yml` in a **public** repository (a fork of TalkSlo
 [configuration-only repository]({{ '/guide/deployment/' | relative_url }}#deploying-from-your-own-repository)),
 GitHub disables scheduled workflows when the repository has had no activity for 60 days. In a fork,
 scheduled workflows are off from the start. The workflow does not fail then, it simply stops running, so
-GitHub sends no failure notice; the cron monitoring notices it after 3 hours.
+GitHub sends no failure notice; the cron monitoring notices it after `cron_alert_hours`
+(12 hours by default).
 
 It stays off until you enable it again: *Actions → Cron → Enable workflow*, or
 `gh workflow enable cron.yml`. Then start it once by hand to check it (*Run workflow*, or
 `gh workflow run cron.yml`); the warning on the dashboard disappears after the first completed run.
 
 GitHub also delays scheduled runs at busy times, especially at the start of every hour, and may drop some.
-That is why `cron.yml` runs at minute 17 and the monitoring waits for two missed runs.
+That is why `cron.yml` runs at minute 17. As runs still often come hours late, the monitoring warns only
+after 12 hours by default.
 
 ## Logs
 
@@ -212,7 +225,7 @@ other up; the cron job waits up to 15 seconds for a run in progress.
   a rollback to one of them loses the cancellations still waiting.
 - **Nothing gets lost unnoticed.** The booking list shows *E-Mail nicht zugestellt* at an entry whose mail
   failed (with *neuer Versuch folgt* while it is retried), and admins see a notice on the overview when
-  mails have waited for more than two hours, usually because the cron job does not run or the mail server
+  mails have waited longer than `cron_alert_hours` (at least two hours), usually because the cron job does not run or the mail server
   keeps refusing. Cancellations are the exception: their booking is gone, so one that is given up after
   48 hours leaves no mark at an entry, only the notice on the overview while it waits.
 - **Without a cron job** mails can only go out on page views if PHP runs as PHP-FPM or LiteSpeed: the page

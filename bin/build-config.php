@@ -93,6 +93,14 @@ $config['db'] = [
     'prefix' => $prefix,
 ];
 $config['alert_email'] = $env('ALERT_EMAIL');
+// Hours without a completed cron run before admins are warned (App\CronMonitor; empty = default of the sample)
+if ($env('CRON_ALERT_HOURS') !== '') {
+    if (!ctype_digit($env('CRON_ALERT_HOURS'))) {
+        fwrite(STDERR, "CRON_ALERT_HOURS must be a whole number (0 = off)\n");
+        exit(1);
+    }
+    $config['cron_alert_hours'] = (int) $env('CRON_ALERT_HOURS');
+}
 $config['languages'] = $languages;
 $config['default_language'] = $default;
 $config['app_name'] = $env('APP_NAME', (string) $config['app_name']);
