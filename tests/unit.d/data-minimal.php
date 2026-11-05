@@ -25,7 +25,8 @@ check('name hint: first and last name with the class, nothing else; the sibling 
     && str_contains($dmRound('none'), 'Bitte buchen Sie nur einen Termin pro Kind.'));
 // Every log message about a booking takes the date only: the five calls, none with a time
 $dmSrc = (string) file_get_contents(APP_ROOT . '/app/src/Controller/AdminController.php');
-$dmCalls = preg_match_all("/__\\('Buchung am \\{date\\}[^']*', \\[[^\\]]*\\]/", $dmSrc, $dmMsgs);
+// The arguments with one level of nested brackets ($slot['day_date']), so that a time passed to when() is part of the match
+$dmCalls = preg_match_all("/__\\('Buchung am \\{date\\}[^']*', \\[(?:[^\\[\\]]|\\[[^\\]]*\\])*\\]/", $dmSrc, $dmMsgs);
 $dmTimed = array_values(array_filter($dmMsgs[0], static fn (string $call): bool => str_contains($call, 'start_time')));
 check('log: the five booking events with the date only' . ($dmTimed ? ' (with a time: ' . implode(' | ', $dmTimed) . ')' : " ($dmCalls found)"),
     $dmCalls === 5 && !$dmTimed && !preg_match("/__\\('Buchung \\{slot\\}/", $dmSrc));

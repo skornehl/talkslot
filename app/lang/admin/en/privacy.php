@@ -6,6 +6,7 @@ return [
         => 'Please keep it neutral: title and description appear in the emails to parents and in calendar files, the title also in the log and, when the round is created, in its address. No hints at special educational needs, health or other sensitive topics.',
     'Name des Kindes wie bei der Online-Buchung, bei Bedarf mit Klasse.' => 'The child’s name as in an online booking, with the class if needed.',
     'Organisatorisches' => 'Organisational notes',
+    'Erlaubt (nur Hinweis „Bitte buchen Sie nur einen Termin pro Kind.“)' => 'Allowed (only the note “Please book only one appointment per child.”)',
     'Stand: {time} Uhr · Vertraulich – nur Organisatorisches notieren, keine Gesprächsinhalte; nach dem Termin vernichten.'
         => 'As of {time} · Confidential – organisational notes only, nothing about the conversation; destroy after the appointment.',
     'Änderungen durch Admins: wer wann welche Runde, welches Konto oder welchen Text geändert hat. Änderungen von Lehrkräften an ihren eigenen Runden werden nicht erfasst, Namen und E-Mail-Adressen von Eltern nie, Buchungen nur mit ihrem Datum. Einträge werden nach {days} Tagen gelöscht.'

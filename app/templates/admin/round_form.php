@@ -69,7 +69,7 @@ $action = $round ? url('/admin/round/' . (int) $round['id'] . '/edit') : url('/a
   <div class="field">
     <label for="booking_limit"><?= e(__('Mehrfachbuchungen')) ?></label>
     <select id="booking_limit" name="booking_limit" aria-describedby="bl-hint">
-      <?php foreach (['round' => __('Ein Termin pro Person in dieser Runde'), 'day' => __('Ein Termin pro Person und Tag'), 'none' => __('Erlaubt (nur Hinweis „Bitte buchen Sie nur einen Termin“)')] as $v => $label): ?>
+      <?php foreach (['round' => __('Ein Termin pro Person in dieser Runde'), 'day' => __('Ein Termin pro Person und Tag'), 'none' => __('Erlaubt (nur Hinweis „Bitte buchen Sie nur einen Termin pro Kind.“)')] as $v => $label): ?>
         <option value="<?= e($v) ?>"<?= ($data['booking_limit'] ?? 'round') === $v ? ' selected' : '' ?>><?= e($label) ?></option>
       <?php endforeach; ?>
     </select>

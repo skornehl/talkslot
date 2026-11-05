@@ -113,7 +113,6 @@ return [
     'Neuen Rundencode erzeugen (bisher {code}; der alte gilt danach nicht mehr)' => 'Create a new round code (currently {code}; the old one no longer works afterwards)',
     'Mehrfachbuchungen' => 'Multiple bookings',
     'Ein Termin pro Person in dieser Runde' => 'One appointment per person in this round',
-    'Erlaubt (nur Hinweis „Bitte buchen Sie nur einen Termin“)' => 'Allowed (only the note “Please book only one appointment”)',
     'Dieselbe Person = gleicher Name und, wenn angegeben, gleiche E-Mail-Adresse; ohne E-Mail zählt nur der Name. Geschwister buchen mit dem Namen des jeweiligen Kindes. Ihre eigenen Einträge sind nicht begrenzt.' => 'Same person = same name and, if given, same email address; without an email only the name counts. Siblings book with the name of the respective child. Your own entries are not limited.',
     'Ist das an, sieht wer nur den Link hat noch keine Termine: Er muss zusätzlich den Rundencode eingeben (steht im Einladungstext). Wer den Code auf der Startseite eingibt, ist direkt drin. Bestehende Buchungen bleiben über ihren persönlichen Link erreichbar.' => 'If this is on, anyone who only has the link does not see any slots yet: they also have to enter the round code (it is in the invitation text). Anyone entering the code on the start page gets straight in. Existing bookings remain accessible via their personal link.',
     'Eltern am Vorabend an ihren Termin erinnern' => 'Remind parents of their appointment the evening before',

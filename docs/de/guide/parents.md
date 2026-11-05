@@ -59,7 +59,7 @@ oder wenn die Lehrkraft Sie lieber selbst informiert, meldet sie sich persönlic
 ## Gut zu wissen
 
 - **Geschwister:** Buchen Sie für jedes Kind einzeln, jeweils mit dem Namen des Kindes. Bei manchen
-  Terminvergaben ist nur ein Termin pro Person möglich. Haben Sie einen Termin auf diesem Gerät gemerkt,
+  Terminvergaben ist nur ein Termin pro Kind möglich. Haben Sie einen Termin auf diesem Gerät gemerkt,
   zeigt die Terminvergabe ihn statt der Terminliste; *Weiteren Termin buchen (z. B. für ein
   Geschwisterkind)* holt das Formular zurück, ohne etwas zu vergessen.
 - **Auf diesem Gerät merken:** Mit einem freiwilligen Häkchen werden der Link zu Ihrem Termin, seine

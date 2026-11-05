@@ -640,7 +640,7 @@ check "day: moving to a day with an own appointment rejected" 'curl -s --data-ur
 DAY2SLOT=$(DBQ "SELECT s.id FROM tp_slots s JOIN tp_round_days d ON d.id=s.day_id LEFT JOIN tp_bookings b ON b.slot_id=s.id WHERE d.round_id=$LT AND d.day_date=\"$LD2\" AND b.id IS NULL ORDER BY s.start_time LIMIT 1")
 check "day: moving on the same day allowed" 'curl -s -o /dev/null -w "%{redirect_url}" --data-urlencode "csrf=$MC2" -d "action=move&slot_id=$DAY2SLOT" "${TOM2#* }" | grep -q "done=changed"'
 LN=$(mkround Ohne+Sperre none); LNS=$(slugof "$LN")
-check "no limit: old notice, same name possible multiple times" 'curl -s "$B/$LNS" | grep -q "Bitte buchen Sie nur einen Termin." && [[ "$(book "$LNS" "Ida" "")" == 303* ]] && [[ "$(book "$LNS" "Ida" "")" == 303* ]]'
+check "no limit: old notice, same name possible multiple times" 'curl -s "$B/$LNS" | grep -qF "Bitte buchen Sie nur einen Termin pro Kind." && [[ "$(book "$LNS" "Ida" "")" == 303* ]] && [[ "$(book "$LNS" "Ida" "")" == 303* ]]'
 # Concurrent: 10 parallel bookings with the same name for different slots → exactly one
 LP=$(mkround Sperre+parallel round); LPS=$(slugof "$LP"); PP=$(curl -s "$B/$LPS"); PPC=$(echo "$PP" | csrf)
 for i in $(seq 1 8); do

@@ -54,7 +54,7 @@ in person, the teacher contacts you directly.
 ## Good to know
 
 - **Siblings:** book once per child, with the child's name. Some rounds allow only one appointment per
-  person. If you remembered an appointment on this device, the round shows it instead of the slot list;
+  child. If you remembered an appointment on this device, the round shows it instead of the slot list;
   *Book another appointment (e.g. for a sibling)* brings the form back without forgetting anything.
 - **Remember on this device:** an optional checkbox saves the link to your appointment, its label and its
   date in your browser, so you see it when you open the round again. Each booking gets its own entry. Nothing
