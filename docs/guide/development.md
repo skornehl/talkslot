@@ -151,15 +151,16 @@ changing a day, a round or an account (`ScheduleService::LOCKS`) and rebuilding 
 (`SlotGenerator::sync()`) follow it; an account's deletion first locks the rows of the active admins, so
 that one admin always remains (`AccountSecurity`).
 
-A booking runs in `Db::transaction()`: with a booking limit it locks the round (`BookingService::lockForLimit()`),
-then the slot together with its day in one joined `SELECT … FOR UPDATE` (`lockSlot()`), then checks for a
-booking of the slot. That join is the one place where a slot may be locked before its day, so a booking can
-cross a `sync()` of the same day; InnoDB then ends one of them as a deadlock. Bookings expect this: they
-retry once on a deadlock or lock wait timeout (`retryOnDeadlock()`) and then report the slot as taken, and
-`UNIQUE(slot_id)` is the hard guarantee against double bookings; the teacher's entries and moves go through the
-same methods. Changes to days, rounds and accounts (`ScheduleService`, `sync()`) do not retry. For new code: lock
-the day before its slots, and wrap new writes that use `lockSlot()` in `retryOnDeadlock()`. Mails
-go out after the commit (directly or through the outbox), never inside the transaction.
+A booking runs in `Db::transaction()`: with a booking limit it locks the round
+(`BookingService::lockForLimit()`), then the slot together with its day in one joined `SELECT … FOR UPDATE`
+(`lockSlot()`), then checks for a booking of the slot. That join is the one place where a slot may be locked
+before its day, so a booking can cross a `sync()` of the same day; InnoDB then ends one of them as a deadlock.
+Bookings expect this: they retry once on a deadlock or lock wait timeout (`retryOnDeadlock()`) and then report
+the slot as taken, and `UNIQUE(slot_id)` is the hard guarantee against double bookings; the teacher's entries
+and moves go through the same methods. Changes to days, rounds and accounts (`ScheduleService`, `sync()`) do not
+retry. For new code: lock the day before its slots, and wrap new writes that use `lockSlot()` in
+`retryOnDeadlock()`. Mails go out after the commit (directly or through the outbox), never inside the
+transaction.
 
 Background work takes named locks instead: migrations and the outbox use `GET_LOCK`; reminders and summaries
 claim their rows with `UPDATE … WHERE reminded_at IS NULL` and `INSERT IGNORE`, so that two runs at the same

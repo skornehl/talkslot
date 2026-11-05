@@ -161,16 +161,16 @@ das Löschen eines Kontos sperrt vorher die Zeilen der aktiven Admins, damit imm
 (`AccountSecurity`).
 
 Eine Buchung läuft in `Db::transaction()`: Mit Buchungslimit sperrt sie die Runde
-(`BookingService::lockForLimit()`), dann den Termin zusammen mit seinem Tag in einem verknüpften
-`SELECT … FOR UPDATE` (`lockSlot()`), dann prüft sie, ob der Termin schon gebucht ist. Diese Verknüpfung ist
-die einzige Stelle, an der ein Termin vor seinem Tag gesperrt werden kann; eine Buchung kann sich deshalb mit
-einem `sync()` desselben Tages kreuzen, und InnoDB beendet dann eine der beiden als Deadlock. Buchungen sind
-darauf eingestellt: Sie wiederholen bei einem Deadlock oder Sperr-Timeout einmal (`retryOnDeadlock()`) und
-melden den Termin danach als vergeben, und `UNIQUE(slot_id)` ist die harte Garantie gegen Doppelbuchungen;
-Einträge und Verschiebungen durch die Lehrkraft laufen über dieselben Methoden. Änderungen an Tagen, Runden und
-Konten (`ScheduleService`, `sync()`) werden nicht wiederholt. Für neuen Code: den Tag vor seinen Terminen
-sperren und neue Schreibzugriffe, die `lockSlot()` nutzen, in `retryOnDeadlock()` einbetten. E-Mails gehen erst nach dem Commit hinaus
-(direkt oder über die Warteschlange), nie innerhalb der Transaktion.
+(`BookingService::lockForLimit()`), dann den Termin zusammen mit seinem Tag in einem verknüpften `SELECT … FOR
+UPDATE` (`lockSlot()`), dann prüft sie, ob der Termin schon gebucht ist. Diese Verknüpfung ist die einzige
+Stelle, an der ein Termin vor seinem Tag gesperrt werden kann; eine Buchung kann sich deshalb mit einem `sync()`
+desselben Tages kreuzen, und InnoDB beendet dann eine der beiden als Deadlock. Buchungen sind darauf
+eingestellt: Sie wiederholen bei einem Deadlock oder Sperr-Timeout einmal (`retryOnDeadlock()`) und melden den
+Termin danach als vergeben, und `UNIQUE(slot_id)` ist die harte Garantie gegen Doppelbuchungen; Einträge und
+Verschiebungen durch die Lehrkraft laufen über dieselben Methoden. Änderungen an Tagen, Runden und Konten
+(`ScheduleService`, `sync()`) werden nicht wiederholt. Für neuen Code: den Tag vor seinen Terminen sperren und
+neue Schreibzugriffe, die `lockSlot()` nutzen, in `retryOnDeadlock()` einbetten. E-Mails gehen erst nach dem
+Commit hinaus (direkt oder über die Warteschlange), nie innerhalb der Transaktion.
 
 Hintergrundarbeiten nutzen stattdessen benannte Sperren: Migrationen und die Warteschlange `GET_LOCK`;
 Erinnerungen und Zusammenfassungen reservieren ihre Zeilen mit `UPDATE … WHERE reminded_at IS NULL` und
