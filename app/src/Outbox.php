@@ -215,7 +215,16 @@ final class Outbox
     }
 
     /**
-     * Mails waiting longer than LATE_HOURS (for the admins' overview): the cron job does not run or the
+     * Hours after which waiting mails are shown to admins: LATE_HOURS, or cron_alert_hours if longer (the
+     * cron job sends them; with the GitHub workflow it often runs only every few hours, see CronMonitor).
+     */
+    public static function lateHours(): int
+    {
+        return max(self::LATE_HOURS, CronMonitor::alertHours());
+    }
+
+    /**
+     * Mails waiting longer than lateHours() (for the admins' overview): the cron job does not run or the
      * mail server keeps refusing. null = none.
      * @return ?array{count:int,since:string}
      */
@@ -223,7 +232,7 @@ final class Outbox
     {
         $row = Db::one(
             'SELECT COUNT(*) AS n, MIN(created_at) AS since FROM mail_outbox WHERE created_at < ?',
-            [Time::now()->modify('-' . self::LATE_HOURS . ' hours')->format('Y-m-d H:i:s')]
+            [Time::now()->modify('-' . self::lateHours() . ' hours')->format('Y-m-d H:i:s')]
         );
         return (int) ($row['n'] ?? 0) > 0 ? ['count' => (int) $row['n'], 'since' => (string) $row['since']] : null;
     }

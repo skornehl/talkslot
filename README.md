@@ -110,7 +110,7 @@ schools (GDPR/DSGVO, TDDDG) and multilingual families.
 **Operations**
 - Errors are caught, logged without personal data and **mailed to the operator** (throttled), including
   "database unreachable" (the site answers 503 with `Retry-After`).
-- A cron job that stops is noticed: after 3 hours without a completed run, admins see a warning on the
+- A cron job that stops is noticed: after 12 hours (configurable) without a completed run, admins see a warning on the
   dashboard and the operator gets an alert mail, daily while it lasts (GitHub disables scheduled workflows
   in public repositories after 60 days without activity).
 - Database migrations run automatically and only ever add columns/tables.
@@ -216,7 +216,7 @@ bin/setup-secrets.sh    # asks for host, directories, FTP and DB credentials; ge
 
 This sets the variables `BASE_URL`, `FTP_HOST`, `WEB_DIR`, `APP_DIR`, `DB_HOST` and the secrets
 `FTP_USERNAME`, `FTP_PASSWORD`, `DB_USER`, `DB_PASS`, `DB_NAME`, `APP_SECRET`, `INSTALL_KEY`. Optional
-variables: `APP_NAME`, `HOSTING_DE`, `HOSTING_EN` (web host for the privacy policy), `LANGUAGES` (e.g. `de,en,tr`) and `DEFAULT_LANGUAGE` (e.g. `en`), `ALERT_EMAIL`, `MAIL_FROM`, `MAIL_FROM_NAME`, `MAIL_REPLY_TO`, `MAIL_TRANSPORT=smtp` with
+variables: `APP_NAME`, `HOSTING_DE`, `HOSTING_EN` (web host for the privacy policy), `LANGUAGES` (e.g. `de,en,tr`) and `DEFAULT_LANGUAGE` (e.g. `en`), `ALERT_EMAIL`, `CRON_ALERT_HOURS`, `MAIL_FROM`, `MAIL_FROM_NAME`, `MAIL_REPLY_TO`, `MAIL_TRANSPORT=smtp` with
 `SMTP_HOST`, `SMTP_PORT`, `SMTP_ENCRYPTION` and the secrets `SMTP_USER`, `SMTP_PASS`, `DB_PREFIX`; the
 variable `CONFIG_MODE` sets the permissions of `config.php` on the server (default `600`).
 Without `FTP_HOST` the deploy, cron and switch workflows do nothing.

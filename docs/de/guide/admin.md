@@ -194,4 +194,4 @@ zu ergänzen.
 
 Zusammenfassungen und Erinnerungen verschickt der Cronjob über die
 [Mail-Warteschlange]({{ '/de/guide/operations/' | relative_url }}#mail-warteschlange); die Übersicht weist
-Admins darauf hin, wenn E-Mails länger als zwei Stunden warten.
+Admins darauf hin, wenn E-Mails länger als `cron_alert_hours` (mindestens zwei Stunden) warten.

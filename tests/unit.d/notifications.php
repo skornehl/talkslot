@@ -27,6 +27,9 @@ $inMinutes = static fn (string $at): int => (int) round((strtotime($at) - time()
 check('retries: at once, then after 5, 15, 30, 60, 120 and 240 minutes, never longer',
     array_map(static fn (int $failures): int => $inMinutes(App\Outbox::retryAt($failures)), [0, 1, 2, 3, 4, 5, 6, 7, 50]) === [0, 5, 15, 30, 60, 120, 240, 240, 240]);
 check('a mail is retried for at most 48 hours, overdue ones are shown after 2', App\Outbox::MAX_AGE_HOURS === 48 && App\Outbox::LATE_HOURS === 2);
+$lateHours = static function (int $hours) use ($cfg): int { App\Config::load(['cron_alert_hours' => $hours] + $cfg); return App\Outbox::lateHours(); };
+check('overdue mails: not before the cron monitoring would warn (12 → 12, 3 → 3), at least 2 hours (also with it off)', [$lateHours(12), $lateHours(3), $lateHours(1), $lateHours(0)] === [12, 3, 2, 2]);
+App\Config::load($cfg);
 $sample = (array) ((require dirname(__DIR__, 2) . '/config/config.sample.php')['mail_queue'] ?? []);
 check('config.sample.php: mail_queue with the defaults of the code', $sample === ['batch' => 100, 'seconds' => 20, 'hourly_limit' => 0, 'after_response' => true]);
 

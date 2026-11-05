@@ -174,7 +174,7 @@ check "health check: ok again once the migrations are through" 'op_is "$(op_heal
 
 echo "Operations: cron monitoring"
 # Expert review P1-2: every completed cron run (bin/cron.php, web cron) records last_cron, apart from the
-# clean-up on page views (last_cleanup). Without a completed run for cron_alert_hours (3 by default), admins
+# clean-up on page views (last_cleanup). Without a completed run for cron_alert_hours (3 in dev/config.dev.php), admins
 # see a warning on the dashboard and the operator gets one alert mail per outage, repeated daily.
 op_set() { DBQ "INSERT INTO tp_settings (name, value) VALUES ('$1', '$2') ON DUPLICATE KEY UPDATE value = '$2'"; }
 op_get() { DBQ "SELECT value FROM tp_settings WHERE name = '$1'"; }
