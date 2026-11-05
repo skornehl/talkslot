@@ -49,7 +49,7 @@ check "contact for all saved again unchanged: no new log entry" '[ "$(DBQ "SELEC
 check "start page after a wrong code: the contact for all" 'curl -s -d "code=ZZZZ-ZZZZ" "$B/" | has "Bei Fragen: Sekretariat Tel. 01234 5678" && ! curl -s "$B/" | has "data-contact"'
 UX_MNF=$(curl -s -w '\n%{http_code}' "$B/b/$(printf 'A%.0s' $(seq 1 43))?lang=en")
 check "unknown appointment link (English): 404 with the way on and the contact" \
-  'echo "$UX_MNF" | tail -1 | grep -qx 404 && echo "$UX_MNF" | has "Do you have a code from your invitation?" && echo "$UX_MNF" | has "If you have questions: Sekretariat Tel. 01234 5678"'
+  'echo "$UX_MNF" | tail -1 | grep -qx 404 && echo "$UX_MNF" | has "Do you have a code from your invitation?" && echo "$UX_MNF" | has "If you have questions: <span lang=\"de\">Sekretariat Tel. 01234 5678</span>"'
 
 # Rounds: the teacher's own contact, otherwise the one for all; a round with code shows only the one for all
 UXR=$(ux_round "UX Kontakt $URUN" 0); UXS=$(slugof "$UXR")
@@ -94,7 +94,7 @@ check "no upcoming slots: as before \"no free appointments\"" \
 echo "Accounts: username of new accounts (expert review P2-1)"
 UXF=$(curl -s -b "$J" "$B/admin/users/new")
 check "new account: username offered (optional, not required)" \
-  'echo "$UXF" | has "<input type=\"text\" id=\"username\" name=\"username\" maxlength=\"254\"" && echo "$UXF" | has "Leer = die E-Mail-Adresse."'
+  'echo "$UXF" | has "<input type=\"text\" id=\"username\" name=\"username\" maxlength=\"254\"" && echo "$UXF" | has "Wenn leer, ist die E-Mail-Adresse der Benutzername."'
 curl -s -o /dev/null -b "$J" --data-urlencode "csrf=$UT" -d "display_name=Herr+UX&email=ux-$URUN@example.org&username=hux$URUN&role=teacher&lang=de" "$B/admin/users/new"
 curl -s -o /dev/null -b "$J" --data-urlencode "csrf=$UT" -d "display_name=Frau+UX&email=ux2-$URUN@example.org&username=&role=teacher&lang=de" "$B/admin/users/new"
 UXE=$(curl -s -b "$J" --data-urlencode "csrf=$UT" -d "display_name=Frau+UX&email=keine-adresse&username=&role=teacher&lang=de" "$B/admin/users/new")
