@@ -10,7 +10,7 @@ namespace App;
  */
 final class Migrations
 {
-    public const LATEST = 18;
+    public const LATEST = 19;
 
     /** Version => SQL statements */
     private const STEPS = [
@@ -130,6 +130,15 @@ final class Migrations
         // 18: admin area in German or English, per account (NULL = admin_language)
         18 => [
             'ALTER TABLE users ADD COLUMN IF NOT EXISTS lang VARCHAR(5) NULL AFTER email',
+        ],
+        // 19: only rounds that were in use expire automatically (activated at least once or with an entry
+        //     by the teacher); a draft such as a copy that keeps the old dates stays. Existing rounds count
+        //     as used if they are active, already expired or booked. Additive: the version before ignores it.
+        19 => [
+            'ALTER TABLE rounds ADD COLUMN IF NOT EXISTS was_used TINYINT(1) NOT NULL DEFAULT 0 AFTER is_active',
+            'UPDATE rounds r SET r.was_used = 1
+              WHERE r.is_active = 1 OR r.expired_at IS NOT NULL
+                 OR EXISTS (SELECT 1 FROM round_days d JOIN slots s ON s.day_id = d.id JOIN bookings b ON b.slot_id = s.id WHERE d.round_id = r.id)',
         ],
     ];
 

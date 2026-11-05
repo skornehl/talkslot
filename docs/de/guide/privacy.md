@@ -14,7 +14,7 @@ TDDDG. Diese Seite erläutert die Designentscheidungen; sie ist keine Rechtsbera
 | Hash des persönlichen Änderungslinks (und des zweiten Links in der Erinnerungsmail) | Datenbank | mit der Buchung |
 | Gekürzte, per HMAC gehashte IP-Adressen; HMAC-Hashes von Konto-IDs und Geräte-Cookies mit fehlgeschlagenen Anmeldungen | Datenbank (Rate Limiting) | spätestens nach 24 Stunden |
 | Geräte-Cookie eines Admin- oder Lehrkraft-Kontos (Zufallszahl, Zeitpunkt, Signatur) | Browser der Person | nach 365 Tagen, bei jeder Anmeldung erneuert |
-| Konten der Lehrkräfte | Datenbank | durch einen Admin; inaktive Konten ohne Runden 15 Monate nach der letzten Anmeldung |
+| Konten der Lehrkräfte | Datenbank | durch einen Admin; inaktive Konten ohne Runden in Gebrauch 15 Monate nach der letzten Anmeldung, zusammen mit ihren Entwürfen |
 | Zusammenfassungen per E-Mail an Lehrkräfte (Uhrzeit und Name, keine E-Mail-Adressen) | Postfach der Lehrkraft | die Datenschutzerklärung sagt höchstens 15 Monate zu |
 | Protokoll der Änderungen durch Admins (wer, wann, was; keine Daten von Eltern) | Datenbank | nach 90 Tagen (`audit_log_days`) |
 
