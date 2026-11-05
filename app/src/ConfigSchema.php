@@ -127,15 +127,6 @@ final class ConfigSchema
                 'de' => 'Fehler in der Konfiguration: „db.prefix“ darf nur Buchstaben, Ziffern und _ enthalten (höchstens 20 Zeichen).',
             ];
         }
-        // A CA file the server cannot read would only show up as "Cannot connect to MySQL using SSL"
-        $ca = self::value($config, 'db.ssl_ca');
-        if (!is_string($ca) || (trim($ca) !== '' && !is_readable(trim($ca)))) {
-            $shown = self::shown($ca);
-            $errors[] = [
-                'en' => "Configuration error: \"db.ssl_ca\" must be the path of a readable file, the CA certificate of the database server ($shown).",
-                'de' => "Fehler in der Konfiguration: „db.ssl_ca“ muss der Pfad einer lesbaren Datei sein, des CA-Zertifikats des Datenbankservers ($shown).",
-            ];
-        }
         return $errors;
     }
 

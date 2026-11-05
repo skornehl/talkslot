@@ -65,7 +65,7 @@ Die Sessions liegen im gemeinsamen `app/var/`, daher wird durch ein Deployment n
 | `DB_USER`, `DB_PASS` | Secrets | ja | Datenbank |
 | `DB_NAME` | Secret | | Standard ist `DB_USER` |
 | `DB_HOST`, `DB_PORT`, `DB_PREFIX` | Variablen | | Standard `localhost`, `3306`, `tp_` |
-| `DB_SSL_CA` | Variable | | CA-Zertifikat für eine verschlüsselte Datenbankverbindung, ein Pfad auf dem Webserver ([`db.ssl_ca`]({{ '/de/guide/configuration/' | relative_url }}#datenbank)) |
+| `DB_SSL_CA` | Variable | | CA-Zertifikat für eine verschlüsselte Datenbankverbindung, ein absoluter Pfad auf dem Webserver ([`db.ssl_ca`]({{ '/de/guide/configuration/' | relative_url }}#database-tls)) |
 | `APP_SECRET` | Secret | ja | mindestens 32 Zeichen; auch der Schlüssel für den [Health-Check](#health-check) |
 | `INSTALL_KEY` | Secret | zur Installation | zusammen mit der Variable `ALLOW_INSTALL=1` |
 | `APP_NAME` | Variable | | Name, der Eltern und in E-Mails angezeigt wird |

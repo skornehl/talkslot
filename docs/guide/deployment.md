@@ -63,7 +63,7 @@ Sessions live in the shared `app/var/`, so nobody is logged out by a deployment.
 | `DB_USER`, `DB_PASS` | secrets | yes | database |
 | `DB_NAME` | secret | | defaults to `DB_USER` |
 | `DB_HOST`, `DB_PORT`, `DB_PREFIX` | variables | | defaults `localhost`, `3306`, `tp_` |
-| `DB_SSL_CA` | variable | | CA certificate for an encrypted database connection, a path on the web server ([`db.ssl_ca`]({{ '/guide/configuration/' | relative_url }}#database)) |
+| `DB_SSL_CA` | variable | | CA certificate for an encrypted database connection, an absolute path on the web server ([`db.ssl_ca`]({{ '/guide/configuration/' | relative_url }}#database-tls)) |
 | `APP_SECRET` | secret | yes | at least 32 characters; also the key of the [health check](#health-check) |
 | `INSTALL_KEY` | secret | for installing | together with variable `ALLOW_INSTALL=1` |
 | `APP_NAME` | variable | | name shown to parents and in mails |

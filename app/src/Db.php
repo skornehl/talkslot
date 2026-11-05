@@ -81,8 +81,8 @@ final class Db
             try {
                 self::$pdo = new PDO($dsn, (string) ($c['user'] ?? ''), (string) ($c['pass'] ?? ''), self::options($c));
             } catch (PDOException $e) {
-                self::$connectError = $e;
-                throw $e;
+                self::$connectError = self::explain($e, $c);
+                throw self::$connectError;
             }
             // Strict SQL mode: no silent truncation
             self::$pdo->exec("SET SESSION sql_mode = 'STRICT_ALL_TABLES,NO_ZERO_DATE,NO_ENGINE_SUBSTITUTION'");
@@ -91,12 +91,16 @@ final class Db
     }
 
     /**
-     * Options of the connection. With db.ssl_ca (the CA certificate of the database server as a PEM file) the
-     * connection is encrypted with TLS, and the server must show a certificate signed by that CA for the host
-     * name in db.host; otherwise it fails. Without it the connection is not encrypted, which is fine when the
-     * database runs on the same server or in the hoster's internal network.
+     * Options of the connection. With db.ssl_ca (absolute path of the CA certificate of the database server, a
+     * PEM file) the connection is encrypted with TLS, and the server must show a certificate signed by that CA
+     * for the host name in db.host; otherwise it fails. Without it the connection is not encrypted, which is
+     * fine when the database runs on the same server or in the hoster's internal network.
+     * The file is not checked here: PHP's file functions may not reach it under open_basedir, while the MySQL
+     * driver hands it to OpenSSL directly. A missing or wrong file fails like any other connection error
+     * (503, alert mail, health check "db_unreachable"), with explain()'s hint.
      * @param array<string, mixed> $db the db section of the configuration
      * @return array<int, mixed>
+     * @throws PDOException for a relative path (it would depend on the working directory: web and cron differ)
      */
     public static function options(array $db): array
     {
@@ -108,6 +112,9 @@ final class Db
             PDO::ATTR_TIMEOUT => 5, // don't hang for minutes if the database goes down
         ];
         $ca = trim((string) ($db['ssl_ca'] ?? ''));
+        if ($ca !== '' && !str_starts_with($ca, '/') && !preg_match('~^[A-Za-z]:[\\\\/]~', $ca)) {
+            throw new PDOException('db.ssl_ca must be an absolute path (the CA certificate of the database server)');
+        }
         if ($ca !== '') {
             $options[self::mysqlAttribute('SSL_CA')] = $ca;
             $options[self::mysqlAttribute('SSL_VERIFY_SERVER_CERT')] = true;
@@ -118,7 +125,22 @@ final class Db
     /** Pdo\Mysql::ATTR_<name> from PHP 8.4 on; PHP 8.3 only has PDO::MYSQL_ATTR_<name> (deprecated since 8.5). */
     private static function mysqlAttribute(string $name): int
     {
-        return (int) constant(class_exists(\Pdo\Mysql::class) ? \Pdo\Mysql::class . '::ATTR_' . $name : PDO::class . '::MYSQL_ATTR_' . $name);
+        return (int) constant(class_exists(\Pdo\Mysql::class, false) ? \Pdo\Mysql::class . '::ATTR_' . $name : PDO::class . '::MYSQL_ATTR_' . $name);
+    }
+
+    /**
+     * A failed connection with db.ssl_ca: the driver only says "Cannot connect to MySQL using SSL" (wrong or
+     * unreadable CA file, a certificate for another name) or "MySQL server has gone away" (a server without
+     * TLS). The alert mail then names the setting to check.
+     */
+    private static function explain(PDOException $e, array $db): PDOException
+    {
+        if (trim((string) ($db['ssl_ca'] ?? '')) === '' || str_starts_with($e->getMessage(), 'db.ssl_ca')) {
+            return $e;
+        }
+        return new PDOException($e->getMessage() . ' (db.ssl_ca is set: check that the file is readable for PHP and holds the CA'
+            . ' that signed the database server\'s certificate, that db.host is the name in that certificate and that the'
+            . ' server offers TLS at all)', 0, $e);
     }
 
     public static function run(string $sql, array $params = []): PDOStatement
