@@ -66,6 +66,10 @@ in person, the teacher contacts you directly.
   date in your browser, so you see it when you open the round again. Each booking gets its own entry. Nothing
   is sent to the server. You can delete an entry any time (your appointment stays booked); after a
   cancellation and after the day of the appointment it disappears by itself.
+- **Stuck?** If a link does not work, the page offers the code input of the start page right away. If no
+  slot is free, the page says why: all slots are taken, or the booking deadline has passed. Where the
+  teacher or the school has given a contact for questions (for example the school office with its phone
+  number), the booking page, the page of your appointment and the "not found" page show it.
 - **Privacy:** the booking site sets no cookies and does not track you. Your details are deleted
   automatically the day after the appointment. The privacy notice is available in all six languages (the
   German version is authoritative); until the school has completed a translation, you see the English one

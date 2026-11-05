@@ -517,7 +517,7 @@ $pvManage = static fn (bool $canChange, array $booking = [], ?bool $canMove = nu
 ]);
 check('appointment page: until when changing and cancelling work online, or that the time is up',
     str_contains($pvManage(true), '<p class="hint" data-change-deadline>Ändern oder absagen können Sie den Termin online bis Dienstag, 12.11.2030, 15:45 Uhr.</p>')
-    && str_contains($pvManage(false, ['day_date' => '2020-01-01', 'cancel_deadline_hours' => 12]), '<p class="alert">Änderungen und Absagen sind online nur bis 12 Stunden vor dem Termin möglich.')
+    && (bool) preg_match('#<div class="alert" data-locked>\s*<p>Änderungen und Absagen sind online nur bis 12 Stunden vor dem Termin möglich\.#', $pvManage(false, ['day_date' => '2020-01-01', 'cancel_deadline_hours' => 12]))
     && !str_contains($pvManage(false, ['day_date' => '2020-01-01']), 'data-change-deadline')
     && str_contains($pvManage(true, [], false), '<p class="hint" data-change-deadline>Absagen können Sie den Termin online bis Dienstag, 12.11.2030, 15:45 Uhr.</p>'));
 

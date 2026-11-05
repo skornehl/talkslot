@@ -22,6 +22,18 @@ $behind = static fn (string $page): string => isset($outdated[$page])
     <div class="actions"><button type="submit" class="button button-primary"><?= e(__('Speichern')) ?></button></div>
   </form>
 </section>
+<section class="card" id="parent-contact">
+  <h2><?= e(__('Kontakt für Eltern bei Fragen')) ?></h2>
+  <form method="post" action="<?= e(url('/admin/texts/contact')) ?>" class="form-grid">
+    <?= Csrf::adminField() ?>
+    <div class="field">
+      <label for="parent_contact"><?= e(__('Allgemeiner Kontakt (z. B. Sekretariat)')) ?> <span class="muted small"><?= e(__('(optional)')) ?></span></label>
+      <input type="text" id="parent_contact" name="parent_contact" maxlength="<?= App\ParentContact::MAX_LENGTH ?>" value="<?= e($parentContact ?? '') ?>" placeholder="<?= e(__('z. B. Sekretariat, Telefon 01234 5678, montags bis freitags 8 bis 12 Uhr')) ?>" aria-describedby="gpc-hint">
+      <p class="hint" id="gpc-hint"><?= e(__('Eltern sehen ihn, wenn sie nicht weiterkommen: auf der Seite „Nicht gefunden“ (z. B. bei einem vertippten Link), bei Runden mit Rundencode vor der Eingabe des Codes und bei allen Runden von Lehrkräften, die unter „Mein Profil“ keinen eigenen Kontakt angegeben haben. Er wird nicht übersetzt: bitte kurz und ohne Abkürzungen. Ohne Eintrag verweist die Seite auf das Impressum.')) ?></p>
+    </div>
+    <div class="actions"><button type="submit" class="button button-primary"><?= e(__('Speichern')) ?></button></div>
+  </form>
+</section>
 <?php foreach ($legalHints ?? [] as $h): ?>
   <div class="alert alert-warning" role="status"><p><?= e($h) ?> <?= __h('Die Vorlage steht in {file} bzw. {file2}.', ['file' => '<code>app/templates/pages/' . e($privacyTemplate) . '.de.md</code>', 'file2' => '<code>' . e($privacyTemplate) . '.en.md</code>']) ?></p></div>
 <?php endforeach; ?>

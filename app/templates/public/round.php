@@ -4,6 +4,7 @@
  * @var array $round @var array $days @var string $csrf @var array $errors @var array $old
  * @var string $controller name of the controller (first level of the privacy information)
  * @var ?string $operatorType operated by the school or privately (legal basis), null = not chosen yet
+ * @var string $contact who parents can ask (App\ParentContact) @var ?string $unavailable why there is no free slot
  */
 // Deadlines before booking (expert review P1-9): a deadline of 0 hours restricts nothing and is not mentioned
 $deadlines = array_filter([
@@ -15,6 +16,7 @@ $deadlines = array_filter([
   <h1><?= e($round['title']) ?></h1>
   <p class="teacher"><?= e(t('round.teacher', ['name' => $round['teacher_name']])) ?></p>
   <?php if (trim((string) ($round['location'] ?? '')) !== ''): ?><p class="location"><?= e(t('round.location', ['location' => trim((string) $round['location'])])) ?></p><?php endif; ?>
+  <?php if ($days): /* with no free slot, the contact is part of the notice below */ require __DIR__ . '/_contact.php'; endif; ?>
   <?php if (!empty($round['description'])): ?>
     <div class="description"><?= nl2br(e($round['description'])) ?></div>
   <?php endif; ?>
@@ -30,7 +32,11 @@ $deadlines = array_filter([
     <?php require __DIR__ . '/_errors.php'; ?>
 
     <?php if (!$days): ?>
-      <p class="alert"><?= e(t('round.no_slots')) ?></p>
+      <?php /* Why: all booked, the booking deadline has passed, or nothing planned (BookingService::unavailableReason()) */ ?>
+      <div class="alert" data-unavailable="<?= e($unavailable ?? 'none') ?>">
+        <p><?= e(t(['full' => 'round.no_slots.full', 'closed' => 'round.no_slots.closed'][$unavailable ?? ''] ?? 'round.no_slots')) ?></p>
+        <?php $contactFallback = true; require __DIR__ . '/_contact.php'; ?>
+      </div>
     <?php else: /* data-once: a second click while the booking is on its way would end on "already taken" instead of the page with the link */ ?>
     <form method="post" action="<?= e(url('/' . $round['slug'])) ?>" class="booking-form" id="booking-form" novalidate data-once>
       <input type="hidden" name="csrf" value="<?= e($csrf) ?>">

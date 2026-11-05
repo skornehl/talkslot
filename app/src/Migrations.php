@@ -10,7 +10,7 @@ namespace App;
  */
 final class Migrations
 {
-    public const LATEST = 22;
+    public const LATEST = 23;
 
     /** Version => SQL statements */
     private const STEPS = [
@@ -179,6 +179,11 @@ final class Migrations
             'ALTER TABLE users ADD COLUMN IF NOT EXISTS summary_names TINYINT(1) NULL AFTER summary_deadline,
                 ADD COLUMN IF NOT EXISTS reply_to VARCHAR(254) NULL AFTER email',
             'ALTER TABLE users ALTER COLUMN summary_names SET DEFAULT 0',
+        ],
+        // 23: parent_contact: how parents can reach the account with questions (shown on the parents' pages,
+        //     ParentContact); NULL = the contact the admins set for all (setting parent_contact) or none
+        23 => [
+            'ALTER TABLE users ADD COLUMN IF NOT EXISTS parent_contact VARCHAR(300) NULL AFTER reply_to',
         ],
     ];
 

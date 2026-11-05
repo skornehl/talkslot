@@ -212,6 +212,15 @@ dass ihre Antworten an die Lehrkraft gehen. Erlaubt die Schule nur ihre eigenen 
 Regel wird dann nicht verwendet (die Antworten gehen an Ihre E-Mail-Adresse, wenn diese bei der Domain der
 Schule liegt), und die Übersicht bittet Sie, sie zu ändern.
 
+### Kontakt für Eltern
+
+Unter *Mein Profil → Kontakt für Eltern bei Fragen* geben Sie an, wie Eltern Sie erreichen, z. B. Ihre
+dienstliche E-Mail-Adresse oder das Sekretariat mit Telefonnummer und Zeiten. Er steht auf der Buchungsseite
+Ihrer Runden und auf der Seite gebuchter Termine, wo Eltern ihn am ehesten brauchen: wenn alle Termine
+vergeben sind oder die Frist für Änderungen abgelaufen ist. Bleibt das Feld leer, sehen Eltern den Kontakt,
+den die Admins für alle hinterlegt haben, falls es einen gibt. Eltern sehen ihn so, wie Sie ihn schreiben
+(nicht übersetzt); bitte keine privaten Telefonnummern.
+
 ### Links aus den E-Mails
 
 Der Link in einer Zusammenfassung öffnet die Seite direkt. Sind Sie angemeldet, öffnet sie sich angemeldet
