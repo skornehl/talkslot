@@ -549,6 +549,12 @@ var L = (function () {
           ? L('Vorschau: {count} Termine pro Tag ({total} insgesamt an {days} Tagen): {slots}', { count: slots.length, total: days * slots.length, days: days, slots: slots.join(', ') })
           : L('Vorschau: {count} Termine pro Tag: {slots}', { count: slots.length, slots: slots.join(', ') }))
         : L('Mit diesen Zeiten entsteht kein Termin.');
+      // "Tag bearbeiten": booked slots that would no longer fit become conflicts (SlotGenerator::sync)
+      var booked = (box.getAttribute('data-booked') || '').split(',').filter(Boolean);
+      var lost = booked.filter(function (b) { return slots.indexOf(b.replace('-', '–')) === -1; }).length;
+      if (lost) {
+        preview.textContent += ' ' + L('{count} gebuchte(r) Termin(e) passen nicht mehr in diesen Zeitplan und würden als Konflikt markiert.', { count: lost });
+      }
       preview.hidden = false;
     }
     box.addEventListener('input', update);

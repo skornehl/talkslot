@@ -63,9 +63,9 @@ $deletionText = $deletion ? __('{date}, {time} Uhr', ['date' => fmt_date($deleti
   <p class="small muted"><?= e(['round' => __('Ein Termin pro Person'), 'day' => __('Ein Termin pro Person und Tag')][$round['booking_limit'] ?? 'none'] ?? __('Mehrfachbuchungen erlaubt')) ?><?= !empty($round['remind_parents']) ? ' · ' . e(__('Erinnerung am Vorabend')) : '' ?> · <?= e(__('Buchungsschluss {hours} h vorher', ['hours' => (int) $round['booking_deadline_hours']])) ?> · <?= e(__('Ändern/Absagen bis {hours} h vorher', ['hours' => (int) $round['cancel_deadline_hours']])) ?> ·
     <?= e(match (true) {
         $round['delete_after_hours'] === null => __('Runde wird nicht automatisch gelöscht'),
-        $deletion !== null => __('Runde wird am {date} gelöscht ({hours} h nach Ablauf)', ['date' => $deletionText, 'hours' => (int) $round['delete_after_hours']]),
+        $deletion !== null => __('Runde wird am {date} gelöscht ({days} Tag(e) nach Ablauf)', ['date' => $deletionText, 'days' => days_from_hours($round['delete_after_hours'])]),
         $days !== [] => __('Noch nie aktiv: wird nicht automatisch gelöscht'),
-        default => __('Runde wird {hours} h nach Ablauf gelöscht', ['hours' => (int) $round['delete_after_hours']]),
+        default => __('Runde wird {days} Tag(e) nach Ablauf gelöscht', ['days' => days_from_hours($round['delete_after_hours'])]),
     }) ?></p>
   <div class="actions">
     <a class="button" href="<?= e(url('/admin/round/' . $rid . '/edit')) ?>"><?= e(__('Bearbeiten')) ?></a>
@@ -97,46 +97,13 @@ $deletionText = $deletion ? __('{date}, {time} Uhr', ['date' => fmt_date($deleti
   <div class="alert alert-warning" role="alert"><p><strong><?= e(__('{count} Konflikt(e):', ['count' => $conflicts])) ?></strong> <?= e(__('Gebuchte Termine passen nicht mehr zum Zeitplan (markiert mit ⚠). Bitte umbuchen oder löschen.')) ?> <?= e(__('Die Eltern erfahren davon, wenn Sie den Termin umbuchen (mit „Änderung per E-Mail mitteilen“) oder löschen (mit „Eltern per E-Mail informieren“); ohne E-Mail-Adresse bitte persönlich informieren.')) ?></p></div>
 <?php endif; ?>
 
-<details class="card" id="translations"<?= array_filter($translations, static fn ($t) => !in_array($t['status'], ['auto', 'manual', 'none'], true)) ? ' open' : '' ?>>
-  <summary><strong><?= e(__('Übersetzungen von Titel und Beschreibung')) ?></strong>
-    <?php $states = array_count_values(array_column($translations, 'status')); ?>
-    <span class="small muted" data-bt-counter><?= e(__('({ok} von {all} aktuell)', ['ok' => count($translations) - ($states['missing'] ?? 0) - ($states['outdated'] ?? 0), 'all' => count($translations)])) ?></span></summary>
-  <p class="small"><?= e(__('Original: {lang}. Eltern sehen Titel und Beschreibung in ihrer Sprache, auch in E-Mails. Ohne Übersetzung oder wenn sie veraltet ist, erscheint das Original. Titel leeren = diese Sprache bewusst ohne Übersetzung (bleibt so, bis sich das Original ändert); ohne übersetzte Beschreibung erscheint die Original-Beschreibung.', ['lang' => App\I18n::name($round['source_lang'])])) ?></p>
-  <?php $at = $autoTranslate; ?>
-  <p class="small muted" data-bt-hint><?= __h('Automatisch übersetzen kann ein {browsers} mit einem Übersetzungsmodell auf dem eigenen Gerät.', ['browsers' => '<strong>' . e(__('aktuelles Chrome (ab 138) oder Edge (ab 148) am Computer')) . '</strong>']) . "\n" ?>
-    <?= e(__('In diesem Browser ist das nicht verfügbar (auf Schulgeräten kann es auch abgeschaltet sein) – bitte unten von Hand eintragen; ohne Übersetzung sehen Eltern das Original.')) ?></p>
-  <p class="small muted"><?= __h('Bitte {not} die Browserfunktion „Seite übersetzen“ verwenden: Sie schickt die ganze Seite samt Buchungen an Google bzw. Microsoft.', ['not' => '<strong>' . e(__('nicht')) . '</strong>']) ?></p>
-  <form method="post" action="<?= e($at['url']) ?>" class="browser-translate" data-browser-translate hidden
-        data-source="<?= e($at['source']) ?>" data-hash="<?= e($at['hash']) ?>"
-        data-pending="<?= e(implode(',', $at['pending'])) ?>" data-all="<?= e(implode(',', $at['all'])) ?>"
-        data-title="<?= e($at['title']) ?>" data-description="<?= e($at['description']) ?>"><?= $csrf ?>
-    <div class="actions">
-      <?php if ($at['pending']): ?>
-      <button type="button" class="button button-primary button-small" data-bt-pending><?= e(count($at['pending']) === 1 ? __('Im Browser übersetzen ({count} Sprache)', ['count' => count($at['pending'])]) : __('Im Browser übersetzen ({count} Sprachen)', ['count' => count($at['pending'])])) ?></button>
-      <?php endif; ?>
-      <button type="button" class="button button-primary button-small" data-bt-next hidden><?= e(__('Nächste Sprache laden')) ?></button>
-      <button type="button" class="button button-small" data-bt-all data-bt-confirm="<?= e(__('Wirklich alle neu übersetzen? Von Hand geänderte werden überschrieben – zum Bestätigen noch einmal klicken')) ?>"><?= e(__('Alle neu übersetzen (im Browser)')) ?></button>
-    </div>
-    <div data-bt-status role="status" aria-live="polite" hidden></div>
-  </form>
-  <form method="post" action="<?= e(url('/admin/round/' . $rid . '/translations')) ?>" class="form-grid"><?= $csrf ?>
-    <?php foreach ($translations as $lang => $t): ?>
-    <fieldset class="field pin-fieldset" lang="<?= e($lang) ?>">
-      <legend><img src="<?= e(asset('flags/' . $lang . '.svg')) ?>" alt="" class="flag flag-inline"> <?= e(App\I18n::name($lang)) ?>
-        <span class="status <?= in_array($t['status'], ['auto', 'manual', 'none'], true) ? 'status-on' : 'status-off' ?>"><?= e(['auto' => __('automatisch'), 'manual' => __('von Hand'), 'none' => __('bewusst ohne Übersetzung (Original)'), 'outdated' => __('veraltet – Original geändert'), 'missing' => __('fehlt')][$t['status']]) ?></span></legend>
-      <input type="hidden" name="t_seen[<?= e($lang) ?>]" value="<?= e($t['seen']) ?>">
-      <div class="field"><label for="tt-<?= e($lang) ?>"><?= e(__('Titel')) ?></label><input type="text" id="tt-<?= e($lang) ?>" name="t_title[<?= e($lang) ?>]" maxlength="200" value="<?= e($t['title']) ?>"></div>
-      <div class="field"><label for="td-<?= e($lang) ?>"><?= e(__('Beschreibung')) ?></label><textarea id="td-<?= e($lang) ?>" name="t_description[<?= e($lang) ?>]" rows="3" maxlength="5000"><?= e($t['description']) ?></textarea></div>
-      <?php if ($t['status'] === 'outdated'): ?>
-      <label class="small"><input type="checkbox" name="t_confirm[<?= e($lang) ?>]" value="1"> <?= e(__('Passt weiterhin zum geänderten Original (ohne Textänderung als aktuell übernehmen)')) ?></label>
-      <?php endif; ?>
-    </fieldset>
-    <?php endforeach; ?>
-    <div class="actions"><button type="submit" class="button button-primary"><?= e(__('Übersetzungen speichern')) ?></button></div>
-  </form>
-</details>
 
 <?php if (!$days) { require __DIR__ . '/_add_day.php'; } ?>
+<?php if (count($days) > 1): /* several days: straight to the one that is needed ("Wer kommt wann?") */ ?>
+<nav class="day-nav" aria-label="<?= e(__('Tage dieser Runde')) ?>">
+  <ul><?php foreach ($days as $day): ?><li><a href="#day-<?= (int) $day['id'] ?>"><?= e(fmt_date($day['day_date'])) ?></a></li><?php endforeach; ?></ul>
+</nav>
+<?php endif; ?>
 
 <?php foreach ($days as $day): $did = (int) $day['id']; ?>
 <section class="card day-card" id="day-<?= $did ?>">
@@ -167,12 +134,15 @@ $deletionText = $deletion ? __('{date}, {time} Uhr', ['date' => fmt_date($deleti
     <?php endforeach; ?>
   </ul>
   <?php else: ?><p class="muted small"><?= e(__('Keine Pausen.')) ?></p><?php endif; ?>
+  <details class="add-break">
+  <summary><?= e(__('+ Pause hinzufügen')) ?></summary>
   <form method="post" action="<?= e(url('/admin/day/' . $did . '/break')) ?>" class="inline-form"><?= $csrf ?>
     <label><?= e(__('Von')) ?> <input type="text" inputmode="numeric" pattern="[0-9]{1,2}([:.][0-9]{2})?|[0-9]{3,4}" maxlength="5" placeholder="HH:MM" autocomplete="off" class="time-input" data-time name="start_time" required></label>
     <label><?= e(__('Bis')) ?> <input type="text" inputmode="numeric" pattern="[0-9]{1,2}([:.][0-9]{2})?|[0-9]{3,4}" maxlength="5" placeholder="HH:MM" autocomplete="off" class="time-input" data-time name="end_time" required></label>
     <label><?= e(__('Bezeichnung')) ?> <input type="text" name="label" maxlength="100" placeholder="<?= e(__('z. B. Mittagspause')) ?>"></label>
     <button type="submit" class="button button-small"><?= e(__('Pause hinzufügen')) ?></button>
   </form>
+  </details>
 
   <h3><?= e(__('Termine')) ?></h3>
   <div class="table-wrap">
@@ -222,6 +192,48 @@ $deletionText = $deletion ? __('{date}, {time} Uhr', ['date' => fmt_date($deleti
 <?php endforeach; ?>
 
 <?php if ($days) { require __DIR__ . '/_add_day.php'; } ?>
+
+<?php /* Folded away below the days (expert review P2-3): the summary says how many are current and which are not */
+$states = array_count_values(array_column($translations, 'status'));
+$behind = array_keys(array_filter($translations, static fn ($t) => !in_array($t['status'], ['auto', 'manual', 'none'], true))); ?>
+<details class="card" id="translations">
+  <summary><strong><?= e(__('Übersetzungen von Titel und Beschreibung')) ?></strong>
+    <span class="small muted" data-bt-counter><?= e(__('({ok} von {all} aktuell)', ['ok' => count($translations) - ($states['missing'] ?? 0) - ($states['outdated'] ?? 0), 'all' => count($translations)])) ?></span><?php if ($behind): ?>
+    <span class="small muted" data-bt-behind><?= e(__('– fehlt oder veraltet: {languages}', ['languages' => implode(', ', array_map(static fn ($l) => App\I18n::name($l), $behind))])) ?></span><?php endif; ?></summary>
+  <p class="small"><?= e(__('Original: {lang}. Eltern sehen Titel und Beschreibung in ihrer Sprache, auch in E-Mails. Ohne Übersetzung oder wenn sie veraltet ist, erscheint das Original. Titel leeren = diese Sprache bewusst ohne Übersetzung (bleibt so, bis sich das Original ändert); ohne übersetzte Beschreibung erscheint die Original-Beschreibung.', ['lang' => App\I18n::name($round['source_lang'])])) ?></p>
+  <?php $at = $autoTranslate; ?>
+  <p class="small muted" data-bt-hint><?= __h('Automatisch übersetzen kann ein {browsers} mit einem Übersetzungsmodell auf dem eigenen Gerät.', ['browsers' => '<strong>' . e(__('aktuelles Chrome (ab 138) oder Edge (ab 148) am Computer')) . '</strong>']) . "\n" ?>
+    <?= e(__('In diesem Browser ist das nicht verfügbar (auf Schulgeräten kann es auch abgeschaltet sein) – bitte unten von Hand eintragen; ohne Übersetzung sehen Eltern das Original.')) ?></p>
+  <p class="small muted"><?= __h('Bitte {not} die Browserfunktion „Seite übersetzen“ verwenden: Sie schickt die ganze Seite samt Buchungen an Google bzw. Microsoft.', ['not' => '<strong>' . e(__('nicht')) . '</strong>']) ?></p>
+  <form method="post" action="<?= e($at['url']) ?>" class="browser-translate" data-browser-translate hidden
+        data-source="<?= e($at['source']) ?>" data-hash="<?= e($at['hash']) ?>"
+        data-pending="<?= e(implode(',', $at['pending'])) ?>" data-all="<?= e(implode(',', $at['all'])) ?>"
+        data-title="<?= e($at['title']) ?>" data-description="<?= e($at['description']) ?>"><?= $csrf ?>
+    <div class="actions">
+      <?php if ($at['pending']): ?>
+      <button type="button" class="button button-primary button-small" data-bt-pending><?= e(count($at['pending']) === 1 ? __('Im Browser übersetzen ({count} Sprache)', ['count' => count($at['pending'])]) : __('Im Browser übersetzen ({count} Sprachen)', ['count' => count($at['pending'])])) ?></button>
+      <?php endif; ?>
+      <button type="button" class="button button-primary button-small" data-bt-next hidden><?= e(__('Nächste Sprache laden')) ?></button>
+      <button type="button" class="button button-small" data-bt-all data-bt-confirm="<?= e(__('Wirklich alle neu übersetzen? Von Hand geänderte werden überschrieben – zum Bestätigen noch einmal klicken')) ?>"><?= e(__('Alle neu übersetzen (im Browser)')) ?></button>
+    </div>
+    <div data-bt-status role="status" aria-live="polite" hidden></div>
+  </form>
+  <form method="post" action="<?= e(url('/admin/round/' . $rid . '/translations')) ?>" class="form-grid"><?= $csrf ?>
+    <?php foreach ($translations as $lang => $t): ?>
+    <fieldset class="field pin-fieldset" lang="<?= e($lang) ?>">
+      <legend><img src="<?= e(asset('flags/' . $lang . '.svg')) ?>" alt="" class="flag flag-inline"> <?= e(App\I18n::name($lang)) ?>
+        <span class="status <?= in_array($t['status'], ['auto', 'manual', 'none'], true) ? 'status-on' : 'status-off' ?>"><?= e(['auto' => __('automatisch'), 'manual' => __('von Hand'), 'none' => __('bewusst ohne Übersetzung (Original)'), 'outdated' => __('veraltet – Original geändert'), 'missing' => __('fehlt')][$t['status']]) ?></span></legend>
+      <input type="hidden" name="t_seen[<?= e($lang) ?>]" value="<?= e($t['seen']) ?>">
+      <div class="field"><label for="tt-<?= e($lang) ?>"><?= e(__('Titel')) ?></label><input type="text" id="tt-<?= e($lang) ?>" name="t_title[<?= e($lang) ?>]" maxlength="200" value="<?= e($t['title']) ?>"></div>
+      <div class="field"><label for="td-<?= e($lang) ?>"><?= e(__('Beschreibung')) ?></label><textarea id="td-<?= e($lang) ?>" name="t_description[<?= e($lang) ?>]" rows="3" maxlength="5000"><?= e($t['description']) ?></textarea></div>
+      <?php if ($t['status'] === 'outdated'): ?>
+      <label class="small"><input type="checkbox" name="t_confirm[<?= e($lang) ?>]" value="1"> <?= e(__('Passt weiterhin zum geänderten Original (ohne Textänderung als aktuell übernehmen)')) ?></label>
+      <?php endif; ?>
+    </fieldset>
+    <?php endforeach; ?>
+    <div class="actions"><button type="submit" class="button button-primary"><?= e(__('Übersetzungen speichern')) ?></button></div>
+  </form>
+</details>
 
 <?php /* Apart from the everyday actions above, so that a slip of the mouse deletes nothing; bookings need the box (checked on the server) */ ?>
 <section class="card danger-zone" id="delete-round" aria-labelledby="delete-round-title">

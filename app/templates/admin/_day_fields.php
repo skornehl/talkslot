@@ -3,6 +3,7 @@
  * Input for appointment days: date(s), time range, slot length, breaks + live preview.
  * Used when creating a round, for "Add day" and (without dates, $withDates = false) for templates.
  * @var array $dayData ['dates' => list, 'start' => 'HH:MM', 'end' => ..., 'minutes' => int, 'breaks' => list<[start,end,label]>]
+ * @var list<string> $bookedSlots "Tag bearbeiten": booked slots as "HH:MM-HH:MM"; the preview counts those that would no longer fit
  */
 $dates = $dayData['dates'] ?: [''];
 // Break rows only for breaks already entered (e.g. after an error); "+ Pause hinzufügen"
@@ -17,7 +18,7 @@ $breakRow = static function (string $bs, string $be, string $bl): void { ?>
       </div>
 <?php };
 ?>
-<div class="day-fields" data-day-fields>
+<div class="day-fields" data-day-fields<?= isset($bookedSlots) ? ' data-booked="' . e(implode(',', $bookedSlots)) . '"' : '' ?>>
   <fieldset class="field pin-fieldset">
     <legend><?= e(__('Wann?')) ?></legend>
     <?php if ($withDates ?? true): ?>

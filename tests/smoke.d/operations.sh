@@ -18,7 +18,7 @@ OPE=$(op_round "Betrieb Eintrag" 0 "$OP_PAST"); op_entry "$OPE" "Betrieb Eintrag
 OPX=$(op_round "Betrieb deaktiviert" 1 "$OP_NEXT")
 OPB=$(op_round "Betrieb gebucht" 0 "$OP_NEXT"); op_entry "$OPB" "Betrieb Buchung"
 OPX_PAGE=$(curl -s -b "$J" "$B/admin/round/$OPX")
-check "active round: the round page says when it will be deleted (0:00 after the last day + 24 h)" 'echo "$OPX_PAGE" | grep -q "Runde wird am [A-Za-z]*, $(date -d "$OP_NEXT +2 day" +%d.%m.%Y), 00:00 Uhr gelöscht (24 h nach Ablauf)"'
+check "active round: the round page says when it will be deleted (0:00 after the last day + 24 h)" 'echo "$OPX_PAGE" | grep -q "Runde wird am [A-Za-z]*, $(date -d "$OP_NEXT +2 day" +%d.%m.%Y), 00:00 Uhr gelöscht (1 Tag(e) nach Ablauf)"'
 curl -s -o /dev/null -b "$J" -d "csrf=$T" "$B/admin/round/$OPX/toggle"
 DBQ "UPDATE tp_round_days SET day_date = '$OP_PAST' WHERE round_id = $OPX"
 # Deactivated accounts unused for 15 months: a draft must not keep them forever (it no longer expires)

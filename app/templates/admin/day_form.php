@@ -1,4 +1,11 @@
-<?php /** @var array $day @var array $round @var array $parents upcoming bookings, how many can be mailed @var array $errors @var bool $notify the box as sent (ticked by default) */ use App\Csrf; ?>
+<?php
+/**
+ * "Tag bearbeiten": the same fields as for a new day (_day_fields.php, expert review P2-3), plus date and location.
+ * @var array $day @var array $round @var array $parents upcoming bookings, how many can be mailed @var array $errors
+ * @var bool $notify the box as sent (ticked by default) @var array $dayData times and breaks, as stored or as sent
+ * @var list<string> $bookedSlots booked slots as "HH:MM-HH:MM" (the preview counts those that would no longer fit)
+ */
+use App\Csrf; ?>
 <p class="breadcrumb"><a href="<?= e(url('/admin')) ?>"><?= e(__('Runden')) ?></a> › <a href="<?= e(url('/admin/round/' . (int) $round['id'])) ?>"><?= e($round['title']) ?></a></p>
 <h1><?= e(__('Tag bearbeiten')) ?></h1>
 <?php require __DIR__ . '/_errors.php'; ?>
@@ -10,15 +17,12 @@
 <?php endif; ?>
 <form method="post" action="<?= e(url('/admin/day/' . (int) $day['id'] . '/edit')) ?>" class="card form-grid">
   <?= Csrf::adminField() ?>
-  <div class="field-row">
-    <div class="field"><label for="day_date"><?= e(__('Datum')) ?></label><input type="date" data-de-date id="day_date" name="day_date" required value="<?= e($day['day_date']) ?>"></div>
-    <div class="field"><label for="start_time"><?= e(__('Von')) ?></label><input type="text" inputmode="numeric" pattern="[0-9]{1,2}([:.][0-9]{2})?|[0-9]{3,4}" maxlength="5" placeholder="HH:MM" autocomplete="off" class="time-input" data-time id="start_time" name="start_time" required value="<?= e(fmt_time($day['start_time'])) ?>"></div>
-    <div class="field"><label for="end_time"><?= e(__('Bis')) ?></label><input type="text" inputmode="numeric" pattern="[0-9]{1,2}([:.][0-9]{2})?|[0-9]{3,4}" maxlength="5" placeholder="HH:MM" autocomplete="off" class="time-input" data-time id="end_time" name="end_time" required value="<?= e(fmt_time($day['end_time'])) ?>"></div>
-    <div class="field"><label for="slot_minutes"><?= e(__('Minuten pro Termin')) ?></label><input type="number" id="slot_minutes" name="slot_minutes" required min="5" max="240" value="<?= (int) $day['slot_minutes'] ?>"></div>
-  </div>
+  <input type="hidden" name="breaks_field" value="1">
+  <div class="field"><label for="day_date"><?= e(__('Datum')) ?></label><input type="date" data-de-date id="day_date" name="day_date" required value="<?= e($dayData['date'] ?? $day['day_date']) ?>"></div>
+  <?php $withDates = false; require __DIR__ . '/_day_fields.php'; ?>
   <div class="field">
     <label for="location"><?= e(__('Ort an diesem Tag (optional)')) ?></label>
-    <input type="text" id="location" name="location" maxlength="200" value="<?= e($day['location'] ?? '') ?>" placeholder="<?= e(trim((string) ($round['location'] ?? '')) !== '' ? __('wie die Runde: {location}', ['location' => trim((string) $round['location'])]) : __('z. B. Raum 2.14')) ?>" aria-describedby="dloc-hint">
+    <input type="text" id="location" name="location" maxlength="200" value="<?= e($dayData['location'] ?? ($day['location'] ?? '')) ?>" placeholder="<?= e(trim((string) ($round['location'] ?? '')) !== '' ? __('wie die Runde: {location}', ['location' => trim((string) $round['location'])]) : __('z. B. Raum 2.14')) ?>" aria-describedby="dloc-hint">
     <p class="hint" id="dloc-hint"><?= e(__('Nur ausfüllen, wenn der Tag nicht am Ort der Runde stattfindet.')) ?></p>
   </div>
   <?php if ($parents['mailable'] > 0): ?>
