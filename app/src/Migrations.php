@@ -184,10 +184,20 @@ final class Migrations
         // Unchanged since v1.5.0: the legal notice of a "private, non-commercial service"
         'imprint-private.de' => '036e210b629357dfbf768868e3a5f249c888d3052f301170703b196336058f43',
         'imprint-private.en' => 'f15521ceaa18e97c98190e448cc95eb6130c4cf571164b09819bb40dd7af22c8',
-        'privacy.de' => '6a3e56b92970cd83352b6d4fbff9ff64fbb6765bf8d622c9c66cd5bb8812f374',
-        'privacy.en' => '5c1350ac669db8120b946879389dd3cfb6bb1720a86aa523d6df95520c2b7878',
-        'privacy-private.de' => '41e56d82edcfea69af044fbef9639ab5f3e0667d831450fa1f593bce0b6623a1',
-        'privacy-private.en' => 'a2305054d982c4c4aba8a97698209e7146a247e86f7875fdc0c79b51acd6bdab',
+        'privacy.de' => '7973493ea955616e1241676c390c1cb29f54ef87d67a07aabe2f49cb4f7492bd',
+        'privacy.en' => '7ee196e8cecb6f1e82c44108a086fe9bc213d94debab3bc780783c15dcea2c80',
+        'privacy-private.de' => '056c114794a78da3c6c72f69b5bb8555e0aef01db6f5799c1702656870569804',
+        'privacy-private.en' => 'd1d0182270d438ca679b3410d25a6a64ba59448e9e5aa2d0119e806732400856',
+        // Translations of the privacy policy for the other parent languages (German placeholders, the German
+        // version is authoritative); the legal notice has none, it falls back to English
+        'privacy.pl' => '31ece416ddc4fab279fd4c304d5183f34f5ae76dbd98fc8b634b681055659222',
+        'privacy.ru' => '4aa7ff91eb2f51a274f694e55ef63b9f621fb11ff3b9a8fd8ae32ceaa6793a9b',
+        'privacy.tr' => 'ee07ef40adbbc185a177381fc0fca30d185314d6f04170b697bcb8ffcb761a7c',
+        'privacy.uk' => 'f0c41cc5b40a4e77bc6f136721f81576d9f2c5a93d1b2bc9e5b3ea00f46d5a8c',
+        'privacy-private.pl' => '9eb1b0abfbeb5828485ae28965ae88926198ab6505d3b0c981b86ddc49e51398',
+        'privacy-private.ru' => '017ae39b1c0ecf26cfba719b36d7a476fbdf2286006da3fef4b0ad5d8a160e24',
+        'privacy-private.tr' => '901cf3c3749843edc47407ce870ec1888ef400369783511922a15883f25c888d',
+        'privacy-private.uk' => 'd719e06917a517c5b061caa0d9393012a8bb9f88931f380ed9cc6f9a4982c599',
     ];
 
     /**
@@ -198,6 +208,10 @@ final class Migrations
      */
     public const OLD_PAGE_HASHES = [
         'private' => [
+            // Privacy policy de/en with the required checkbox in the booking form ("acknowledgement, not consent"),
+            // before the translations into the other parent languages (talkslot PR #39 up to expert review P1-9)
+            '41e56d82edcfea69af044fbef9639ab5f3e0667d831450fa1f593bce0b6623a1',
+            'a2305054d982c4c4aba8a97698209e7146a247e86f7875fdc0c79b51acd6bdab',
             // Privacy policy de/en up to v1.6.0: "private service" without a data protection officer, legal
             // bases (b) and (f), "cancel at any time" (the legal notice of that time is the current
             // imprint-private template)
@@ -278,6 +292,10 @@ final class Migrations
             'f1ac0f64ece1e1ce11b4322831f8d121b6d5a3ea450183d6a277cf26d9c0f3b1',
         ],
         'school' => [
+            // Privacy policy de/en for public schools with the required checkbox in the booking form, before the
+            // translations into the other parent languages (up to expert review P1-9)
+            '6a3e56b92970cd83352b6d4fbff9ff64fbb6765bf8d622c9c66cd5bb8812f374',
+            '5c1350ac669db8120b946879389dd3cfb6bb1720a86aa523d6df95520c2b7878',
             // Privacy policy de/en for public schools without the calendar download, the later confirmation
             // mail and the expiry of the remember-me entry (interim state on main after v1.5.0)
             'ac8cf4d882a13a6e127476ab13de02524316d343a746b4b8ff055c3aa0d09347',

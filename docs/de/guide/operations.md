@@ -38,6 +38,13 @@ Texte bleiben unverändert, und Admins sehen unter *Texte* einen Hinweis, wenn e
 neue Vorlage neue Platzhalter in eckigen Klammern mit, bleiben bereits aktive Runden erreichbar; das
 Dashboard nennt die Platzhalter, und die nächste Runde lässt sich erst aktivieren, wenn sie ausgefüllt sind.
 
+**Update auf die Version mit übersetzten Datenschutzerklärungen:** Jede angebotene Sprache ohne eigene
+Datenschutzerklärung erhält die Übersetzung der Betriebsart. Deren Platzhalter sind zunächst offen; Eltern in
+dieser Sprache bekommen deshalb weiter den englischen Text (jetzt mit einem Hinweis in ihrer Sprache), bis ein
+Admin sie ausfüllt. Die Aktivierung von Runden hält das nicht auf. Das Dashboard zeigt *Übersetzungen noch
+nicht vollständig*. Bearbeitete Texte, die noch das Pflicht-Häkchen im Buchungsformular erwähnen, das es
+nicht mehr gibt, bekommen einen Hinweis.
+
 **Update auf die Version mit Betriebsart:** Eine Installation, deren Texte alle noch unverändert den
 Vorlagen bis v1.6 entsprechen, wird *privat betrieben* (das beschrieben diese Vorlagen), und das Dashboard
 weist die Admins darauf hin. Jede andere Installation hat danach keine Betriebsart: Admins sehen im

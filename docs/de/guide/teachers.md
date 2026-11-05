@@ -29,7 +29,9 @@ Englisch umstellen.
   verwendet.
   Geschwister buchen jeweils mit dem Namen des Kindes. Ihre eigenen Einträge sind nicht begrenzt.
 - **Fristen**: Buchungen sind bis *N* Stunden vor einem Termin möglich (*Buchungsschluss*), Eltern können
-  bis *N* Stunden vorher ändern oder absagen (*Ändern/Absagen bis*).
+  bis *N* Stunden vorher ändern oder absagen (*Ändern/Absagen bis*). Eltern sehen beide vor dem Buchen auf
+  der Rundenseite (eine Frist von 0 wird nicht erwähnt) und Datum und Uhrzeit der zweiten auf der Seite ihres
+  Termins und in der Bestätigungs-E-Mail.
 - ***Runde löschen nach Ablauf***: Stunden nach dem letzten Tag, standardmäßig 24, leer = nie. Buchungen werden in jedem Fall am Tag nach dem Termin gelöscht.
   Ablaufen kann nur eine Runde, die in Gebrauch war: die irgendwann aktiv war oder in die Sie etwas
   eingetragen haben. Eine Runde, die nie aktiv war, etwa eine Kopie mit den alten Daten, bleibt, bis Sie

@@ -27,7 +27,9 @@ the German ones, with the English label in brackets.
   ignored) and, if both bookings have one, the same e-mail address. Siblings book with each child's name.
   Your own entries are not limited.
 - **Deadlines**: booking closes *N* hours before a slot (*Buchungsschluss*), parents can change or cancel
-  until *N* hours before (*Ändern/Absagen bis*).
+  until *N* hours before (*Ändern/Absagen bis*). Parents see both on the round page before they book (a
+  deadline of 0 is not mentioned), and the date and time of the second on their appointment page and in the
+  confirmation mail.
 - **Delete after** (*Runde löschen nach Ablauf*): hours after the last day, 24 by default, empty = never.
   Bookings are deleted the day after the appointment either way. Only a round that was in use expires:
   one that was active at some point or got an entry from you. A round that was never active, e.g. a copy

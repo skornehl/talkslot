@@ -15,13 +15,18 @@ Benutzerkonto brauchen Sie nicht.
    Русский, Українська oder Türkçe (je nach Schule). Ist Ihr Browser auf eine dieser Sprachen eingestellt,
    bietet ein Link über der Seite sie an; von selbst wechselt die Seite nicht. Einladungen der Lehrkraft
    enthalten meist für jede Sprache einen direkten Link.
-3. **Wählen Sie einen freien Termin.** Es werden nur freie Termine angezeigt, nach Tagen geordnet.
+3. **Wählen Sie einen freien Termin.** Es werden nur freie Termine angezeigt, nach Tagen geordnet. Der
+   Kasten oben sagt, bis wann Sie buchen und bis wann Sie online ändern oder absagen können (z. B. 24 und
+   12 Stunden vor dem Termin).
 4. **Geben Sie einen Namen ein**, meist den Vor- und Nachnamen Ihres Kindes. Die **E-Mail-Adresse ist
    freiwillig**: Wenn Sie eine angeben, erhalten Sie eine Bestätigung mit Ihrem persönlichen Link und
    einer Kalenderdatei und meist am Vorabend eine Erinnerung. Kann die Bestätigung gerade nicht verschickt
    werden, sagt die Seite das, und sie kommt automatisch nach (mit einem eigenen persönlichen Link; der Link
    auf der Seite bleibt gültig).
-5. Bestätigen Sie mit einem Häkchen, dass Sie die **Datenschutzhinweise** gelesen haben, und buchen Sie.
+5. **Prüfen und buchen.** Direkt über dem Button sehen Sie den gewählten Termin mit Datum, Uhrzeit und Ort
+   und das Wichtigste zum Datenschutz: wer verantwortlich ist, wofür Ihre Angaben genutzt und wann sie
+   gelöscht werden. *Mehr zum Datenschutz* zeigt den Rest, ein Link öffnet die vollständigen
+   Datenschutzhinweise in Ihrer Sprache. Ankreuzen müssen Sie dafür nichts.
 
 ![Buchungsseite auf dem Handy]({{ '/assets/img/parent-round-mobile-dark.webp' | relative_url }}){: style="max-width: 320px"}
 
@@ -29,7 +34,7 @@ Benutzerkonto brauchen Sie nicht.
 
 Nach der Buchung sehen Sie **Ihren persönlichen Link**. Er ist der einzige Schlüssel zu Ihrem Termin: Damit
 können Sie den Termin auf einen anderen freien Termin verschieben oder absagen – bis zu der Frist, die die
-Lehrkraft festgelegt hat. Bewahren Sie ihn gut auf; die Seite hilft dabei:
+Lehrkraft festgelegt hat. Die Seite und die Bestätigungs-E-Mail nennen Datum und Uhrzeit dieser Frist. Bewahren Sie ihn gut auf; die Seite hilft dabei:
 
 - **Link kopieren** legt ihn in die Zwischenablage, zum Beispiel für Ihre Notizen.
 - **In Kalender eintragen** lädt den Termin als Kalenderdatei herunter. Der persönliche Link steht in der
@@ -67,4 +72,6 @@ oder wenn die Lehrkraft Sie lieber selbst informiert, meldet sie sich persönlic
   können einen Eintrag jederzeit löschen (Ihr Termin bleibt bestehen); nach einer Absage und nach dem Tag
   des Termins verschwindet er von selbst.
 - **Datenschutz:** Die Buchungsseite setzt keine Cookies und verfolgt Sie nicht. Ihre Angaben werden am Tag
-  nach dem Termin automatisch gelöscht.
+  nach dem Termin automatisch gelöscht. Die Datenschutzhinweise gibt es in allen sechs Sprachen (maßgeblich
+  ist die deutsche Fassung); solange die Schule eine Übersetzung noch nicht vervollständigt hat, sehen Sie
+  die englische mit einem Hinweis in Ihrer Sprache. Jede E-Mail verlinkt sie in der Fußzeile.

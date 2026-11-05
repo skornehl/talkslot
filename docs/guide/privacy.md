@@ -102,17 +102,57 @@ ask how long they are kept and state it in the privacy policy.
   that function, so no consent is needed. "Automatic" removes the entry.
 - **Booking limits** only compare with bookings of the same round, using data that is stored anyway. The
   rejection does not reveal when or by whom a slot was booked.
-- **Acknowledgement, not consent:** the privacy notice does not need to be "accepted" under the GDPR; it
-  informs (Art. 13). The required checkbox is worded as *having read* the notice, and the notice states
-  that it is not consent.
+- **Informing, not ticking:** under the GDPR the privacy notice informs (Art. 13); nobody has to accept or
+  confirm it, and a required checkbox would only have been mistaken for consent and stopped bookings with an
+  error. The booking form therefore has none. Right above the button it gives the information in two levels
+  (Art. 12): who is responsible (the first line of the operator's details), the purpose and the deletion,
+  plus a link to the full privacy policy; a folded *Mehr zum Datenschutz* (*More about privacy*) adds the
+  data stored, the summary mail to the teacher, the legal basis of the operator type (Art. 6(1)(e) or (b)
+  GDPR; none while no type is chosen) and the rights including the complaint. The privacy policy says that
+  booking needs no consent; only "remember on this device" does.
+- **Deadlines and the chosen appointment before booking:** the round page names the booking deadline and the
+  deadline for changes of the round (in hours, a deadline of 0 is not mentioned), and the line above the
+  button shows the chosen slot with date, time and location (filled in by JavaScript, announced by screen
+  readers; after an error also without JavaScript). The appointment page and the confirmation, change and
+  reminder mails give the date and time until which the booking can still be changed or cancelled online, or
+  say that this is no longer possible. The footer of every mail to parents links the privacy policy in their
+  language.
 
 ## Legal templates
 
-Imprint and privacy policy templates in German and English are copied into the database at installation
-and can be edited by admins under *Texte* (*Texts*). The privacy template covers the information required
-by Art. 13 GDPR: controller, data protection officer, purposes, legal bases, recipients, third countries,
-retention, rights of data subjects including the right to object, right to lodge a complaint, whether
-providing data is required, and automated decision-making.
+Imprint templates in German and English and privacy policy templates in all six parent languages (German,
+English, Polish, Russian, Ukrainian, Turkish) are copied into the database at installation and can be
+edited by admins under *Texte* (*Texts*). The privacy template covers the information required by Art. 13
+GDPR: controller, data protection officer, purposes, legal bases, recipients, third countries, retention,
+rights of data subjects including the right to object, right to lodge a complaint, whether providing data is
+required, and automated decision-making.
+
+### The privacy policy in the parents' languages
+
+Art. 12(1) GDPR asks for the information in a language the people addressed understand, and TalkSlot
+addresses parents in six languages. The translations follow the German templates of both operator types
+section by section and start with a note that the German version is authoritative (so does the English
+one). They have the **same placeholders as the German template, in German**, so admins fill them in with
+the details they put into the German text; short details such as names, addresses and legal provisions can
+be copied as they are, a sentence such as the retention of the web server logs is best written in the
+language of the text. `[[HOSTER]]` takes `hosting.<language>` if the configuration has it, otherwise the
+English text (then the German one) of the web host; German and English need their own.
+
+- **Which text parents get:** the one in their language if it is complete, i.e. not empty and without open
+  placeholders; otherwise the English one, then the one of the default language (these two as they are, open
+  placeholders included, as before: they keep rounds from being activated). The page then says in the
+  parents' language that the text is not available in it yet, and marks the text with its language
+  (`lang`, for screen readers). The imprint has no translations and always takes this way.
+- **Open placeholders in a translation do not keep rounds from being activated**, because parents do not see
+  them. Admins see *Übersetzungen noch nicht vollständig* (*Translations not complete yet*) with the texts
+  concerned on the dashboard and under *Texte*. A translation you do not want to offer can be emptied;
+  parents then get the English text, and the note goes away.
+- **Existing installations** get the translations of their operator type on the first request after the
+  update, as long as there is no text in that language yet (or an unedited template); edited texts stay. They
+  show the English text until the admins have filled in the placeholders, as before.
+- The translations were made with care but **should be reviewed by native speakers**, ideally with legal
+  knowledge, before you rely on them. Every change to the German templates has to be made in all six languages
+  and both operator types (see [Development]({{ '/guide/development/' | relative_url }})).
 
 ### Operated by the school or privately
 
@@ -143,6 +183,12 @@ operator type first; it only replaces the stored text when you save. Hints compa
   data protection officer, cancelling "at any time") or relies on Art. 6(1)(b) or (f) GDPR.
 - **Operated privately:** a hint if a text contains the school template (Art. 6(1)(e) GDPR, school act, the
   school's data protection officer) or still says that parents can cancel "at any time".
+- **Either type:** a hint if a privacy policy still mentions the required checkbox in the booking form, which
+  no longer exists.
+
+The hints also recognise the translations, which cite the GDPR as "6(1)(e)" or, in Polish, "art. 6 ust. 1
+lit. e RODO". For installations from before the operator type, only the German and English texts count, as
+there were no translations then.
 
 **Installations from before the operator type** get one on the first request after the update:
 
@@ -183,10 +229,12 @@ Before going live:
      written for a private person: an association or independent provider adds the person authorised to
      represent it and, if it has one, its register entry (section 5 DDG).
 2. **Controller:** fill in *Texte → Angaben für Impressum und Datenschutz*. These details replace
-   `[[VERANTWORTLICHE]]`; without them no round is public.
+   `[[VERANTWORTLICHE]]`; without them no round is public. Their first line also names the controller in the
+   privacy information of the booking form.
 3. **Web host:** set `hosting` in the configuration (or `HOSTING_DE`/`HOSTING_EN` when deploying). It
    replaces `[[HOSTER]]`. Unset, the page shows the placeholders `[HOSTER MIT ANSCHRIFT]` and `[LAND]`
-   (English: `[WEB HOST WITH ADDRESS]`, `[COUNTRY]`), and admins see a hint.
+   (English: `[WEB HOST WITH ADDRESS]`, `[COUNTRY]`), and admins see a hint. The translations use the English
+   text unless you add one per language (e.g. `hosting.pl`).
 4. **Remaining placeholders** in square brackets, in every language you keep a text for: the data
    protection officer (contact details; for a private operator the check whether one is appointed), for a
    school the provisions of your state (school act, data protection act), the retention of the web server
@@ -203,7 +251,7 @@ TalkSlot checks the stored imprint and privacy policy of every offered language 
 with the controller details and the web host filled in, whatever the operator type. An open placeholder is
 text in square brackets without lower-case letters, at least four characters long, such as `[LAND]`. A
 Markdown link like `[PDF](https://…)` or mixed-case text like `[Hinweis]` does not count. As long as one is
-left:
+left in English or in the default language (the texts parents get when there is none in their language):
 
 - **No round can be activated:** neither a new active round, nor *Aktivieren* (*Activate*), nor assigning an
   active round to another teacher. The message names the affected texts.
@@ -212,6 +260,9 @@ left:
 - **Rounds that are already active stay online**, and parents can still use their change links. An
   existing installation therefore does not go offline after an update: the dashboard announces the open
   placeholders, and only the next activation waits for them.
+
+Open placeholders in the other languages (the translations of the privacy policy) do not stop anything:
+parents in that language get the English text with a notice until they are filled in (see above).
 
 On an update, texts that were never edited are replaced by the new templates of the operator type (see
 [Operations]({{ '/guide/operations/' | relative_url }})), new placeholders included. Edited texts stay as

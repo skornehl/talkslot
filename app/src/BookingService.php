@@ -251,7 +251,24 @@ final class BookingService
      */
     public static function canChange(array $booking): bool
     {
-        return self::slotStart($booking) > self::deadline((int) $booking['cancel_deadline_hours']);
+        return Time::now() < self::changeDeadline($booking);
+    }
+
+    /** Until when parents can change or cancel a booking online: its start minus the round's deadline for changes. */
+    public static function changeDeadline(array $booking): DateTimeImmutable
+    {
+        return self::slotStart($booking)->modify('-' . (int) $booking['cancel_deadline_hours'] . ' hours');
+    }
+
+    /**
+     * The deadline for changes in the parents' language, for the appointment page and the mails about the
+     * appointment: until when (date and time) while it is still open, otherwise that it has passed.
+     */
+    public static function changeNotice(array $booking): string
+    {
+        return self::canChange($booking)
+            ? t('manage.deadline', ['when' => fmt_datetime(self::changeDeadline($booking))])
+            : t('manage.locked', ['hours' => fmt_hours((int) $booking['cancel_deadline_hours'])]);
     }
 
     private static function deadline(int $hours): DateTimeImmutable

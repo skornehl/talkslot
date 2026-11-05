@@ -60,7 +60,15 @@ Syntaxfehlers.
 
 - **Sprache:** Code, Kommentare, Commits und Dokumentation auf Englisch. Der Admin-Bereich ist deutsch;
   die Elternseiten nutzen `app/lang/*.php`, und jeder Schlüssel muss in jeder Sprache vorhanden sein (ein
-  Unit-Test prüft das).
+  Unit-Test prüft das). Zahlen mit Einheit laufen über `I18n::plural()` (`fmt_hours()`): Jede Sprachdatei
+  nennt ihre Pluralregel (`'plural'`: `one`, `pl`, `east-slavic` oder `none`) und so viele Formen von
+  `'hours'`, wie die Regel braucht. Neue Elterntexte auf Polnisch, Russisch, Ukrainisch und Türkisch sollten
+  Muttersprachlerinnen und Muttersprachler prüfen; vermerken Sie das im Pull Request.
+- **Vorlagen der Rechtstexte:** Die Datenschutzerklärung gibt es in allen sechs Elternsprachen für beide
+  Betriebsarten (`app/templates/pages/privacy*.{de,en,pl,ru,uk,tr}.md`). Eine Änderung an der deutschen Vorlage
+  gehört in alle zwölf Dateien, mit denselben Abschnitten und den deutschen Platzhaltern in den Übersetzungen
+  (ein Unit-Test vergleicht sie), den neuen Hashes in `Migrations::CURRENT_PAGE_HASHES` und den alten in
+  `OLD_PAGE_HASHES`. Markieren Sie geänderte Übersetzungen für eine Prüfung durch Muttersprachler.
 - **Commits:** [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `docs:`, …);
   Releases werden daraus abgeleitet.
 - **Datenbank:** ausschließlich Prepared Statements; das SQL-Audit im Unit-Test schlägt bei

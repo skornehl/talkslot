@@ -70,8 +70,10 @@ $doneText = ['booked' => 'manage.booked', 'changed' => 'manage.changed', 'sent' 
 <p class="hint"><?= e(t('manage.deletion')) ?></p>
 
 <?php if (!$canChange): ?>
-  <p class="alert"><?= e(t('manage.locked', ['hours' => (int) $booking['cancel_deadline_hours']])) ?></p>
+  <p class="alert"><?= e(App\BookingService::changeNotice($booking)) ?></p>
 <?php else: ?>
+  <?php /* Until when (date and time) moving and cancelling work online, as in the confirmation mail */ ?>
+  <p class="hint" data-change-deadline><?= e(App\BookingService::changeNotice($booking)) ?></p>
   <?php /* Moving and cancelling folded away: right after booking, the slot list would be the first thing to see */ ?>
   <?php if ($canMove): ?>
   <details class="card" id="change"<?= $open === 'move' ? ' open' : '' ?>>

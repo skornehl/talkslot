@@ -13,19 +13,25 @@ You received a link or a **round code** from your child's teacher. You do not ne
    Українська or Türkçe (depending on the school). If your browser is set to one of these languages, a
    link above the page offers it; the page does not switch by itself. Invitations from the teacher usually
    contain a direct link for each language.
-3. **Pick a free time slot.** Only free slots are shown, grouped by day.
+3. **Pick a free time slot.** Only free slots are shown, grouped by day. The box at the top says until when
+   you can book and until when you can change or cancel online (e.g. 24 and 12 hours before the
+   appointment).
 4. **Enter a name**, usually your child's first and last name. An **e-mail address is optional**: with it,
    you get a confirmation with your personal link and a calendar file, and usually a reminder the
    evening before. If the confirmation cannot be sent at that moment, the page says so and it follows
    automatically (with a personal link of its own; the one on the page stays valid).
-5. Tick that you have read the **privacy notice** and book.
+5. **Check and book.** Right above the button you see the appointment you chose, with date, time and
+   location, and the most important privacy information: who is responsible, what your details are used for
+   and when they are deleted. *More about privacy* shows the rest, and a link opens the full privacy notice in
+   your language. You do not have to tick anything for it.
 
 ![Booking page on a phone]({{ '/assets/img/parent-round-mobile-dark.webp' | relative_url }}){: style="max-width: 320px"}
 
 ## Change or cancel
 
 After booking you see your **personal link**. It is the only key to your appointment: with it you can move
-the appointment to another free slot or cancel it, until the deadline set by the teacher. Keep it safe; the
+the appointment to another free slot or cancel it, until the deadline set by the teacher. The page and the
+confirmation mail give the date and time of that deadline. Keep it safe; the
 page helps you with that:
 
 - **Copy link** puts it on the clipboard, for example to paste it into your notes.
@@ -61,4 +67,6 @@ in person, the teacher contacts you directly.
   is sent to the server. You can delete an entry any time (your appointment stays booked); after a
   cancellation and after the day of the appointment it disappears by itself.
 - **Privacy:** the booking site sets no cookies and does not track you. Your details are deleted
-  automatically the day after the appointment.
+  automatically the day after the appointment. The privacy notice is available in all six languages (the
+  German version is authoritative); until the school has completed a translation, you see the English one
+  with a note in your language. Every e-mail links it in its footer.

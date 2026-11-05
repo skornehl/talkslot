@@ -58,7 +58,16 @@ and checks that PHP 7.4 and 8.2 get the message of `App\Platform` instead of a s
 ## Conventions
 
 - **Language:** code, comments, commits and documentation in English. The admin area is German; parent
-  pages use `app/lang/*.php`, and every key must exist in every language (a unit test checks this).
+  pages use `app/lang/*.php`, and every key must exist in every language (a unit test checks this). Numbers
+  with a unit go through `I18n::plural()` (`fmt_hours()`): each language file names its plural rule
+  (`'plural'`: `one`, `pl`, `east-slavic` or `none`) and gives as many forms of `'hours'` as the rule needs.
+  New parent texts in Polish, Russian, Ukrainian and Turkish should be reviewed by native speakers; say so in
+  the pull request.
+- **Legal templates:** the privacy policy exists in all six parent languages for both operator types
+  (`app/templates/pages/privacy*.{de,en,pl,ru,uk,tr}.md`). A change to the German template goes into all twelve
+  files, with the same sections and the German placeholders in the translations (a unit test compares them),
+  the new hashes in `Migrations::CURRENT_PAGE_HASHES` and the old ones in `OLD_PAGE_HASHES`. Mark changed
+  translations for a native-speaker review.
 - **Commits:** [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `docs:`, …);
   releases are derived from them.
 - **Database:** only prepared statements; the unit test's SQL audit fails on concatenated variables.

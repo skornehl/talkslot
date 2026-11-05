@@ -120,8 +120,6 @@ PC=$(echo "$P" | csrf)
 SLOT=$(echo "$P" | grep -o 'name="slot_id" id="slot-[0-9]*" value="[0-9]*"' | head -1 | grep -o 'value="[0-9]*"' | grep -o '[0-9]*')
 code=$(curl -s -o /dev/null -w '%{http_code}' --data-urlencode "csrf=$PC" -d "slot_id=$SLOT&name=Max&privacy=1&website=spam" "$B/$SLUG")
 check "honeypot blocks" '[ "$code" = 422 ]'
-code=$(curl -s -o /dev/null -w '%{http_code}' --data-urlencode "csrf=$PC" -d "slot_id=$SLOT&name=Max" "$B/$SLUG")
-check "without privacy checkbox → 422" '[ "$code" = 422 ]'
 code=$(curl -s -o /dev/null -w '%{http_code}' -d "csrf=123.abc&slot_id=$SLOT&name=Max&privacy=1" "$B/$SLUG")
 check "invalid CSRF token → 422" '[ "$code" = 422 ]'
 X=$(curl -s --data-urlencode "csrf=$PC" --data-urlencode 'name=<script>alert(1)</script>' -d "slot_id=$SLOT&email=kaputt" "$B/$SLUG")
@@ -362,7 +360,7 @@ check "booking with access token succeeds" 'echo "$loc" | grep -q "/b/"'
 check "privacy summary in the form" 'echo "$U" | grep -q "Datenschutz auf einen Blick"'
 SL=$(echo "$U" | grep -o 'value="[0-9]*" required' | sed -n 2p | grep -o '[0-9]*')
 KEEP=$(curl -s --data-urlencode "csrf=$(echo "$U" | csrf)" --data-urlencode "access=$ACC" --data-urlencode "name=Müller Max" -d "lang=de&switch_lang=en&slot_id=$SL&email=m@example.org&privacy=1&remember=1" "$B/$S3")
-check "language switch keeps input (slot, name, email, checkboxes), does not book" 'echo "$KEEP" | grep -q "Choose a free time slot" && echo "$KEEP" | grep -q "value=\"Müller Max\"" && echo "$KEEP" | grep -q "value=\"m@example.org\"" && echo "$KEEP" | grep -q "value=\"$SL\" required checked" && echo "$KEEP" | grep -q "name=\"privacy\" value=\"1\" required checked" && ! echo "$KEEP" | grep -q "alert-error"'
+check "language switch keeps input (slot, name, email, checkbox), does not book" 'echo "$KEEP" | grep -q "Choose a free time slot" && echo "$KEEP" | grep -q "value=\"Müller Max\"" && echo "$KEEP" | grep -q "value=\"m@example.org\"" && echo "$KEEP" | grep -q "value=\"$SL\" required checked" && echo "$KEEP" | grep -q "name=\"remember\" value=\"1\" aria-describedby=\"remember-hint\" checked" && ! echo "$KEEP" | grep -q "alert-error"'
 check "language buttons submit the booking form" 'echo "$KEEP" | grep -q "form=\"booking-form\" name=\"switch_lang\" value=\"de\""'
 SW=$(curl -s -d "step=switch&lang=en" --data-urlencode "access=$ACC" "$B/$S3")
 check "language switch keeps access (code not needed again)" 'echo "$SW" | grep -q "slot_id" && echo "$SW" | grep -q "Choose a free time slot" && ! echo "$SW" | grep -q "name=\"step\" value=\"unlock\""'
@@ -820,9 +818,12 @@ check "admin session expired after 30 minutes of inactivity (notice, new login r
 rm -f "$JS"
 # Rules the server enforces itself (tampered form)
 PB=$(curl -s "$B/$SP"); PBC=$(echo "$PB" | csrf)
-FREEB=$(echo "$PB" | grep -o 'value="[0-9]*" required' | sed -n 2p | grep -o '[0-9]*')
+# The only free slot of the round (the second match used to be the privacy checkbox, value="1" required, which the
+# form no longer has since expert review P1-9), blocked for the check and unblocked again
+FREEB=$(echo "$PB" | grep -o 'name="slot_id" id="slot-[0-9]*" value="[0-9]*" required' | head -1 | grep -o 'value="[0-9]*"' | grep -o '[0-9]*')
 curl -s -o /dev/null -b "$J" -d "csrf=$T" "$B/admin/slot/$FREEB/block"
-check "blocked slot cannot be booked via a tampered form" 'R=$(curl -s -w "%{http_code}" --data-urlencode "csrf=$PBC" -d "slot_id=$FREEB&name=Gesperrt+Test&privacy=1" "$B/$SP"); [[ "$R" == *422 ]] && echo "$R" | grep -q "Dieser Termin ist nicht mehr verfügbar"'
+check "blocked slot cannot be booked via a tampered form" 'R=$(curl -s -w "%{http_code}" --data-urlencode "csrf=$PBC" -d "slot_id=$FREEB&name=Gesperrt+Test" "$B/$SP"); [ -n "$FREEB" ] && [[ "$R" == *422 ]] && echo "$R" | grep -q "Dieser Termin ist nicht mehr verfügbar" && [ "$(DBQ "SELECT is_blocked FROM tp_slots WHERE id = $FREEB")" = 1 ]'
+curl -s -o /dev/null -b "$J" -d "csrf=$T" "$B/admin/slot/$FREEB/block"
 OTHER=$(DBQ "SELECT s.id FROM tp_slots s JOIN tp_round_days d ON d.id=s.day_id LEFT JOIN tp_bookings b ON b.slot_id=s.id WHERE d.round_id=$LT AND b.id IS NULL LIMIT 1")
 check "slot of another round cannot be booked via a tampered form" 'R=$(curl -s -w "%{http_code}" --data-urlencode "csrf=$PBC" -d "slot_id=$OTHER&name=Fremd+Test&privacy=1" "$B/$SP"); [[ "$R" == *422 ]] && echo "$R" | grep -q "Dieser Termin ist nicht mehr verfügbar" && [ -z "$(DBQ "SELECT id FROM tp_bookings WHERE name=\"Fremd Test\"")" ]'
 FREEC=$(DBQ "SELECT s.id FROM tp_slots s JOIN tp_round_days d ON d.id=s.day_id LEFT JOIN tp_bookings b ON b.slot_id=s.id WHERE d.round_id=$R6 AND b.id IS NULL AND s.is_blocked=0 LIMIT 1")

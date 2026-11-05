@@ -1,3 +1,5 @@
+> This is a translation. The German version is authoritative.
+
 This notice informs you, in accordance with Art. 13 of the General Data Protection Regulation (GDPR), which personal data is processed when you use this booking service, for what purpose, and what rights you have.
 
 # 1. Controller
@@ -43,7 +45,7 @@ There are no user accounts, no advertising, no tracking and no usage analytics. 
 - **Summary e-mails to the teacher:** Art. 6(1)(b) GDPR (carrying out the agreed appointment) and Art. 6(1)(f) GDPR. The legitimate interest is the teacher's reliable appointment planning. The operator is not responsible for keeping them in the teacher's mailbox (see section 1).
 - **Browser storage (“Remember my appointment”):** Section 25(1) TDDDG and Art. 6(1)(a) GDPR (your consent by ticking the box), see section 7.
 
-By ticking the required box in the booking form you only confirm that you have read this notice. This is not consent; the processing of your booking data is based on the legal grounds stated above.
+You do not need to give consent to book an appointment; the processing of your booking data is based on the legal grounds stated above. Consent only concerns the optional browser storage (“Remember my appointment”).
 
 # 5. Retention and deletion
 

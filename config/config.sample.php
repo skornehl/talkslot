@@ -33,7 +33,8 @@ return [
     // is down). The same error is reported at most once per hour.
     'alert_email' => '',
 
-    // Hosting provider for the privacy policy (replaces [[HOSTER]] there), per template language
+    // Hosting provider for the privacy policy (replaces [[HOSTER]] there), per template language. The translated
+    // privacy policies (pl, ru, uk, tr) take 'en' (then 'de') unless you add an entry of their own, e.g. 'pl' => '…'
     'hosting' => [
         'de' => '', // e.g. 'Beispiel Hosting GmbH, Musterweg 1, 12345 Musterstadt, als Auftragsverarbeiter nach Art. 28 DSGVO. Die Server stehen in Deutschland.'
         'en' => '', // e.g. 'Example Hosting GmbH, Musterweg 1, 12345 Musterstadt, Germany, as processor under Art. 28 GDPR. The servers are located in Germany.'
