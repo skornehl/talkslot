@@ -90,10 +90,13 @@ final class Email
         }
         $labels = [];
         foreach (explode('.', $domain) as $label) {
-            if ($label === '' || strlen($label) > 63) {
+            if ($label === '') {
                 return null;
             }
             if (!preg_match('/[^\x00-\x7F]/', $label)) {
+                if (strlen($label) > 63) {
+                    return null;
+                }
                 $labels[] = $label; // checked with the whole address (FILTER_VALIDATE_EMAIL)
                 continue;
             }
