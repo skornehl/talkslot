@@ -99,11 +99,16 @@ können:
   Adresse). Nach 5 falschen Eingaben in 15 Minuten (falsche aktuelle Passwörter beim Ändern des eigenen
   Passworts zählen mit) wird die Bestätigung eine Weile abgelehnt; nach Ab- und erneutem Anmelden geht es
   sofort wieder.
-- **Sicherheitsmails:** Der Kontoinhaber erhält eine E-Mail, wenn sein Passwort geändert oder festgelegt
-  wurde; die bisherige Adresse, wenn ein Admin die E-Mail-Adresse oder den Benutzernamen geändert hat; alle
-  aktiven Admins (auch Sie selbst) und die betroffene Person, wenn sich Admin-Rechte ändern oder ein
-  Admin-Konto deaktiviert, wieder aktiviert oder gelöscht wird. Bitte filtern Sie diese Mails nicht weg:
-  Oft sind sie der einzige Weg, einen Missbrauch zu bemerken.
+- **Sicherheitsmails** (bitte nicht wegfiltern: Oft sind sie der einzige Weg, einen Missbrauch zu bemerken):
+
+  | E-Mail | An | Wann |
+  |---|---|---|
+  | *Ihr Passwort wurde geändert* / *festgelegt* | das Konto | sein Passwort wurde geändert oder über einen Einladungs- bzw. Zurücksetzungslink festgelegt |
+  | *Ihr Benutzername wurde geändert* u. Ä. | die bisherige Adresse | ein Admin hat die E-Mail-Adresse oder den Benutzernamen geändert |
+  | *Sicherheitshinweis: Änderung im Verwaltungsbereich* | alle aktiven Admins (auch Sie) und die betroffene Person | ein Admin wurde eingeladen, Admin-Rechte wurden vergeben oder entzogen, ein Admin-Konto wurde deaktiviert, wieder aktiviert oder gelöscht |
+  | dieselbe, *Alle Sitzungen wurden beendet* | alle aktiven Admins | jemand hat alle Sitzungen beendet |
+  | *Viele fehlgeschlagene Anmeldeversuche* | das Konto | Fremde haben sein Anmeldelimit aufgebraucht; höchstens eine am Tag, nach der Antwort aus der Warteschlange gesendet |
+  | der Link zum Zurücksetzen | das Konto | ein Admin hat sein Passwort zurückgesetzt (*Link zum Zurücksetzen senden*) |
 - **Passwortlinks** gehen nur per E-Mail hinaus und werden nie angezeigt. Setzt ein Admin ein Passwort
   zurück, erfährt die Person, dass ihr bisheriges Passwort nicht mehr gilt.
 - **Alle Sitzungen beenden** (unten auf der Seite *Benutzer*) meldet alle Konten auf allen Geräten ab, nur

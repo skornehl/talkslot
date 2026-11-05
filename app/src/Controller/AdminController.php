@@ -1666,8 +1666,9 @@ final class AdminController
         }
         AccountLinks::consume((int) $user['id'], $new);
         // Whoever can use the link may sign in on this device even while strangers have used up the
-        // account's login limit ("forgot password" would not help against a lockout otherwise)
-        TrustedDevice::remember((int) $user['id']);
+        // account's login limit ("forgot password" would not help against a lockout otherwise). The new
+        // password revoked the other devices (new epoch), this one gets a cookie of the new epoch
+        TrustedDevice::remember((int) $user['id'], Auth::deviceEpoch(Db::one('SELECT session_epoch FROM users WHERE id = ?', [$user['id']]) ?? []));
         Auth::startSession(true);
         $this->flash('success', __('Ihr Passwort ist gespeichert. Bitte melden Sie sich jetzt an.'));
         $_SESSION['login_user'] = $user['username']; // not in the URL (access logs)
@@ -1806,6 +1807,8 @@ final class AdminController
         Auth::endAllSessions();
         $this->audit(fn () => __('Alle Sitzungen beendet'));
         $me = Auth::user();
+        // The new epoch revoked all known devices; the admin's own browser stays known
+        TrustedDevice::remember((int) $me['id'], Auth::deviceEpoch($me));
         $this->withoutSession(static fn () => AccountSecurity::adminChange(AccountSecurity::SESSIONS_ENDED, null, $me));
         $this->flash('success', __('Alle Sitzungen beendet: Alle Konten müssen sich auf allen Geräten neu anmelden, nur diese Sitzung bleibt bestehen.'));
         Http::redirect('/admin/users');

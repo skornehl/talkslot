@@ -69,7 +69,16 @@ keine öffentlichen Issues.
   365 Tage, bei jeder Anmeldung erneuert). Damit gelten nur das IP-Limit und ein Limit von 20 Fehlversuchen
   pro Gerät, Fremde können Lehrkräfte also nicht von ihren eigenen Geräten aussperren. Ist das Limit des
   Kontos erreicht, geht eine E-Mail an die Adresse des Kontos (höchstens eine am Tag) mit dem Ausweg: ein
-  bekanntes Gerät oder *Passwort vergessen?*.
+  bekanntes Gerät oder *Passwort vergessen?*. Die E-Mail geht nach der Antwort hinaus (aus der
+  Warteschlange: mit PHP-FPM direkt danach, sonst mit dem Cronjob), damit die Dauer einer abgelehnten
+  Anmeldung nicht verrät, ob es das Konto gibt.
+- Bekannte Geräte lassen sich widerrufen: Das Cookie ist mit dem Sitzungszähler des Kontos und dem aller
+  Konten signiert. Ein neues Passwort (selbst oder über einen Link festgelegt) und ein Zurücksetzen durch
+  einen Admin machen alle Geräte des Kontos wieder unbekannt, *Alle Sitzungen beenden* die aller Konten,
+  ein neues `APP_SECRET` jedes Cookie. Der Browser, in dem das neue Passwort festgelegt oder alle Sitzungen
+  beendet wurden, erhält ein neues Cookie. Ein Browser behält höchstens 20 solcher Cookies (die ältesten
+  zuerst weg): Auf einem gemeinsamen PC im Lehrerzimmer würde ein Cookie pro Konto die Anfrage sonst über
+  die Grenze des Servers von etwa 8 KB wachsen lassen, und die Anmeldeseite scheiterte mit HTTP 400.
 - Passwörter: 12 Zeichen bis 72 Byte (die Grenze von bcrypt) und nicht leicht zu erraten: kein häufiges
   Passwort aus einer lokalen Liste (`app/data/common-passwords.txt`, es wird nichts nach außen gesendet),
   auch nicht als Wort mit Ziffern oder Zeichen davor oder dahinter (`Sommer2024!!!!`), keine Wiederholungen

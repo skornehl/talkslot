@@ -15,7 +15,7 @@ This page explains the design decisions; it is not legal advice.
 | Mail queue entry: which mail is due for which booking or account (no address, text or link) | database | once sent, after 48 hours at the latest, with the booking |
 | Cancellation by the teacher in the mail queue: address, language, name, appointment and teacher (name and address for replies; no address once the account is deleted) of the deleted booking (no link) | database | once sent, after 48 hours at the latest |
 | Shortened, HMAC-hashed IP addresses; HMAC hashes of account IDs and known-device cookies with failed logins | database (rate limiting) | after 24 hours at the latest |
-| Known-device cookie of an admin or teacher account (random number, time, signature) | that person's browser | after 365 days, renewed at every sign-in |
+| Known-device cookie of an admin or teacher account (random number, time, signature) | that person's browser | after 365 days, renewed at every sign-in; invalid after a new password or when all sessions are ended; at most 20 per browser |
 | Teacher accounts | database | by an admin; inactive accounts without rounds in use 15 months after the last login, together with their drafts |
 | Summary mails to teachers (by default the number of appointments and the link, no names; time and name only where the school allows them; never e-mail addresses) | teacher's mailbox | with names: by the end of the school year at the latest (privacy template; operated privately the template recommends it, the school's rules apply) |
 | Log of admin changes (who, when, what; no data of parents) | database | after 90 days (`audit_log_days`) |

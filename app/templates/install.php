@@ -23,7 +23,8 @@
     </div>
     <div class="field">
       <label for="password"><?= e(__('Passwort (mind. 12 Zeichen)')) ?></label>
-      <input type="password" id="password" name="password" required minlength="12" autocomplete="new-password">
+      <input type="password" id="password" name="password" required minlength="12" autocomplete="new-password" aria-describedby="password-hint">
+      <p class="hint" id="password-hint"><?= e(__('Mindestens 12 Zeichen. Nicht erlaubt sind häufig verwendete Passwörter, Wiederholungen und Tastenfolgen sowie Ihr Benutzername, Ihre E-Mail-Adresse oder der Name der Anwendung. Gut geeignet sind z. B. drei oder vier zufällige Wörter.')) ?></p>
     </div>
     <div class="field">
       <label for="password2"><?= e(__('Passwort wiederholen')) ?></label>

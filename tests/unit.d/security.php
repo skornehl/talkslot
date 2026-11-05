@@ -307,26 +307,36 @@ check('installer: valid input, username with accent rejected',
     App\Installer::validate('sabrina', 'Kaffee-Wolke-Tisch-17', 'Kaffee-Wolke-Tisch-17', 'lehrer@example.org') === []
     && count(App\Installer::validate('sábrina', 'Kaffee-Wolke-Tisch-17', 'Kaffee-Wolke-Tisch-17', '')) === 1);
 
-// Known-device cookie: signed per account, expires, cannot be moved to another account
+// Known-device cookie: signed per account and epoch, expires, cannot be moved to another account
 $device = App\TrustedDevice::class;
 $nonce = 'AbCdEfGhIjKlMnOpQrStUv';
-$_COOKIE = [$device::cookieName(7) => $device::sign(7, $nonce, time() - 86400)];
+$_COOKIE = [$device::cookieName(7) => $device::sign(7, $nonce, time() - 86400, '3.1')];
 check('device cookie: name per account, without the account ID in plain text',
     (bool) preg_match('/^tp_device_[0-9a-f]{16}$/', $device::cookieName(7)) && $device::cookieName(7) !== $device::cookieName(8)
     && $device::cookieName(7) === $device::cookieName(7));
-check('device cookie: valid → its own rate limit subject', $device::subject(7) === 'device:' . $nonce);
-$_COOKIE[$device::cookieName(8)] = $device::sign(7, $nonce, time());
-check('device cookie: one of another account does not count', $device::subject(8) === null);
-$cookie = static function (string $value) use ($device): ?string { $_COOKIE = [$device::cookieName(7) => $value]; return $device::subject(7); };
-$signed = $device::sign(7, $nonce, time());
+check('device cookie: valid → its own rate limit subject', $device::subject(7, '3.1') === 'device:' . $nonce);
+// P0-4b: revocable with the sessions (the account's counter and the one of all accounts, Auth::deviceEpoch())
+check('device cookie: from another epoch (new password, all sessions ended) it no longer counts',
+    $device::subject(7, '4.1') === null && $device::subject(7, '3.2') === null && $device::subject(7, '31.') === null);
+$_COOKIE[$device::cookieName(8)] = $device::sign(7, $nonce, time(), '3.1');
+check('device cookie: one of another account does not count', $device::subject(8, '3.1') === null);
+$cookie = static function (string $value) use ($device): ?string { $_COOKIE = [$device::cookieName(7) => $value]; return $device::subject(7, '0.0'); };
+$signed = $device::sign(7, $nonce, time(), '0.0');
 check('device cookie: changed signature, nonce or time rejected',
     $cookie(substr($signed, 0, -1) . (str_ends_with($signed, '0') ? '1' : '0')) === null
     && $cookie(str_replace($nonce, strrev($nonce), $signed)) === null
-    && $cookie(preg_replace('/\.\d+\./', '.' . (time() - 5) . '.', $device::sign(7, $nonce, time()))) === null);
+    && $cookie(preg_replace('/\.\d+\./', '.' . (time() - 5) . '.', $device::sign(7, $nonce, time(), '0.0'))) === null);
 check('device cookie: expired after ' . $device::DAYS . ' days, not from the future',
-    $cookie($device::sign(7, $nonce, time() - $device::DAYS * 86400 + 60)) !== null && $cookie($device::sign(7, $nonce, time() - $device::DAYS * 86400 - 60)) === null
-    && $cookie($device::sign(7, $nonce, time() + 3600)) === null);
+    $cookie($device::sign(7, $nonce, time() - $device::DAYS * 86400 + 60, '0.0')) !== null && $cookie($device::sign(7, $nonce, time() - $device::DAYS * 86400 - 60, '0.0')) === null
+    && $cookie($device::sign(7, $nonce, time() + 3600, '0.0')) === null);
 $_COOKIE = [$device::cookieName(7) => ['x']];
-check('device cookie: malformed or missing → none', $device::subject(7) === null && $cookie('kaputt') === null && $cookie('') === null
-    && (($_COOKIE = []) === [] && $device::subject(7) === null));
+check('device cookie: malformed or missing → none', $device::subject(7, '0.0') === null && $cookie('kaputt') === null && $cookie('') === null
+    && (($_COOKIE = []) === [] && $device::subject(7, '0.0') === null));
+check('device cookies per browser: a limit far below the ~8 KB of a request header (about 130 bytes each)',
+    $device::MAX_PER_BROWSER * (strlen($device::cookieName(7)) + strlen($device::sign(7, $nonce, time(), '0.0')) + 3) < 4096);
+// P0-4b: "ß" counts as "ss" when comparing (common passwords, username, e-mail address)
+check('password rules: "ß" and "ẞ" compared as "ss"',
+    App\PasswordRules::containsPersonal('Straße-Kaffee-9', ['strasse@schule.example']) && App\PasswordRules::containsPersonal('Kaffee-Strasse-9', ['straße'])
+    && App\PasswordRules::containsPersonal('GROẞMUTTER-Tisch-4', ['grossmutter']) && App\PasswordRules::isCommon('Paßwort')
+    && !App\PasswordRules::containsPersonal('Kaffee-Wolke-Tisch-5', ['strasse']));
 $_COOKIE = [];

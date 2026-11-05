@@ -193,8 +193,10 @@ Ein neues `APP_SECRET` ändert das Token für den Web-Cron und den Schlüssel f�
 leiten beide aus demselben Secret ab; ein externer Cron-Dienst braucht das neue Token (siehe
 [Web-Cron]({{ '/de/guide/installation/' | relative_url }})), sonst läuft die Bereinigung nur noch bei
 Seitenaufrufen, und E-Mails in der Warteschlange bleiben liegen. Außerdem werden die Rate-Limits zurückgesetzt, und Eltern müssen ein offenes
-Buchungsformular neu laden oder einen Rundencode erneut eingeben. Admin-Sitzungen, Änderungslinks und
-Buchungen bleiben gültig.
+Buchungsformular neu laden oder einen Rundencode erneut eingeben. Geräte-Cookies werden ungültig: Jeder
+Browser gilt bis zur nächsten Anmeldung als neues Gerät, was nur zählt, solange Fremde das Anmeldelimit
+eines Kontos aufgebraucht haben (siehe [Sicherheit]({{ '/de/guide/security/' | relative_url }})).
+Admin-Sitzungen, Änderungslinks und Buchungen bleiben gültig.
 
 ## Löschfristen
 

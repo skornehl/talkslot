@@ -62,7 +62,16 @@ not public issues.
   (`tp_device_…`, only sent to `/admin/login`, `HttpOnly`, `SameSite=Strict`, 365 days, renewed at every
   sign-in). With it, only the IP limit and a limit of 20 failed attempts per device apply, so strangers
   cannot lock teachers out of their own devices. When the account limit is reached, the owner gets an
-  e-mail (at most one a day) explaining the way out: a known device, or *Passwort vergessen?*.
+  e-mail (at most one a day) explaining the way out: a known device, or *Passwort vergessen?*. The mail
+  goes out after the response (from the mail queue: on PHP-FPM right after it, otherwise with the cron
+  job), so the time a refused sign-in takes does not tell whether the account exists.
+- Known devices can be revoked: the cookie is signed with the account's session counter and the one of
+  all accounts. A new password (set by the person or through a link) and a reset by an admin make all
+  devices of the account unknown again, *Alle Sitzungen beenden* those of all accounts, a new `APP_SECRET`
+  every cookie. The browser in which the new password was set, or all sessions were ended, gets a new
+  cookie. A browser keeps at most 20 such cookies (the oldest go first): on a shared staff-room PC one per
+  account would otherwise grow the request header beyond the server's limit of about 8 KB, and the login
+  page would fail with HTTP 400.
 - Passwords: 12 characters up to 72 bytes (the bcrypt limit), and not easy to guess: no common password
   from a local list (`app/data/common-passwords.txt`, nothing is sent anywhere), also not as a word with
   digits or symbols around it (`Sommer2024!!!!`), no repetitions or keyboard runs (`passwortpasswort`,

@@ -179,8 +179,10 @@ A new `APP_SECRET` changes the web cron token and the key of the
 [health check]({{ '/guide/deployment/' | relative_url }}#health-check). The included workflows derive both
 from the same secret; an external cron service needs the new token (see [web cron]({{ '/guide/installation/' | relative_url }})),
 otherwise the clean-up only runs on page views and queued mails wait. It also resets the rate limits, and parents have to
-reload an open booking form or enter a round code again. Admin sessions, change links and bookings stay
-valid.
+reload an open booking form or enter a round code again. Known-device cookies become invalid: every
+browser counts as a new device until it signs in again, which only matters while strangers have used up
+an account's sign-in limit (see [Security]({{ '/guide/security/' | relative_url }})). Admin sessions,
+change links and bookings stay valid.
 
 ## Clean-up schedule
 

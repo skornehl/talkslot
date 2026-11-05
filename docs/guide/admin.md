@@ -89,10 +89,16 @@ A taken-over session or a misused admin account must not be able to take over ot
   (password links go there; this applies to your own address too). After 5 wrong entries in 15 minutes
   (wrong current passwords when changing your own password count too) the confirmation is refused for a
   while; signing out and in again starts afresh.
-- **Security mails:** the account holder gets a mail when its password was changed or set; the previous
-  address when an admin changed the e-mail address or the username; all active admins (you included) and
-  the person concerned when admin rights change or an admin account is deactivated, reactivated or
-  deleted. Please do not filter these mails away: they are often the only way to notice misuse.
+- **Security mails** (please do not filter them away: they are often the only way to notice misuse):
+
+  | Mail | Goes to | When |
+  |---|---|---|
+  | *Ihr Passwort wurde geändert* / *festgelegt* | the account | its password was changed, or set through an invitation or reset link |
+  | *Ihr Benutzername wurde geändert* and the like | the previous address | an admin changed the e-mail address or the username |
+  | *Sicherheitshinweis: Änderung im Verwaltungsbereich* | all active admins (you included) and the person concerned | an admin was invited, admin rights were given or taken away, an admin account was deactivated, reactivated or deleted |
+  | the same, *Alle Sitzungen wurden beendet* | all active admins | somebody ended all sessions |
+  | *Viele fehlgeschlagene Anmeldeversuche* | the account | strangers used up its sign-in limit; at most one a day, sent after the response from the mail queue |
+  | the reset link | the account | an admin reset its password (*Link zum Zurücksetzen senden*) |
 - **Password links** are only sent by mail and never shown on screen. A reset by an admin tells the person
   that their previous password no longer works.
 - **Alle Sitzungen beenden** (end all sessions, at the bottom of *Benutzer*) signs out every account on
