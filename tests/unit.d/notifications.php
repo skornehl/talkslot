@@ -242,7 +242,7 @@ check('dashboard notice: only for accounts from before (NULL) with summaries, sa
 
 // Profile: the choice only where the school allows names; the reply address for parents; the allowed domains
 $_SESSION = ['csrf' => 'test'];
-$profileUser = ['display_name' => 'Frau Berger', 'username' => 'berger', 'role' => 'teacher', 'email' => 'berger@schule.example.org', 'reply_to' => 'sekretariat@schule.example.org',
+$profileUser = ['display_name' => 'Frau Berger', 'username' => 'berger', 'role' => 'teacher', 'email' => 'berger@schule.example.org', 'reply_to' => 'b.berger@schule.example.org',
     'lang' => 'de', 'summary_evening' => 1, 'summary_deadline' => 1, 'summary_names' => null];
 $profile = static fn (array $change = []): string => App\AdminI18n::with('de', static fn () => App\View::capture('admin/profile',
     ['user' => $change + $profileUser, 'data' => $change + $profileUser, 'errors' => []]));
@@ -255,7 +255,13 @@ check('profile: names to choose only where the school allows them (as before for
     str_contains($namesOn, '<input type="checkbox" id="summary_names" name="summary_names" value="1" checked>') && str_contains($namesNo, 'name="summary_names" value="1">')
     && !str_contains($namesHidden, 'summary_names') && str_contains($namesHidden, 'Die Schule erlaubt nur Adressen bei schule.example.org.')
     && !str_contains($namesOn, 'Die Schule erlaubt nur')
-    && str_contains($namesOn, '<input type="email" id="reply_to" name="reply_to" maxlength="254" value="sekretariat@schule.example.org" aria-describedby="rt-hint">'));
+    && str_contains($namesOn, '<input type="email" id="reply_to" name="reply_to" maxlength="254" value="b.berger@schule.example.org" aria-describedby="rt-hint">'));
+// Without a reply address the account's address is the Reply-To of the parents' mails: the hint must not hide it
+$profileEn = App\AdminI18n::with('en', static fn () => App\View::capture('admin/profile', ['user' => $profileUser, 'data' => $profileUser, 'errors' => []]));
+check('profile: the hint under the e-mail address says that parents see it while there is no reply address (German, English)',
+    str_contains($namesOn, 'Solange Sie keine Antwortadresse für Eltern angeben, gehen auch die Antworten der Eltern auf E-Mails zu ihrem Termin an diese Adresse; Eltern sehen sie dann, sobald sie antworten.')
+    && str_contains($profileEn, 'As long as you do not enter a reply address for parents, parents&apos; replies to emails about their appointment go to this address as well; parents then see it as soon as they reply.')
+    && !preg_match('/Eltern sehen sie nicht|Parents do not see it/', $namesOn . $profileEn));
 $sumDash = static fn (array $vars): string => App\AdminI18n::with('de', static fn () => App\View::capture('admin/dashboard', $vars + ['title' => 'x', 'rounds' => [], 'showOwner' => false,
     'configExposed' => [], 'profileHints' => [], 'operatorMissing' => false, 'legalHints' => [], 'mailsLate' => null, 'unusedAccounts' => 0]));
 $withNotice = $sumDash(['summaryNotice' => 'Neu: <keine Namen>', 'foreignAddresses' => 2]);
