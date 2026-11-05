@@ -5,7 +5,8 @@
 #   list       only show what is on the server
 #   prune      delete all versions except the active one, e.g. after changing secrets (older versions
 #              keep the old ones in their config.php); no rollback is possible afterwards
-# After switching, the site is checked; if that fails, the previous version stays active.
+# After switching, the site is checked, with APP_SECRET also its database (health check; versions from
+# before the health check get the page checks only); if that fails, the previous version stays active.
 # The next push to main deploys the latest code again. The database is not rolled back:
 # an older version runs with the newer schema as long as migrations only add columns/tables with
 # default values (rule, see README "Deployment").
@@ -70,6 +71,7 @@ jobs:
         env:
           FTP_USER: ${{ secrets.FTP_USERNAME }}
           FTP_PASS: ${{ secrets.FTP_PASSWORD }}
+          APP_SECRET: ${{ secrets.APP_SECRET }} # key of the health check; without it only the pages are checked
           TARGET: ${{ inputs.target }}
         run: |
           sudo apt-get install -y -qq lftp > /dev/null

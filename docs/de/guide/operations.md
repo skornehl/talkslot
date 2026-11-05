@@ -21,6 +21,11 @@ Von Hand ist nichts auszuführen. Bei der ersten Anfrage nach einem Update hebt 
 für Schritt an (`app/src/Migrations.php`). Eine Datenbanksperre sorgt dafür, dass nur eine Anfrage migriert;
 die anderen warten kurz. Neuinstallationen erhalten das neueste Schema direkt aus `app/schema.sql`.
 
+Schlägt eine Migration fehl, kommt eine Fehlermeldung per E-Mail; die Seiten werden weiter ausgeliefert.
+Beim atomaren Deployment führt der [Health-Check]({{ '/de/guide/deployment/' | relative_url }}#health-check)
+nach dem Umschalten zuerst die Migrationen aus und schaltet auf die vorherige Version zurück, wenn eine
+fehlschlägt, die Datenbank nicht erreichbar ist oder sie nicht MariaDB 10.6 oder neuer ist.
+
 Migrationen fügen nur Spalten (mit Standardwerten) und Tabellen hinzu, sodass ein Rollback auf eine ältere
 Version weiter funktioniert. Texte für Impressum und Datenschutzerklärung, die nie bearbeitet wurden, werden
 automatisch durch neuere Vorlagen ersetzt; bearbeitete Texte bleiben unverändert, und Admins sehen unter
@@ -57,7 +62,9 @@ E-Mail-Adressen werden vor dem Schreiben entfernt. Das Log wird bei 5 MB rotiert
 ## Backups
 
 Sichern Sie die **Datenbank** (z. B. `mysqldump --single-transaction`) und `config/config.php`. `app/var/`
-enthält nur Sessions, den Zähler für Fehlermeldungen und Logs und braucht kein Backup.
+enthält nur Sessions, den Zähler für Fehlermeldungen und Logs und braucht kein Backup. Sichern Sie die
+Datenbank vor einem Update, dessen Release Notes eine Datenbank-Migration nennen: Ein Rollback schaltet den
+Code um, nicht die Datenbank.
 
 Bedenken Sie, dass Buchungen personenbezogene Daten mit kurzer Lebensdauer sind: Spielen Sie ein Backup nur
 so weit wie nötig zurück und lassen Sie anschließend die Bereinigung laufen.
@@ -93,8 +100,9 @@ können, wenn jemand mit FTP-Zugang ausgeschieden ist oder wenn ein altes Backup
    binnen 72 Stunden der Aufsichtsbehörde, es sei denn, sie führt voraussichtlich nicht zu einem Risiko
    für die Betroffenen; bei hohem Risiko sind auch diese zu benachrichtigen (Art. 33, 34 DSGVO).
 
-Ein neues `APP_SECRET` ändert das Token für den Web-Cron. Das mitgelieferte `cron.yml` leitet es aus
-demselben Secret ab; ein externer Cron-Dienst braucht das neue Token (siehe
+Ein neues `APP_SECRET` ändert das Token für den Web-Cron und den Schlüssel für den
+[Health-Check]({{ '/de/guide/deployment/' | relative_url }}#health-check). Die mitgelieferten Workflows
+leiten beide aus demselben Secret ab; ein externer Cron-Dienst braucht das neue Token (siehe
 [Web-Cron]({{ '/de/guide/installation/' | relative_url }})), sonst läuft die Bereinigung nur noch bei
 Seitenaufrufen. Außerdem werden die Rate-Limits zurückgesetzt, und Eltern müssen ein offenes
 Buchungsformular neu laden oder einen Rundencode erneut eingeben. Admin-Sitzungen, Änderungslinks und

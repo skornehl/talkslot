@@ -163,7 +163,9 @@ switches over **atomically**:
    code, its `config.php` gets the permissions `600` (variable `CONFIG_MODE`: `640` or `keep` if PHP runs
    as a different user than FTP; a server without `chmod` only causes a warning).
 2. A pointer file `<APP_DIR>/current` is replaced in one step. Old and new code never run side by side.
-3. The site is checked (login page, start page, CSS). On failure it switches straight back and the run
+3. The site is checked (login page, start page, CSS) and so is its database: the health check `POST /health`
+   (key derived from `APP_SECRET`) confirms that it is reachable, MariaDB 10.6+ and fully migrated. On
+   failure, e.g. a wrong database password or a failed migration, it switches straight back and the run
    fails.
 4. The last five versions are kept for rollbacks; once the check has passed, their `config.php` gets the
    same permissions.
@@ -315,7 +317,7 @@ otherwise the legal pages fall back to English.
 php tests/unit.php      # unit tests, no database needed (also run in CI on PHP 8.3–8.5)
 tests/smoke.sh          # ~300 end-to-end checks against the local Docker setup
 node tests/browser.mjs  # the JavaScript in headless Chrome (after dev/reset.sh && dev/demo.sh)
-tests/deploy.sh         # atomic deployment via lftp file:// under load (needs lftp and the local DB)
+tests/deploy.sh         # atomic deployment via lftp file:// under load, switch-back on errors (needs lftp, openssl and the local DB)
 ```
 
 CI runs all four on every push: the unit tests on PHP 8.3–8.5, the others against the Docker environment.

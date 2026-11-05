@@ -21,8 +21,9 @@ When you deploy with GitHub Actions, the file is generated from repository varia
 | `install_key` | – | at least 16 characters, only for `install.php` | `INSTALL_KEY` (with `ALLOW_INSTALL=1`) |
 
 Changing `secret` only affects short-lived things: forms that are open at that moment, access granted by
-a round code in the last hours, and the web cron token. Bookings, change links, invitation and password
-links are random tokens and keep working. It does not sign anybody out of the admin area; for that, use
+a round code in the last hours, the web cron token and the key of the deployment's
+[health check]({{ '/guide/deployment/' | relative_url }}#health-check) (the included workflows derive both
+again). Bookings, change links, invitation and password links are random tokens and keep working. It does not sign anybody out of the admin area; for that, use
 *Benutzer → Alle Sitzungen beenden*.
 
 ## Database
