@@ -632,14 +632,16 @@ final class LegalTexts
 
     /**
      * Languages whose texts parents get when there is no complete one in their own language (the order of
-     * forParents() after their own language): English and the default language. Open placeholders in these
-     * texts keep rounds from being activated; in any other language they only mean that parents get one of
-     * these instead until the admins have filled them in.
+     * forParents() after their own language): English if it is offered, and the default language (always
+     * offered). Only offered languages: open() checks only those and admins can only edit those, so a text left
+     * from a language no longer offered never reaches parents unchecked. Open placeholders in these texts keep
+     * rounds from being activated; in any other language they only mean that parents get one of these instead
+     * until the admins have filled them in.
      * @return list<string>
      */
     public static function fallbackLanguages(): array
     {
-        return array_values(array_unique(['en', I18n::defaultLanguage()]));
+        return array_values(array_unique([...array_intersect(['en'], I18n::languages()), I18n::defaultLanguage()]));
     }
 
     /**

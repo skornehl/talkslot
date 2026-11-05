@@ -67,7 +67,7 @@ return [
     'privacy.summary.deletion' => 'Usuwanie: dane są automatycznie usuwane z systemu rezerwacji dzień po terminie, a w przypadku odwołania – natychmiast.',
     'privacy.summary.more' => 'Więcej o ochronie danych',
     'privacy.summary.data' => 'Zapisywane są wyłącznie podane imię i nazwisko, termin oraz – dobrowolnie – adres e-mail.',
-    'privacy.summary.teacher' => 'Termin oraz imię i nazwisko (bez adresu e-mail) nauczyciel otrzymuje również e-mailem. Jak długo te e-maile są przechowywane, podano w informacji o ochronie danych.',
+    'privacy.summary.teacher' => 'Zestawienia wysyłane e-mailem do nauczyciela nie zawierają adresów e-mail, a godzinę oraz imię i nazwisko tylko wtedy, gdy szkoła na to zezwoliła. Jak długo te e-maile są przechowywane, podano w informacji o ochronie danych.',
     'privacy.summary.basis.school' => 'Podstawa prawna: rozmowy z rodzicami należą do ustawowych zadań szkoły (art. 6 ust. 1 lit. e RODO). Zgoda nie jest do tego potrzebna.',
     'privacy.summary.basis.private' => 'Podstawa prawna: umówienie Państwa terminu (art. 6 ust. 1 lit. b RODO). Zgoda nie jest do tego potrzebna. Samą rozmowę regulują zasady szkoły.',
     'privacy.summary.rights' => 'Przysługuje Państwu m.in. prawo dostępu do danych, ich sprostowania i usunięcia oraz prawo wniesienia skargi do organu nadzorczego ds. ochrony danych.',
@@ -138,7 +138,7 @@ return [
     'manage.locked' => 'Zmiany i odwołania są możliwe online najpóźniej {hours} przed terminem. Prosimy skontaktować się bezpośrednio z nauczycielem.',
     'manage.deadline' => 'Zmiana lub odwołanie terminu online są możliwe do: {when}.',
     'manage.notfound' => 'Nie znaleziono terminu. Mógł zostać odwołany lub automatycznie usunięty po dacie terminu.',
-    'manage.deletion' => 'Dane zostaną automatycznie usunięte z systemu rezerwacji dzień po terminie. Termin oraz imię i nazwisko (bez adresu e-mail) nauczyciel otrzymuje również e-mailem. Jak długo te e-maile są przechowywane, podano w informacji o ochronie danych.',
+    'manage.deletion' => 'Dane zostaną automatycznie usunięte z systemu rezerwacji dzień po terminie. Zestawienia wysyłane e-mailem do nauczyciela nie zawierają adresów e-mail, a godzinę oraz imię i nazwisko tylko wtedy, gdy szkoła na to zezwoliła. Jak długo te e-maile są przechowywane, podano w informacji o ochronie danych.',
 
     'cancelled.title' => 'Termin odwołany',
     'cancelled.text' => 'Termin został odwołany, a Państwa dane usunięte z systemu rezerwacji.',

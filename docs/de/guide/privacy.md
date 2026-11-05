@@ -128,8 +128,8 @@ Datenschutzerklärung.
   Buchungen mit einer Fehlermeldung aufhalten. Das Buchungsformular hat deshalb keins. Direkt über dem Button
   steht die Information in zwei Ebenen (Art. 12): wer verantwortlich ist (die erste Zeile der Angaben des
   Betreibers), der Zweck und die Löschung, dazu ein Link auf die vollständige Datenschutzerklärung; ein
-  eingeklapptes *Mehr zum Datenschutz* ergänzt die gespeicherten Daten, die Zusammenfassung an die
-  Lehrkraft, die Rechtsgrundlage der Betriebsart (Art. 6 Abs. 1 lit. e bzw. b DSGVO; ohne gewählte
+  eingeklapptes *Mehr zum Datenschutz* ergänzt die gespeicherten Daten, die Zusammenfassungen an die
+  Lehrkraft (Namen nur, wenn die Schule sie freigegeben hat), die Rechtsgrundlage der Betriebsart (Art. 6 Abs. 1 lit. e bzw. b DSGVO; ohne gewählte
   Betriebsart keine) und die Rechte einschließlich der Beschwerde. Die Datenschutzerklärung sagt, dass die
   Buchung keine Einwilligung braucht; nur „auf diesem Gerät merken“ braucht eine.
 - **Fristen und gewählter Termin vor dem Buchen:** Die Rundenseite nennt den Buchungsschluss und die
@@ -164,7 +164,9 @@ Englisch brauchen einen eigenen.
 
 - **Welchen Text Eltern bekommen:** den in ihrer Sprache, wenn er vollständig ist, also nicht leer und ohne
   offene Platzhalter; sonst den englischen, danach den der Standardsprache (diese beiden wie bisher so, wie sie
-  sind, auch mit offenen Platzhaltern: Diese verhindern ja die Aktivierung von Runden). Die Seite sagt dann in
+  sind, auch mit offenen Platzhaltern: Diese verhindern ja die Aktivierung von Runden). Englisch nur, wenn es
+  angeboten wird (`languages`): Einen Text in einer nicht angebotenen Sprache bekommen Eltern nie, weil Admins
+  ihn weder sehen noch bearbeiten können. Die Seite sagt dann in
   der Sprache der Eltern, dass es den Text in ihrer Sprache noch nicht gibt, und kennzeichnet seine Sprache
   (`lang`, für Screenreader). Das Impressum hat keine Übersetzungen und nimmt immer diesen Weg.
 - **Offene Platzhalter in einer Übersetzung verhindern keine Aktivierung**, weil Eltern sie nicht sehen.

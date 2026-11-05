@@ -67,7 +67,7 @@ return [
     'privacy.summary.deletion' => 'Silme: Bilgileriniz randevudan sonraki gün, iptal halinde ise hemen randevu sisteminden otomatik olarak silinir.',
     'privacy.summary.more' => 'Veri koruma hakkında daha fazla bilgi',
     'privacy.summary.data' => 'Yalnızca girdiğiniz ad, seçtiğiniz saat ve – isteğe bağlı olarak – e-posta adresiniz kaydedilir.',
-    'privacy.summary.teacher' => 'Saat ve ad (e-posta adresi olmadan) öğretmene ayrıca e-posta ile gönderilir. Bu e-postaların ne kadar süre saklandığı veri koruma bilgilendirmesinde yer alır.',
+    'privacy.summary.teacher' => 'Öğretmene gönderilen özet e-postalar e-posta adresi içermez; saat ve adlar yalnızca okul buna izin verdiyse yer alır. Bu e-postaların ne kadar süre saklandığı veri koruma bilgilendirmesinde yer alır.',
     'privacy.summary.basis.school' => 'Hukuki dayanak: Velilerle görüşmeler okulun yasal görevleri arasındadır (GDPR madde 6(1)(e)). Bunun için onay gerekmez.',
     'privacy.summary.basis.private' => 'Hukuki dayanak: randevunuzun kararlaştırılması (GDPR madde 6(1)(b)). Bunun için onay gerekmez. Görüşmenin kendisi için okulun kuralları geçerlidir.',
     'privacy.summary.rights' => 'Diğerlerinin yanı sıra bilgi alma, düzeltme ve silme hakkınız ile bir veri koruma denetim makamına şikâyette bulunma hakkınız vardır.',
@@ -138,7 +138,7 @@ return [
     'manage.locked' => 'Değişiklik ve iptal çevrimiçi olarak yalnızca randevudan {hours} öncesine kadar mümkündür. Lütfen doğrudan öğretmenle iletişime geçin.',
     'manage.deadline' => 'Randevunuzu şu zamana kadar çevrimiçi olarak değiştirebilir veya iptal edebilirsiniz: {when}.',
     'manage.notfound' => 'Randevu bulunamadı. İptal edilmiş veya randevu tarihinden sonra otomatik olarak silinmiş olabilir.',
-    'manage.deletion' => 'Bilgileriniz randevudan sonraki gün randevu sisteminden otomatik olarak silinir. Saat ve ad (e-posta adresi olmadan) öğretmene ayrıca e-posta ile gönderilir. Bu e-postaların ne kadar süre saklandığı veri koruma bilgilendirmesinde yer alır.',
+    'manage.deletion' => 'Bilgileriniz randevudan sonraki gün randevu sisteminden otomatik olarak silinir. Öğretmene gönderilen özet e-postalar e-posta adresi içermez; saat ve adlar yalnızca okul buna izin verdiyse yer alır. Bu e-postaların ne kadar süre saklandığı veri koruma bilgilendirmesinde yer alır.',
 
     'cancelled.title' => 'Randevu iptal edildi',
     'cancelled.text' => 'Randevunuz iptal edildi ve bilgileriniz randevu sisteminden silindi.',

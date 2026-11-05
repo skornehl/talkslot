@@ -70,7 +70,7 @@ return [
     'privacy.summary.deletion' => 'Löschung: In der Terminvergabe werden Ihre Angaben am Tag nach dem Termin automatisch gelöscht, bei einer Absage sofort.',
     'privacy.summary.more' => 'Mehr zum Datenschutz',
     'privacy.summary.data' => 'Gespeichert werden nur der eingetragene Name, der Termin und – freiwillig – Ihre E-Mail-Adresse.',
-    'privacy.summary.teacher' => 'Termin und Name (ohne E-Mail-Adresse) bekommt die Lehrkraft auch per E-Mail. Wie lange diese E-Mails aufbewahrt werden, steht in den Datenschutzhinweisen.',
+    'privacy.summary.teacher' => 'Zusammenfassungen per E-Mail an die Lehrkraft enthalten keine E-Mail-Adressen, Uhrzeit und Namen nur, wenn die Schule das freigegeben hat. Wie lange diese E-Mails aufbewahrt werden, steht in den Datenschutzhinweisen.',
     'privacy.summary.basis.school' => 'Rechtsgrundlage: Gespräche mit Eltern gehören zu den gesetzlichen Aufgaben der Schule (Art. 6 Abs. 1 lit. e DSGVO). Eine Einwilligung ist dafür nicht nötig.',
     'privacy.summary.basis.private' => 'Rechtsgrundlage: die Vereinbarung Ihres Termins (Art. 6 Abs. 1 lit. b DSGVO). Eine Einwilligung ist dafür nicht nötig. Für das Gespräch selbst gelten die Regeln der Schule.',
     'privacy.summary.rights' => 'Sie haben u. a. das Recht auf Auskunft, Berichtigung und Löschung und können sich bei einer Datenschutz-Aufsichtsbehörde beschweren.',
@@ -141,7 +141,7 @@ return [
     'manage.locked' => 'Änderungen und Absagen sind online nur bis {hours} vor dem Termin möglich. Bitte wenden Sie sich direkt an die Lehrkraft.',
     'manage.deadline' => 'Ändern oder absagen können Sie den Termin online bis {when}.',
     'manage.notfound' => 'Termin nicht gefunden. Er wurde möglicherweise abgesagt oder nach dem Termin automatisch gelöscht.',
-    'manage.deletion' => 'Ihre Angaben werden am Tag nach dem Termin automatisch aus der Terminvergabe gelöscht. Termin und Name (ohne E-Mail-Adresse) bekommt die Lehrkraft auch per E-Mail. Wie lange diese E-Mails aufbewahrt werden, steht in den Datenschutzhinweisen.',
+    'manage.deletion' => 'Ihre Angaben werden am Tag nach dem Termin automatisch aus der Terminvergabe gelöscht. Zusammenfassungen per E-Mail an die Lehrkraft enthalten keine E-Mail-Adressen, Uhrzeit und Namen nur, wenn die Schule das freigegeben hat. Wie lange diese E-Mails aufbewahrt werden, steht in den Datenschutzhinweisen.',
 
     'cancelled.title' => 'Termin abgesagt',
     'cancelled.text' => 'Ihr Termin wurde abgesagt, und Ihre Angaben wurden aus der Terminvergabe gelöscht.',

@@ -365,10 +365,10 @@ echo "Security: form posts from other sites"
 XS="Sec-Fetch-Site: cross-site"
 P=$(curl -s "$B/$SI_S"); PC=$(echo "$P" | csrf); SI_FREE=$(echo "$P" | grep -o 'value="[0-9]*" required' | head -1 | grep -o '[0-9]*')
 SI_NB=$(DBQ "SELECT COUNT(*) FROM tp_bookings")
-X=$(curl -s -w '\n%{http_code}' -H "$XS" -H "Origin: https://evil.example" --data-urlencode "csrf=$PC" -d "slot_id=$SI_FREE&name=Fremde+Seite&privacy=1" "$B/$SI_S")
+X=$(curl -s -w '\n%{http_code}' -H "$XS" -H "Origin: https://evil.example" --data-urlencode "csrf=$PC" -d "slot_id=$SI_FREE&name=Fremde+Seite" "$B/$SI_S")
 check "booking posted from another site: 403 with a notice, nothing booked" '[ "$(echo "$X" | tail -1)" = 403 ] && echo "$X" | has "<h1>Anfrage abgelehnt</h1>" && echo "$X" | has "von einer anderen Website aus abgeschickt" && [ "$(DBQ "SELECT COUNT(*) FROM tp_bookings")" = "$SI_NB" ]'
 check "the notice in the parents' language" 'curl -s -H "$XS" -d "lang=uk&name=x" "$B/$SI_S" | has "<h1>Запит відхилено</h1>"'
-code=$(curl -s -o /dev/null -w '%{http_code}' -H "Sec-Fetch-Site: same-origin" -H "Origin: null" --data-urlencode "csrf=$PC" -d "slot_id=$SI_FREE&name=Gleiche+Seite&privacy=1" "$B/$SI_S")
+code=$(curl -s -o /dev/null -w '%{http_code}' -H "Sec-Fetch-Site: same-origin" -H "Origin: null" --data-urlencode "csrf=$PC" -d "slot_id=$SI_FREE&name=Gleiche+Seite" "$B/$SI_S")
 check "same-origin booking with 'Origin: null' goes through" '[ "$code" = 303 ] && [ "$(DBQ "SELECT COUNT(*) FROM tp_bookings")" = "$((SI_NB + 1))" ]'
 MC=$(curl -s "$B/b/$SI_TOKEN" | csrf)
 code=$(curl -s -o /dev/null -w '%{http_code}' -H "$XS" --data-urlencode "csrf=$MC" -d "action=cancel&confirm=1" "$B/b/$SI_TOKEN")

@@ -67,7 +67,7 @@ return [
     'privacy.summary.deletion' => 'Deletion: your details are deleted from the booking service automatically on the day after the appointment, or immediately if you cancel.',
     'privacy.summary.more' => 'More about privacy',
     'privacy.summary.data' => 'Only the name you enter, the appointment and – if you choose – your e-mail address are stored.',
-    'privacy.summary.teacher' => 'The teacher also receives the appointment and name (without e-mail address) by e-mail. The privacy notice says how long these e-mails are kept.',
+    'privacy.summary.teacher' => 'Summary e-mails to the teacher contain no e-mail addresses, and time and name only if the school has allowed it. The privacy notice says how long these e-mails are kept.',
     'privacy.summary.basis.school' => 'Legal basis: meetings with parents are part of the school\'s statutory tasks (Art. 6(1)(e) GDPR). No consent is needed for this.',
     'privacy.summary.basis.private' => 'Legal basis: arranging your appointment (Art. 6(1)(b) GDPR). No consent is needed for this. The meeting itself is subject to the school\'s rules.',
     'privacy.summary.rights' => 'You have the right of access, rectification and erasure, among others, and can lodge a complaint with a data protection supervisory authority.',
@@ -138,7 +138,7 @@ return [
     'manage.locked' => 'Changes and cancellations are only possible online up to {hours} before the appointment. Please contact the teacher directly.',
     'manage.deadline' => 'You can change or cancel the appointment online until {when}.',
     'manage.notfound' => 'Appointment not found. It may have been cancelled or automatically deleted after the appointment date.',
-    'manage.deletion' => 'Your details will be deleted from the booking service automatically on the day after the appointment. The teacher also receives the appointment and name (without e-mail address) by e-mail. The privacy notice says how long these e-mails are kept.',
+    'manage.deletion' => 'Your details will be deleted from the booking service automatically on the day after the appointment. Summary e-mails to the teacher contain no e-mail addresses, and time and name only if the school has allowed it. The privacy notice says how long these e-mails are kept.',
 
     'cancelled.title' => 'Appointment cancelled',
     'cancelled.text' => 'Your appointment has been cancelled and your details deleted from the booking service.',

@@ -392,6 +392,12 @@ check('open placeholders: in German and English they keep rounds from going publ
 App\Config::load(['default_language' => 'tr'] + $pvCfg);
 check('another default language falls back as well (and keeps rounds from going public)', App\LegalTexts::fallbackLanguages() === ['en', 'tr']
     && App\LegalTexts::splitOpen($pvOpen)[0] === [$pvOpen[2], $pvOpen[3]]);
+// English not offered: a stored English text (e.g. from before) is neither checked by open() nor editable for admins,
+// so parents never get it; its placeholders do not keep rounds from going public
+App\Config::load(['languages' => ['de', 'pl', 'tr'], 'default_language' => 'de'] + $pvCfg);
+check('English not offered: only the default language is a fallback, open placeholders in English do not block',
+    App\LegalTexts::fallbackLanguages() === ['de'] && App\LegalTexts::splitOpen($pvOpen)[0] === [$pvOpen[0]]
+    && $pvPick(['pl' => 'x [LAND]', 'en' => 'Policy', 'de' => 'Hinweise'], ['pl', ...App\LegalTexts::fallbackLanguages()]) === 'de');
 App\Config::load($pvCfg);
 
 App\Config::load(['hosting' => ['en' => 'Example Hosting GmbH', 'pl' => 'Hosting Przykład sp. z o.o.']] + $pvCfg);
@@ -431,9 +437,9 @@ check('first level: who is responsible, the purpose and the deletion, then the l
     (bool) preg_match('#<ul>\s*<li>Verantwortlich für diese Terminvergabe: Gesamtschule am See</li>\s*<li>Zweck: nur die Organisation und Durchführung Ihres Gesprächs\. Keine Weitergabe, kein Tracking, keine Cookies\.</li>\s*<li>Löschung: In der Terminvergabe werden Ihre Angaben am Tag nach dem Termin automatisch gelöscht, bei einer Absage sofort\.</li>\s*</ul>\s*<details>#', $pvBox)
     && str_contains($pvBox, '<p class="privacy-link"><a href="/datenschutz?r=runde-7b" target="_blank" rel="noopener">Alle Datenschutzhinweise</a></p>'));
 $pvDetails = (string) (preg_match('#<details>.*?</details>#s', $pvBox, $pvM) ? $pvM[0] : '');
-check('second level folded away: data, the teacher\'s mail, legal basis (operated by the school), rights and complaint',
+check('second level folded away: data, the teacher\'s mail (names only if the school allows them), legal basis (operated by the school), rights and complaint',
     str_contains($pvDetails, '<summary>Mehr zum Datenschutz</summary>') && !str_contains($pvDetails, '<details open')
-    && str_contains($pvDetails, 'Gespeichert werden nur der eingetragene Name') && str_contains($pvDetails, 'bekommt die Lehrkraft auch per E-Mail')
+    && str_contains($pvDetails, 'Gespeichert werden nur der eingetragene Name') && str_contains($pvDetails, 'Zusammenfassungen per E-Mail an die Lehrkraft enthalten keine E-Mail-Adressen, Uhrzeit und Namen nur, wenn die Schule das freigegeben hat.')
     && str_contains($pvDetails, '(Art. 6 Abs. 1 lit. e DSGVO). Eine Einwilligung ist dafür nicht nötig.') && str_contains($pvDetails, 'bei einer Datenschutz-Aufsichtsbehörde beschweren'));
 check('legal basis by operator type: privately operated Art. 6(1)(b) and the school\'s rules for the meeting, without a type none',
     str_contains($pvForm(['operatorType' => 'private']), 'die Vereinbarung Ihres Termins (Art. 6 Abs. 1 lit. b DSGVO). Eine Einwilligung ist dafür nicht nötig. Für das Gespräch selbst gelten die Regeln der Schule.')

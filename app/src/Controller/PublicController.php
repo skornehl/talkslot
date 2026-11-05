@@ -263,9 +263,6 @@ final class PublicController
 
         // No checkbox for the privacy notice: Art. 13 GDPR asks to inform, not to confirm (expert review P1-9)
         $errors = self::validate($old, true);
-        if (Http::post('privacy') !== '1') {
-            $errors[] = t('err.privacy');
-        }
         if ($errors) {
             $this->round($slug, $errors, $old, true);
             return;

@@ -79,7 +79,7 @@ check "browser language Turkish: page stays German, a button in Turkish is offer
 HINT=$(curl -s -H "Accept-Language: fr-FR,fr;q=0.9,en;q=0.8,de;q=0.7" "$B/" | grep -o '<a href="[^"]*" hreflang="en" lang="en">View this page in English</a>' | sed 's/<a href="//;s/".*//')
 check "home page: the first offered browser language is linked in that language and opens the page in it ($HINT)" '[ "$HINT" = "/?lang=en" ] && curl -s "$B$HINT" | grep -q "<html lang=\"en\">"'
 check "hint only while the page is shown in another language than the preferred one" 'curl -s -H "Accept-Language: tr" "$B/$IVS" | grep -q "lang-hint" && ! curl -s -H "Accept-Language: de-DE,de;q=0.9,en;q=0.8" "$B/" | grep -q "lang-hint" && ! curl -s -H "Accept-Language: tr" "$B/$IVS?lang=tr" | grep -q "lang-hint" && ! curl -s -H "Accept-Language: tr" "$B/$IVS?lang=en" | grep -q "lang-hint"'
-SWH=$(curl -s -w '\n%{http_code}' -H "Accept-Language: uk" --data-urlencode "csrf=$(echo "$LANGP" | csrf)" -d "lang=de&switch_lang=uk&name=Olena+Movna&privacy=1" "$B/$IVS")
+SWH=$(curl -s -w '\n%{http_code}' -H "Accept-Language: uk" --data-urlencode "csrf=$(echo "$LANGP" | csrf)" -d "lang=de&switch_lang=uk&name=Olena+Movna" "$B/$IVS")
 check "switching via the hint keeps the input and books nothing" '[ "$(echo "$SWH" | tail -1)" = 200 ] && echo "$SWH" | grep -q "<html lang=\"uk\">" && echo "$SWH" | grep -q "value=\"Olena Movna\"" && echo "$SWH" | grep -q "value=\"uk\" formnovalidate class=\"button-link\" lang=\"uk\" aria-current=\"true\">Українська</button>" && ! echo "$SWH" | grep -q "lang-hint"'
 
 # Invitation text: direct link per further language, sentence on multiple bookings as on the round page
@@ -188,7 +188,7 @@ echo "Appointment page: keeping the link (copy, calendar file, confirmation by m
 T=$(curl -s -b "$J" "$B/admin" | csrf)
 KL=$(mkround Link+behalten none); KLS=$(slugof "$KL")
 KP=$(curl -s "$B/$KLS")
-KLOC=$(curl -s -o /dev/null -w '%{redirect_url}' --data-urlencode "csrf=$(echo "$KP" | csrf)" -d "slot_id=$(echo "$KP" | grep -o 'value="[0-9]*" required' | head -1 | grep -o '[0-9]*')&name=Link+Behalten&privacy=1&remember=1" "$B/$KLS")
+KLOC=$(curl -s -o /dev/null -w '%{redirect_url}' --data-urlencode "csrf=$(echo "$KP" | csrf)" -d "slot_id=$(echo "$KP" | grep -o 'value="[0-9]*" required' | head -1 | grep -o '[0-9]*')&name=Link+Behalten&remember=1" "$B/$KLS")
 KT=$(echo "$KLOC" | grep -o '/b/[A-Za-z0-9_-]\{43\}' | cut -c4-)
 KM=$(curl -s "$KLOC"); KMC=$(echo "$KM" | csrf)
 KD=$(DBQ "SELECT d.day_date FROM tp_bookings b JOIN tp_slots s ON s.id = b.slot_id JOIN tp_round_days d ON d.id = s.day_id WHERE b.name = 'Link Behalten'")

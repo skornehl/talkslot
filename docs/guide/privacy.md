@@ -116,7 +116,7 @@ ask how long they are kept and state it in the privacy policy.
   error. The booking form therefore has none. Right above the button it gives the information in two levels
   (Art. 12): who is responsible (the first line of the operator's details), the purpose and the deletion,
   plus a link to the full privacy policy; a folded *Mehr zum Datenschutz* (*More about privacy*) adds the
-  data stored, the summary mail to the teacher, the legal basis of the operator type (Art. 6(1)(e) or (b)
+  data stored, the summary mails to the teacher (names only if the school allows them), the legal basis of the operator type (Art. 6(1)(e) or (b)
   GDPR; none while no type is chosen) and the rights including the complaint. The privacy policy says that
   booking needs no consent; only "remember on this device" does.
 - **Deadlines and the chosen appointment before booking:** the round page names the booking deadline and the
@@ -149,7 +149,9 @@ English text (then the German one) of the web host; German and English need thei
 
 - **Which text parents get:** the one in their language if it is complete, i.e. not empty and without open
   placeholders; otherwise the English one, then the one of the default language (these two as they are, open
-  placeholders included, as before: they keep rounds from being activated). The page then says in the
+  placeholders included, as before: they keep rounds from being activated). English only if it is offered
+  (`languages`): a text in a language that is not offered is never shown, since admins can neither see nor
+  edit it. The page then says in the
   parents' language that the text is not available in it yet, and marks the text with its language
   (`lang`, for screen readers). The imprint has no translations and always takes this way.
 - **Open placeholders in a translation do not keep rounds from being activated**, because parents do not see
