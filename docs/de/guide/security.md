@@ -47,7 +47,13 @@ keine öffentlichen Issues.
 **Admin-Konten**
 - Session-Cookie nur für `/admin`, `HttpOnly`, `Secure`, `SameSite=Strict`, Strict Mode, eigenes
   Session-Verzeichnis, 30 Minuten Inaktivitäts- und 8 Stunden absolutes Timeout, neue Session-ID beim
-  Login. Anonyme Besucher der Login-Seite erhalten überhaupt keine Session.
+  Login. Eine Anfrage ohne Session-Cookie erhält überhaupt keine Session (keine Datei, kein Cookie): Seiten
+  des Adminbereichs schicken sie zur Login-Seite, die nach der Anmeldung zur angefragten Seite zurückführt
+  (nur Pfade des Adminbereichs, nie eine andere Website). Bei Links von anderen Websites, etwa dem Link
+  einer Zusammenfassung in einem Webmailer, hält der Browser das Strict-Cookie zurück; eine solche Anfrage
+  (`Sec-Fetch-Site: cross-site`) erhält eine kleine Zwischenseite, die dieselbe Adresse noch einmal von
+  TalkSlot aus öffnet (Meta-Refresh). So landet ein angemeldeter Browser angemeldet, und sein Cookie wird
+  nie ersetzt.
 - Eine Passwortänderung oder -zurücksetzung beendet alle anderen Sessions des Kontos. *Alle Sitzungen
   beenden* (unter *Benutzer*) beendet die Sessions aller Konten (ein globaler Zähler in den Einstellungen).
 - Brute-Force-Schutz: höchstens 5 fehlgeschlagene Logins pro gekürzter IP-Adresse in 15 Minuten und 20 pro
@@ -149,8 +155,8 @@ erklären kann:
 
 - Rate-Limits gelten pro gekürzter IP-Adresse. Wer im selben Netz (z. B. Schul-WLAN) immer wieder falsche
   Passwörter sendet, sperrt die Logins aus diesem Netz für 15 Minuten.
-- Wer einen Benutzernamen kennt (bei neuen Konten die E-Mail-Adresse, die Eltern als Antwortadresse sehen),
-  kann das Limit dieses Kontos aufbrauchen. Bis zu einer Stunde lang ist das Konto dann nur auf Geräten
+- Wer einen Benutzernamen kennt (bei neuen Konten die E-Mail-Adresse, die Eltern als Antwortadresse sehen,
+  sofern das Konto keine eigene Antwortadresse für Eltern angibt), kann das Limit dieses Kontos aufbrauchen. Bis zu einer Stunde lang ist das Konto dann nur auf Geräten
   nutzbar, die sich schon einmal angemeldet haben, oder nachdem in diesem Browser über *Passwort vergessen?*
   ein neues Passwort festgelegt wurde. Dazu geht eine E-Mail an die Adresse des Kontos.
 - Es gibt keinen zweiten Faktor. Konten schützen die Passwortregeln und die Limits oben.

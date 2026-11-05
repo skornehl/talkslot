@@ -42,8 +42,13 @@ not public issues.
 
 **Admin accounts**
 - Session cookie only for `/admin`, `HttpOnly`, `Secure`, `SameSite=Strict`, strict mode, own session
-  directory, 30 minutes idle and 8 hours absolute timeout, new session ID on login. Anonymous visitors of
-  the login page get no session at all.
+  directory, 30 minutes idle and 8 hours absolute timeout, new session ID on login. A request without the
+  session cookie gets no session at all (no file, no cookie): pages of the admin area send it to the login
+  page, which leads back to the page asked for after signing in (only paths of the admin area, never
+  another site). The browser keeps back the strict cookie on links from other sites, such as the link in
+  a summary opened in a webmailer; such a request (`Sec-Fetch-Site: cross-site`) gets a small interim page
+  that opens the same address again from TalkSlot (meta refresh), so a signed-in browser lands signed in
+  and its cookie is never replaced.
 - Changing or resetting a password ends all other sessions of the account. *Alle Sitzungen beenden* (end
   all sessions, under *Benutzer*) ends the sessions of all accounts (a global counter in the settings).
 - Brute-force protection: at most 5 failed logins per shortened IP address in 15 minutes, and 20 per
@@ -134,7 +139,8 @@ change nobody made, or entries in *Protokoll* (log) nobody can explain:
 - Rate limits work per shortened IP address. Somebody in the same network (e.g. school Wi-Fi) who keeps
   sending wrong passwords blocks logins from that network for 15 minutes.
 - Somebody who knows a username (for new accounts it is the e-mail address, which parents see as the
-  reply address) can use up its per-account limit. For up to an hour, the account can then only be used
+  reply address unless the account gives its own reply address for parents) can use up its per-account
+  limit. For up to an hour, the account can then only be used
   on devices that signed in to it before, or after setting a new password through *Passwort vergessen?*
   in that browser. An e-mail to the account's address says so.
 - There is no second factor. Accounts are protected by the password rules and the limits above.
