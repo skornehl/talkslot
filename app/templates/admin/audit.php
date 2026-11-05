@@ -1,6 +1,7 @@
 <?php /** Log of the changes made by admins. @var array $rows @var int $older @var bool $paged @var int $days */ ?>
 <h1><?= e(__('Protokoll')) ?></h1>
 <p class="muted small"><?= e(__('Änderungen durch Admins: wer wann welche Runde, welches Konto oder welchen Text geändert hat. Änderungen von Lehrkräften an ihren eigenen Runden werden nicht erfasst, Daten von Eltern (Namen, E-Mail-Adressen) nie. Einträge werden nach {days} Tagen gelöscht.', ['days' => (int) $days])) ?></p>
+<p><a href="<?= e(url('/admin/access-request')) ?>"><?= e(__('Auskunft zu einer E-Mail-Adresse (Art. 15 DSGVO)')) ?></a></p>
 <?php if (!$rows): ?>
   <p class="alert"><?= e($paged ? __('Keine weiteren Einträge.') : __('Noch keine Einträge.')) ?></p>
 <?php else: ?>

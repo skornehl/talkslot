@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\AccessRequest;
 use App\AccountDomains;
 use App\AccountLinks;
 use App\AccountSecurity;
@@ -94,6 +95,8 @@ final class AdminController
         ['GET', '#^/page/(imprint|privacy)/([a-z]{2})$#', 'pageForm', 'admin'],
         ['POST', '#^/page/(imprint|privacy)/([a-z]{2})$#', 'pageSave', 'admin'],
         ['GET', '#^/log$#', 'auditLog', 'admin'],
+        ['GET', '#^/access-request\z#', 'accessRequestForm', 'admin'],
+        ['POST', '#^/access-request\z#', 'accessRequestSearch', 'admin'],
         ['GET', '#^/templates$#', 'templates', 'admin'],
         ['GET', '#^/templates/new$#', 'templateForm', 'admin'],
         ['POST', '#^/templates/new$#', 'templateSave', 'admin'],
@@ -2322,6 +2325,40 @@ final class AdminController
             'paged' => $before > 0,
             'days' => Audit::retentionDays(),
         ]);
+    }
+
+    // ---------------------------------------------------------------- Requests for access (Art. 15 GDPR)
+
+    /** Form for a request for access about one e-mail address (admins only, see AccessRequest). */
+    private function accessRequestForm(): void
+    {
+        $this->render('admin/access_request', ['title' => __('Auskunft zu einer E-Mail-Adresse'), 'email' => '', 'result' => null, 'errors' => []]);
+    }
+
+    /**
+     * The search: a POST, so that the address appears in no address bar, browser history or server log; only with
+     * the box that it answers a request for access; logged with the number of hits, without the address (the log
+     * holds no data of parents).
+     */
+    private function accessRequestSearch(): void
+    {
+        $email = mb_substr(Http::post('email'), 0, 254);
+        $errors = [];
+        if (!is_valid_email($email)) {
+            $errors[] = __('Die E-Mail-Adresse ist ungültig.');
+        }
+        if (Http::post('purpose') !== '1') {
+            $errors[] = __('Bitte bestätigen Sie, dass Sie ein Auskunftsersuchen der Person bearbeiten, der die Adresse gehört.');
+        }
+        if ($errors) {
+            http_response_code(422);
+            $this->render('admin/access_request', ['title' => __('Auskunft zu einer E-Mail-Adresse'), 'email' => $email, 'result' => null, 'errors' => $errors]);
+            return;
+        }
+        $result = AccessRequest::find($email);
+        $this->audit(fn () => __('Auskunftssuche zu einer E-Mail-Adresse (Auskunftsersuchen): {bookings} Buchung(en), {mails} wartende Absage-E-Mail(s) gefunden',
+            ['bookings' => count($result['bookings']), 'mails' => count($result['cancellations'])]));
+        $this->render('admin/access_request', ['title' => __('Auskunft zu einer E-Mail-Adresse'), 'email' => $email, 'result' => $result, 'errors' => []]);
     }
 
     /**
