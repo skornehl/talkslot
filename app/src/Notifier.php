@@ -5,7 +5,7 @@ namespace App;
 
 /**
  * Email notifications to parents – only if they voluntarily provided an address.
- * Replies go to the teacher (Reply-To). Summaries for teachers: see Summaries.
+ * Replies go to the teacher (Reply-To, see replyTo()). Summaries for teachers: see Summaries.
  * Mails to the address stored with the booking record their result there (BookingService::mailResult()).
  * Changes by the teacher (ScheduleService) send change notices and cancellations; a cancellation is sent once
  * the booking is gone, from what cancellationData() kept of it.
@@ -47,10 +47,26 @@ final class Notifier
             'booking_id' => (int) $b['id'], 'round_id' => (int) $b['round_id'], 'email' => (string) $b['email'], 'lang' => $lang,
             'name' => (string) $b['name'], 'title' => (string) $title['title'], 'auto_translated' => (bool) $title['auto_translated'],
             'source_lang' => (string) $b['source_lang'], 'teacher_name' => (string) ($b['teacher_name'] ?? ''),
-            'teacher_email' => (string) ($b['teacher_email'] ?? ''), 'day_date' => (string) $b['day_date'],
+            'teacher_email' => (string) self::replyTo($b), 'day_date' => (string) $b['day_date'],
             'start_time' => (string) $b['start_time'], 'end_time' => (string) $b['end_time'],
             'location' => trim((string) ($b['location'] ?? '')), 'created_at' => (string) $b['created_at'],
         ];
+    }
+
+    /**
+     * Where the parents' replies go (Reply-To): the account's reply address for parents, else its e-mail address,
+     * each only if it is valid and allowed_account_domains permits it (AccountDomains). A reply address from
+     * before the restriction thus falls back to an allowed account address. Null: config mail.reply_to applies.
+     * @param array $b booking from DETAIL_SQL, or cancellationData() (teacher_email is then this address)
+     */
+    public static function replyTo(array $b): ?string
+    {
+        foreach ([(string) ($b['teacher_reply_to'] ?? ''), (string) ($b['teacher_email'] ?? '')] as $address) {
+            if (filter_var($address, FILTER_VALIDATE_EMAIL) && AccountDomains::permits($address)) {
+                return $address;
+            }
+        }
+        return null;
     }
 
     /**
@@ -151,8 +167,7 @@ final class Notifier
                 ];
                 $body .= "\n\n" . t('mail.ics.cancel_hint');
             }
-            $replyTo = filter_var((string) ($b['teacher_email'] ?? ''), FILTER_VALIDATE_EMAIL) ? (string) $b['teacher_email'] : null;
-            return Mailer::send($email, t("mail.$type.subject", $vars), $body . "\n\n" . t($footer, $vars), $attachments, $replyTo);
+            return Mailer::send($email, t("mail.$type.subject", $vars), $body . "\n\n" . t($footer, $vars), $attachments, self::replyTo($b));
         });
     }
 }

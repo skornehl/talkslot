@@ -17,7 +17,7 @@ This page explains the design decisions; it is not legal advice.
 | Shortened, HMAC-hashed IP addresses; HMAC hashes of account IDs and known-device cookies with failed logins | database (rate limiting) | after 24 hours at the latest |
 | Known-device cookie of an admin or teacher account (random number, time, signature) | that person's browser | after 365 days, renewed at every sign-in |
 | Teacher accounts | database | by an admin; inactive accounts without rounds in use 15 months after the last login, together with their drafts |
-| Summary mails to teachers (time and name, no e-mail addresses) | teacher's mailbox | operated by the school: the privacy policy promises at most 15 months; operated privately: the school's rules (the template recommends 15 months) |
+| Summary mails to teachers (by default the number of appointments and the link, no names; time and name only where the school allows them; never e-mail addresses) | teacher's mailbox | with names: by the end of the school year at the latest (privacy template; operated privately the template recommends it, the school's rules apply) |
 | Log of admin changes (who, when, what; no data of parents) | database | after 90 days (`audit_log_days`) |
 
 TalkSlot keeps **no** access logs of its own. The web server's logs are the web host's responsibility;
@@ -35,6 +35,15 @@ ask how long they are kept and state it in the privacy policy.
   privacy template says so. The only exception is a cancellation by the teacher: the booking is already
   deleted then, so the entry keeps what this one mail needs (address, language, name, appointment,
   teacher; no link, token or description) until it is sent, at most 48 hours. The template says so too.
+- **Summaries without names:** the mails to teachers stay in their mailboxes, maybe private ones with a
+  provider outside the EU, and in calendars synchronised from them; TalkSlot cannot delete them there, and
+  requests for access or erasure would mean searching mailboxes. By default they therefore give, per day,
+  only the number of appointments, anything worth a look (so that someone booking many slots still shows)
+  and the link to the list in the admin area. Names, and a calendar file whose entries carry the round
+  instead of names, only where the school allows them (`summary_names`) and the account ticks them; new
+  accounts start without. `allowed_account_domains` keeps the addresses of accounts, and with them the
+  summaries and the replies of parents, in the school's own mailboxes. Teachers can give their own reply
+  address for parents instead of their account's address.
 - **Reminders only where the parents know about them:** parents who book get the reminder if the round
   had it turned on when they booked (the form says so). Entries made by the teacher get it only once a
   confirmation or change notice reached the parents, as that mail tells them about the entry and the
@@ -167,10 +176,11 @@ Before going live:
    - **Operated privately:** the operator (you, your association or your organisation) is the controller for
      the booking service, including the mails it sends; teachers use the service for their parent meetings.
      The meeting itself, notes, the summary mails in the teacher's mailbox and printed lists are the teacher's
-     work at their school: as a rule the school is responsible for them and its rules apply (the template
-     recommends deleting the summaries after at most 15 months). Teachers should give a work e-mail address
-     for their account; otherwise the summaries end up in a private mailbox, possibly with a provider outside
-     the EU. Schools may have their own rules on which services their teachers may use, so teachers should
+     work at their school: as a rule the school is responsible for them and its rules apply (the summaries
+     contain no names unless names are allowed; the template recommends deleting those with names by the end
+     of the school year). Teachers should give a work e-mail address for their account; otherwise the
+     summaries end up in a private mailbox, possibly with a provider outside the EU
+     (`allowed_account_domains` can require the school's domain). Schools may have their own rules on which services their teachers may use, so teachers should
      check with their school management or the school's data protection officer. If the school has a say in
      the booking service itself – e.g. it introduces it as its tool for parent meetings, requires its teachers
      to use it, or sets its settings, retention or admin accounts – the private template no longer fits: you

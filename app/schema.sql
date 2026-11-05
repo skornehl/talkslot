@@ -6,6 +6,9 @@
 -- controller_contact: admin only – details for legal notice and privacy policy (placeholder [[VERANTWORTLICHE]]).
 -- access_token_hash: SHA-256 of an invitation or password link (single use, with expiry).
 -- lang: language of the admin area and of mails to the account (de, en; NULL = admin_language).
+-- reply_to: where the replies of parents go (Reply-To of their mails); NULL = email.
+-- summary_names: names in the summaries, if the school allows them (config summary_names); NULL = account from
+-- before that setting, which keeps them where allowed until it confirms the notice on the dashboard (Summaries).
 CREATE TABLE IF NOT EXISTS users (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   username VARCHAR(254) NOT NULL,
@@ -13,6 +16,7 @@ CREATE TABLE IF NOT EXISTS users (
   role ENUM('admin','teacher') NOT NULL DEFAULT 'teacher',
   display_name VARCHAR(200) NOT NULL DEFAULT '',
   email VARCHAR(254) NULL,
+  reply_to VARCHAR(254) NULL,
   lang VARCHAR(5) NULL,
   controller_contact TEXT NULL,
   is_active TINYINT(1) NOT NULL DEFAULT 1,
@@ -21,6 +25,7 @@ CREATE TABLE IF NOT EXISTS users (
   access_token_expires_at DATETIME NULL,
   summary_evening TINYINT(1) NOT NULL DEFAULT 1,
   summary_deadline TINYINT(1) NOT NULL DEFAULT 1,
+  summary_names TINYINT(1) NULL DEFAULT 0,
   failed_logins INT UNSIGNED NOT NULL DEFAULT 0,
   session_epoch INT UNSIGNED NOT NULL DEFAULT 0,
   last_login_at DATETIME NULL,

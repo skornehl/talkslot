@@ -1,5 +1,5 @@
 <?php
-/** Admin layout. @var string $content @var string $title @var array $flash */
+/** Admin layout. @var string $content @var string $title @var array $flash @var ?string $refresh (URL to open at once, from this site) */
 use App\Auth;
 use App\Csrf;
 
@@ -17,6 +17,9 @@ $legalQuery = ['lang' => App\AdminI18n::lang() !== 'de' && App\I18n::lang() === 
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
 <meta name="robots" content="noindex, nofollow">
+<?php if (isset($refresh)): ?>
+<meta http-equiv="refresh" content="0; url=<?= e($refresh) ?>">
+<?php endif; ?>
 <title><?= e($title) ?> · Admin · <?= e(app_name()) ?></title>
 <script src="<?= e(asset('js/theme.js')) ?>"></script>
 <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>">

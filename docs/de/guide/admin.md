@@ -56,6 +56,15 @@ E-Mail-Adresse. Kann die E-Mail nicht versendet werden, sehen Sie nur einen Hinw
 ihm könnten Sie das Passwort eines fremden Kontos festlegen): Prüfen Sie den Mailversand (*Texte →
 E-Mail-Versand*) und senden Sie die Einladung danach erneut.
 
+Zusammenfassungen, Passwort-Links und die Antworten der Eltern gehen an die Adressen der Konten. Damit sie in
+den Postfächern der Schule bleiben, wo ihre Löschregeln gelten, kann die technische Betreuung die Adressen
+auf die Domains der Schule beschränken (`allowed_account_domains` in `config/config.php`, siehe
+[Konfiguration]({{ '/de/guide/configuration/' | relative_url }}#zusammenfassungen-und-konten)). Eine neue
+oder geänderte Adresse anderswo wird dann abgelehnt; Konten, die schon eine haben, funktionieren weiter,
+erhalten an dieser Adresse aber keine Zusammenfassungen und keine Antworten der Eltern, bis sie geändert
+ist (statt einer solchen Antwortadresse für Eltern gilt dann die E-Mail-Adresse des Kontos, wenn diese
+erlaubt ist). Die Übersicht sagt es dem Konto und nennt Admins die Zahl der Konten mit solchen Adressen.
+
 Die Spalte *Letzter Login* zeigt nur *nie*, *in den letzten 12 Monaten* oder *vor über 12 Monaten*, keine
 Uhrzeiten: Das genügt, um Konten aufzuräumen, ohne allen Admins die Anmeldezeiten der Kolleginnen und
 Kollegen zu zeigen. Die Übersicht nennt Admins die Zahl der aktiven Konten, die seit über 12 Monaten
@@ -225,8 +234,21 @@ Rechtsgrundlagen der Vorlage für Schulen bei privatem Betrieb).
 
 Unter *Mein Profil* legt jedes Konto fest, welche ***Zusammenfassungen per E-Mail***
 es erhält: abends eine Übersicht über den nächsten Tag (standardmäßig ab 18:00 Uhr) und eine Übersicht nach
-dem Buchungsschluss eines Tages. Sie enthalten nur Uhrzeit und Name, keine E-Mail-Adressen der Eltern,
-dazu eine Kalenderdatei.
+dem Buchungsschluss eines Tages. Standardmäßig nennen sie je Runde und Tag die Zahl der Termine, Auffälliges
+(derselbe Name oder dieselbe Adresse mehrmals, Eltern ohne Adresse, nicht zugestellte E-Mails, Konflikte) und
+den Link zur Liste, aber **keine Namen** und nie E-Mail-Adressen der Eltern; siehe die
+[Anleitung für Lehrkräfte]({{ '/de/guide/teachers/' | relative_url }}#zusammenfassungen-per-e-mail). Die
+E-Mails bleiben in Postfächern und Kalendern, die die Löschregeln der Schule womöglich nicht erreichen,
+eventuell bei Anbietern außerhalb der EU.
+
+Namen (und eine Kalenderdatei der Termine, selbst ohne Namen) gibt es nur, wenn die Schule sie erlaubt:
+`summary_names` in `config/config.php` (Deployment: Variable `SUMMARY_NAMES=1`). Dann wählt jedes Konto im
+Profil *Mit Namen*; neue Konten beginnen ohne. Erlauben Sie das nur, wenn alle Konten dienstliche Adressen
+verwenden, deren Löschregeln die Schule in der Hand hat (`allowed_account_domains`), und empfehlen Sie, die
+E-Mails bis zum Ende des Schuljahres zu löschen. Nach dem Update sehen Konten von vorher in der Übersicht
+einen Hinweis, was sich für sie ändert. Wo Namen erlaubt sind, behalten ihre Zusammenfassungen sie; sonst
+sind sie ohne Namen, und sobald der Hinweis bestätigt ist, gilt das Konto wie ein neues (Namen nur, wenn
+es sie ankreuzt).
 
 Eltern mit E-Mail-Adresse bekommen am Vorabend ihres Termins eine **Erinnerung** (zur selben Uhrzeit,
 standardmäßig ab 18:00 Uhr) mit einem Link zum Absagen. Sie lässt sich pro Runde abschalten (*Eltern am

@@ -89,6 +89,15 @@ final class Http
         return self::isPost() && strtolower(trim((string) ($_SERVER['HTTP_SEC_FETCH_SITE'] ?? ''))) === 'cross-site';
     }
 
+    /**
+     * A page opened from another site, e.g. a link in a webmailer (GET with Sec-Fetch-Site: cross-site). The
+     * browser holds back SameSite=Strict cookies for it, such as the admin session (see Auth::startSession()).
+     */
+    public static function isCrossSiteGet(): bool
+    {
+        return self::method() === 'GET' && strtolower(trim((string) ($_SERVER['HTTP_SEC_FETCH_SITE'] ?? ''))) === 'cross-site';
+    }
+
     /** POST value as trimmed string (arrays and invalid UTF-8 are ignored). */
     public static function post(string $key, string $default = ''): string
     {

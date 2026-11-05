@@ -159,10 +159,46 @@ still do so, so please do not translate admin pages by other means either.
 ## Summary mails
 
 In *Mein Profil* you choose whether you receive an overview of the next day in the evening and an
-overview after the booking deadline of each day. They list time and name, without the parents' e-mail
-addresses, and include a calendar file. Parents' replies to their confirmation mails reach your e-mail
-address (reply-to).
+overview after the booking deadline of each day. For each round and day they give the number of
+appointments with the first and last time, anything worth a look and the link to the list in the admin area:
 
-Once sent, these mails are in your mailbox: delete them according to your school's rules, at the latest
-15 months after the appointment. Use your work e-mail address for your account, so that they do not end up
-in a private mailbox.
+```
+Elternsprechtag 7b – Monday, 17 August 2026
+  6 appointments between 14:00 and 15:30
+  Worth a look: 2× the same name, 1× without an email address
+  Overview and print view: https://termine.example.org/admin/round/5
+```
+
+*Worth a look* (*Auffällig*) counts the same name or the same e-mail address more than once (siblings, or
+someone booking many slots), parents who booked without an e-mail address (they cannot be told about
+changes), mails that could not be delivered and appointments that no longer fit the schedule.
+
+The mails contain **no names** and never the parents' e-mail addresses: they stay in mailboxes and calendars
+that your school's deletion rules may not reach. The names are in the list behind the link (after signing
+in). Only if your school allows it (an admin sets `summary_names`) can you tick *Mit Namen* (*With names*
+in the English admin area) in the profile: the mails then list time and name of each appointment and come
+with a calendar file of the appointments, which itself has no names (each appointment is titled with its
+round). Delete such mails as
+soon as you no longer need them, at the latest at the end of the school year, and use your work e-mail
+address for your account. For accounts from before this change, a notice on the overview says what
+changed. Where the school allows names, your summaries keep them, and you can turn them off in the profile.
+Where it does not, they are without names from the update on; once you confirm the notice (*Verstanden*,
+*Got it*),
+your account is treated like a new one, so if the school allows names later, tick *Mit Namen* yourself.
+
+### Replies of parents
+
+Parents' replies to the mails about their appointment go to your e-mail address (reply-to), so parents see
+it once they reply. Under *Mein Profil → Antwortadresse für Eltern* (*Reply address for parents*) you can
+give another address of your own for that, e.g. your work address; changing it asks for your password, like
+the e-mail address. Use an address that you read yourself: the mails tell parents that their replies go to
+the teacher. If the school allows only its own addresses (`allowed_account_domains`), both have to be at its
+domain. A reply address from before that rule is then not used (the replies go to your e-mail address, if
+that is at the school's domain), and the overview asks you to change it.
+
+### Links from the mails
+
+The link in a summary opens the page directly. If you are signed in, it opens signed in (the browser keeps
+back the session cookie for links from other sites, for example a webmailer, so a short interim page
+*Weiterleitung* (*Redirecting*) opens it once more from TalkSlot). If you are not signed in, or the browser
+still holds the cookie back, you sign in and land on that page, not on the overview.

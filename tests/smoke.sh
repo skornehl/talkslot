@@ -542,7 +542,7 @@ check "daily overview for tomorrow sent" 'echo "$OUT" | grep -qE "summaries_even
 OUT2=$($DC exec -T app php /srv/app/bin/cron.php -v)
 check "no duplicate sending" 'echo "$OUT2" | grep -qE "summaries_evening +0"'
 SUM=$($DC exec -T app php -r 'echo file_get_contents("http://mail:8025/api/v1/search?query=to:zwei@example.org%20subject:Morgen");')
-check "daily overview to teacher 2 with calendar file, without parent email" 'echo "$SUM" | grep -q "\"Attachments\":1" && ! echo "$SUM" | grep -q "eltern-zwei@"'
+check "daily overview to teacher 2: without names unless the school allows them, so no calendar file; no parent email" 'echo "$SUM" | grep -q "\"Attachments\":0" && ! echo "$SUM" | grep -q "eltern-zwei@"'
 
 # A parent's booking with teacher 2, to try moving it after the account is deactivated
 P4B=$(curl -s "$B/$S4")
@@ -851,7 +851,7 @@ RF=$(echo "$loc" | grep -o '[0-9]*$')
 curl -s -o /dev/null -b "$J" -d "csrf=$T&name=Frist+Kind&lang=de" "$B$(curl -s -b "$J" "$B/admin/round/$RF" | grep -o '/admin/slot/[0-9]*/book' | head -1)"
 OUT=$($DC exec -T app php /srv/app/bin/cron.php -v)
 FM=$($DC exec -T app php -r '$r=json_decode(file_get_contents("http://mail:8025/api/v1/search?query=subject:%22Buchungsschluss:%20Fristtest%22"),true); echo json_decode(file_get_contents("http://mail:8025/api/v1/message/".($r["messages"][0]["ID"] ?? "x")),true)["Text"] ?? "";')
-check "summary at the booking deadline: list with free slots" 'echo "$OUT" | grep -qE "summaries_deadline +[1-9]" && echo "$FM" | has "Frist Kind" && echo "$FM" | has "(1 Termin blieb frei)"'
+check "summary at the booking deadline: the number of appointments and the free slots, no name" 'echo "$OUT" | grep -qE "summaries_deadline +[1-9]" && echo "$FM" | has "  1 Termin um 10:00" && ! echo "$FM" | has "Frist Kind" && echo "$FM" | has "(1 Termin blieb frei)"'
 check "summary at the booking deadline only once" '$DC exec -T app php /srv/app/bin/cron.php -v | grep -qE "summaries_deadline +0"'
 check "delete account with all rounds" 'curl -s -L -b "$J" -d "csrf=$T&confirm=1" "$B/admin/users/$U3/delete" | has "mit allen Runden und Buchungen gelöscht" && [ -z "$(DBQ "SELECT id FROM tp_rounds WHERE id=$RA")" ]'
 

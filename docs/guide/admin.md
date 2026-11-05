@@ -52,6 +52,15 @@ default). No password is ever sent by mail. The username is the e-mail address. 
 sent, you only see a hint, not the link (with it you could set the password of somebody else's account):
 check the mail delivery (*Texte → E-Mail-Versand*) and send the invitation again.
 
+Summaries, password links and the replies of parents go to the addresses of the accounts. To keep them in
+the school's own mailboxes, where its deletion rules apply, the technical side can restrict the addresses to
+the school's domains (`allowed_account_domains` in `config/config.php`, see
+[Configuration]({{ '/guide/configuration/' | relative_url }}#summaries-and-accounts)). A new or changed
+address elsewhere is then refused; accounts that already have one keep working, but get no summaries and
+no replies of parents at that address until it is changed (a reply address for parents of that kind gives
+way to the account's e-mail address, if that is allowed). The overview tells the account, and admins how
+many accounts have such an address.
+
 The column *Letzter Login* (last sign-in) only shows *nie* (never), *in den letzten 12 Monaten* (within
 the last 12 months) or *vor über 12 Monaten* (more than 12 months ago), no times: enough to tidy up
 accounts, without showing everybody's sign-in times to all admins. The overview tells admins how many
@@ -206,7 +215,20 @@ when TalkSlot is operated privately).
 
 Under *Mein Profil* every account chooses its **summary mails** (*Zusammenfassungen per E-Mail*): an
 overview of the next day in the evening (from 18:00 by default) and an overview after the booking
-deadline of a day. They contain time and name only, no e-mail addresses of parents, plus a calendar file.
+deadline of a day. By default they give, per round and day, the number of appointments, anything worth a
+look (the same name or address more than once, parents without an address, undelivered mails, conflicts)
+and the link to the list, but **no names** and never e-mail addresses of parents; see the
+[Teacher guide]({{ '/guide/teachers/' | relative_url }}#summary-mails). The mails stay in mailboxes and
+calendars the school's deletion rules may not reach, possibly with providers outside the EU.
+
+Names (and a calendar file of the appointments, itself without names) are only possible if the school
+allows them: `summary_names` in `config/config.php` (deployment: variable `SUMMARY_NAMES=1`). Then each
+account chooses *Mit Namen* in its profile; new accounts start without. Allow it only if all accounts use
+work addresses whose deletion rules the school controls (`allowed_account_domains`), and recommend
+deleting the mails by the end of the school year. After the update, accounts from before see a notice on
+the overview saying what changed for them. Where names are allowed, their summaries keep them; where not,
+they are without names, and once the notice is confirmed the account counts as a new one (names only if
+it ticks them).
 
 Parents who gave an e-mail address get a **reminder** the evening before their appointment (at the same
 time, from 18:00 by default), with a link to cancel. It can be turned off per round (*Eltern am Vorabend an

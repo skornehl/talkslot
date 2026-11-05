@@ -10,7 +10,7 @@ namespace App;
  */
 final class Migrations
 {
-    public const LATEST = 21;
+    public const LATEST = 22;
 
     /** Version => SQL statements */
     private const STEPS = [
@@ -171,6 +171,15 @@ final class Migrations
         21 => [
             'ALTER TABLE mail_outbox ADD COLUMN IF NOT EXISTS payload TEXT NULL AFTER ref',
         ],
+        // 22: summaries without names unless the school allows them (config summary_names). Existing accounts
+        //     get NULL ("as before": names, if allowed, until they confirm the notice on the dashboard), new
+        //     ones 0. Added without a default first, so that a repeated run leaves the values as they are.
+        //     reply_to: the account's own address for the replies of parents instead of its e-mail address
+        22 => [
+            'ALTER TABLE users ADD COLUMN IF NOT EXISTS summary_names TINYINT(1) NULL AFTER summary_deadline,
+                ADD COLUMN IF NOT EXISTS reply_to VARCHAR(254) NULL AFTER email',
+            'ALTER TABLE users ALTER COLUMN summary_names SET DEFAULT 0',
+        ],
     ];
 
     /**
@@ -184,10 +193,10 @@ final class Migrations
         // Unchanged since v1.5.0: the legal notice of a "private, non-commercial service"
         'imprint-private.de' => '036e210b629357dfbf768868e3a5f249c888d3052f301170703b196336058f43',
         'imprint-private.en' => 'f15521ceaa18e97c98190e448cc95eb6130c4cf571164b09819bb40dd7af22c8',
-        'privacy.de' => '6a3e56b92970cd83352b6d4fbff9ff64fbb6765bf8d622c9c66cd5bb8812f374',
-        'privacy.en' => '5c1350ac669db8120b946879389dd3cfb6bb1720a86aa523d6df95520c2b7878',
-        'privacy-private.de' => '41e56d82edcfea69af044fbef9639ab5f3e0667d831450fa1f593bce0b6623a1',
-        'privacy-private.en' => 'a2305054d982c4c4aba8a97698209e7146a247e86f7875fdc0c79b51acd6bdab',
+        'privacy.de' => '6d3917ebd6668be5ef53fd3d9215db22ffaf526a7e2db0aaad2c195c3bb873ef',
+        'privacy.en' => '89197fcf4e398d4e5de638b5efcbf0c3624f6dbf7d8b0a9fafa0a1803997c2c6',
+        'privacy-private.de' => 'f6a1a0488c648b7d524f41d6406718938fad59cb934a5c0a6d8b1631d9700d34',
+        'privacy-private.en' => '859517c15d6f539cf9d8506404abb6171bd7e8f46eb727e5b43826e738dcddca',
     ];
 
     /**
@@ -198,6 +207,10 @@ final class Migrations
      */
     public const OLD_PAGE_HASHES = [
         'private' => [
+            // Summary mails with time and name, the recommendation to delete them after 15 months (up to schema
+            // version 21, before the summaries without names)
+            '41e56d82edcfea69af044fbef9639ab5f3e0667d831450fa1f593bce0b6623a1',
+            'a2305054d982c4c4aba8a97698209e7146a247e86f7875fdc0c79b51acd6bdab',
             // Privacy policy de/en up to v1.6.0: "private service" without a data protection officer, legal
             // bases (b) and (f), "cancel at any time" (the legal notice of that time is the current
             // imprint-private template)
@@ -278,6 +291,10 @@ final class Migrations
             'f1ac0f64ece1e1ce11b4322831f8d121b6d5a3ea450183d6a277cf26d9c0f3b1',
         ],
         'school' => [
+            // Summary mails with time and name, kept as a record of the meetings for 15 months (up to schema
+            // version 21, before the summaries without names)
+            '6a3e56b92970cd83352b6d4fbff9ff64fbb6765bf8d622c9c66cd5bb8812f374',
+            '5c1350ac669db8120b946879389dd3cfb6bb1720a86aa523d6df95520c2b7878',
             // Privacy policy de/en for public schools without the calendar download, the later confirmation
             // mail and the expiry of the remember-me entry (interim state on main after v1.5.0)
             'ac8cf4d882a13a6e127476ab13de02524316d343a746b4b8ff055c3aa0d09347',

@@ -73,6 +73,8 @@ final class Installer
         }
         if ($email !== '' && !is_valid_email($email)) {
             $errors[] = __('Die E-Mail-Adresse ist ungültig.');
+        } elseif (($error = AccountDomains::error($email)) !== null) {
+            $errors[] = $error;
         }
         return $errors;
     }

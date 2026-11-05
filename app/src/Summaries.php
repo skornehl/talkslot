@@ -7,7 +7,11 @@ namespace App;
  * Summary emails to teachers (can be turned off per person in the profile):
  * - Daily overview the evening before: from config summary_evening_hour (default 6 pm) for the next day
  * - Overview after the booking deadline: as soon as the last slot of a day can no longer be booked
- * Content: only time and name (no parents' email addresses), plus an .ics file.
+ * Content (expert review P1-4): per round and day the number of appointments, what stands out (notes()) and the
+ * link to the list in the admin area, but no names, as the mails stay in mailboxes the school's deletion
+ * rules may not reach. Names, and a calendar file of the appointments without names, only where the school
+ * allows them (config summary_names) and the account wants them (withNames()). Never parents' addresses, and
+ * nothing to an address outside allowed_account_domains (AccountDomains).
  * run() queues them (Outbox); deliver() creates the mail when the outbox sends it, so the list is
  * current then. sent_summaries prevents queueing twice; the entry is made together with the queue entry.
  */
@@ -81,13 +85,51 @@ final class Summaries
     }
 
     /**
+     * Names (and the calendar file) in the summaries of this account: only if the school allows them (config
+     * summary_names) and the account wants them (wantsNames()).
+     */
+    public static function withNames(array $user): bool
+    {
+        return (bool) Config::get('summary_names', false) && self::wantsNames($user);
+    }
+
+    /**
+     * The account's choice: 1 = with names, 0 = without (new accounts). NULL = an account from before this
+     * choice (migration 22): it keeps what it had, names where they are allowed, until it confirms the notice
+     * on the dashboard (notice()), so that its summaries do not change without a word.
+     */
+    public static function wantsNames(array $user): bool
+    {
+        return array_key_exists('summary_names', $user) && ($user['summary_names'] === null || (int) $user['summary_names'] === 1);
+    }
+
+    /**
+     * The notice on the dashboard for an account from before summaries without names (summary_names NULL)
+     * that gets summaries: what changed for it. null: nothing to say.
+     */
+    public static function notice(array $user, bool $isAdmin): ?string
+    {
+        if (!array_key_exists('summary_names', $user) || $user['summary_names'] !== null || (!$user['summary_evening'] && !$user['summary_deadline'])) {
+            return null;
+        }
+        if (Config::get('summary_names', false)) {
+            return __('Neu: Die Kalenderdatei Ihrer Zusammenfassungen enthält keine Namen mehr. Ob die E-Mail selbst die Namen enthält, können Sie jetzt im Profil wählen; bis dahin bleibt es wie bisher.');
+        }
+        return __('Neu: Ihre Zusammenfassungen per E-Mail enthalten keine Namen und keine Kalenderdatei mehr, sondern je Tag die Zahl der Termine, Auffälliges und den Link zur Terminliste. So liegen keine Namenslisten in Postfächern und Kalendern, für die die Löschregeln der Schule nicht gelten.')
+            . ' ' . ($isAdmin ? __('Namen kann die Schule mit „summary_names“ in config/config.php freigeben, wenn alle Konten dienstliche Adressen verwenden.') : __('Namen kann nur die Schule freigeben.'));
+    }
+
+    /**
      * Sends a queued summary (from the outbox). null: no longer needed – the account is inactive or has
-     * no address, the summary was turned off, the evening is over ("tomorrow" would be wrong) or the day
-     * is gone or no longer this teacher's.
+     * no address (or one outside allowed_account_domains), the summary was turned off, the evening is over
+     * ("tomorrow" would be wrong) or the day is gone or no longer this teacher's.
      */
     public static function deliver(string $kind, int $userId, string $ref): ?bool
     {
         $user = Db::one("SELECT * FROM users WHERE id = ? AND is_active = 1 AND COALESCE(email, '') <> ''", [$userId]);
+        if ($user && !AccountDomains::permits((string) $user['email'])) {
+            return null;
+        }
         if ($kind === 'summary_evening' && $user && $user['summary_evening'] && $ref > Time::today()) {
             return self::sendEvening($user, $ref);
         }
@@ -120,9 +162,9 @@ final class Summaries
         return (bool) AdminI18n::with(AdminI18n::of($user), static function () use ($user, $day, $rows, $free): bool {
             $subject = __('Buchungsschluss: {title} – {date}', ['date' => fmt_date($day['day_date']), 'title' => $day['title']]);
             $intro = match (true) {
-                $free === 0 => __('Für diesen Tag sind keine Buchungen mehr möglich. Endgültige Terminliste:'),
-                $free === 1 => __('Für diesen Tag sind keine Buchungen mehr möglich. Endgültige Terminliste ({count} Termin blieb frei):', ['count' => $free]),
-                default => __('Für diesen Tag sind keine Buchungen mehr möglich. Endgültige Terminliste ({count} Termine blieben frei):', ['count' => $free]),
+                $free === 0 => __('Für diesen Tag sind keine Buchungen mehr möglich. Endgültiger Stand:'),
+                $free === 1 => __('Für diesen Tag sind keine Buchungen mehr möglich. Endgültiger Stand ({count} Termin blieb frei):', ['count' => $free]),
+                default => __('Für diesen Tag sind keine Buchungen mehr möglich. Endgültiger Stand ({count} Termine blieben frei):', ['count' => $free]),
             };
             return self::send($user, $subject, $intro, $rows, 'termine-' . $day['day_date'] . '.ics');
         });
@@ -130,8 +172,9 @@ final class Summaries
 
     private static function bookings(string $where, array $params): array
     {
+        // Addresses only for notes() (the same address twice, none): they never go into the mail
         return Db::all(
-            "SELECT b.id, b.name, d.day_date, s.start_time, s.end_time, r.title, r.id AS round_id
+            "SELECT b.id, b.name, b.email, b.source, b.mail_failed_at, s.is_conflict, d.day_date, s.start_time, s.end_time, r.title, r.id AS round_id
                FROM bookings b JOIN slots s ON s.id = b.slot_id JOIN round_days d ON d.id = s.day_id JOIN rounds r ON r.id = d.round_id
               WHERE $where ORDER BY d.day_date, s.start_time",
             $params
@@ -141,33 +184,87 @@ final class Summaries
     /** Called within AdminI18n::with() in the recipient's language. */
     private static function send(array $user, string $subject, string $intro, array $rows, string $icsName): bool
     {
-        $lines = [__('Hallo {name},', ['name' => $user['display_name']]), '', $intro, ''];
-        $currentTitle = null;
+        $names = self::withNames($user);
+        $attachments = $names && $rows ? [[
+            'name' => $icsName,
+            'type' => 'text/calendar; charset=utf-8; method=PUBLISH',
+            // Each appointment with the title of its round; the calendar is named after all of them
+            'content' => IcsExport::forRound(['title' => implode(', ', array_unique(array_column($rows, 'title')))], $rows),
+        ]] : [];
+        return Mailer::send((string) $user['email'], $subject, self::text($user, $intro, $rows, $names), $attachments);
+    }
+
+    /**
+     * The text of a summary, per round and day: the times and names ($names) or the number of appointments,
+     * then what stands out and the link to the list. Within AdminI18n::with() in the recipient's language.
+     * @param list<array> $rows from bookings(), ordered by day and time
+     */
+    public static function text(array $user, string $intro, array $rows, bool $names): string
+    {
+        $lines = [__('Hallo {name},', ['name' => $user['display_name']]), '', $intro];
+        $groups = [];
         foreach ($rows as $r) {
-            if ($r['title'] !== $currentTitle) {
-                $currentTitle = $r['title'];
-                $lines[] = '';
-                $lines[] = $r['title'] . ' – ' . fmt_date($r['day_date']);
+            $groups[$r['round_id'] . ' ' . $r['day_date']][] = $r;
+        }
+        foreach ($groups as $group) {
+            $first = $group[0];
+            $lines[] = '';
+            $lines[] = $first['title'] . ' – ' . fmt_date($first['day_date']);
+            if ($names) {
+                foreach ($group as $r) {
+                    $lines[] = '  ' . fmt_range($r['start_time'], $r['end_time']) . '  ' . $r['name'];
+                }
+            } else {
+                $vars = ['count' => count($group), 'from' => fmt_time($first['start_time']), 'to' => fmt_time($group[count($group) - 1]['end_time'])];
+                $lines[] = '  ' . (count($group) === 1 ? __('1 Termin um {from}', $vars) : __('{count} Termine zwischen {from} und {to}', $vars));
             }
-            $lines[] = '  ' . fmt_range($r['start_time'], $r['end_time']) . '  ' . $r['name'];
+            if (($notes = self::notes($group)) !== []) {
+                $lines[] = '  ' . __('Auffällig: {notes}', ['notes' => implode(', ', $notes)]);
+            }
+            $lines[] = '  ' . __('Übersicht und Druckansicht: {url}', ['url' => abs_url('/admin/round/' . (int) $first['round_id'], ['lang' => null])]);
         }
         if (!$rows) {
+            $lines[] = '';
             $lines[] = __('(keine Buchungen)');
-        }
-        $roundIds = array_unique(array_column($rows, 'round_id'));
-        $lines[] = '';
-        foreach ($roundIds as $rid) {
-            $lines[] = __('Übersicht und Druckansicht: {url}', ['url' => abs_url('/admin/round/' . (int) $rid, ['lang' => null])]);
         }
         $lines[] = '';
         $lines[] = '--';
-        $lines[] = __('Diese Zusammenfassung können Sie im Profil abbestellen. Bitte löschen Sie sie nach den Vorgaben Ihrer Schule, spätestens 15 Monate nach dem Termin.');
+        $lines[] = $names
+            ? __('Diese Zusammenfassung enthält Namen. Bitte löschen Sie sie, sobald Sie sie nicht mehr brauchen, spätestens zum Ende des Schuljahres. Abbestellen können Sie sie im Profil.')
+            : __('Diese Zusammenfassung enthält keine Namen: Die Terminliste sehen Sie nach der Anmeldung über den Link. Abbestellen können Sie sie im Profil.');
+        return implode("\n", $lines);
+    }
 
-        $attachments = $rows ? [[
-            'name' => $icsName,
-            'type' => 'text/calendar; charset=utf-8; method=PUBLISH',
-            'content' => IcsExport::forRound(['title' => $rows[0]['title']], $rows),
-        ]] : [];
-        return Mailer::send((string) $user['email'], $subject, implode("\n", $lines), $attachments);
+    /**
+     * What stands out in the bookings of a day, without names or addresses: the same name or address more than
+     * once (siblings, or someone booking many slots), parents' bookings without an address (they cannot be told
+     * about changes), mails that could not be delivered and appointments that no longer fit the schedule.
+     * @param list<array> $rows from bookings()
+     * @return list<string> e.g. ["2× gleicher Name", "1× ohne E-Mail-Adresse"]
+     */
+    public static function notes(array $rows): array
+    {
+        $names = $emails = [];
+        $noEmail = $failed = $conflicts = 0;
+        foreach ($rows as $r) {
+            $name = mb_strtolower((string) preg_replace('/\s+/u', ' ', trim((string) $r['name'])));
+            $names[$name] = ($names[$name] ?? 0) + 1;
+            $email = mb_strtolower(trim((string) ($r['email'] ?? '')));
+            if ($email !== '') {
+                $emails[$email] = ($emails[$email] ?? 0) + 1;
+            } elseif (($r['source'] ?? 'parent') === 'parent') {
+                $noEmail++;
+            }
+            $failed += ($r['mail_failed_at'] ?? null) !== null ? 1 : 0;
+            $conflicts += !empty($r['is_conflict']) ? 1 : 0;
+        }
+        $twice = static fn (array $counts): int => array_sum(array_filter($counts, static fn (int $n): bool => $n > 1));
+        return array_values(array_filter([
+            $twice($names) ? __('{count}× gleicher Name', ['count' => $twice($names)]) : '',
+            $twice($emails) ? __('{count}× gleiche E-Mail-Adresse', ['count' => $twice($emails)]) : '',
+            $noEmail ? __('{count}× ohne E-Mail-Adresse', ['count' => $noEmail]) : '',
+            $failed ? __('{count}× E-Mail nicht zugestellt', ['count' => $failed]) : '',
+            $conflicts ? __('{count}× passt nicht mehr zum Zeitplan', ['count' => $conflicts]) : '',
+        ]));
     }
 }

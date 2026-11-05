@@ -80,7 +80,11 @@ schools (GDPR/DSGVO, TDDDG) and multilingual families.
   bookings needs an extra tick, checked on the server. Print view per round or day.
 - Translation of title and description **in the teacher's browser** (Chrome/Edge Translator API with a
   local model, no text leaves the device), manually editable.
-- Summary mails: evening before a day and after the booking deadline (time and name only).
+- Summary mails: evening before a day and after the booking deadline, per day the number of appointments,
+  anything worth a look (the same name or address twice, no address, undelivered mails, conflicts) and the
+  link to the list; names and a calendar file (without names) only where the school allows them.
+- Links from the mails: signing in leads back to the page asked for, and a signed-in browser lands signed in
+  even from a webmailer (interim page for the `SameSite=Strict` cookie).
 - Reminder to parents the evening before, with the link to cancel (only with an e-mail address; can be
   turned off per round; entries made by the teacher only after the parents got a confirmation).
 - A mail the mail server refused is retried from a **mail queue** and marked *E-Mail nicht zugestellt*
@@ -291,6 +295,8 @@ All options are documented in [`config/config.sample.php`](config/config.sample.
 | `hosting` | – | web host per language, replaces `[[HOSTER]]` in the privacy policy |
 | `access_link_hours` | `48` | validity of invitation/reset links |
 | `summary_evening_hour` | `18` | time of the evening summary |
+| `summary_names` | `false` | the school allows names in the summaries (each account chooses, new ones start without; variable `SUMMARY_NAMES`) |
+| `allowed_account_domains` | `[]` | accounts may only use addresses at these domains, e.g. `['schule.example.org']` (variable `ALLOWED_ACCOUNT_DOMAINS`) |
 | `mail_queue` | see file | mails per cron run (`batch`), seconds per run (`seconds`), reminders, summaries and mails to many parents after a change per hour (`hourly_limit`, `0` = no limit), sending after the response with PHP-FPM (`after_response`) |
 | `cron_alert_hours` | `12` | warn admins and mail the operator after this many hours without a completed cron run (`0` = off) |
 | `rate_limits` | see file | generous, since many parents share an IP (mobile CGNAT, school Wi-Fi); mails to parents per teacher account and hour (`teacher_mail` from entries, `teacher_bulk` after a change of a day or round) |
@@ -316,7 +322,8 @@ values are listed for admins on the dashboard.
 - Change links: 256-bit random tokens, only their SHA-256 hash is stored.
 - Admin session: cookie limited to `/admin`, `HttpOnly`, `Secure`, `SameSite=Strict`, idle and absolute
   timeouts, ID regeneration; password changes end all other sessions, an admin can end all sessions of all
-  accounts. No session for anonymous visitors.
+  accounts. No session (no file, no cookie) for requests without the cookie; after signing in back to the
+  page asked for (admin paths only).
 - Admin rights and e-mail addresses change only with the password of the acting admin; security mails to
   the account holder, the previous address and all admins; at least one active admin under a row lock;
   password links are never shown on screen. Password and token parameters are `#[\SensitiveParameter]`.
@@ -348,7 +355,8 @@ values are listed for admins on the dashboard.
 - Browser storage only on explicit request (§ 25 TDDDG): "remember my appointment" is an unticked checkbox;
   the light/dark choice stores only `light`/`dark`.
 - The mandatory checkbox is worded as *acknowledgement* of the privacy notice, not as consent (Art. 13 GDPR).
-- Automatic deletion as described above; summary mails to teachers contain no parent e-mail addresses.
+- Automatic deletion as described above; summary mails to teachers contain no names unless the school
+  allows them, and never parent e-mail addresses. Teachers can give their own reply address for parents.
 - The mail queue holds references only; a cancellation by the teacher keeps just what that one mail needs
   (no link) until it is sent, at most 48 hours.
 
