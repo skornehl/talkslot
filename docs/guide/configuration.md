@@ -70,11 +70,11 @@ hosting account; PHP must be able to read it. The connection is then encrypted, 
 server shows a certificate of that CA for exactly the name in `db.host` (a host name, not an IP address,
 unless the certificate names it).
 
-If something does not fit, the site answers 503 like for any other database problem, the
+If something does not fit, the site answers 503 as for any other database problem, the
 [health check]({{ '/guide/deployment/' | relative_url }}#health-check) of a deployment reports
 `db_unreachable`, and the alert mail (only with `alert_email`: without the database there is no admin
 address) says *Cannot connect to MySQL using SSL* (wrong or unreadable file, certificate for another name)
-or *MySQL server has gone away* (the server offers no TLS), followed by a hint to `db.ssl_ca`.
+or *MySQL server has gone away* (the server offers no TLS), followed by a hint about `db.ssl_ca`.
 
 ## Languages
 

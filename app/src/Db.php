@@ -111,9 +111,9 @@ final class Db
             PDO::ATTR_STRINGIFY_FETCHES => false,
             PDO::ATTR_TIMEOUT => 5, // don't hang for minutes if the database goes down
         ];
-        $ca = trim((string) ($db['ssl_ca'] ?? ''));
+        $ca = is_string($db['ssl_ca'] ?? null) ? trim($db['ssl_ca']) : ''; // another type: a warning on the dashboard
         if ($ca !== '' && !str_starts_with($ca, '/') && !preg_match('~^[A-Za-z]:[\\\\/]~', $ca)) {
-            throw new PDOException('db.ssl_ca must be an absolute path (the CA certificate of the database server)');
+            throw new PDOException('db.ssl_ca must be an absolute path, the path of the CA certificate of the database server');
         }
         if ($ca !== '') {
             $options[self::mysqlAttribute('SSL_CA')] = $ca;
@@ -131,16 +131,18 @@ final class Db
     /**
      * A failed connection with db.ssl_ca: the driver only says "Cannot connect to MySQL using SSL" (wrong or
      * unreadable CA file, a certificate for another name) or "MySQL server has gone away" (a server without
-     * TLS). The alert mail then names the setting to check.
+     * TLS). The alert mail then names the setting to check. Without quotes or brackets: ErrorPage::sanitize()
+     * would cut them out of the alert mail and the log.
      */
     private static function explain(PDOException $e, array $db): PDOException
     {
-        if (trim((string) ($db['ssl_ca'] ?? '')) === '' || str_starts_with($e->getMessage(), 'db.ssl_ca')) {
-            return $e;
+        $tls = in_array((int) ($e->errorInfo[1] ?? 0), [2002, 2006], true) || preg_match('/\[(2002|2006)\]/', $e->getMessage()) === 1;
+        if (!is_string($db['ssl_ca'] ?? null) || trim($db['ssl_ca']) === '' || !$tls) {
+            return $e; // e.g. a wrong password: the hint would point the wrong way
         }
-        return new PDOException($e->getMessage() . ' (db.ssl_ca is set: check that the file is readable for PHP and holds the CA'
-            . ' that signed the database server\'s certificate, that db.host is the name in that certificate and that the'
-            . ' server offers TLS at all)', 0, $e);
+        return new PDOException($e->getMessage() . ' – db.ssl_ca is set: check that PHP can read the file, that it holds the CA that'
+            . ' signed the certificate of the database server, that db.host is the name in that certificate and that the server'
+            . ' offers TLS', 0, $e);
     }
 
     public static function run(string $sql, array $params = []): PDOStatement
