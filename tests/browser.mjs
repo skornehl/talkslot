@@ -173,6 +173,37 @@ try {
   const demoRound = await js(`[...document.querySelectorAll('a[href^="/admin/round/"]')].find(a => a.textContent.trim() === 'Elternsprechtag Klasse 7b')?.getAttribute('href')`);
   check('demo data present (dev/demo.sh)', /^\/admin\/round\/\d+$/.test(demoRound || '') && /^\/admin\/round\/\d+$/.test(mathRound || ''), `${demoRound} ${mathRound}`);
 
+  // Expert review P1-4: the browser holds back the SameSite=Strict session cookie on a link from another site
+  // (here a data: page, as from a webmailer); an interim page opens it again from this site
+  section('Admin: a link from another site (e.g. a webmailer), signing in leads back');
+  await cdp.send('Network.enable');
+  const sessionCookie = async () => (await cdp.send('Network.getCookies', { urls: [`${BASE}/admin/x`] })).cookies.find((c) => c.name === 'tp_admin')?.value;
+  /** Waits until the page at path has loaded and is not the interim page (it has the same address). */
+  const landed = async (path, timeout = 10000) => {
+    for (const end = Date.now() + timeout; Date.now() < end; await sleep(100)) {
+      try {
+        if (await js(`location.pathname === ${JSON.stringify(path)} && document.readyState === 'complete' && !document.querySelector('meta[http-equiv=refresh]')`)) return true;
+      } catch { /* navigating */ }
+    }
+    return false;
+  };
+  const sessionBefore = await sessionCookie();
+  const linkPage = cdp.once('Page.loadEventFired');
+  await cdp.send('Page.navigate', { url: 'data:text/html,' + encodeURIComponent(`<a href="${BASE}${demoRound}">Elternsprechtag</a>`) });
+  await linkPage;
+  await js(`document.querySelector('a').click()`, { gesture: true });
+  check('link from another site: the page opens signed in, the session stays (no new cookie)', await landed(demoRound)
+    && await js(`document.querySelector('h1')?.textContent.trim() === 'Elternsprechtag Klasse 7b'`) && await sessionCookie() === sessionBefore && !!sessionBefore,
+    await js('location.href + " " + document.title').catch((e) => e.message));
+  await cdp.send('Network.deleteCookies', { name: 'tp_admin', url: `${BASE}/admin/x` });
+  await goto(demoRound);
+  check('signed out: the login page keeps the page asked for', await js(`location.pathname === '/admin/login' && document.querySelector('[name=next]')?.value === ${JSON.stringify(demoRound)}`),
+    await js('location.href'));
+  await js(`document.querySelector('[name=username]').value = ${JSON.stringify(USER)}; document.querySelector('[name=password]').value = ${JSON.stringify(PASS)}`);
+  await navigating(`document.querySelector('[name=password]').form.requestSubmit()`);
+  check('signing in leads back to that page', await js(`location.pathname === ${JSON.stringify(demoRound)} && document.querySelector('h1')?.textContent.trim() === 'Elternsprechtag Klasse 7b'`),
+    await js('location.href'));
+
   section('Admin: new round form (times, dates, breaks, preview)');
   await goto('/admin/round/new');
   check('time typed as 1430 becomes 14:30 while typing', (await type('#start_time', '1430')) === '14:30');

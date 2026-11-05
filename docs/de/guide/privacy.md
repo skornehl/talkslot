@@ -17,7 +17,7 @@ TDDDG. Diese Seite erläutert die Designentscheidungen; sie ist keine Rechtsbera
 | Gekürzte, per HMAC gehashte IP-Adressen; HMAC-Hashes von Konto-IDs und Geräte-Cookies mit fehlgeschlagenen Anmeldungen | Datenbank (Rate Limiting) | spätestens nach 24 Stunden |
 | Geräte-Cookie eines Admin- oder Lehrkraft-Kontos (Zufallszahl, Zeitpunkt, Signatur) | Browser der Person | nach 365 Tagen, bei jeder Anmeldung erneuert |
 | Konten der Lehrkräfte | Datenbank | durch einen Admin; inaktive Konten ohne Runden in Gebrauch 15 Monate nach der letzten Anmeldung, zusammen mit ihren Entwürfen |
-| Zusammenfassungen per E-Mail an Lehrkräfte (Uhrzeit und Name, keine E-Mail-Adressen) | Postfach der Lehrkraft | von der Schule betrieben: die Datenschutzerklärung sagt höchstens 15 Monate zu; privat betrieben: Vorgaben der Schule (die Vorlage empfiehlt 15 Monate) |
+| Zusammenfassungen per E-Mail an Lehrkräfte (standardmäßig die Zahl der Termine und der Link, keine Namen; Uhrzeit und Name nur, wo die Schule sie erlaubt; nie E-Mail-Adressen) | Postfach der Lehrkraft | mit Namen: spätestens zum Ende des Schuljahres (Vorlage der Datenschutzerklärung; bei privatem Betrieb empfiehlt die Vorlage das, es gelten die Regeln der Schule) |
 | Protokoll der Änderungen durch Admins (wer, wann, was; keine Daten von Eltern) | Datenbank | nach 90 Tagen (`audit_log_days`) |
 
 TalkSlot führt **keine** eigenen Zugriffsprotokolle. Für die Logs des Webservers ist der Hoster
@@ -38,6 +38,15 @@ Datenschutzerklärung.
   dann schon gelöscht, deshalb behält der Eintrag, was genau diese E-Mail braucht (Adresse, Sprache, Name,
   Termin, Lehrkraft; keinen Link, keinen Token, keine Beschreibung), bis sie verschickt ist, höchstens
   48 Stunden. Auch das nennt die Vorlage.
+- **Zusammenfassungen ohne Namen:** Die E-Mails an Lehrkräfte bleiben in deren Postfächern, womöglich
+  privaten bei einem Anbieter außerhalb der EU, und in daraus synchronisierten Kalendern; TalkSlot kann sie
+  dort nicht löschen, und Auskunfts- oder Löschanfragen hießen, Postfächer zu durchsuchen. Standardmäßig
+  nennen sie deshalb je Tag nur die Zahl der Termine, Auffälliges (damit jemand, der viele Termine bucht,
+  weiterhin auffällt) und den Link zur Liste im Adminbereich. Namen und eine Kalenderdatei, deren Einträge
+  statt Namen die Runde tragen, nur, wo die Schule sie erlaubt (`summary_names`) und das Konto sie ankreuzt;
+  neue Konten beginnen ohne. `allowed_account_domains` hält die Adressen der Konten und damit
+  Zusammenfassungen und Antworten der Eltern in den Postfächern der Schule. Lehrkräfte können statt der
+  Adresse ihres Kontos eine eigene Antwortadresse für Eltern angeben.
 - **Erinnerungen nur, wo Eltern davon wissen:** Wer selbst bucht, bekommt die Erinnerung, wenn sie für die
   Runde beim Buchen eingeschaltet war (das Formular sagt es). Einträge der Lehrkraft bekommen sie erst, wenn
   eine Bestätigung oder Änderungsmitteilung bei den Eltern angekommen ist, denn diese E-Mail informiert über
@@ -185,9 +194,11 @@ Vor dem Start:
      Terminvergabe einschließlich der E-Mails, die sie verschickt; Lehrkräfte nutzen das Angebot für ihre
      Elterngespräche. Das Gespräch selbst, Notizen, die Zusammenfassungen im Postfach der Lehrkraft und
      Ausdrucke gehören zur Arbeit der Lehrkraft an ihrer Schule: Verantwortlich ist dafür in der Regel die
-     Schule, es gelten deren Regeln (die Vorlage empfiehlt, die Zusammenfassungen nach höchstens 15 Monaten zu
-     löschen). Lehrkräfte sollten für ihr Konto die dienstliche E-Mail-Adresse angeben; sonst landen die
-     Zusammenfassungen in einem privaten Postfach, eventuell bei einem Anbieter außerhalb der EU. Schulen
+     Schule, es gelten deren Regeln (die Zusammenfassungen enthalten keine Namen, solange Namen nicht erlaubt
+     sind; die Vorlage empfiehlt, solche mit Namen bis zum Ende des Schuljahres zu löschen). Lehrkräfte
+     sollten für ihr Konto die dienstliche E-Mail-Adresse angeben; sonst landen die Zusammenfassungen in einem
+     privaten Postfach, eventuell bei einem Anbieter außerhalb der EU (`allowed_account_domains` kann die
+     Domain der Schule vorschreiben). Schulen
      können eigene Vorgaben haben, welche Dienste ihre Lehrkräfte nutzen dürfen; Lehrkräfte sollten das mit
      ihrer Schulleitung oder der oder dem Datenschutzbeauftragten der Schule klären. Bestimmt die Schule über
      die Terminvergabe selbst mit – etwa weil sie sie als ihr Werkzeug für Elterngespräche einführt, ihren

@@ -84,7 +84,7 @@ Please have native speakers review translations.
 | `mail.transport` | `mail` | `mail` (PHP `mail()`), `smtp` (bundled PHPMailer) or `none` | `MAIL_TRANSPORT` |
 | `mail.from_address` | – | sender address (domain with SPF/DKIM) | `MAIL_FROM` |
 | `mail.from_name` | `TalkSlot` | sender name; follows `APP_NAME` when deployed | `MAIL_FROM_NAME` |
-| `mail.reply_to` | – | optional; mails to parents use the teacher as reply-to | `MAIL_REPLY_TO` |
+| `mail.reply_to` | – | optional; mails to parents use the teacher's reply address (*Mein Profil*) or else the teacher's e-mail address as reply-to | `MAIL_REPLY_TO` |
 | `mail.smtp.host` / `port` | – / `587` | | `SMTP_HOST` / `SMTP_PORT` |
 | `mail.smtp.encryption` | `tls` | `tls` (STARTTLS), `ssl` or `none` | `SMTP_ENCRYPTION` |
 | `mail.smtp.user` / `pass` | – | | `SMTP_USER` / `SMTP_PASS` (secrets) |
@@ -111,6 +111,17 @@ under Art. 28 GDPR. The servers are located in Germany.*
 | `summary_evening_hour` | `18` | from this hour, teachers get the summary for the next day and parents the reminder |
 | `audit_log_days` | `90` | entries of the admin log (*Protokoll*) are deleted after this many days |
 | `cron_alert_hours` | `12` | without a completed cron run for this many hours, admins see a warning on the dashboard and the operator gets an alert mail ([cron monitoring]({{ '/guide/operations/' | relative_url }}#cron-monitoring); `0` = off); deployment variable `CRON_ALERT_HOURS` |
+
+## Summaries and accounts {#summaries-and-accounts}
+
+| Option | Default | Meaning | Deployment |
+|---|---|---|---|
+| `summary_names` | `false` | the school allows names in the summaries for teachers, with a calendar file of the appointments (itself without names); each account then chooses *Mit Namen* in its profile, new ones start without. `false`: per day the number of appointments, anything worth a look and the link to the list only ([Teacher guide]({{ '/guide/teachers/' | relative_url }}#summary-mails)) | `SUMMARY_NAMES` (`1`) |
+| `allowed_account_domains` | `[]` | accounts may only use addresses at these domains, e.g. `['schule.example.org']`: the exact domain, umlauts as punycode (`xn--…`). A new or changed address elsewhere (account, reply address for parents, installer) is refused; an address from before at another domain gets no summaries and no replies of parents until it is changed (instead of such a reply address, the account's e-mail address is used if it is allowed). `[]` = any address | `ALLOWED_ACCOUNT_DOMAINS` (comma-separated) |
+
+Set `summary_names` only where all accounts use work addresses whose deletion rules the school controls,
+for instance together with `allowed_account_domains`: summary mails stay in mailboxes and synchronised
+calendars that TalkSlot cannot delete.
 
 ## Mail queue
 

@@ -12,7 +12,7 @@ Die Lehrkräfte, die über diese Plattform Gesprächstermine anbieten, nutzen si
 
 # 2. Zweck der Verarbeitung
 
-Über diese Seite können Erziehungsberechtigte Gesprächstermine (z. B. zum Elternsprechtag) mit der auf der Buchungsseite genannten Lehrkraft vereinbaren, ändern und absagen. Solche Gespräche gehören zum Bildungs- und Erziehungsauftrag der Schule. Die Daten werden ausschließlich zur Organisation und Durchführung dieser Termine sowie – nur Termin und Name – zum Nachweis der geführten Gespräche in E-Mail-Zusammenfassungen an die Lehrkraft (höchstens 15 Monate) verarbeitet und nicht für andere Zwecke genutzt.
+Über diese Seite können Erziehungsberechtigte Gesprächstermine (z. B. zum Elternsprechtag) mit der auf der Buchungsseite genannten Lehrkraft vereinbaren, ändern und absagen. Solche Gespräche gehören zum Bildungs- und Erziehungsauftrag der Schule. Die Daten werden ausschließlich zur Organisation und Durchführung dieser Termine verarbeitet, dazu gehören auch Zusammenfassungen per E-Mail an die Lehrkraft, und nicht für andere Zwecke genutzt.
 
 # 3. Welche Daten verarbeitet werden
 
@@ -46,7 +46,7 @@ Mit dem Pflicht-Häkchen im Buchungsformular bestätigen Sie nur, dass Sie diese
 - Sagt die Lehrkraft Ihren Termin ab oder löscht sie einen Termintag oder die Terminrunde, werden die betroffenen Buchungen sofort gelöscht. Haben Sie eine E-Mail-Adresse angegeben, erhalten Sie eine Absage per E-Mail.
 - Gekürzte und gehashte IP-Adressen werden spätestens nach 24 Stunden gelöscht.
 - **E-Mails, die noch versendet werden** (z. B. die Erinnerung am Vorabend oder eine Bestätigung, die nicht sofort zugestellt werden konnte): Bis zum Versand wird nur vermerkt, welche E-Mail zu welcher Buchung aussteht, ohne Adresse und Inhalt; beides entsteht erst beim Versand aus Ihrer Buchung. Der Vermerk wird nach dem Versand gelöscht, spätestens nach 48 Stunden und mit Ihrer Buchung. Einzige Ausnahme ist die Absage durch die Lehrkraft: Ihre Buchung ist dann schon gelöscht, deshalb werden für diese E-Mail Adresse, Sprache, Name und Termin (ohne Link) bis zum Versand aufbewahrt und danach gelöscht, ebenfalls spätestens nach 48 Stunden.
-- **Zusammenfassungs-E-Mails an die Lehrkraft** (siehe Abschnitt 6) enthalten Termin und Namen – ohne E-Mail-Adresse – und werden als Nachweis der Gespräche **spätestens 15 Monate nach dem Termin** gelöscht. In der Regel geschieht das gesammelt nach dem Ende des Schuljahres; die Frist von 15 Monaten stellt sicher, dass auch Termine vom Schuljahresbeginn dabei fristgerecht gelöscht werden.
+- **Zusammenfassungs-E-Mails an die Lehrkraft** (siehe Abschnitt 6) enthalten je Tag die Zahl der Termine und einen Link zur Terminliste in der Terminvergabe, aber keine Namen und keine E-Mail-Adressen. Nur wenn die Schule es freigegeben hat, enthalten sie zusätzlich Uhrzeit und Namen; die Lehrkraft löscht sie dann, sobald sie sie nicht mehr braucht, **spätestens zum Ende des Schuljahres**.
 - Möchten Sie, dass auch diese Einträge früher gelöscht werden, genügt eine kurze Nachricht an die Schule (Abschnitt 1) oder an die Lehrkraft (Art. 17 DSGVO).
 - Ausdrucke der Terminliste werden nach dem Termin vernichtet.
 
@@ -57,7 +57,7 @@ Inhaltlich haben nur die Lehrkraft der Terminrunde, in der Sie gebucht haben, un
 - **Hosting:** [[HOSTER]]
 - **E-Mail-Versand:** über den Mailserver des Hosters (siehe oben).
 - **Übersetzung der Texte der Lehrkraft:** Titel und Beschreibung einer Terminrunde, die die Lehrkraft verfasst, können zur Anzeige in mehreren Sprachen übersetzt werden. Die automatische Übersetzung erfolgt ausschließlich im Browser der Lehrkraft auf deren eigenem Gerät, über die Programmierschnittstelle „Translator API“ von Chrome bzw. Edge mit einem lokal gespeicherten Übersetzungsmodell (nicht über die Browserfunktion „Seite übersetzen“). Die Texte werden dabei an keinen Übersetzungsdienst übermittelt. Beim ersten Gebrauch lädt der Browser das Sprachmodell vom Hersteller (Google bzw. Microsoft) herunter; dabei werden keine Texte übertragen. Übersetzt werden **keine Daten von Eltern**, sondern ausschließlich diese Texte der Lehrkraft.
-- **Zusammenfassungen an die Lehrkraft:** Die Lehrkraft kann am Vorabend eines Termintags und nach Buchungsschluss eine E-Mail mit der Terminliste (Uhrzeit und Name, ohne E-Mail-Adressen) erhalten.
+- **Zusammenfassungen an die Lehrkraft:** Die Lehrkraft kann am Vorabend eines Termintags und nach Buchungsschluss eine E-Mail mit der Zahl der gebuchten Termine erhalten, ohne E-Mail-Adressen; Uhrzeit und Namen nur, wenn die Schule das freigegeben hat.
 
 Eine Übermittlung in Länder außerhalb der EU bzw. des EWR (Drittländer) findet nicht statt.
 
