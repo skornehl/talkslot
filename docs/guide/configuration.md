@@ -54,6 +54,12 @@ again). Bookings, change links, invitation and password links are random tokens 
 | `db.user` / `db.pass` | – | `DB_USER` / `DB_PASS` |
 | `db.prefix` | `tp_` | `DB_PREFIX`; letters, digits and `_`, empty for no prefix |
 
+**Sharing a database.** Every table and every foreign key gets the prefix, so another application or a second
+TalkSlot (a test and a live site, two schools) can use the same database with a prefix of its own. The installer
+refuses table or foreign key names that are already taken, and if it fails half-way it drops the tables it
+created, so it can simply be run again. Older installations kept their foreign key names without the prefix
+(`fk_…`); next to one of them, a second installation needs a prefix that is not empty.
+
 ## Languages
 
 | Option | Default | Meaning | Deployment |

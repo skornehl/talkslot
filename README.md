@@ -120,7 +120,8 @@ schools (GDPR/DSGVO, TDDDG) and multilingual families.
   dashboard and the operator gets an alert mail, daily while it lasts (GitHub disables scheduled workflows
   in public repositories after 60 days without activity).
 - Database migrations run automatically and only ever add columns/tables.
-- Table prefix (default `tp_`), so a database can be shared with other applications.
+- Table prefix (default `tp_`) for tables and foreign keys, so a database can be shared with other applications
+  or a second TalkSlot.
 
 ## Requirements
 

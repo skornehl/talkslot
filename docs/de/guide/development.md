@@ -65,6 +65,10 @@ Syntaxfehlers.
   Releases werden daraus abgeleitet.
 - **Datenbank:** ausschließlich Prepared Statements; das SQL-Audit im Unit-Test schlägt bei
   eingesetzten (verketteten) Variablen fehl.
+- **Tabellenpräfix:** SQL nennt die Tabellen ohne Präfix, `Db::prefix()` setzt es davor. Eine neue Tabelle kommt in
+  `Db::TABLES`, ein Fremdschlüssel heißt `fk_…` (er bekommt das Präfix ebenfalls; zum Löschen den Namen mit
+  `Db::foreignKey()` nachschlagen, da ältere Installationen ihn ohne Präfix haben), kein Alias heißt wie eine
+  Tabelle, und eine benannte Sperre läuft über `Db::lock()`. Unit-Tests prüfen alle vier Regeln.
 - **Admin-Routen:** Tragen Sie eine Route in `AdminController::ROUTES` mit der Rolle, die sie braucht, als
   viertem Element ein (`'teacher'` für jedes angemeldete Konto, `'admin'` nur für Admin-Konten). Eine Route
   ohne bekannte Rolle ist nur für Admins erreichbar. GET-Routen dürfen keine Daten verändern; der Smoke-Test

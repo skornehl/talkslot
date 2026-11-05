@@ -57,6 +57,13 @@ Abgemeldet wird dadurch niemand; dafür gibt es *Benutzer → Alle Sitzungen bee
 | `db.user` / `db.pass` | – | `DB_USER` / `DB_PASS` |
 | `db.prefix` | `tp_` | `DB_PREFIX`; Buchstaben, Ziffern und `_`, leer für kein Präfix |
 
+**Eine Datenbank teilen.** Jede Tabelle und jeder Fremdschlüssel bekommt das Präfix, sodass eine andere
+Anwendung oder ein zweites TalkSlot (Test- und Live-Seite, zwei Schulen) dieselbe Datenbank mit einem eigenen
+Präfix nutzen kann. Der Installer lehnt Tabellen- oder Fremdschlüsselnamen ab, die schon vergeben sind, und löscht
+nach einem Abbruch mitten in der Installation die angelegten Tabellen wieder, sodass er einfach erneut laufen
+kann. Ältere Installationen haben ihre Fremdschlüssel ohne Präfix angelegt (`fk_…`); neben einer solchen braucht
+eine zweite Installation ein Präfix, das nicht leer ist.
+
 ## Sprachen {#languages}
 
 | Option | Standard | Bedeutung | Deployment |
