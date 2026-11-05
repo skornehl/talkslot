@@ -29,6 +29,18 @@ itself, otherwise the private person, association or independent provider whose 
 5. **Templates** (*Vorlagen*, optional): set up the usual formats once, e.g. your parent-teacher day.
 6. **Invite teachers** and, if you like, further admins (*Benutzer*).
 
+**Ready to start?** (*Bereit für den Start?*, linked at the top of *Texte*) shows all of this on one page, each
+point as *Erledigt* (done), *Bitte prüfen* (please check) or *Noch offen* (still to do), with the way to fix it:
+imprint and privacy policy, the school's data protection officer (only when operated by the school), mail
+delivery, cron job, server and configuration, and the permissions of the configuration file. Until the first
+round has been active, the overview of the rounds shows this checklist instead of the separate warnings on
+these points. Mail delivery always stays at *Bitte prüfen*: only a test booking with your own address shows
+whether the mails arrive.
+
+**What's new** (*Was ist neu*): after an update, the overview lists what changed in how admins and teachers
+work, for example a new option in the profile or a changed default, so that it does not look like an error.
+*Verstanden* (got it) hides the notes for your account. Accounts created later do not get the older notes.
+
 If the dashboard warns that the configuration can be read by every user of the server, set the
 permissions of the files it lists to `600` or pass the warning on to whoever runs the server: they contain
 the database and mail passwords. If these may have got out in the meantime, see

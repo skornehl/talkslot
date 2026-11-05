@@ -31,6 +31,18 @@ des deutschen Admin-Bereichs; jedes Konto kann ihn unter *Mein Profil* auf Engli
 5. ***Vorlagen*** (optional): die üblichen Formate einmal anlegen, z. B. Ihren Elternsprechtag.
 6. **Lehrkräfte einladen** und bei Bedarf weitere Admins (*Benutzer*).
 
+***Bereit für den Start?*** (verlinkt oben unter *Texte*) zeigt all das auf einer Seite, jeden Punkt als
+*Erledigt*, *Bitte prüfen* oder *Noch offen*, mit dem Weg zur Lösung: Impressum und Datenschutzerklärung,
+die bzw. der Datenschutzbeauftragte der Schule (nur bei Betrieb durch die Schule), E-Mail-Versand, Cronjob,
+Server und Konfiguration sowie die Rechte der Konfigurationsdatei. Bis die erste Runde aktiv war, zeigt die
+Übersicht der Runden diese Liste statt der einzelnen Warnungen zu diesen Punkten. Der E-Mail-Versand bleibt
+immer bei *Bitte prüfen*: Ob die E-Mails ankommen, zeigt nur eine Testbuchung mit Ihrer eigenen Adresse.
+
+***Was ist neu***: Nach einem Update nennt die Übersicht, was sich für Admins und Lehrkräfte geändert hat,
+z. B. eine neue Einstellung im Profil oder eine geänderte Voreinstellung, damit das nicht wie ein Fehler
+wirkt. *Verstanden* blendet die Hinweise für Ihr Konto aus. Später angelegte Konten bekommen die älteren
+Hinweise nicht.
+
 Warnt die Übersicht, dass die Konfiguration für alle Benutzer des Servers lesbar ist, setzen Sie die
 Rechte der genannten Dateien auf `600` oder geben Sie die Warnung an die technische Betreuung weiter: Sie
 enthalten die Passwörter für Datenbank und Mailversand. Könnten diese inzwischen in falsche Hände gelangt

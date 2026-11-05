@@ -22,6 +22,7 @@ use App\Notifier;
 use App\Operator;
 use App\Outbox;
 use App\RateLimiter;
+use App\Readiness;
 use App\RoundCode;
 use App\ScheduleChange;
 use App\ScheduleService;
@@ -32,6 +33,7 @@ use App\Time;
 use App\Translator;
 use App\TrustedDevice;
 use App\View;
+use App\WhatsNew;
 
 /**
  * Admin area (German or English, see AdminI18n).
@@ -76,6 +78,7 @@ final class AdminController
         ['GET', '#^/profile$#', 'profile', 'teacher'],
         ['POST', '#^/profile$#', 'profileSave', 'teacher'],
         ['POST', '#^/profile/summaries$#', 'summaryNoticeSeen', 'teacher'],
+        ['POST', '#^/news$#', 'newsSeen', 'teacher'],
         ['POST', '#^/password$#', 'passwordSave', 'teacher'],
         ['GET', '#^/password-change$#', 'passwordChangeForm', 'teacher'],
         ['POST', '#^/password-change$#', 'passwordChangeSave', 'teacher'],
@@ -88,6 +91,7 @@ final class AdminController
         ['POST', '#^/users/(\d+)/delete$#', 'userDelete', 'admin'],
         ['POST', '#^/users/end-sessions$#', 'endAllSessions', 'admin'],
         ['GET', '#^/texts$#', 'texts', 'admin'],
+        ['GET', '#^/start$#', 'readiness', 'admin'],
         ['POST', '#^/texts/operator$#', 'operatorSave', 'admin'],
         ['GET', '#^/page/(imprint|privacy)/([a-z]{2})$#', 'pageForm', 'admin'],
         ['POST', '#^/page/(imprint|privacy)/([a-z]{2})$#', 'pageSave', 'admin'],
@@ -273,6 +277,7 @@ final class AdminController
             $r['deletion_at'] = Cleanup::deletionAt($r, $r['last_day']);
         }
         unset($r);
+        $legalHints = Auth::isAdmin() ? array_merge(self::operatorHints(), self::legalHints(LegalTexts::outdated())) : [];
         $this->render('admin/dashboard', [
             'title' => $all ? __('Alle Terminrunden') : __('Meine Terminrunden'),
             'rounds' => $rounds,
@@ -296,7 +301,11 @@ final class AdminController
             'operatorMissing' => !Operator::ready(),
             'typeMissing' => !Auth::isAdmin() && Operator::ready() && Operator::type() === null,
             'textsOpen' => !Auth::isAdmin() && Operator::ready() && LegalTexts::open() !== [],
-            'legalHints' => Auth::isAdmin() ? array_merge(self::operatorHints(), self::legalHints(LegalTexts::outdated())) : [],
+            'legalHints' => $legalHints,
+            // Until the first round has been public: one checklist ("Bereit für den Start?") instead of the setup warnings
+            'readiness' => Auth::isAdmin() && !Readiness::started() ? Readiness::checks($legalHints) : null,
+            // "Was ist neu" after an update: what changed in how admins and teachers work
+            'whatsNew' => WhatsNew::unseen((array) Auth::user()),
             // Offboarding: active accounts nobody has signed in to for a long time (only the number)
             'unusedAccounts' => Auth::isAdmin() ? (int) Db::value(
                 'SELECT COUNT(*) FROM users WHERE is_active = 1 AND COALESCE(last_login_at, created_at) < ?',
@@ -1443,6 +1452,20 @@ final class AdminController
         Http::redirect('/admin');
     }
 
+    /** "Was ist neu" confirmed: the notes so far are not shown again to this account. */
+    private function newsSeen(): void
+    {
+        WhatsNew::markSeen(Auth::id());
+        Http::redirect('/admin');
+    }
+
+    /** "Bereit für den Start?": the checklist of the setup (Readiness). */
+    private function readiness(): void
+    {
+        $items = Readiness::checks(array_merge(self::operatorHints(), self::legalHints(LegalTexts::outdated())));
+        $this->render('admin/readiness', ['title' => __('Bereit für den Start?'), 'items' => $items, 'started' => Readiness::started()]);
+    }
+
     private function passwordSave(): void
     {
         $result = $this->changePasswordFromPost();
@@ -1761,6 +1784,7 @@ final class AdminController
             $me = Auth::user();
             $this->withoutSession(static fn () => AccountSecurity::adminChange(AccountSecurity::DELETED, $user, $me));
         }
+        WhatsNew::forget($id);
         $this->flash('success', __('Benutzer „{name}“ mit allen Runden und Buchungen gelöscht.', ['name' => $user['username']]));
         $this->parentsFlash($parents);
         Http::redirect('/admin/users');

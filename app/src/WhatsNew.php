@@ -5,13 +5,12 @@ namespace App;
 
 /**
  * "Was ist neu" (expert review P2-13): after an update, admins and teachers see on their overview what changed in
- * how they work, so that a changed default does not look like an error. Each account confirms the notes once
- * (users.news_seen: the key of the newest note it has seen).
+ * how they work, so that a changed default does not look like an error. Each account confirms the notes once.
  *
- * A note is added here with a key of its date and a letter (keys sort as text, newest last) and the German
- * text in __() (English in app/lang/admin/en/). Only changes that admins or teachers notice belong here, not
- * every fix. Accounts from before the notes (news_seen NULL) see them all; new accounts ('') none of the older
- * ones: their first overview marks them as seen.
+ * A note is added here with a key of its date and a letter (keys sort as text, newest last) and the German text
+ * in __() (English in app/lang/admin/en/). Only changes that admins or teachers notice belong here, not every fix.
+ * An account sees the notes newer than the one it confirmed last (setting "news_seen:<id>"), but none from before
+ * the day it was created: for a new account nothing has changed. No migration needed.
  */
 final class WhatsNew
 {
@@ -32,23 +31,32 @@ final class WhatsNew
     }
 
     /**
-     * The notes an account has not seen yet. A new account ('') sees none: the call marks them all as seen.
+     * The notes an account has not confirmed yet, without those from before it was created.
+     * @param array{id: int|string, role?: string, created_at?: string} $user
      * @return list<string>
      */
     public static function unseen(array $user): array
     {
-        $seen = $user['news_seen'] ?? null;
-        if ($seen === '') {
-            self::markSeen((int) $user['id']);
-            return [];
-        }
+        $seen = (string) Settings::get(self::setting((int) $user['id']), '');
+        $created = substr((string) ($user['created_at'] ?? ''), 0, 10);
         $admin = ($user['role'] ?? '') === 'admin';
-        return array_values(array_column(array_filter(self::entries(),
-            static fn (array $e): bool => $e['key'] > (string) $seen && ($admin || !$e['admin'])), 'text'));
+        return array_values(array_column(array_filter(self::entries(), static fn (array $e): bool => $e['key'] > $seen
+            && substr($e['key'], 0, 10) >= $created && ($admin || !$e['admin'])), 'text'));
     }
 
     public static function markSeen(int $userId): void
     {
-        Db::run('UPDATE users SET news_seen = ? WHERE id = ?', [self::latest(), $userId]);
+        Settings::set(self::setting($userId), self::latest());
+    }
+
+    /** When an account is deleted. */
+    public static function forget(int $userId): void
+    {
+        Db::run('DELETE FROM settings WHERE name = ?', [self::setting($userId)]);
+    }
+
+    private static function setting(int $userId): string
+    {
+        return 'news_seen:' . $userId;
     }
 }

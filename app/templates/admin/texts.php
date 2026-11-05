@@ -4,6 +4,7 @@ $outdated ??= [];
 $behind = static fn (string $page): string => isset($outdated[$page])
     ? ' <span class="small muted">– ' . e($outdated[$page] ? __('Vorlage geändert') : __('weicht von der Vorlage ab')) . '</span>' : ''; ?>
 <h1><?= e(__('Impressum & Datenschutz')) ?></h1>
+<p><a href="<?= e(url('/admin/start')) ?>"><?= e(__('Bereit für den Start? Alle Punkte der Einrichtung auf einen Blick')) ?></a></p>
 <?php foreach ($operatorHints ?? [] as $h): ?>
   <div class="alert alert-warning" role="status"><p><?= e($h) ?></p></div>
 <?php endforeach; ?>
