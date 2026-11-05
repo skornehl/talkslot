@@ -63,6 +63,11 @@ Syntaxfehlers.
   Unit-Test prüft das).
 - **Commits:** [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `docs:`, …);
   Releases werden daraus abgeleitet.
+- **Coding-Standard:** PSR-12 für `app/src`, `bin`, `public` und `config` (`.php-cs-fixer.dist.php` nennt zwei
+  Regeln, denen der Code anders folgt). `dev/cs.sh` prüft ihn mit einem festgelegten PHP-CS-Fixer,
+  `dev/cs.sh --fix` wendet ihn an; die CI prüft ihn im Workflow *Coding standard*. Verankerte reguläre Ausdrücke
+  enden auf `\z`, nicht auf `$`, das auch vor einem abschließenden Zeilenumbruch passt (ein Unit-Test prüft die
+  Routen).
 - **Datenbank:** ausschließlich Prepared Statements; das SQL-Audit im Unit-Test schlägt bei
   eingesetzten (verketteten) Variablen fehl.
 - **Admin-Routen:** Tragen Sie eine Route in `AdminController::ROUTES` mit der Rolle, die sie braucht, als

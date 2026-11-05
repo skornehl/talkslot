@@ -439,7 +439,11 @@ final class PublicController
     /** Notice on the appointment page after booking or moving: "mail=1" sent, "mail=queued" follows later. */
     private static function mailParam(?string $result): ?string
     {
-        return match ($result) { Notifier::SENT => '1', Notifier::QUEUED => 'queued', default => null };
+        return match ($result) {
+            Notifier::SENT => '1',
+            Notifier::QUEUED => 'queued',
+            default => null,
+        };
     }
 
     /** Shared validation for name/email/slot (also used by the admin). */

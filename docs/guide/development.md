@@ -61,6 +61,10 @@ and checks that PHP 7.4 and 8.2 get the message of `App\Platform` instead of a s
   pages use `app/lang/*.php`, and every key must exist in every language (a unit test checks this).
 - **Commits:** [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `docs:`, …);
   releases are derived from them.
+- **Coding standard:** PSR-12 for `app/src`, `bin`, `public` and `config` (`.php-cs-fixer.dist.php` names two
+  rules the code follows differently). `dev/cs.sh` checks it with a pinned PHP-CS-Fixer, `dev/cs.sh --fix`
+  applies it; CI runs the check in the workflow *Coding standard*. Anchored regular expressions end with
+  `\z`, not `$`, which also matches before a final line break (a unit test checks the routes).
 - **Database:** only prepared statements; the unit test's SQL audit fails on concatenated variables.
 - **Admin routes:** add a route to `AdminController::ROUTES` with the role it needs as the fourth element
   (`'teacher'` for every signed-in account, `'admin'` for admin accounts only). A route without a known role
