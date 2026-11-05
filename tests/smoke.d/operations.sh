@@ -38,6 +38,10 @@ op_round() { [ "$(printf '%s\n' "$1" | tail -1)" = 200 ] && printf '%s\n' "$1" |
 check "a round at /health or /cron from before keeps its page; with the key header the address is the health check or the web cron" \
   'op_round "$OP_RP" health && op_round "$OP_RC" cron && op_is "$OP_H" 200 ok && [ "$OP_CW" = 404 ]' \
   || echo "    $(printf '%s\n' "$OP_RP" | tail -1) $(printf '%s\n' "$OP_RC" | tail -1) $OP_CW"
+OP_NR=$(curl -s -o /dev/null -w '%{redirect_url}' -b "$J" --data-urlencode "csrf=$T" -d "title=Health&booking_deadline_hours=0&cancel_deadline_hours=0&day_dates%5B%5D=$(date -d '+12 day' +%F)&start_time=10:00&end_time=11:00&slot_minutes=30" "$B/admin/round/new" | grep -o '[0-9]*$')
+OP_NS=$(DBQ "SELECT slug FROM tp_rounds WHERE id = ${OP_NR:-0}")
+curl -s -o /dev/null -b "$J" -d "csrf=$T&confirm=1" "$B/admin/round/${OP_NR:-0}/delete"
+check "a new round titled \"Health\" gets the next free address ($OP_NS), removed again" '[ "$OP_NS" = health-2 ] && [ -z "$(DBQ "SELECT id FROM tp_rounds WHERE id = $OP_NR")" ]'
 
 # A migration that fails is reported by the health check (503 + alert mail) instead of being swallowed, while
 # pages are still served (that is why the deployment cannot rely on them); here the settings table is missing.
