@@ -1,4 +1,8 @@
-<?php /** @var array $languages @var string $mailTransport @var string $mailFrom @var string $operatorContact @var ?string $operatorType @var list<string> $operatorHints @var string $privacyTemplate */ use App\Csrf; ?>
+<?php /** @var array $languages @var string $mailTransport @var string $mailFrom @var string $operatorContact @var ?string $operatorType @var list<string> $operatorHints @var string $privacyTemplate @var list<string> $legalHints @var list<string> $outdatedHints @var array<string, bool> $outdated */ use App\Csrf;
+// Behind the current template (LegalTexts::outdated()): with a version marker "changed", otherwise "differs"
+$outdated ??= [];
+$behind = static fn (string $page): string => isset($outdated[$page])
+    ? ' <span class="small muted">– ' . e($outdated[$page] ? __('Vorlage geändert') : __('weicht von der Vorlage ab')) . '</span>' : ''; ?>
 <h1><?= e(__('Impressum & Datenschutz')) ?></h1>
 <?php foreach ($operatorHints ?? [] as $h): ?>
   <div class="alert alert-warning" role="status"><p><?= e($h) ?></p></div>
@@ -21,14 +25,17 @@
 <?php foreach ($legalHints ?? [] as $h): ?>
   <div class="alert alert-warning" role="status"><p><?= e($h) ?> <?= __h('Die Vorlage steht in {file} bzw. {file2}.', ['file' => '<code>app/templates/pages/' . e($privacyTemplate) . '.de.md</code>', 'file2' => '<code>' . e($privacyTemplate) . '.en.md</code>']) ?></p></div>
 <?php endforeach; ?>
+<?php foreach ($outdatedHints ?? [] as $h): ?>
+  <div class="alert alert-warning" role="status" data-legal-outdated><p><?= e($h) ?></p></div>
+<?php endforeach; ?>
 <section class="card">
   <p><?= __h('Diese Texte gelten für die gesamte Plattform. In Impressum und Datenschutzerklärung wird die Stelle {controller} automatisch durch die Angaben oben ersetzt. {hoster} in der Datenschutzerklärung wird durch die Angaben zum Hoster aus der Konfiguration ersetzt.', ['controller' => '<code>[[VERANTWORTLICHE]]</code>', 'hoster' => '<code>[[HOSTER]]</code>']) ?></p>
   <p><?= __h('Impressum und Datenschutzerklärung gibt es als Vorlage für beide Betriebsarten. Ändern Sie oben die Betriebsart, werden unveränderte Vorlagentexte durch die passende Vorlage ersetzt, bearbeitete Texte nie; eine Vorlage laden Sie beim jeweiligen Text über „Vorlage laden“. Angaben in eckigen Klammern wie {example} müssen Sie selbst ersetzen – vorher lässt sich keine Runde aktivieren.', ['example' => '<code>[ZUSTÄNDIGE LANDESDATENSCHUTZBEHÖRDE MIT ADRESSE]</code>']) ?></p>
   <p><?= e(__('Die Datenschutzerklärung gibt es als Vorlage auch in den anderen Elternsprachen (maßgeblich ist die deutsche Fassung). Diese Übersetzungen enthalten dieselben Platzhalter wie die deutsche Fassung. Solange darin noch welche offen sind, sehen Eltern in dieser Sprache die englische bzw. deutsche Fassung mit einem Hinweis in ihrer Sprache; Runden lassen sich trotzdem aktivieren. Das Impressum gibt es nur auf Deutsch und Englisch.')) ?></p>
   <ul class="link-list">
     <?php foreach ($languages as $l): ?>
-      <li><a href="<?= e(url('/admin/page/imprint/' . $l)) ?>"><?= e(__('Impressum ({lang})', ['lang' => strtoupper($l)])) ?></a></li>
-      <li><a href="<?= e(url('/admin/page/privacy/' . $l)) ?>"><?= e(__('Datenschutzerklärung ({lang})', ['lang' => strtoupper($l)])) ?></a></li>
+      <li><a href="<?= e(url('/admin/page/imprint/' . $l)) ?>"><?= e(__('Impressum ({lang})', ['lang' => strtoupper($l)])) ?></a><?= $behind("imprint/$l") ?></li>
+      <li><a href="<?= e(url('/admin/page/privacy/' . $l)) ?>"><?= e(__('Datenschutzerklärung ({lang})', ['lang' => strtoupper($l)])) ?></a><?= $behind("privacy/$l") ?></li>
     <?php endforeach; ?>
   </ul>
 </section>

@@ -85,6 +85,17 @@ return [
     // Daily summary for teachers and reminders to parents are sent for the next day from this hour on (local time)
     'summary_evening_hour' => 18,
 
+    // Summaries for teachers (the evening before, after the booking deadline) give the number of appointments,
+    // anything that stands out and the link to the list, but no names. true: the school allows names in them
+    // (with a calendar file of the appointments, itself without names); each teacher then chooses in the
+    // profile, new accounts start without. Only where the accounts use work addresses whose deletion rules
+    // the school controls (see allowed_account_domains)
+    'summary_names' => false,
+
+    // Accounts may only use addresses at these domains (summaries, password links, replies of parents), e.g.
+    // ['schule.example.org']; the exact domain, umlauts as punycode (xn--…). [] = any address
+    'allowed_account_domains' => [],
+
     // Language of the admin area for accounts without their own choice and before signing in
     // (de or en; everybody can change it under "Mein Profil")
     'admin_language' => 'de',

@@ -90,7 +90,7 @@ prüfen.
 | `mail.transport` | `mail` | `mail` (PHP `mail()`), `smtp` (mitgeliefertes PHPMailer) oder `none` | `MAIL_TRANSPORT` |
 | `mail.from_address` | – | Absenderadresse (Domain mit SPF/DKIM) | `MAIL_FROM` |
 | `mail.from_name` | `TalkSlot` | Absendername; folgt beim Deployment `APP_NAME` | `MAIL_FROM_NAME` |
-| `mail.reply_to` | – | optional; E-Mails an Eltern nutzen die Lehrkraft als Antwortadresse | `MAIL_REPLY_TO` |
+| `mail.reply_to` | – | optional; E-Mails an Eltern nutzen die Antwortadresse der Lehrkraft (*Mein Profil*) oder sonst ihre E-Mail-Adresse als Antwortadresse | `MAIL_REPLY_TO` |
 | `mail.smtp.host` / `port` | – / `587` | | `SMTP_HOST` / `SMTP_PORT` |
 | `mail.smtp.encryption` | `tls` | `tls` (STARTTLS), `ssl` oder `none` | `SMTP_ENCRYPTION` |
 | `mail.smtp.user` / `pass` | – | | `SMTP_USER` / `SMTP_PASS` (Secrets) |
@@ -118,6 +118,17 @@ Auftragsverarbeiter nach Art. 28 DSGVO. Die Server stehen in Deutschland.*
 | `summary_evening_hour` | `18` | ab dieser Stunde erhalten Lehrkräfte die Zusammenfassung für den nächsten Tag und Eltern die Erinnerung |
 | `audit_log_days` | `90` | Einträge im *Protokoll* der Admin-Änderungen werden nach so vielen Tagen gelöscht |
 | `cron_alert_hours` | `12` | ohne vollständigen Cron-Lauf seit so vielen Stunden sehen Admins eine Warnung in der Übersicht, und der Betreiber erhält eine Warnmeldung per E-Mail ([Überwachung des Cronjobs]({{ '/de/guide/operations/' | relative_url }}#cron-monitoring); `0` = aus); Deploy-Variable `CRON_ALERT_HOURS` |
+
+## Zusammenfassungen und Konten {#zusammenfassungen-und-konten}
+
+| Option | Standard | Bedeutung | Deployment |
+|---|---|---|---|
+| `summary_names` | `false` | die Schule erlaubt Namen in den Zusammenfassungen für Lehrkräfte, mit einer Kalenderdatei der Termine (selbst ohne Namen); jedes Konto wählt dann im Profil *Mit Namen*, neue Konten beginnen ohne. `false`: je Tag nur die Zahl der Termine, Auffälliges und der Link zur Liste ([Anleitung für Lehrkräfte]({{ '/de/guide/teachers/' | relative_url }}#zusammenfassungen-per-e-mail)) | `SUMMARY_NAMES` (`1`) |
+| `allowed_account_domains` | `[]` | Konten dürfen nur Adressen bei diesen Domains verwenden, z. B. `['schule.example.org']`: genau die Domain, Umlaute als Punycode (`xn--…`). Eine neue oder geänderte Adresse anderswo (Konto, Antwortadresse für Eltern, Installer) wird abgelehnt; an eine Adresse von vorher bei einer anderen Domain gehen keine Zusammenfassungen und keine Antworten der Eltern, bis sie geändert ist (statt einer solchen Antwortadresse gilt die E-Mail-Adresse des Kontos, wenn sie erlaubt ist). `[]` = jede Adresse | `ALLOWED_ACCOUNT_DOMAINS` (durch Kommas getrennt) |
+
+Setzen Sie `summary_names` nur, wenn alle Konten dienstliche Adressen verwenden, deren Löschregeln die
+Schule in der Hand hat, etwa zusammen mit `allowed_account_domains`: Zusammenfassungen bleiben in
+Postfächern und synchronisierten Kalendern, die TalkSlot nicht löschen kann.
 
 ## Mail-Warteschlange
 

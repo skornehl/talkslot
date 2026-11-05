@@ -66,11 +66,13 @@ check('German', fmt_date('2026-08-17') === 'Montag, 17.08.2026');
 check('English', I18n::with('en', static fn () => fmt_date('2026-08-17')) === 'Monday, 17 August 2026');
 
 echo "Calendar export\n";
-$ics = App\IcsExport::forRound(['title' => 'Elternsprechtag, Test'], [
-    ['id' => 7, 'name' => "Müller; Anna, Ben\nund ein sehr langer Name, der über die fünfundsiebzig Byte einer Zeile hinausgeht", 'day_date' => '2026-08-17', 'start_time' => '14:00:00', 'end_time' => '14:15:00'],
+// The teacher's calendar file (summaries): the round as the title, never the parents' names (expert review P1-4)
+$ics = App\IcsExport::forRound(['title' => "Elternsprechtag; Klasse 3b, Raum\nund ein sehr langer Titel, der über die fünfundsiebzig Byte einer Zeile hinausgeht"], [
+    ['id' => 7, 'name' => 'Müller, Anna', 'day_date' => '2026-08-17', 'start_time' => '14:00:00', 'end_time' => '14:15:00'],
 ]);
 check('start time in UTC (summer time −2 h)', str_contains($ics, "DTSTART:20260817T120000Z\r\n"));
-check('special characters escaped', str_contains(str_replace("\r\n ", '', $ics), 'SUMMARY:Müller\; Anna\, Ben\nund'));
+check('special characters escaped, title = round, no name', str_contains(str_replace("\r\n ", '', $ics), "SUMMARY:Elternsprechtag\\; Klasse 3b\\, Raum\\nund ein sehr langer Titel")
+    && !str_contains(str_replace("\r\n ", '', $ics), 'Müller'));
 check('lines ≤ 75 bytes, CRLF', max(array_map('strlen', explode("\r\n", $ics))) <= 75 && !preg_match("/[^\r]\n/", $ics));
 check('folding does not split UTF-8', mb_check_encoding(str_replace("\r\n ", '', $ics), 'UTF-8') && mb_check_encoding($ics, 'UTF-8'));
 
@@ -249,7 +251,7 @@ unset($_SERVER['REMOTE_ADDR']);
 check('rate limit key: IPv4 truncated to /24, IPv6 to /48, invalid IP gets its own key',
     $keys[0] === $keys[1] && $keys[2] === $keys[3] && $keys[0] !== $keys[2] && $keys[4] !== $keys[0] && strlen($keys[4]) === 64);
 check('slot duration 0 → no slots', SlotGenerator::compute('14:00:00', '16:00:00', 0, []) === []);
-$ics = App\IcsExport::forRound(['title' => 'R'], [['id' => 1, 'day_date' => '2026-11-20', 'start_time' => '14:00:00', 'end_time' => '14:15:00', 'name' => str_repeat('a', 66) . 'ÄÖÜäöüß' . str_repeat('ö', 40)]]);
+$ics = App\IcsExport::forRound(['title' => str_repeat('a', 66) . 'ÄÖÜäöüß' . str_repeat('ö', 40)], [['id' => 1, 'day_date' => '2026-11-20', 'start_time' => '14:00:00', 'end_time' => '14:15:00', 'name' => 'R']]);
 $folded = array_filter(explode("\r\n", $ics), static fn ($l) => str_starts_with($l, 'SUMMARY') || str_starts_with($l, ' '));
 check('calendar: long lines folded (max. 75 bytes) without splitting UTF-8 characters',
     count($folded) > 1 && !array_filter($folded, static fn ($l) => strlen($l) > 75 || !mb_check_encoding($l, 'UTF-8')));

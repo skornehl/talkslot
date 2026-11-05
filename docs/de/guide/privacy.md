@@ -17,7 +17,7 @@ TDDDG. Diese Seite erläutert die Designentscheidungen; sie ist keine Rechtsbera
 | Gekürzte, per HMAC gehashte IP-Adressen; HMAC-Hashes von Konto-IDs und Geräte-Cookies mit fehlgeschlagenen Anmeldungen | Datenbank (Rate Limiting) | spätestens nach 24 Stunden |
 | Geräte-Cookie eines Admin- oder Lehrkraft-Kontos (Zufallszahl, Zeitpunkt, Signatur) | Browser der Person | nach 365 Tagen, bei jeder Anmeldung erneuert |
 | Konten der Lehrkräfte | Datenbank | durch einen Admin; inaktive Konten ohne Runden in Gebrauch 15 Monate nach der letzten Anmeldung, zusammen mit ihren Entwürfen |
-| Zusammenfassungen per E-Mail an Lehrkräfte (Uhrzeit und Name, keine E-Mail-Adressen) | Postfach der Lehrkraft | von der Schule betrieben: die Datenschutzerklärung sagt höchstens 15 Monate zu; privat betrieben: Vorgaben der Schule (die Vorlage empfiehlt 15 Monate) |
+| Zusammenfassungen per E-Mail an Lehrkräfte (standardmäßig die Zahl der Termine und der Link, keine Namen; Uhrzeit und Name nur, wo die Schule sie erlaubt; nie E-Mail-Adressen) | Postfach der Lehrkraft | mit Namen: spätestens zum Ende des Schuljahres (Vorlage der Datenschutzerklärung; bei privatem Betrieb empfiehlt die Vorlage das, es gelten die Regeln der Schule) |
 | Protokoll der Änderungen durch Admins (wer, wann, was; keine Daten von Eltern) | Datenbank | nach 90 Tagen (`audit_log_days`) |
 
 TalkSlot führt **keine** eigenen Zugriffsprotokolle. Für die Logs des Webservers ist der Hoster
@@ -38,6 +38,15 @@ Datenschutzerklärung.
   dann schon gelöscht, deshalb behält der Eintrag, was genau diese E-Mail braucht (Adresse, Sprache, Name,
   Termin, Lehrkraft; keinen Link, keinen Token, keine Beschreibung), bis sie verschickt ist, höchstens
   48 Stunden. Auch das nennt die Vorlage.
+- **Zusammenfassungen ohne Namen:** Die E-Mails an Lehrkräfte bleiben in deren Postfächern, womöglich
+  privaten bei einem Anbieter außerhalb der EU, und in daraus synchronisierten Kalendern; TalkSlot kann sie
+  dort nicht löschen, und Auskunfts- oder Löschanfragen hießen, Postfächer zu durchsuchen. Standardmäßig
+  nennen sie deshalb je Tag nur die Zahl der Termine, Auffälliges (damit jemand, der viele Termine bucht,
+  weiterhin auffällt) und den Link zur Liste im Adminbereich. Namen und eine Kalenderdatei, deren Einträge
+  statt Namen die Runde tragen, nur, wo die Schule sie erlaubt (`summary_names`) und das Konto sie ankreuzt;
+  neue Konten beginnen ohne. `allowed_account_domains` hält die Adressen der Konten und damit
+  Zusammenfassungen und Antworten der Eltern in den Postfächern der Schule. Lehrkräfte können statt der
+  Adresse ihres Kontos eine eigene Antwortadresse für Eltern angeben.
 - **Erinnerungen nur, wo Eltern davon wissen:** Wer selbst bucht, bekommt die Erinnerung, wenn sie für die
   Runde beim Buchen eingeschaltet war (das Formular sagt es). Einträge der Lehrkraft bekommen sie erst, wenn
   eine Bestätigung oder Änderungsmitteilung bei den Eltern angekommen ist, denn diese E-Mail informiert über
@@ -234,9 +243,11 @@ Vor dem Start:
      Terminvergabe einschließlich der E-Mails, die sie verschickt; Lehrkräfte nutzen das Angebot für ihre
      Elterngespräche. Das Gespräch selbst, Notizen, die Zusammenfassungen im Postfach der Lehrkraft und
      Ausdrucke gehören zur Arbeit der Lehrkraft an ihrer Schule: Verantwortlich ist dafür in der Regel die
-     Schule, es gelten deren Regeln (die Vorlage empfiehlt, die Zusammenfassungen nach höchstens 15 Monaten zu
-     löschen). Lehrkräfte sollten für ihr Konto die dienstliche E-Mail-Adresse angeben; sonst landen die
-     Zusammenfassungen in einem privaten Postfach, eventuell bei einem Anbieter außerhalb der EU. Schulen
+     Schule, es gelten deren Regeln (die Zusammenfassungen enthalten keine Namen, solange Namen nicht erlaubt
+     sind; die Vorlage empfiehlt, solche mit Namen bis zum Ende des Schuljahres zu löschen). Lehrkräfte
+     sollten für ihr Konto die dienstliche E-Mail-Adresse angeben; sonst landen die Zusammenfassungen in einem
+     privaten Postfach, eventuell bei einem Anbieter außerhalb der EU (`allowed_account_domains` kann die
+     Domain der Schule vorschreiben). Schulen
      können eigene Vorgaben haben, welche Dienste ihre Lehrkräfte nutzen dürfen; Lehrkräfte sollten das mit
      ihrer Schulleitung oder der oder dem Datenschutzbeauftragten der Schule klären. Bestimmt die Schule über
      die Terminvergabe selbst mit – etwa weil sie sie als ihr Werkzeug für Elterngespräche einführt, ihren
@@ -289,8 +300,51 @@ Offene Platzhalter in den anderen Sprachen (den Übersetzungen der Datenschutzer
 Eltern in dieser Sprache bekommen den englischen Text mit einem Hinweis, bis sie ausgefüllt sind (siehe oben).
 
 Bei einem Update werden nie bearbeitete Texte durch die neuen Vorlagen der Betriebsart ersetzt (siehe
-[Betrieb]({{ '/de/guide/operations/' | relative_url }})), einschließlich neuer Platzhalter. Bearbeitete
-Texte bleiben, wie sie sind; die Hinweise oben bitten darum, sie mit der Vorlage abzugleichen.
+[Betrieb]({{ '/de/guide/operations/' | relative_url }})), einschließlich neuer Platzhalter.
+
+### Neuere Vorlagen für bearbeitete Texte
+
+Bearbeitete Texte werden nie automatisch ersetzt: Was ein Admin geschrieben hat, bleibt. Damit Korrekturen an
+den Vorlagen – z. B. zu Speicherfristen, Empfängern, E-Mails oder Rechtsgrundlagen – trotzdem Installationen
+mit ausgefüllten Texten erreichen, merkt sich TalkSlot zu jedem Text einen **Vorlagenstand**: die Vorlage,
+aus der er gespeichert wurde (Installation, Wechsel der Betriebsart, *Vorlage laden*) oder mit der er zuletzt
+abgeglichen wurde. Kommt mit einem Update eine neuere Vorlage der Betriebsart, sehen Admins im Dashboard und
+unter *Texte*, welche Abschnitte sie seitdem geändert hat, und im Formular des Textes jeweils die alte und
+die neue Fassung, mit *Abschnitte aus der Vorlage übernehmen*, um sie abschnittsweise zu übernehmen; die
+ausgefüllten Angaben bleiben dabei erhalten (siehe [Admins]({{ '/de/guide/admin/' | relative_url }}#rechtstexte)).
+Abschnitte, die ein Admin bewusst umformuliert hat, werden nur gemeldet, wenn die Vorlage sie ebenfalls ändert.
+
+- Der Vorlagenstand ist der Wortlaut der Vorlage selbst, gespeichert in der Tabelle `settings`
+  (`legal_base.<seite>.<sprache>`, keine personenbezogenen Daten). Ein Text, der genau der Vorlage seines
+  Vorlagenstands entspricht, gilt als unbearbeitet und wird durch eine neuere Vorlage ersetzt, auch wenn deren
+  Hash in `OLD_PAGE_HASHES` fehlt.
+- Texte, die bearbeitet wurden, bevor TalkSlot Vorlagenstände festhielt, bekommen beim ersten Aufruf nach dem
+  Update einen, wenn sie den Wortlaut der aktuellen Vorlage haben (nur die Platzhalter ausgefüllt). Sonst nennt
+  der Hinweis die Abschnitte, in denen sie von der aktuellen Vorlage abweichen; hat ein Admin den Text
+  abgeglichen und das bestätigt, erscheinen nur noch spätere Änderungen der Vorlage.
+- Mit Vorlagenstand gilt ein Abschnitt erst als übernommen, wenn keine Zeile mehr im Text steht, die die
+  Vorlage seitdem gestrichen hat – auch nicht neben einem Platzhalter oder an Stelle eines neuen Platzhalters –
+  und jeder Platzhalter im Text steht, den die Vorlage seitdem hinzugefügt hat, auch einer ohne neuen
+  Wortlaut drumherum (z. B. ein Prüfhinweis in eckigen Klammern am Zeilenende oder ein Absatz, der nur aus
+  einem Platzhalter besteht): Ein Platzhalter darf auch durch nichts ausgefüllt sein, sonst sähe die frühere
+  Zeile aus wie die neue, ausgefüllt. Ohne Vorlagenstand lässt sich nicht unterscheiden, ob eine solche Zeile
+  einen Platzhalter ausfüllt oder noch den Wortlaut einer früheren Vorlage hat; bestätigen Sie den Abgleich
+  deshalb einmal.
+- Beim Übernehmen bleiben die ausgefüllten Angaben erhalten, auch wo sie in den Zeilen unter einem Platzhalter
+  am Zeilenende weitergehen (z. B. Name, Anschrift und E-Mail-Adresse der oder des Datenschutzbeauftragten).
+  Was der Text in den übernommenen Abschnitten sonst noch hatte (eigene Zeilen, Angaben in einer Zeile, die die
+  Vorlage geändert hat), listet das Formular als nicht übernommen auf, damit nichts unbemerkt wegfällt, etwa
+  die Kontaktdaten nach Art. 13 Abs. 1 lit. b DSGVO.
+- Der Abgleich steht mit dem Namen des Admins im Protokoll (Rechenschaftspflicht, Art. 5 Abs. 2 DSGVO); so
+  lässt sich zeigen, wann eine Korrektur der Vorlage übernommen wurde. Das Protokoll wird nach
+  `audit_log_days` gelöscht (Standard 90 Tage); wer den Abgleich länger belegen muss, sichert den Eintrag
+  vorher, z. B. zusammen mit der gespeicherten Fassung des Textes.
+- Vorlagen gibt es auf Deutsch und Englisch. Datenschutzerklärungen in den anderen Sprachen (Polnisch,
+  Russisch, Türkisch, Ukrainisch) vergleicht TalkSlot mit keiner Vorlage: Meldet der Hinweis eine Änderung der
+  deutschen oder englischen Fassung, gleichen Sie die Übersetzungen bitte selbst ab.
+
+Die Hinweise zur Betriebsart oben bleiben: Sie erklären, warum ein Wortlaut nicht passt, unabhängig vom
+Vorlagenstand.
 
 Lassen Sie die Texte von jemandem prüfen, der Ihre Situation kennt, an einer Schule am besten von der oder
 dem Datenschutzbeauftragten der Schule; die Vorlagen ersetzen keine Rechtsberatung.

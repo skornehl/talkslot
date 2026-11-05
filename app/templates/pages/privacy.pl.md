@@ -14,7 +14,7 @@ Nauczyciele, którzy oferują na tej platformie terminy rozmów, korzystają z n
 
 # 2. Cel przetwarzania
 
-Na tej stronie rodzice i opiekunowie prawni mogą umawiać, zmieniać i odwoływać terminy rozmów (np. w ramach dnia konsultacji) z nauczycielem wskazanym na stronie rezerwacji. Takie rozmowy należą do zadań dydaktycznych i wychowawczych szkoły. Dane są przetwarzane wyłącznie w celu organizacji i przeprowadzenia tych rozmów oraz – tylko termin oraz imię i nazwisko – jako potwierdzenie odbytych rozmów w zestawieniach wysyłanych e-mailem do nauczyciela (najwyżej przez 15 miesięcy) i nie są wykorzystywane do innych celów.
+Na tej stronie rodzice i opiekunowie prawni mogą umawiać, zmieniać i odwoływać terminy rozmów (np. w ramach dnia konsultacji) z nauczycielem wskazanym na stronie rezerwacji. Takie rozmowy należą do zadań dydaktycznych i wychowawczych szkoły. Dane są przetwarzane wyłącznie w celu organizacji i przeprowadzenia tych rozmów, w tym na potrzeby zestawień wysyłanych e-mailem do nauczyciela, i nie są wykorzystywane do innych celów.
 
 # 3. Jakie dane są przetwarzane
 
@@ -48,7 +48,7 @@ Do rezerwacji terminu nie jest potrzebna Państwa zgoda; przetwarzanie danych re
 - Jeśli nauczyciel odwoła Państwa termin albo usunie dzień z terminami lub cały harmonogram terminów, rezerwacje, których to dotyczy, są natychmiast usuwane. Jeśli podali Państwo adres e-mail, otrzymają Państwo wiadomość o odwołaniu.
 - Skrócone i zahashowane adresy IP są usuwane najpóźniej po 24 godzinach.
 - **Wiadomości e-mail oczekujące na wysłanie** (np. przypomnienie wieczorem w dniu poprzedzającym lub potwierdzenie, którego nie udało się od razu doręczyć): do momentu wysłania zapisywana jest tylko informacja, która wiadomość jest należna dla której rezerwacji, bez adresu i treści; oba powstają dopiero przy wysyłce na podstawie Państwa rezerwacji. Ta informacja jest usuwana po wysłaniu, najpóźniej po 48 godzinach, oraz razem z Państwa rezerwacją. Jedynym wyjątkiem jest odwołanie terminu przez nauczyciela: Państwa rezerwacja jest wtedy już usunięta, dlatego na potrzeby tej wiadomości adres, język, imię i nazwisko oraz termin (bez linku) są przechowywane do momentu wysłania, a następnie usuwane, również najpóźniej po 48 godzinach.
-- **Zestawienia e-mail dla nauczyciela** (zob. punkt 6) zawierają termin oraz imię i nazwisko – bez adresu e-mail – i jako potwierdzenie odbytych rozmów są usuwane **najpóźniej 15 miesięcy po terminie**. Z reguły odbywa się to zbiorczo po zakończeniu roku szkolnego; okres 15 miesięcy zapewnia, że również terminy z początku roku szkolnego zostaną usunięte w terminie.
+- **Zestawienia e-mail dla nauczyciela** (zob. punkt 6) zawierają liczbę terminów w danym dniu oraz link do listy terminów w systemie rezerwacji, ale bez imion i nazwisk i bez adresów e-mail. Tylko jeśli szkoła na to zezwoliła, zawierają dodatkowo godzinę oraz imię i nazwisko; nauczyciel usuwa je wtedy, gdy tylko nie są mu już potrzebne, **najpóźniej z końcem roku szkolnego**.
 - Jeśli chcą Państwo, aby również te wpisy zostały usunięte wcześniej, wystarczy krótka wiadomość do szkoły (punkt 1) lub do nauczyciela (art. 17 RODO).
 - Wydruki listy terminów są niszczone po terminie.
 
@@ -59,7 +59,7 @@ Dostęp do treści Państwa danych mają wyłącznie nauczyciel harmonogramu ter
 - **Hosting:** [[HOSTER]]
 - **Wysyłka e-maili:** przez serwer pocztowy firmy hostingowej (zob. wyżej).
 - **Tłumaczenie tekstów nauczyciela:** tytuł i opis harmonogramu terminów, które pisze nauczyciel, mogą zostać przetłumaczone, aby wyświetlać je w kilku językach. Automatyczne tłumaczenie odbywa się wyłącznie w przeglądarce nauczyciela na jego własnym urządzeniu, za pomocą interfejsu programistycznego „Translator API” przeglądarki Chrome lub Edge z lokalnie zapisanym modelem tłumaczeniowym (nie za pomocą funkcji przeglądarki „Przetłumacz stronę”). Teksty nie są przy tym przekazywane do żadnej usługi tłumaczeniowej. Przy pierwszym użyciu przeglądarka pobiera model językowy od producenta (Google lub Microsoft); nie są przy tym przesyłane żadne teksty. Tłumaczone są **wyłącznie te teksty nauczyciela, a nie dane rodziców**.
-- **Zestawienia dla nauczyciela:** nauczyciel może otrzymać wieczorem przed dniem rozmów oraz po upływie terminu rezerwacji wiadomość e-mail z listą terminów (godzina oraz imię i nazwisko, bez adresów e-mail).
+- **Zestawienia dla nauczyciela:** nauczyciel może otrzymać wieczorem przed dniem rozmów oraz po upływie terminu rezerwacji wiadomość e-mail z liczbą zarezerwowanych terminów, bez adresów e-mail; godzinę oraz imię i nazwisko tylko wtedy, gdy szkoła na to zezwoliła.
 
 Dane nie są przekazywane do państw spoza UE lub EOG (państw trzecich).
 

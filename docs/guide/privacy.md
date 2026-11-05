@@ -17,7 +17,7 @@ This page explains the design decisions; it is not legal advice.
 | Shortened, HMAC-hashed IP addresses; HMAC hashes of account IDs and known-device cookies with failed logins | database (rate limiting) | after 24 hours at the latest |
 | Known-device cookie of an admin or teacher account (random number, time, signature) | that person's browser | after 365 days, renewed at every sign-in |
 | Teacher accounts | database | by an admin; inactive accounts without rounds in use 15 months after the last login, together with their drafts |
-| Summary mails to teachers (time and name, no e-mail addresses) | teacher's mailbox | operated by the school: the privacy policy promises at most 15 months; operated privately: the school's rules (the template recommends 15 months) |
+| Summary mails to teachers (by default the number of appointments and the link, no names; time and name only where the school allows them; never e-mail addresses) | teacher's mailbox | with names: by the end of the school year at the latest (privacy template; operated privately the template recommends it, the school's rules apply) |
 | Log of admin changes (who, when, what; no data of parents) | database | after 90 days (`audit_log_days`) |
 
 TalkSlot keeps **no** access logs of its own. The web server's logs are the web host's responsibility;
@@ -35,6 +35,15 @@ ask how long they are kept and state it in the privacy policy.
   privacy template says so. The only exception is a cancellation by the teacher: the booking is already
   deleted then, so the entry keeps what this one mail needs (address, language, name, appointment,
   teacher; no link, token or description) until it is sent, at most 48 hours. The template says so too.
+- **Summaries without names:** the mails to teachers stay in their mailboxes, maybe private ones with a
+  provider outside the EU, and in calendars synchronised from them; TalkSlot cannot delete them there, and
+  requests for access or erasure would mean searching mailboxes. By default they therefore give, per day,
+  only the number of appointments, anything worth a look (so that someone booking many slots still shows)
+  and the link to the list in the admin area. Names, and a calendar file whose entries carry the round
+  instead of names, only where the school allows them (`summary_names`) and the account ticks them; new
+  accounts start without. `allowed_account_domains` keeps the addresses of accounts, and with them the
+  summaries and the replies of parents, in the school's own mailboxes. Teachers can give their own reply
+  address for parents instead of their account's address.
 - **Reminders only where the parents know about them:** parents who book get the reminder if the round
   had it turned on when they booked (the form says so). Entries made by the teacher get it only once a
   confirmation or change notice reached the parents, as that mail tells them about the entry and the
@@ -213,10 +222,11 @@ Before going live:
    - **Operated privately:** the operator (you, your association or your organisation) is the controller for
      the booking service, including the mails it sends; teachers use the service for their parent meetings.
      The meeting itself, notes, the summary mails in the teacher's mailbox and printed lists are the teacher's
-     work at their school: as a rule the school is responsible for them and its rules apply (the template
-     recommends deleting the summaries after at most 15 months). Teachers should give a work e-mail address
-     for their account; otherwise the summaries end up in a private mailbox, possibly with a provider outside
-     the EU. Schools may have their own rules on which services their teachers may use, so teachers should
+     work at their school: as a rule the school is responsible for them and its rules apply (the summaries
+     contain no names unless names are allowed; the template recommends deleting those with names by the end
+     of the school year). Teachers should give a work e-mail address for their account; otherwise the
+     summaries end up in a private mailbox, possibly with a provider outside the EU
+     (`allowed_account_domains` can require the school's domain). Schools may have their own rules on which services their teachers may use, so teachers should
      check with their school management or the school's data protection officer. If the school has a say in
      the booking service itself – e.g. it introduces it as its tool for parent meetings, requires its teachers
      to use it, or sets its settings, retention or admin accounts – the private template no longer fits: you
@@ -265,8 +275,47 @@ Open placeholders in the other languages (the translations of the privacy policy
 parents in that language get the English text with a notice until they are filled in (see above).
 
 On an update, texts that were never edited are replaced by the new templates of the operator type (see
-[Operations]({{ '/guide/operations/' | relative_url }})), new placeholders included. Edited texts stay as
-they are; the hints above ask you to compare them with the template.
+[Operations]({{ '/guide/operations/' | relative_url }})), new placeholders included.
+
+### Template updates for edited texts
+
+Edited texts are never replaced automatically: what an admin has written stays. So that corrections to the
+templates – e.g. on retention periods, recipients, mails or the legal bases – still reach installations
+whose texts have been filled in, TalkSlot keeps a **version marker** for every text: the template it was
+stored from (installation, change of the operator type, *Vorlage laden*) or last reconciled with. When a newer
+template of the operator type arrives with an update, admins see on the dashboard and under *Texte* which
+sections it has changed since, and on the text form the old and new wording of each, with *Abschnitte aus der
+Vorlage übernehmen* (*Take over the sections from the template*) to take them over section by section,
+keeping the details filled in (see [Admins]({{ '/guide/admin/' | relative_url }}#legal-texts)). Sections an
+admin has deliberately reworded are not flagged unless the template changes them too.
+
+- The marker is the wording of the template itself, stored in the settings table (`legal_base.<page>.<lang>`,
+  no personal data). A text that is exactly the template of its marker counts as unedited and is replaced
+  by a newer template, even if that template's hash is missing from `OLD_PAGE_HASHES`.
+- Texts edited before TalkSlot kept version markers get one on the first request after the update if they
+  have the wording of the current template (only the placeholders filled in). Otherwise the hint lists the
+  sections in which they differ from the current template; once an admin has reconciled the text and
+  confirmed it, only later template changes are shown.
+- With a marker, a section only counts as taken over once the text no longer has any line the template has
+  dropped since – also next to a placeholder or in place of a new placeholder – and has every placeholder the
+  template has added since, also one without new wording around it (e.g. a note to check in square brackets
+  at the end of a line, or a paragraph that is only a placeholder): a placeholder may be filled in by
+  nothing, so otherwise the earlier line would look like the new one filled in. Without a marker it cannot be
+  told whether such a line fills in a placeholder or still has the wording of an earlier template, so confirm
+  the reconciliation once.
+- Taking over keeps the details filled in, also where they go on in the lines below a placeholder at the end
+  of a line (e.g. name, address and e-mail of the data protection officer). Whatever else the text had in
+  the sections taken over (own lines, details in a line the template changed) the form lists as not taken
+  over, so that nothing goes missing unnoticed, e.g. the contact details required by Art. 13(1)(b) GDPR.
+- Reconciling is logged with the admin's name (accountability, Art. 5(2) GDPR), so you can show when a
+  correction of the template was taken over. The log is deleted after `audit_log_days` (90 days by default);
+  if you need to show the reconciliation for longer, keep a copy of the entry before, e.g. together with the
+  saved version of the text.
+- Templates exist in German and English. Privacy policies in the other languages (Polish, Russian, Turkish,
+  Ukrainian) are not compared with any template: when the notice reports a change to the German or English
+  version, please update the translations yourself.
+
+The hints on the operator type above stay: they explain why a wording does not fit, whatever the marker says.
 
 Have the texts reviewed by someone who knows your situation, at a school ideally its data protection
 officer; the templates do not replace legal advice.

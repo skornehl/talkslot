@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\AccountDomains;
 use App\AccountLinks;
 use App\AccountSecurity;
 use App\AdminI18n;
@@ -26,6 +27,7 @@ use App\ScheduleChange;
 use App\ScheduleService;
 use App\SlotGenerator;
 use App\Slug;
+use App\Summaries;
 use App\Time;
 use App\Translator;
 use App\TrustedDevice;
@@ -73,6 +75,7 @@ final class AdminController
         ['POST', '#^/booking/(\d+)/delete$#', 'bookingDelete', 'teacher'],
         ['GET', '#^/profile$#', 'profile', 'teacher'],
         ['POST', '#^/profile$#', 'profileSave', 'teacher'],
+        ['POST', '#^/profile/summaries$#', 'summaryNoticeSeen', 'teacher'],
         ['POST', '#^/password$#', 'passwordSave', 'teacher'],
         ['GET', '#^/password-change$#', 'passwordChangeForm', 'teacher'],
         ['POST', '#^/password-change$#', 'passwordChangeSave', 'teacher'],
@@ -100,9 +103,10 @@ final class AdminController
 
     public function dispatch(string $path, string $method): void
     {
-        // Login, "forgot password" and invitation need no session without an existing cookie
-        // (stateless CSRF tokens, see formToken()); everything else does
-        Auth::startSession(!($path === '/login' || $path === '/forgot' || str_starts_with($path, '/invite/')));
+        // A session only for a browser that brings the session cookie: login, "forgot password" and invitation
+        // work without one (stateless CSRF tokens, see formToken()), every other page sends a browser without it
+        // to the login page before a session exists (signInFirst())
+        Auth::startSession(false);
         header('X-Robots-Tag: noindex, nofollow');
         AdminI18n::set(AdminI18n::forRequest(Auth::check() ? Auth::user() : null));
 
@@ -120,15 +124,7 @@ final class AdminController
             return;
         }
         if (!Auth::check()) {
-            // e.g. account deactivated in the meantime or password changed; notices (such as "session
-            // expired") are kept
-            $flash = $_SESSION['flash'] ?? [];
-            Auth::logout();
-            Auth::startSession();
-            if ($flash) {
-                $_SESSION['flash'] = $flash;
-            }
-            Http::redirect('/admin/login');
+            $this->signInFirst($path, $method);
         }
         if ($method === 'POST' && !Csrf::checkAdmin($_POST['csrf'] ?? null)) {
             $this->flash('error', __('Das Formular ist abgelaufen. Bitte erneut versuchen.'));
@@ -152,6 +148,56 @@ final class AdminController
         $this->render('admin/message', ['title' => __('Nicht gefunden'), 'text' => __('Diese Seite gibt es nicht.')]);
     }
 
+    /**
+     * Not signed in: to the login page, which leads back to the page asked for (a GET, see Auth::returnPath()).
+     * - Without the session cookie no session is started, so no file for scanners and no new cookie in place
+     *   of a valid one. A page opened from another site, such as the link in a summary in a webmailer, comes
+     *   without the cookie even in a signed-in browser, as it is SameSite=Strict: an interim page opens it
+     *   again from this site (meta refresh), then the browser sends the cookie. It does so once: the address it
+     *   opens carries REOPENED, so a browser that still holds the cookie back gets the login page, not a loop.
+     * - With the cookie of a session that is no longer valid (expired, account deactivated, password changed)
+     *   the session ends; a new one only to keep its notices (such as "session expired").
+     */
+    private function signInFirst(string $path, string $method): never
+    {
+        $target = $method === 'GET' ? Auth::returnPath('/admin' . ($path !== '/' ? $path : '') . self::queryString()) : null;
+        if (session_status() !== PHP_SESSION_ACTIVE && Http::isCrossSiteGet() && !isset($_GET[self::REOPENED])) {
+            $url = Http::basePath() . ($target ?? '/admin');
+            $url .= (str_contains($url, '?') ? '&' : '?') . self::REOPENED . '=1';
+            $this->render('admin/message', ['title' => __('Weiterleitung'), 'refresh' => $url,
+                'text' => __('Die Seite öffnet sich gleich. Falls nicht, wählen Sie „Weiter“.'), 'link' => [$url, __('Weiter')]]);
+            exit;
+        }
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            $flash = $_SESSION['flash'] ?? [];
+            Auth::logout();
+            if ($flash) {
+                Auth::startSession();
+                $_SESSION['flash'] = $flash;
+            }
+        }
+        Http::redirect('/admin/login', ['next' => $target]);
+    }
+
+    /** Query parameter of the address the interim page opens (signInFirst()). */
+    private const REOPENED = 'reopened';
+
+    /** "?a=1&b=2" of the request (without REOPENED), or ''. */
+    private static function queryString(): string
+    {
+        $query = implode('&', array_filter(explode('&', (string) ($_SERVER['QUERY_STRING'] ?? '')),
+            static fn (string $pair): bool => $pair !== '' && explode('=', $pair, 2)[0] !== self::REOPENED));
+        return $query !== '' ? '?' . $query : '';
+    }
+
+    /** To a page of the admin area (from Auth::returnPath()) or, without one, the overview. */
+    private static function redirectTo(?string $target): never
+    {
+        $parts = parse_url($target ?? '/admin');
+        parse_str((string) ($parts['query'] ?? ''), $query);
+        Http::redirect((string) ($parts['path'] ?? '/admin'), $query);
+    }
+
     /** May the signed-in account use this route? Only 'teacher' routes are open to teachers (fails closed). */
     private static function allows(array $route, bool $isAdmin): bool
     {
@@ -162,12 +208,15 @@ final class AdminController
 
     private function login(string $error = ''): void
     {
+        // The page to go back to after signing in (see signInFirst())
+        $next = Auth::returnPath(Http::isPost() ? Http::post('next') : Http::query('next'));
         if (Auth::check()) {
-            Http::redirect('/admin');
+            self::redirectTo($next);
         }
         $username = (string) ($_SESSION['login_user'] ?? '');
         unset($_SESSION['login_user']);
-        $this->render('admin/login', ['title' => __('Anmelden'), 'error' => $error, 'username' => $username, 'csrf' => self::formToken('login')], 'admin/layout');
+        $this->render('admin/login', ['title' => __('Anmelden'), 'error' => $error, 'username' => $username, 'csrf' => self::formToken('login'),
+            'next' => $next ?? ''], 'admin/layout');
     }
 
     /**
@@ -192,7 +241,7 @@ final class AdminController
         }
         $result = Auth::attempt(Http::post('username'), Http::postRaw('password'));
         if ($result === true) {
-            Http::redirect('/admin');
+            self::redirectTo(Auth::returnPath(Http::post('next')));
         }
         http_response_code(401);
         $this->login((string) $result);
@@ -235,10 +284,19 @@ final class AdminController
             // Cron job late or never run (only admins can have it fixed)
             'cron' => Auth::isAdmin() ? \App\CronMonitor::status() : null,
             'profileHints' => $this->profileHints(),
+            // Summaries without names: what changed for an account from before (until it confirms)
+            'summaryNotice' => Summaries::notice(Auth::user(), Auth::isAdmin()),
+            // allowed_account_domains: active accounts with an address (e-mail or reply address) that is not allowed;
+            // nothing goes there (no summaries, no replies of parents)
+            'foreignAddresses' => Auth::isAdmin() && AccountDomains::allowed() ? count(array_filter(
+                Db::all("SELECT email, reply_to FROM users WHERE is_active = 1 AND CONCAT(COALESCE(email, ''), COALESCE(reply_to, '')) <> ''"),
+                static fn (array $u): bool => array_filter([(string) $u['email'], (string) $u['reply_to']],
+                    static fn (string $a): bool => $a !== '' && !AccountDomains::permits($a)) !== []
+            )) : 0,
             'operatorMissing' => !Operator::ready(),
             'typeMissing' => !Auth::isAdmin() && Operator::ready() && Operator::type() === null,
             'textsOpen' => !Auth::isAdmin() && Operator::ready() && LegalTexts::splitOpen(LegalTexts::open())[0] !== [],
-            'legalHints' => Auth::isAdmin() ? array_merge(self::operatorHints(), self::legalHints()) : [],
+            'legalHints' => Auth::isAdmin() ? array_merge(self::operatorHints(), self::legalHints(LegalTexts::outdated())) : [],
             // Offboarding: active accounts nobody has signed in to for a long time (only the number)
             'unusedAccounts' => Auth::isAdmin() ? (int) Db::value(
                 'SELECT COUNT(*) FROM users WHERE is_active = 1 AND COALESCE(last_login_at, created_at) < ?',
@@ -1300,6 +1358,12 @@ final class AdminController
         }
         if ((string) $u['email'] === '' && ($u['summary_evening'] || $u['summary_deadline'])) {
             $hints[] = __('Keine E-Mail-Adresse hinterlegt – Zusammenfassungen können nicht versendet werden.');
+        } elseif ((string) $u['email'] !== '' && !AccountDomains::permits((string) $u['email'])) {
+            $hints[] = __('Ihre E-Mail-Adresse ist keine dienstliche Adresse bei {domains}, wie die Schule es vorgibt – bitte ändern. Bis dahin erhalten Sie keine Zusammenfassungen.', ['domains' => implode(', ', AccountDomains::allowed())]);
+        }
+        // A reply address from before allowed_account_domains: not used (Notifier::replyTo())
+        if ((string) $u['reply_to'] !== '' && !AccountDomains::permits((string) $u['reply_to'])) {
+            $hints[] = __('Ihre Antwortadresse für Eltern ist keine dienstliche Adresse bei {domains}, wie die Schule es vorgibt – bitte ändern. Bis dahin gehen Antworten der Eltern nicht an diese Adresse.', ['domains' => implode(', ', AccountDomains::allowed())]);
         }
         return $hints;
     }
@@ -1316,13 +1380,22 @@ final class AdminController
 
     private function profileSave(): void
     {
+        $me = Auth::user();
         $data = [
             'display_name' => mb_substr(Http::post('display_name'), 0, 200),
             'email' => Http::post('email'),
+            'reply_to' => Http::post('reply_to'),
             'summary_evening' => Http::post('summary_evening') === '1' ? 1 : 0,
             'summary_deadline' => Http::post('summary_deadline') === '1' ? 1 : 0,
-            'lang' => in_array(Http::post('lang'), AdminI18n::LANGUAGES, true) ? Http::post('lang') : AdminI18n::of(Auth::user()),
+            // Only offered where the school allows names; otherwise the choice so far stays (NULL included)
+            'summary_names' => \App\Config::get('summary_names', false) ? (Http::post('summary_names') === '1' ? 1 : 0) : $me['summary_names'],
+            'lang' => in_array(Http::post('lang'), AdminI18n::LANGUAGES, true) ? Http::post('lang') : AdminI18n::of($me),
         ];
+        // Password reset links go to the e-mail address, the replies of parents to the reply address: changing
+        // one requires the current password. Only a changed address has to be at an allowed domain, so that an
+        // account from before the rule can still save its profile (and turn the summaries off)
+        $emailChanged = mb_strtolower($data['email']) !== mb_strtolower((string) $me['email']);
+        $replyChanged = mb_strtolower($data['reply_to']) !== mb_strtolower((string) $me['reply_to']);
         $errors = [];
         if ($data['display_name'] === '') {
             $errors[] = __('Bitte einen Anzeigenamen angeben (z. B. „Frau Muster“).');
@@ -1331,12 +1404,18 @@ final class AdminController
             $errors[] = __('Die E-Mail-Adresse ist ungültig.');
         } elseif ($data['email'] !== '' && $this->emailTaken($data['email'], Auth::id())) {
             $errors[] = __('Diese E-Mail-Adresse gehört bereits zu einem anderen Konto.');
+        } elseif ($emailChanged && ($error = AccountDomains::error($data['email'])) !== null) {
+            $errors[] = $error;
         }
-        // Password reset links go to this address: changing it requires the current password
-        $oldEmail = (string) (Auth::user()['email'] ?? '');
-        $emailChanged = mb_strtolower($data['email']) !== mb_strtolower($oldEmail);
-        if (!$errors && $emailChanged
-            && ($error = Auth::confirmPassword(Http::postRaw('current_password'), __('Zum Ändern der E-Mail-Adresse bitte Ihr aktuelles Passwort eingeben.'))) !== null) {
+        if ($data['reply_to'] !== '' && !is_valid_email($data['reply_to'])) {
+            $errors[] = __('Die Antwortadresse für Eltern ist ungültig.');
+        } elseif ($replyChanged && ($error = AccountDomains::error($data['reply_to'])) !== null) {
+            $errors[] = __('Antwortadresse für Eltern:') . ' ' . $error;
+        }
+        if (!$errors && ($emailChanged || $replyChanged)
+            && ($error = Auth::confirmPassword(Http::postRaw('current_password'), $emailChanged
+                ? __('Zum Ändern der E-Mail-Adresse bitte Ihr aktuelles Passwort eingeben.')
+                : __('Zum Ändern der Antwortadresse für Eltern bitte Ihr aktuelles Passwort eingeben.'))) !== null) {
             $errors[] = $error;
         }
         if ($errors) {
@@ -1344,15 +1423,26 @@ final class AdminController
             return;
         }
         // To the previous address, in the language of the account (as it was before this change)
-        $me = Auth::user();
         $this->withoutSession(static fn () => AccountSecurity::contactChanged($me, ['email' => $data['email']] + $me, $me));
         Db::run(
-            'UPDATE users SET display_name = ?, email = ?, summary_evening = ?, summary_deadline = ?, lang = ? WHERE id = ?',
-            [$data['display_name'], $data['email'] !== '' ? $data['email'] : null, $data['summary_evening'], $data['summary_deadline'], $data['lang'], Auth::id()]
+            'UPDATE users SET display_name = ?, email = ?, reply_to = ?, summary_evening = ?, summary_deadline = ?, summary_names = ?, lang = ? WHERE id = ?',
+            [$data['display_name'], $data['email'] !== '' ? $data['email'] : null, $data['reply_to'] !== '' ? $data['reply_to'] : null,
+                $data['summary_evening'], $data['summary_deadline'], $data['summary_names'], $data['lang'], Auth::id()]
         );
         AdminI18n::set($data['lang']); // the confirmation already in the new language
         $this->flash('success', __('Profil gespeichert.'));
         Http::redirect('/admin/profile');
+    }
+
+    /**
+     * The notice on the dashboard about the summaries without names is confirmed (Summaries::notice()). Where
+     * the school allows names, the account keeps them as before; otherwise it is without names from now on,
+     * like a new account, also if the school allows them later (then it chooses in the profile).
+     */
+    private function summaryNoticeSeen(): void
+    {
+        Db::run('UPDATE users SET summary_names = ? WHERE id = ? AND summary_names IS NULL', [\App\Config::get('summary_names', false) ? 1 : 0, Auth::id()]);
+        Http::redirect('/admin');
     }
 
     private function passwordSave(): void
@@ -1447,6 +1537,9 @@ final class AdminController
             $errors[] = __('Bitte eine gültige E-Mail-Adresse angeben – an sie gehen die Zugangsdaten.');
         } elseif ($this->emailTaken($data['email'], $id ?? 0)) {
             $errors[] = __('Für diese E-Mail-Adresse bzw. diesen Benutzernamen gibt es bereits ein Konto.');
+        } elseif ((!$user || $data['email'] !== mb_strtolower((string) $user['email'])) && ($error = AccountDomains::error($data['email'])) !== null) {
+            // Only for a new or changed address: an account from before the rule can still be edited or deactivated
+            $errors[] = $error;
         }
         if (!Auth::validUsername($data['username'])) {
             $errors[] = __('Benutzername: 3–254 Zeichen, nur Buchstaben, Ziffern und . _ @ + -');
@@ -1729,10 +1822,12 @@ final class AdminController
     // ---------------------------------------------------------------- Global texts (admin)
 
     /**
-     * Notes on outdated, hand-edited legal texts (they are not replaced automatically).
+     * Notes on outdated, hand-edited legal texts (they are not replaced automatically); with $outdated
+     * (LegalTexts::outdated()) also those on texts behind the current template (outdatedHints()).
+     * @param ?list<array{key: string, lang: string, known: bool, changes: list<array{heading: ?string}>}> $outdated
      * @return list<string>
      */
-    private static function legalHints(): array
+    private static function legalHints(?array $outdated = null): array
     {
         $list = static fn (array $rows) => strtoupper(implode(', ', array_column($rows, 'lang')));
         $hints = [];
@@ -1792,6 +1887,7 @@ final class AdminController
         if ($noReminder) {
             $hints[] = __('Die Datenschutzerklärung ({languages}) erwähnt die Erinnerung an Eltern am Vortag noch nicht – bitte den Punkt „E-Mail-Adresse“ in Abschnitt 2 an die Vorlage anpassen (oder die Erinnerung in den Runden abschalten).', ['languages' => $list($noReminder)]);
         }
+        array_push($hints, ...($outdated !== null ? self::outdatedHints($outdated) : []));
         $hosting = array_values(array_filter(
             array_column(Db::all("SELECT DISTINCT lang FROM pages WHERE page_key = 'privacy' AND content LIKE '%[[HOSTER]]%' ORDER BY lang"), 'lang'),
             static fn ($l) => \App\Hosting::source((string) $l) === null
@@ -1850,6 +1946,37 @@ final class AdminController
     }
 
     /**
+     * Notes on the texts behind the current template of the operator type (version markers,
+     * LegalTexts::outdated()): the sections the template changed since a text was stored from or reconciled
+     * with it, or for a text edited before the markers existed, the sections in which it differs from it.
+     * @param list<array{key: string, lang: string, known: bool, changes: list<array{heading: ?string}>}> $outdated
+     * @return list<string>
+     */
+    private static function outdatedHints(array $outdated): array
+    {
+        $hints = [];
+        if ($known = array_filter($outdated, static fn (array $t): bool => $t['known'])) {
+            $hints[] = __('Die Vorlagen wurden geändert, seit diese Texte auf ihnen beruhen – {texts}. Bearbeitete Texte werden nicht automatisch ersetzt: Beim jeweiligen Text unter „Texte“ sehen Sie, was sich geändert hat, und können die Abschnitte übernehmen.', ['texts' => self::outdatedTexts($known)]);
+        }
+        if ($unknown = array_filter($outdated, static fn (array $t): bool => !$t['known'])) {
+            $hints[] = __('Diese Texte weichen von der aktuellen Vorlage ab, und es ist nicht bekannt, mit welchem Stand der Vorlage sie zuletzt abgeglichen wurden – {texts}. Bearbeitete Texte werden nicht automatisch ersetzt: Beim jeweiligen Text unter „Texte“ sehen Sie die Unterschiede und können die Abschnitte übernehmen oder den Abgleich bestätigen.', ['texts' => self::outdatedTexts($unknown)]);
+        }
+        return $hints;
+    }
+
+    /**
+     * The texts behind the template with their sections: "Datenschutzerklärung (DE): 5. Speicherdauer und
+     * Löschung, 6. Empfänger" (more than three: their number).
+     * @param array<array{key: string, lang: string, changes: list<array{heading: ?string}>}> $texts
+     */
+    private static function outdatedTexts(array $texts): string
+    {
+        return implode('; ', array_map(static fn (array $t): string => self::pageLabel($t['key']) . ' (' . strtoupper($t['lang']) . '): '
+            . (count($t['changes']) > 3 ? __('{count} Abschnitte', ['count' => count($t['changes'])])
+                : implode(', ', array_map(static fn (array $c): string => LegalTexts::sectionTitle($c['heading']), $t['changes']))), $texts));
+    }
+
+    /**
      * Details for legal notice and privacy policy and the operator type. A changed type replaces the texts
      * nobody has edited by the templates of the new type (LegalTexts::apply()); a form without the type
      * leaves it unchanged.
@@ -1889,12 +2016,17 @@ final class AdminController
 
     private function texts(): void
     {
+        $outdated = LegalTexts::outdated();
         $this->render('admin/texts', [
             'operatorContact' => Operator::contact(),
             'operatorType' => Operator::type(),
             'privacyTemplate' => LegalTexts::VARIANTS['privacy'][Operator::type() ?? 'school'],
             'operatorHints' => self::operatorHints(),
+            // The notes on wording of the privacy template point to its file, those on newer templates to the text
             'legalHints' => self::legalHints(),
+            'outdatedHints' => self::outdatedHints($outdated),
+            // Per text "<key>/<lang>": behind the template, with (true) or without a version marker
+            'outdated' => array_column(array_map(static fn (array $t): array => [$t['key'] . '/' . $t['lang'], $t['known']], $outdated), 1, 0),
             'title' => __('Impressum & Datenschutz'),
             'languages' => I18n::languages(),
             'mailTransport' => (string) \App\Config::get('mail.transport', 'mail'),
@@ -1911,15 +2043,34 @@ final class AdminController
         $variants = array_values(array_filter(array_unique([...($type !== null ? [$type] : []), ...array_keys(LegalTexts::VARIANTS[$key])]),
             static fn (string $v): bool => LegalTexts::template($key, $v, $lang) !== null));
         $loaded = in_array(Http::query('template'), $variants, true) ? Http::query('template') : null;
+        $stored = Db::value('SELECT content FROM pages WHERE page_key = ? AND lang = ?', [$key, $lang]);
+        // What the current template of the operator type changed since the text's version marker, or where the
+        // text differs from it; ?merge=1 puts the text with these sections taken from the template into the form
+        // (not the sections only the text has, unless the marker shows that the template dropped them)
+        $update = $loaded === null && $stored !== null ? LegalTexts::updates($key, $lang, (string) $stored, $type) : null;
+        $merged = $update !== null && Http::query('merge') === '1' && LegalTexts::mergeable($update);
+        // The template the form is reconciled with ("base"): only that one becomes the text's version marker on
+        // saving, not a newer one an update brought meanwhile
+        $template = $loaded ?? $update['type'] ?? null;
+        // Taken over: also the lines of the text that are left out (LegalTexts::lost()), for the admin to check
+        $keys = array_column($update['changes'] ?? [], 'key');
+        $content = match (true) {
+            $loaded !== null => (string) LegalTexts::template($key, $loaded, $lang),
+            $merged => LegalTexts::merge((string) $stored, (string) LegalTexts::template($key, $update['type'], $lang), $keys, $update['base']),
+            default => (string) $stored,
+        };
         $this->render('admin/page_form', [
             'title' => self::pageLabel($key) . ' (' . strtoupper($lang) . ')',
             'key' => $key,
             'lang' => $lang,
-            'content' => $loaded !== null ? (string) LegalTexts::template($key, $loaded, $lang)
-                : (string) Db::value('SELECT content FROM pages WHERE page_key = ? AND lang = ?', [$key, $lang]),
+            'content' => $content,
             'variants' => $variants,
             'loaded' => $loaded,
             'type' => $type,
+            'update' => $update,
+            'merged' => $merged,
+            'lost' => $merged ? LegalTexts::lost((string) $stored, $content, $keys, $update['base']) : [],
+            'templateHash' => $template !== null ? hash('sha256', (string) LegalTexts::template($key, $template, $lang)) : '',
         ]);
     }
 
@@ -1932,8 +2083,23 @@ final class AdminController
              ON DUPLICATE KEY UPDATE content = ?, updated_at = ?',
             [$key, $lang, $content, Time::nowSql(), $content, Time::nowSql()]
         );
-        $this->audit(fn () => __('{page} ({lang}) geändert', ['page' => self::pageLabel($key), 'lang' => strtoupper($lang)]));
-        $this->flash('success', __('Text gespeichert.'));
+        // Version marker (LegalTexts::base()): the template the form was loaded from or the admin reconciled the
+        // text with ("base", an operator type) if it is still the one the form showed ("base_hash"), else the
+        // current template of the type if the text is up to date with it (LegalTexts::follows())
+        $type = Operator::type();
+        $base = in_array(Http::post('base'), Operator::TYPES, true) ? Http::post('base') : null;
+        $changed = $base !== null && !hash_equals(hash('sha256', (string) LegalTexts::template($key, $base, $lang)), Http::post('base_hash'));
+        $base = $changed ? null : $base;
+        if (($from = $base ?? ($type !== null && LegalTexts::follows($key, $lang, $content, $type, LegalTexts::base($key, $lang)) ? $type : null)) !== null) {
+            LegalTexts::setBase($key, $lang, $from);
+        }
+        $vars = ['page' => self::pageLabel($key), 'lang' => strtoupper($lang)];
+        $this->audit(fn () => $base !== null
+            ? __('{page} ({lang}) geändert und mit dem aktuellen Stand der Vorlage „{template}“ abgeglichen', $vars + ['template' => $base === 'school' ? __('Von der Schule betrieben') : __('Privat betrieben')])
+            : __('{page} ({lang}) geändert', $vars));
+        $this->flash($changed ? 'warning' : 'success', $changed
+            ? __('Text gespeichert, aber nicht als abgeglichen vermerkt: Die Vorlage wurde geändert, während das Formular offen war (z. B. durch ein Update). Bitte prüfen Sie den Hinweis zur Vorlage erneut.')
+            : __('Text gespeichert.'));
         Http::redirect('/admin/page/' . $key . '/' . $lang);
     }
 

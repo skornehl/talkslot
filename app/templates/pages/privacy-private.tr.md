@@ -18,7 +18,7 @@ Bu platformda görüşme randevusu sunan öğretmenler, veri sorumlusunun bu hiz
 
 # 2. İşleme amacı
 
-Veliler ve yasal temsilciler bu sayfa üzerinden, randevu sayfasında adı geçen öğretmenle görüşme randevusu (örneğin veli görüşme günü için) alabilir, randevuyu değiştirebilir ve iptal edebilir. Veriler yalnızca bu görüşmelerin düzenlenmesi ve yapılması için ve – sadece saat ve ad olarak – öğretmene gönderilen e-posta özetleri için işlenir ve başka amaçlarla kullanılmaz.
+Veliler ve yasal temsilciler bu sayfa üzerinden, randevu sayfasında adı geçen öğretmenle görüşme randevusu (örneğin veli görüşme günü için) alabilir, randevuyu değiştirebilir ve iptal edebilir. Veriler yalnızca bu görüşmelerin düzenlenmesi ve yapılması için işlenir, buna öğretmene e-postayla gönderilen özetler de dahildir; başka amaçlarla kullanılmaz.
 
 # 3. Hangi veriler işlenir
 
@@ -54,7 +54,7 @@ Randevu almak için onay vermeniz gerekmez; randevu verilerinizin işlenmesi yuk
 - Öğretmen randevunuzu iptal ederse veya bir randevu gününü ya da randevu takviminin tamamını silerse, ilgili randevular hemen silinir. Bir e-posta adresi girdiyseniz, iptal bildirimini e-posta ile alırsınız.
 - Kısaltılmış ve hash'lenmiş IP adresleri en geç 24 saat sonra silinir.
 - **Henüz gönderilecek e-postalar** (örneğin bir önceki akşamki hatırlatma veya hemen teslim edilemeyen bir onay): Gönderilene kadar yalnızca hangi e-postanın hangi randevu için beklediği not edilir; adres ve içerik saklanmaz, ikisi de ancak gönderim sırasında randevunuzdan oluşturulur. Bu not gönderimden sonra, en geç 48 saat sonra ve randevunuzla birlikte silinir. Tek istisna öğretmenin randevuyu iptal etmesidir: Bu durumda randevunuz zaten silinmiş olduğundan, bu e-posta için adres, dil, ad ve randevu saati (bağlantı olmadan) gönderilene kadar saklanır ve ardından silinir; bu da en geç 48 saat sonra gerçekleşir.
-- **Öğretmene gönderilen özet e-postalar** (bkz. bölüm 6) saat ve adları – e-posta adresleri olmadan – içerir. Gönderildikten sonra randevu sistemi bunları artık saklamaz. Öğretmenin bunları posta kutusunda ne kadar süre sakladığı, okulunun kurallarına bağlıdır (bölüm 1). İşletmeci, öğretmenlere bunları en geç randevudan 15 ay sonra silmelerini önerir.
+- **Öğretmene gönderilen özet e-postalar** (bkz. bölüm 6) her gün için randevu sayısını ve randevu listesine bir bağlantı içerir, ancak ad ve e-posta adresi içermez; saat ve adlar yalnızca okul için buna izin verildiyse yer alır. Gönderildikten sonra randevu sistemi bunları artık saklamaz. Öğretmenin bunları posta kutusunda ne kadar süre sakladığı, okulunun kurallarına bağlıdır (bölüm 1). İşletmeci, öğretmenlere adların yer aldığı e-postaları artık ihtiyaç duymadıkları anda, en geç öğretim yılının sonunda silmelerini önerir.
 - Bu e-postaların silinmesini istiyorsanız, lütfen öğretmene veya okula başvurun (GDPR madde 17). Randevu sistemindeki bilgileriniz için veri sorumlusuna (bölüm 1) kısa bir mesaj göndermeniz yeterlidir.
 - Öğretmenin hazırladığı randevu listesi çıktıları için de okulun kuralları geçerlidir; işletmeci bunların randevudan sonra imha edilmesini önerir.
 
@@ -65,7 +65,7 @@ Bilgilerinizin içeriğine yalnızca randevu aldığınız randevu takviminin ö
 - **Barındırma (hosting):** [[HOSTER]]
 - **E-posta gönderimi:** barındırma hizmeti sağlayıcısının e-posta sunucusu üzerinden (bkz. yukarısı).
 - **Öğretmenin metinlerinin çevirisi:** Öğretmenin yazdığı randevu takvimi başlığı ve açıklaması, birden fazla dilde gösterilmek üzere çevrilebilir. Otomatik çeviri yalnızca öğretmenin kendi cihazındaki tarayıcısında, Chrome veya Edge'in “Translator API” programlama arayüzü ve yerel olarak kaydedilmiş bir çeviri modeli ile yapılır (tarayıcının “Sayfayı çevir” işleviyle değil). Metinler bu sırada hiçbir çeviri hizmetine aktarılmaz. İlk kullanımda tarayıcı dil modelini üreticiden (Google veya Microsoft) indirir; bu sırada hiçbir metin aktarılmaz. **Velilere ait veriler çevrilmez**, yalnızca öğretmenin bu metinleri çevrilir.
-- **Öğretmene gönderilen özetler:** Öğretmen, bir randevu gününden önceki akşam ve randevu alma süresi sona erdikten sonra randevu listesini (saat ve ad, e-posta adresleri olmadan) içeren bir e-posta alabilir.
+- **Öğretmene gönderilen özetler:** Öğretmen, bir randevu gününden önceki akşam ve randevu alma süresi sona erdikten sonra alınan randevuların sayısını içeren, e-posta adresleri olmayan bir e-posta alabilir; saat ve adlar yalnızca okul için buna izin verildiyse yer alır.
 
 AB veya AEA dışındaki ülkelere (üçüncü ülkelere) veri aktarımı yapılmaz.
 

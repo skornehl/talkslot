@@ -14,7 +14,7 @@ The teachers who offer appointments on this platform use it as part of their off
 
 # 2. Purpose
 
-Parents and guardians can use this page to book, change and cancel meetings (e.g. parent-teacher conferences) with the teacher named on the booking page. Such meetings are part of the school's educational mandate. The data is used solely to organise and hold these meetings and – appointment and name only – as a record of the meetings held in summary e-mails to the teacher (for at most 15 months), and for no other purpose.
+Parents and guardians can use this page to book, change and cancel meetings (e.g. parent-teacher conferences) with the teacher named on the booking page. Such meetings are part of the school's educational mandate. The data is used solely to organise and hold these meetings, including summary e-mails to the teacher, and for no other purpose.
 
 # 3. Data processed
 
@@ -48,7 +48,7 @@ You do not need to give consent to book an appointment; the processing of your b
 - If the teacher cancels your appointment or deletes a day or the booking round, the bookings concerned are deleted immediately. If you gave an e-mail address, you receive a cancellation by e-mail.
 - Shortened and hashed IP addresses are deleted after 24 hours at the latest.
 - **E-mails still to be sent** (e.g. the reminder the evening before, or a confirmation that could not be delivered at once): until it is sent, only a note of which e-mail is due for which booking is kept, without address or content; both are created from your booking when sending. The note is deleted once the e-mail is sent, after 48 hours at the latest, and together with your booking. The only exception is a cancellation by the teacher: your booking is already deleted then, so for this e-mail the address, language, name and appointment (without a link) are kept until it is sent and deleted afterwards, also after 48 hours at the latest.
-- **Summary e-mails to the teacher** (see section 6) contain the appointment and name – without e-mail address – and are deleted, as a record of the meetings, **at the latest 15 months after the appointment**. This is usually done in one batch after the end of the school year; the 15-month period ensures that appointments from the start of the school year are also deleted in time.
+- **Summary e-mails to the teacher** (see section 6) contain the number of appointments per day and a link to the appointment list in the booking service, but no names and no e-mail addresses. Only if the school has allowed it do they also contain the time and name; the teacher then deletes them as soon as they are no longer needed, **at the latest at the end of the school year**.
 - If you would like these entries deleted earlier, a short message to the school (section 1) or to the teacher is sufficient (Art. 17 GDPR).
 - Printed appointment lists are destroyed after the meeting day.
 
@@ -59,7 +59,7 @@ Only the teacher of the booking round in which you booked and the persons whom t
 - **Hosting:** [[HOSTER]]
 - **E-mail:** via the web host's mail server (see above).
 - **Translation of the teacher's texts:** the title and description of a booking round written by the teacher can be translated for display in several languages. Automatic translation takes place only in the teacher's browser on their own device, using the "Translator API" programming interface of Chrome or Edge with a locally stored translation model (not the browser's "translate page" feature). The texts are not sent to any translation service. On first use, the browser downloads the language model from its vendor (Google or Microsoft); no texts are transmitted in the process. **No data of parents** is translated, only these texts of the teacher.
-- **Summaries to the teacher:** the teacher may receive an e-mail with the appointment list (time and name, without e-mail addresses) on the evening before a meeting day and after the booking deadline.
+- **Summaries to the teacher:** the teacher may receive an e-mail with the number of booked appointments, without e-mail addresses, on the evening before a meeting day and after the booking deadline; time and name only if the school has allowed it.
 
 No data is transferred to countries outside the EU/EEA.
 

@@ -473,3 +473,160 @@ check "clean-up: the rounds of the review are gone" '[ "$(n_mails "$(r_addr 8)" 
 DBQ "ALTER TABLE tp_mail_outbox DROP COLUMN payload; UPDATE tp_settings SET value = '20' WHERE name = 'schema_version'"
 curl -s -o /dev/null "$B/"
 check "migration 21: the outbox gets the column for cancellations" '[ "$(DBQ "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=\"tp_mail_outbox\" AND COLUMN_NAME=\"payload\"")" = 1 ] && [ "$(DBQ "SELECT value FROM tp_settings WHERE name=\"schema_version\"")" = "$LATEST" ]'
+
+# Expert review P1-4: summaries without names unless the school allows them, the reply address for parents,
+# allowed_account_domains, no admin session without the cookie and the way back to the page asked for
+echo "Summaries without names, reply address, return after signing in"
+ST=$(curl -s -b "$J" "$B/admin" | csrf)
+SRUN=$(date +%s)
+s_addr() { echo "summary-${1:-}-$SRUN@example.org"; }
+s_files() { $DC exec -T app php -r 'echo count(glob("/srv/app/app/var/sessions/sess_*"));'; }
+# s_ics <address> [subject word] → the calendar file of the newest mail ('' without one)
+s_ics() { $DC exec -T app php -r '$r=json_decode(file_get_contents("http://mail:8025/api/v1/search?query='"$(n_query "$@")"'"),true); $id=$r["messages"][0]["ID"] ?? "x"; $a=json_decode(file_get_contents("http://mail:8025/api/v1/message/$id"),true)["Attachments"] ?? []; echo $a ? file_get_contents("http://mail:8025/api/v1/message/$id/part/".$a[0]["PartID"]) : "";'; }
+SU=$(DBQ "SELECT id FROM tp_users WHERE username = '$USER'")
+S_BEFORE=$(DBQ "SELECT CONCAT('email = ', QUOTE(email), ', reply_to = ', QUOTE(reply_to), ', summary_evening = ', summary_evening, ', summary_deadline = ', summary_deadline, ', summary_names = ', QUOTE(summary_names)) FROM tp_users WHERE id = $SU")
+SNAME=$(DBQ "SELECT display_name FROM tp_users WHERE id = $SU")
+DBQ "UPDATE tp_users SET email = '$(s_addr konto)', reply_to = NULL, summary_evening = 1, summary_deadline = 1 WHERE id = $SU"
+# A round for tomorrow: the same name and address twice, parents without an address, an entry by the teacher
+SR=$(curl -s -o /dev/null -w '%{redirect_url}' -b "$J" --data-urlencode "csrf=$ST" -d "title=Zusammenfassung+Test&booking_limit=none&is_active=1&booking_deadline_hours=0&cancel_deadline_hours=0&day_dates%5B%5D=$(date -d '+1 day' +%F)&start_time=09:00&end_time=12:00&slot_minutes=30" "$B/admin/round/new" | grep -o '[0-9]*$')
+SRS=$(slugof "$SR")
+# A second round of the same teacher on that day: the evening summary has both
+SR2=$(curl -s -o /dev/null -w '%{redirect_url}' -b "$J" --data-urlencode "csrf=$ST" -d "title=Zusammenfassung+Zwei&booking_limit=none&is_active=1&booking_deadline_hours=0&cancel_deadline_hours=0&day_dates%5B%5D=$(date -d '+1 day' +%F)&start_time=13:00&end_time=15:00&slot_minutes=30" "$B/admin/round/new" | grep -o '[0-9]*$')
+SR2S=$(slugof "$SR2")
+book "$SR2S" "Cem Zweite" "" >/dev/null
+book "$SRS" "Anna Muster" "$(s_addr eltern)" >/dev/null
+book "$SRS" "anna muster" "$(s_addr eltern)" >/dev/null
+book "$SRS" "Ben Ohne Adresse" "" >/dev/null
+curl -s -o /dev/null -b "$J" --data-urlencode "csrf=$ST" -d "name=Eintrag+Lehrkraft&lang=de" "$B$(curl -s -b "$J" "$B/admin/round/$SR" | grep -o '/admin/slot/[0-9]*/book' | head -1)"
+check "parents' mail: replies go to the account's address while it has no reply address" \
+  '$DC exec -T app php -r "echo file_get_contents(\"http://mail:8025/api/v1/search?query=to:$(s_addr eltern)\");" | has "\"ReplyTo\":[{\"Name\":\"\",\"Address\":\"$(s_addr konto)\"}]"'
+
+# The summaries from the outbox (in-process, script on stdin for the coverage run); each one to its own address
+SM=$($DC exec -T app php -- /srv/app "$SU" "$(date -d '+1 day' +%F)" "$(DBQ "SELECT id FROM tp_round_days WHERE round_id = $SR")" "$(s_addr)" <<'PHP'
+<?php
+[, $root, $uid, $date, $day, $addr] = $argv;
+require "$root/app/bootstrap.php";
+$cfg = require "$root/config/config.php";
+$to = static fn (string $n) => App\Db::run('UPDATE users SET email = ? WHERE id = ?', [str_replace('summary--', "summary-$n-", $addr), $uid]);
+$names = static fn (?int $v) => App\Db::run('UPDATE users SET summary_names = ? WHERE id = ?', [$v, $uid]);
+$evening = static fn (): string => var_export(App\Summaries::deliver('summary_evening', (int) $uid, $date), true);
+$out = [];
+$to('ohne'); $names(1);                       // the account wants names, the school does not allow them
+$out[] = $evening();
+App\Config::load(['summary_names' => true] + $cfg);
+$to('namen');
+$out[] = $evening();                          // allowed and wanted: names and the calendar file
+$to('alt'); $names(null);
+$out[] = $evening();                          // account from before: as before
+$to('frist'); $names(0);
+$out[] = var_export(App\Summaries::deliver('summary_deadline', (int) $uid, "day-$day"), true);
+App\Config::load(['allowed_account_domains' => ['schule.example.org']] + $cfg);
+$to('fremd');
+$out[] = $evening();                          // an address outside the allowed domains gets none
+App\Config::load($cfg);
+echo implode('|', $out);
+PHP
+)
+SM1=$(n_text "$(s_addr ohne)" Morgen)
+check "summary by default: the number, what stands out, the link; no name, no address, no calendar file ($SM)" \
+  '[ "$SM" = "true|true|true|true|NULL" ] && echo "$SM1" | has "Zusammenfassung Test – " && echo "$SM1" | has "  4 Termine zwischen 09:00 und 11:00" && echo "$SM1" | has "  Auffällig: 2× gleicher Name, 2× gleiche E-Mail-Adresse, 1× ohne E-Mail-Adresse" && echo "$SM1" | has "Übersicht und Druckansicht: $B/admin/round/$SR" && echo "$SM1" | has "Diese Zusammenfassung enthält keine Namen" && echo "$SM1" | has "Zusammenfassung Zwei – " && echo "$SM1" | has "  1 Termin um 13:00" && ! echo "$SM1" | grep -qi "anna\|ben ohne\|eintrag\|cem\|@example.org" && [ -z "$(s_ics "$(s_addr ohne)" Morgen)" ]'
+SM2=$(n_text "$(s_addr namen)" Morgen); SICS=$(s_ics "$(s_addr namen)" Morgen)
+check "summary where the school allows names: times and names, the calendar file without names, each appointment titled with its own round" \
+  'echo "$SM2" | has "  09:00–09:30  Anna Muster" && echo "$SM2" | has "  09:30–10:00  anna muster" && echo "$SM2" | has "  13:00–13:30  Cem Zweite" && echo "$SM2" | has "spätestens zum Ende des Schuljahres" && [ "$(echo "$SICS" | grep -c "^SUMMARY:Zusammenfassung Test")" -ge 4 ] && [ "$(echo "$SICS" | grep -c "^SUMMARY:Zusammenfassung Zwei")" = 1 ] && echo "$SICS" | grep "^X-WR-CALNAME:" | has "Zusammenfassung Test\, " && echo "$SICS" | grep "^X-WR-CALNAME:" | has "Zusammenfassung Zwei" && ! echo "$SICS" | grep -qi "anna\|ben\|eintrag\|cem\|@example.org"'
+check "summary: an account from before keeps the names where they are allowed; after the deadline without them (the final status, not a list)" \
+  'n_text "$(s_addr alt)" Morgen | has "  09:00–09:30  Anna Muster" && n_text "$(s_addr frist)" Buchungsschluss | has "Endgültiger Stand (2 Termine blieben frei):" && n_text "$(s_addr frist)" Buchungsschluss | has "  4 Termine zwischen 09:00 und 11:00" && ! n_text "$(s_addr frist)" Buchungsschluss | has "Anna" && [ "$(n_mails "$(s_addr fremd)")" = 0 ]'
+DBQ "UPDATE tp_users SET email = '$(s_addr konto)' WHERE id = $SU"
+
+# Notice on the dashboard for an account from before, until it confirms it
+DBQ "UPDATE tp_users SET summary_names = NULL WHERE id = $SU"
+SD=$(curl -s -b "$J" "$B/admin")
+curl -s -o /dev/null -b "$J" -d "csrf=$ST" "$B/admin/profile/summaries"
+check "dashboard: accounts from before are told that names are gone (admins: how to allow them), until they confirm; then without names like new accounts" \
+  'echo "$SD" | has "data-summary-notice>" && echo "$SD" | has "Neu: Ihre Zusammenfassungen per E-Mail enthalten keine Namen und keine Kalenderdatei mehr" && echo "$SD" | has "„summary_names“ in config/config.php" && [ "$(DBQ "SELECT summary_names FROM tp_users WHERE id = $SU")" = 0 ] && ! curl -s -b "$J" "$B/admin" | has "data-summary-notice"'
+SPF() { curl -s -L -b "$J" --data-urlencode "csrf=$ST" --data-urlencode "display_name=$SNAME" --data-urlencode "email=$(s_addr konto)" -d "summary_evening=1&summary_deadline=1" "$@" "$B/admin/profile"; }
+DBQ "UPDATE tp_users SET summary_names = NULL WHERE id = $SU"
+check "profile: without the school's permission no choice of names, saving keeps it as it was" \
+  '! curl -s -b "$J" "$B/admin/profile" | has "name=\"summary_names\"" && SPF -d "summary_names=0" | has "Profil gespeichert." && [ "$(DBQ "SELECT COALESCE(summary_names, \"NULL\") FROM tp_users WHERE id = $SU")" = NULL ]'
+
+# Reply address for parents: only with the password, then the Reply-To of the parents' mails
+check "reply address: invalid one refused, changing it needs the password" \
+  'SPF --data-urlencode "reply_to=kein at" | has "Die Antwortadresse für Eltern ist ungültig." && SPF --data-urlencode "reply_to=$(s_addr antwort)" | has "Zum Ändern der Antwortadresse für Eltern bitte Ihr aktuelles Passwort eingeben." && [ "$(DBQ "SELECT COALESCE(reply_to, \"-\") FROM tp_users WHERE id = $SU")" = - ]'
+SPF --data-urlencode "reply_to=$(s_addr antwort)" --data-urlencode "current_password=$PASS" >/dev/null
+book "$SRS" "Antwort Test" "$(s_addr eltern2)" >/dev/null
+check "reply address saved; the parents' mails name it as Reply-To instead of the account's address" \
+  '[ "$(DBQ "SELECT reply_to FROM tp_users WHERE id = $SU")" = "$(s_addr antwort)" ] && curl -s -b "$J" "$B/admin/profile" | has "value=\"$(s_addr antwort)\"" && $DC exec -T app php -r "echo file_get_contents(\"http://mail:8025/api/v1/search?query=to:$(s_addr eltern2)\");" | has "\"ReplyTo\":[{\"Name\":\"\",\"Address\":\"$(s_addr antwort)\"}]"'
+
+# The school allows names and only addresses at its domain (config.php changed for a moment, see operations.sh)
+ALERTS '$f = "/srv/app/config/config.php"; copy($f, "$f.p14"); $c = require $f; $c["summary_names"] = true; $c["allowed_account_domains"] = ["schule.example.org"];
+  file_put_contents($f, "<?php return " . var_export($c, true) . ";");'
+sleep 3
+SPN=$(curl -s -b "$J" "$B/admin/profile"); SDN=$(curl -s -b "$J" "$B/admin")
+curl -s -o /dev/null -b "$J" -d "csrf=$ST" "$B/admin/profile/summaries"
+S_SEEN=$(DBQ "SELECT summary_names FROM tp_users WHERE id = $SU")
+S_OFF=$(SPF --data-urlencode "reply_to=$(s_addr antwort)" | has "Profil gespeichert." && DBQ "SELECT summary_names FROM tp_users WHERE id = $SU")
+S_ON=$(SPF --data-urlencode "reply_to=$(s_addr antwort)" -d "summary_names=1" | has "Profil gespeichert." && DBQ "SELECT summary_names FROM tp_users WHERE id = $SU")
+S_MAIL=$(SPF --data-urlencode "reply_to=$(s_addr antwort)" --data-urlencode "email=privat-$SRUN@gmx.example" --data-urlencode "current_password=$PASS")
+S_REPLY=$(SPF --data-urlencode "reply_to=privat-$SRUN@gmx.example" --data-urlencode "current_password=$PASS")
+S_USER=$(curl -s -b "$J" --data-urlencode "csrf=$ST" -d "display_name=Fremd&email=fremd-$SRUN@gmx.example&role=teacher" "$B/admin/users/new")
+book "$SRS" "Antwort Fremd" "$(s_addr eltern3)" >/dev/null
+# A reply address from before the restriction, the account's address allowed: replies go to the latter
+DBQ "UPDATE tp_users SET email = 'konto-$SRUN@schule.example.org' WHERE id = $SU"
+book "$SR2S" "Antwort Schule" "$(s_addr eltern4)" >/dev/null
+SDR=$(curl -s -b "$J" "$B/admin")
+DBQ "UPDATE tp_users SET email = '$(s_addr konto)' WHERE id = $SU"
+ALERTS '$f = "/srv/app/config/config.php"; file_put_contents($f, file_get_contents("$f.p14")) && unlink("$f.p14");'
+sleep 3
+check "names allowed: an account from before keeps them (notice, choice in the profile), saved both ways" \
+  'echo "$SPN" | has "<input type=\"checkbox\" id=\"summary_names\" name=\"summary_names\" value=\"1\" checked>" && echo "$SDN" | has "Neu: Die Kalenderdatei Ihrer Zusammenfassungen enthält keine Namen mehr." && [ "$S_SEEN" = 1 ] && [ "$S_OFF" = 0 ] && [ "$S_ON" = 1 ]'
+check "allowed domains: a new address elsewhere is refused (account, reply address, new account); an address from before can stay, with hints" \
+  'echo "$S_MAIL" | has "Bitte eine Adresse bei schule.example.org angeben" && echo "$S_REPLY" | has "Antwortadresse für Eltern: Bitte eine Adresse bei schule.example.org angeben" && echo "$S_USER" | has "Bitte eine Adresse bei schule.example.org angeben" && [ -z "$(DBQ "SELECT id FROM tp_users WHERE email = \"fremd-$SRUN@gmx.example\"")" ] && [ "$(DBQ "SELECT email FROM tp_users WHERE id = $SU")" = "$(s_addr konto)" ] && echo "$SPN" | has "Die Schule erlaubt nur Adressen bei schule.example.org." && echo "$SDN" | has "data-foreign-addresses>" && echo "$SDN" | has "Ihre E-Mail-Adresse ist keine dienstliche Adresse bei schule.example.org"'
+check "allowed domains: a reply address outside them is not used for the parents' mails" \
+  'S_R3=$($DC exec -T app php -r "echo file_get_contents(\"http://mail:8025/api/v1/search?query=to:$(s_addr eltern3)\");"); echo "$S_R3" | has "\"messages_count\":1," && ! echo "$S_R3" | has "\"ReplyTo\":[{"'
+s_foreign() { grep -o 'allowed_account_domains“: [0-9]*' | grep -o '[0-9]*$'; }
+check "allowed domains: a reply address outside them falls back to the allowed address of the account; the teacher is told, admins count it" \
+  '$DC exec -T app php -r "echo file_get_contents(\"http://mail:8025/api/v1/search?query=to:$(s_addr eltern4)\");" | has "\"ReplyTo\":[{\"Name\":\"\",\"Address\":\"konto-$SRUN@schule.example.org\"}]" && echo "$SDR" | has "Ihre Antwortadresse für Eltern ist keine dienstliche Adresse bei schule.example.org" && ! echo "$SDR" | has "Ihre E-Mail-Adresse ist keine dienstliche Adresse" && [ -n "$(echo "$SDR" | s_foreign)" ] && [ "$(echo "$SDR" | s_foreign)" = "$(echo "$SDN" | s_foreign)" ]'
+
+# No session without the cookie; a link from another site (webmailer) opens the page in a signed-in browser
+SF0=$(s_files)
+SH=$(curl -s -D - -o /dev/null "$B/admin/round/$SR?day=1")
+SH2=$(curl -s -D - -o /dev/null -d "csrf=x" "$B/admin/round/$SR/toggle")
+check "without the cookie: to the login page with the page asked for; no session, no cookie (GET and POST)" \
+  'echo "$SH" | head -1 | grep -q " 303" && echo "$SH" | grep -qi "^location: /admin/login?next=%2Fadmin%2Fround%2F$SR%3Fday%3D1" && echo "$SH2" | grep -qi "^location: /admin/login.$" && ! echo "$SH$SH2" | grep -qi "^set-cookie" && [ "$(s_files)" -le "$SF0" ] && curl -s -D - -o /dev/null "$B/admin" | grep -qi "^location: /admin/login.$"'
+SX=$(curl -s -D - -H "Sec-Fetch-Site: cross-site" "$B/admin/round/$SR?day=1")
+check "link from another site without the cookie (SameSite=Strict): interim page that opens it again from this site, no session" \
+  'echo "$SX" | head -1 | grep -q " 200" && echo "$SX" | has "<meta http-equiv=\"refresh\" content=\"0; url=/admin/round/$SR?day=1&amp;reopened=1\">" && echo "$SX" | has "<a href=\"/admin/round/$SR?day=1&amp;reopened=1\">Weiter</a>" && ! echo "$SX" | grep -qi "^set-cookie" && [ "$(s_files)" -le "$SF0" ] && curl -s -H "Sec-Fetch-Site: cross-site" "$B/admin" | has "content=\"0; url=/admin?reopened=1\">"'
+SX=$(curl -s -D - -o /dev/null -H "Sec-Fetch-Site: cross-site" "$B/admin/round/$SR?reopened=1&day=1")
+check "… only once: opened again and still without the cookie, the login page (with the page asked for, without the mark), no loop" \
+  'echo "$SX" | head -1 | grep -q " 303" && echo "$SX" | grep -qi "^location: /admin/login?next=%2Fadmin%2Fround%2F$SR%3Fday%3D1.$" && ! echo "$SX" | grep -qi "^set-cookie"'
+check "… and with the cookie (opened again from this site) the page itself" \
+  'curl -s -b "$J" -H "Sec-Fetch-Site: cross-site" "$B/admin/round/$SR" | has "<h1>Zusammenfassung Test</h1>" && curl -s -b "$J" -H "Sec-Fetch-Site: same-origin" "$B/admin/round/$SR?day=1&reopened=1" | has "<h1>Zusammenfassung Test</h1>"'
+SH=$(curl -s -D - -o /dev/null -b "tp_admin=$(printf 'a%.0s' {1..40})" "$B/admin/round/$SR")
+check "unknown session cookie: ended, to the login page with the page asked for, no session left" \
+  'echo "$SH" | grep -qi "^location: /admin/login?next=%2Fadmin%2Fround%2F$SR" && echo "$SH" | grep -i "^set-cookie: tp_admin=deleted" | grep -qi "path=/admin" && [ "$(s_files)" -le "$SF0" ]'
+# Signing in leads back there: only to a page of the admin area
+JN=$(mktemp)
+SL=$(curl -s -c "$JN" -b "$JN" "$B/admin/login?next=%2Fadmin%2Fround%2F$SR%3Fday%3D1")
+SLOC=$(curl -s -o /dev/null -w '%{redirect_url}' -c "$JN" -b "$JN" --data-urlencode "csrf=$(echo "$SL" | csrf)" --data-urlencode "username=$USER" --data-urlencode "password=$PASS" --data-urlencode "next=/admin/round/$SR?day=1" "$B/admin/login")
+check "signing in: back to the page asked for (with its query); signed in already, the login page leads there too" \
+  'echo "$SL" | has "<input type=\"hidden\" name=\"next\" value=\"/admin/round/$SR?day=1\">" && [ "$SLOC" = "$B/admin/round/$SR?day=1" ] && [ "$(curl -s -o /dev/null -w "%{redirect_url}" -b "$JN" "$B/admin/login?next=%2Fadmin%2Fround%2F$SR")" = "$B/admin/round/$SR" ]'
+curl -s -o /dev/null -b "$JN" -d "csrf=$(curl -s -b "$JN" "$B/admin" | csrf)" "$B/admin/logout"
+SL=$(curl -s -c "$JN" -b "$JN" "$B/admin/login?next=%2F%2Fevil.example%2Fadmin")
+SLOC=$(curl -s -o /dev/null -w '%{redirect_url}' -c "$JN" -b "$JN" --data-urlencode "csrf=$(echo "$SL" | csrf)" --data-urlencode "username=$USER" --data-urlencode "password=$PASS" --data-urlencode "next=https://evil.example/admin/round/1" "$B/admin/login")
+check "signing in: another site or an odd path as the target leads to the overview" '! echo "$SL" | has "name=\"next\"" && [ "$SLOC" = "$B/admin" ]'
+curl -s -o /dev/null -b "$JN" -d "csrf=$(curl -s -b "$JN" "$B/admin" | csrf)" "$B/admin/logout"
+rm -f "$JN"
+
+# Migration 22 on a database of the version before: accounts from before NULL (as before), new ones 0, a
+# repeated run changes nothing
+S_IDS=$(DBQ "SELECT GROUP_CONCAT(CONCAT(id, ':', COALESCE(summary_names, 'NULL'))) FROM tp_users")
+DBQ "ALTER TABLE tp_users DROP COLUMN summary_names, DROP COLUMN reply_to; UPDATE tp_settings SET value = '21' WHERE name = 'schema_version'"
+curl -s -o /dev/null "$B/"
+DBQ "INSERT INTO tp_users (username, password_hash, display_name, created_at) VALUES ('migration-22-$SRUN', 'x', 'Neu', NOW()); UPDATE tp_settings SET value = '21' WHERE name = 'schema_version'"
+curl -s -o /dev/null "$B/"
+check "migration 22: reply address and choice of names; accounts from before NULL, new ones 0, a repeated run keeps them" \
+  '[ "$(DBQ "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=\"tp_users\" AND COLUMN_NAME IN (\"summary_names\",\"reply_to\")")" = 2 ] && [ "$(DBQ "SELECT COUNT(*) FROM tp_users WHERE summary_names IS NOT NULL AND username <> \"migration-22-$SRUN\"")" = 0 ] && [ "$(DBQ "SELECT summary_names FROM tp_users WHERE username = \"migration-22-$SRUN\"")" = 0 ] && [ "$(DBQ "SELECT value FROM tp_settings WHERE name=\"schema_version\"")" = "$LATEST" ]'
+DBQ "DELETE FROM tp_users WHERE username = 'migration-22-$SRUN'"
+for s_pair in ${S_IDS//,/ }; do DBQ "UPDATE tp_users SET summary_names = ${s_pair#*:} WHERE id = ${s_pair%%:*}"; done
+curl -s -o /dev/null -b "$J" -d "csrf=$ST&confirm=1" "$B/admin/round/$SR/delete"
+curl -s -o /dev/null -b "$J" -d "csrf=$ST&confirm=1" "$B/admin/round/$SR2/delete"
+DBQ "UPDATE tp_users SET $S_BEFORE WHERE id = $SU"

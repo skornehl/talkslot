@@ -8,14 +8,19 @@ use DateTimeZone;
 
 /**
  * Calendar files (iCalendar, RFC 5545).
- * - forRound(): booked appointments of a round for the teacher (title = name from the free-text field)
+ * - forRound(): booked appointments for the teacher's summary (title = name of each appointment's round, never
+ *   the parents' names: calendars are synchronised to services the school does not control, see Summaries)
  * - forParent(): own appointment as an email attachment for parents (title = name of the round and teacher)
  * - cancelForParent(): the cancellation of that appointment (METHOD:CANCEL, same UID)
  * Data-minimal: no email addresses of parents or teachers. Times in UTC, so no VTIMEZONE block needed.
  */
 final class IcsExport
 {
-    /** @param list<array> $bookings rows with id, name, day_date, start_time, end_time */
+    /**
+     * @param array{title: string} $round the name of the calendar, and the title of a booking without its own
+     * @param list<array> $bookings rows with id, day_date, start_time, end_time and the title of their round, which
+     *   may differ (the evening summary has every round of the teacher that day); a name in them is not used
+     */
     public static function forRound(array $round, array $bookings): string
     {
         $events = [];
@@ -24,7 +29,7 @@ final class IcsExport
                 // Stable UID per booking and start time: re-importing updates instead of duplicating
                 'uid' => 'booking-' . (int) $b['id'] . '-' . str_replace([':', '-'], '', $b['day_date'] . $b['start_time']),
                 'date' => $b['day_date'], 'start' => $b['start_time'], 'end' => $b['end_time'],
-                'summary' => $b['name'],
+                'summary' => (string) ($b['title'] ?? $round['title']),
             ];
         }
         return self::calendar($round['title'], $events);

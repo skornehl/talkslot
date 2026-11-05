@@ -57,6 +57,15 @@ E-Mail-Adresse. Kann die E-Mail nicht versendet werden, sehen Sie nur einen Hinw
 ihm könnten Sie das Passwort eines fremden Kontos festlegen): Prüfen Sie den Mailversand (*Texte →
 E-Mail-Versand*) und senden Sie die Einladung danach erneut.
 
+Zusammenfassungen, Passwort-Links und die Antworten der Eltern gehen an die Adressen der Konten. Damit sie in
+den Postfächern der Schule bleiben, wo ihre Löschregeln gelten, kann die technische Betreuung die Adressen
+auf die Domains der Schule beschränken (`allowed_account_domains` in `config/config.php`, siehe
+[Konfiguration]({{ '/de/guide/configuration/' | relative_url }}#zusammenfassungen-und-konten)). Eine neue
+oder geänderte Adresse anderswo wird dann abgelehnt; Konten, die schon eine haben, funktionieren weiter,
+erhalten an dieser Adresse aber keine Zusammenfassungen und keine Antworten der Eltern, bis sie geändert
+ist (statt einer solchen Antwortadresse für Eltern gilt dann die E-Mail-Adresse des Kontos, wenn diese
+erlaubt ist). Die Übersicht sagt es dem Konto und nennt Admins die Zahl der Konten mit solchen Adressen.
+
 Die Spalte *Letzter Login* zeigt nur *nie*, *in den letzten 12 Monaten* oder *vor über 12 Monaten*, keine
 Uhrzeiten: Das genügt, um Konten aufzuräumen, ohne allen Admins die Anmeldezeiten der Kolleginnen und
 Kollegen zu zeigen. Die Übersicht nennt Admins die Zahl der aktiven Konten, die seit über 12 Monaten
@@ -146,7 +155,8 @@ Links verschickt und Vorlagen oder Rechtstexte bearbeitet hat. Bei mehreren Admi
 nachvollziehen, wer was getan hat. Was TalkSlot bei einem Update selbst ändert, steht als *TalkSlot* im
 Protokoll: eine aus unveränderten Vorlagen übernommene Betriebsart und Rechtstexte, die durch neuere
 Vorlagen ersetzt wurden. Der Admin, der die Betriebsart danach speichert, steht mit „Betriebsart bestätigt“
-im Protokoll.
+im Protokoll, ein Rechtstext, der nach dem Abgleich mit einer neueren Vorlage gespeichert wurde, mit „… mit
+dem aktuellen Stand der Vorlage … abgeglichen“.
 
 Was Lehrkräfte in ihren eigenen Runden tun, erfasst das Protokoll **nicht**, und es enthält nie Daten von
 Eltern: Eine Buchung erscheint nur mit Datum und Uhrzeit (z. B. „Buchung 12.11.2026 14:00 gelöscht“).
@@ -174,6 +184,47 @@ Speichern. Ändern Sie die Betriebsart oben unter *Texte*, ersetzt TalkSlot alle
 einer Vorlage entsprechen, durch die Vorlagen der neuen Betriebsart und nennt die Anzahl; bearbeitete Texte
 bleiben, wie sie sind. Die Änderung steht im Protokoll.
 
+**Neuere Vorlagen für bearbeitete Texte.** Einen Text, den Sie bearbeitet haben, überschreibt TalkSlot nie.
+Stattdessen merkt es sich zu jedem Text die Vorlage, aus der er gespeichert oder mit der er zuletzt
+abgeglichen wurde (seinen *Vorlagenstand*). Bringt ein Update eine neuere Vorlage Ihrer Betriebsart, nennen
+das Dashboard und *Texte* die Texte und die Abschnitte, die die Vorlage seitdem geändert hat, z. B.
+*Datenschutzerklärung (DE): 5. Speicherdauer und Löschung, 6. Empfänger*; in der Liste unter *Texte* steht
+dann „Vorlage geändert“. Das Formular des Textes zeigt für jeden dieser Abschnitte, welche Zeilen die Vorlage
+entfernt (−) und hinzugefügt (+) hat. Danach können Sie:
+
+- **die Abschnitte übernehmen:** *Abschnitte aus der Vorlage übernehmen* lädt Ihren Text mit diesen
+  Abschnitten in der Fassung der Vorlage ins Formular. Ihre Angaben in Zeilen, die die Vorlage nicht geändert
+  hat (z. B. die Aufsichtsbehörde), bleiben, auch wo sie in den Zeilen darunter weitergehen (z. B. Name,
+  Anschrift und E-Mail-Adresse der oder des Datenschutzbeauftragten), ebenso was an Stelle von
+  `[[VERANTWORTLICHE]]` steht; eigene Änderungen in diesen Abschnitten nicht. Was aus Ihrem Text dabei
+  wegfällt (eigene Zeilen, Ihre Angaben in einer Zeile, die die Vorlage geändert hat), listet der Hinweis als
+  „nicht übernommen“ auf: Übernehmen Sie daraus, was noch in den Text gehört. Einen Abschnitt, den die Vorlage
+  gestrichen hat, entfernt das Übernehmen, und der Hinweis nennt ihn als „entfernt“. Zum Vergleich bleiben die
+  Unterschiede darunter sichtbar. Prüfen Sie das Formular, ersetzen Sie neue Platzhalter in eckigen Klammern
+  und speichern Sie;
+- **den Text selbst anpassen** und beim Speichern *Abgleich erledigt* ankreuzen; oder
+- **die ganze Vorlage laden** (*Vorlage laden*) und neu ausfüllen.
+
+Speichern Sie nach dem Übernehmen, dem Laden oder mit dem Häkchen, gilt die aktuelle Vorlage als Vorlagenstand
+des Textes, der Hinweis verschwindet, und das Protokoll hält fest, wer den Text abgeglichen hat. Wurde die
+Vorlage geändert, während das Formular offen war (z. B. durch ein Update), speichert TalkSlot den Text, vermerkt
+den Abgleich aber nicht und weist darauf hin. Ein Text, der schon alles enthält, was die Vorlage seit seinem
+Vorlagenstand geändert hat (oder ohne Vorlagenstand den Wortlaut der aktuellen Vorlage, nur die Platzhalter
+ausgefüllt), braucht nichts: TalkSlot vermerkt den Vorlagenstand selbst. Ein Platzhalter innerhalb einer
+Zeile steht für Text bis zum Zeilenende: Haben Sie einen über mehrere Zeilen ausgefüllt (z. B. die Anschrift
+der oder des Datenschutzbeauftragten unter dem Namen), zeigt der Hinweis diese Zeilen bei einem Text ohne
+Vorlagenstand als Abweichung, bis Sie den Abgleich einmal bestätigen. Bei einem Text, der bearbeitet wurde, bevor TalkSlot Vorlagenstände
+festhielt, oder der aus der Vorlage der anderen Betriebsart stammt, ist die Ausgangsvorlage unbekannt: Der
+Hinweis nennt dann die Abschnitte, in denen er von der aktuellen Vorlage abweicht („weicht von der Vorlage
+ab“; ausgefüllte Platzhalter zählen nicht), mit den Zeilen, die nur in Ihrem Text (−) und nur in der Vorlage
+(+) stehen. Dazu gehören auch Abschnitte, die es nur in Ihrem Text gibt: Ob sie Ihre eigenen sind oder aus
+einer früheren Vorlage stammen, ist ohne Vorlagenstand nicht bekannt, deshalb bleiben sie beim Übernehmen, wie
+sie sind (der Hinweis nennt sie als „unverändert“); prüfen Sie selbst, ob sie noch zutreffen. Bestätigen Sie den
+Abgleich einmal, danach sehen Sie nur noch, was spätere Vorlagen ändern.
+
+Heißt ein Abschnitt in Ihrem Text anders als in der Vorlage (z. B. „# 5. Wie lange wir Daten speichern“), fügt
+das Übernehmen den Abschnitt der Vorlage zusätzlich ein; löschen Sie dann den alten vor dem Speichern.
+
 Ist keine Betriebsart gewählt (Installationen aus der Zeit davor mit bearbeiteten Texten), zeigt das
 Dashboard „Bitte Betriebsart wählen“, und bis ein Admin sie wählt, lässt sich keine Runde aktivieren;
 bereits aktive Runden bleiben erreichbar.
@@ -191,8 +242,21 @@ Rechtsgrundlagen der Vorlage für Schulen bei privatem Betrieb).
 
 Unter *Mein Profil* legt jedes Konto fest, welche ***Zusammenfassungen per E-Mail***
 es erhält: abends eine Übersicht über den nächsten Tag (standardmäßig ab 18:00 Uhr) und eine Übersicht nach
-dem Buchungsschluss eines Tages. Sie enthalten nur Uhrzeit und Name, keine E-Mail-Adressen der Eltern,
-dazu eine Kalenderdatei.
+dem Buchungsschluss eines Tages. Standardmäßig nennen sie je Runde und Tag die Zahl der Termine, Auffälliges
+(derselbe Name oder dieselbe Adresse mehrmals, Eltern ohne Adresse, nicht zugestellte E-Mails, Konflikte) und
+den Link zur Liste, aber **keine Namen** und nie E-Mail-Adressen der Eltern; siehe die
+[Anleitung für Lehrkräfte]({{ '/de/guide/teachers/' | relative_url }}#zusammenfassungen-per-e-mail). Die
+E-Mails bleiben in Postfächern und Kalendern, die die Löschregeln der Schule womöglich nicht erreichen,
+eventuell bei Anbietern außerhalb der EU.
+
+Namen (und eine Kalenderdatei der Termine, selbst ohne Namen) gibt es nur, wenn die Schule sie erlaubt:
+`summary_names` in `config/config.php` (Deployment: Variable `SUMMARY_NAMES=1`). Dann wählt jedes Konto im
+Profil *Mit Namen*; neue Konten beginnen ohne. Erlauben Sie das nur, wenn alle Konten dienstliche Adressen
+verwenden, deren Löschregeln die Schule in der Hand hat (`allowed_account_domains`), und empfehlen Sie, die
+E-Mails bis zum Ende des Schuljahres zu löschen. Nach dem Update sehen Konten von vorher in der Übersicht
+einen Hinweis, was sich für sie ändert. Wo Namen erlaubt sind, behalten ihre Zusammenfassungen sie; sonst
+sind sie ohne Namen, und sobald der Hinweis bestätigt ist, gilt das Konto wie ein neues (Namen nur, wenn
+es sie ankreuzt).
 
 Eltern mit E-Mail-Adresse bekommen am Vorabend ihres Termins eine **Erinnerung** (zur selben Uhrzeit,
 standardmäßig ab 18:00 Uhr) mit einem Link zum Absagen. Sie lässt sich pro Runde abschalten (*Eltern am

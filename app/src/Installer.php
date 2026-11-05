@@ -73,6 +73,8 @@ final class Installer
         }
         if ($email !== '' && !is_valid_email($email)) {
             $errors[] = __('Die E-Mail-Adresse ist ungültig.');
+        } elseif (($error = AccountDomains::error($email)) !== null) {
+            $errors[] = $error;
         }
         return $errors;
     }
@@ -103,8 +105,23 @@ final class Installer
     }
 
     /**
+     * Stores the templates of the operator type as legal notice and privacy policy where a text is missing,
+     * each with its template as version marker (LegalTexts::base()).
+     */
+    public static function storePages(string $operatorType): void
+    {
+        foreach (self::pages($operatorType, I18n::languages()) as $key => $texts) {
+            foreach ($texts as $lang => $content) {
+                if (Db::run('INSERT IGNORE INTO pages (page_key, lang, content, updated_at) VALUES (?, ?, ?, ?)', [$key, $lang, $content, Time::nowSql()])->rowCount() > 0) {
+                    LegalTexts::setBase($key, $lang, $operatorType);
+                }
+            }
+        }
+    }
+
+    /**
      * Creates the first account as admin (which can also manage its own rounds) and stores the legal notice
-     * and privacy policy templates of the operator type.
+     * and privacy policy templates of the operator type (with them as their version markers).
      */
     public static function install(string $username, #[\SensitiveParameter] string $password, string $email, string $displayName, string $operatorType): void
     {
@@ -128,11 +145,7 @@ final class Installer
             "INSERT INTO users (username, password_hash, role, display_name, email, created_at) VALUES (?, ?, 'admin', ?, ?, ?)",
             [$username, password_hash($password, PASSWORD_DEFAULT), $displayName !== '' ? $displayName : $username, $email !== '' ? $email : null, $now]
         );
-        foreach (self::pages($operatorType, I18n::languages()) as $key => $texts) {
-            foreach ($texts as $lang => $content) {
-                Db::run('INSERT IGNORE INTO pages (page_key, lang, content, updated_at) VALUES (?, ?, ?, ?)', [$key, $lang, $content, $now]);
-            }
-        }
+        self::storePages($operatorType);
         Operator::saveType($operatorType);
         Settings::set('last_cleanup', '0');
         Settings::set('schema_version', (string) Migrations::LATEST);

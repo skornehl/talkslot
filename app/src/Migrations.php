@@ -10,7 +10,7 @@ namespace App;
  */
 final class Migrations
 {
-    public const LATEST = 21;
+    public const LATEST = 22;
 
     /** Version => SQL statements */
     private const STEPS = [
@@ -171,6 +171,15 @@ final class Migrations
         21 => [
             'ALTER TABLE mail_outbox ADD COLUMN IF NOT EXISTS payload TEXT NULL AFTER ref',
         ],
+        // 22: summaries without names unless the school allows them (config summary_names). Existing accounts
+        //     get NULL ("as before": names, if allowed, until they confirm the notice on the dashboard), new
+        //     ones 0. Added without a default first, so that a repeated run leaves the values as they are.
+        //     reply_to: the account's own address for the replies of parents instead of its e-mail address
+        22 => [
+            'ALTER TABLE users ADD COLUMN IF NOT EXISTS summary_names TINYINT(1) NULL AFTER summary_deadline,
+                ADD COLUMN IF NOT EXISTS reply_to VARCHAR(254) NULL AFTER email',
+            'ALTER TABLE users ALTER COLUMN summary_names SET DEFAULT 0',
+        ],
     ];
 
     /**
@@ -184,20 +193,20 @@ final class Migrations
         // Unchanged since v1.5.0: the legal notice of a "private, non-commercial service"
         'imprint-private.de' => '036e210b629357dfbf768868e3a5f249c888d3052f301170703b196336058f43',
         'imprint-private.en' => 'f15521ceaa18e97c98190e448cc95eb6130c4cf571164b09819bb40dd7af22c8',
-        'privacy.de' => '7973493ea955616e1241676c390c1cb29f54ef87d67a07aabe2f49cb4f7492bd',
-        'privacy.en' => '7ee196e8cecb6f1e82c44108a086fe9bc213d94debab3bc780783c15dcea2c80',
-        'privacy-private.de' => '056c114794a78da3c6c72f69b5bb8555e0aef01db6f5799c1702656870569804',
-        'privacy-private.en' => 'd1d0182270d438ca679b3410d25a6a64ba59448e9e5aa2d0119e806732400856',
+        'privacy.de' => '0e9337c8a3a72445dea3dc97a7da4326510231924c918be4e921a625f40fa883',
+        'privacy.en' => 'b9c46fa92a0065f9f78e2235b7802b45a1d00b7bdf4c7e8374669e632e6ffeec',
+        'privacy-private.de' => '39cbde3d5fb6673783bb2acc57dd1c75ed187abd1f63f040d96fed09721f7114',
+        'privacy-private.en' => 'e774ecf62032ece13b5fcccad1efbba89359ba45ca224af0b0cc6833439fe4a9',
         // Translations of the privacy policy for the other parent languages (German placeholders, the German
         // version is authoritative); the legal notice has none, it falls back to English
-        'privacy.pl' => '31ece416ddc4fab279fd4c304d5183f34f5ae76dbd98fc8b634b681055659222',
-        'privacy.ru' => '4aa7ff91eb2f51a274f694e55ef63b9f621fb11ff3b9a8fd8ae32ceaa6793a9b',
-        'privacy.tr' => 'ee07ef40adbbc185a177381fc0fca30d185314d6f04170b697bcb8ffcb761a7c',
-        'privacy.uk' => 'f0c41cc5b40a4e77bc6f136721f81576d9f2c5a93d1b2bc9e5b3ea00f46d5a8c',
-        'privacy-private.pl' => '9eb1b0abfbeb5828485ae28965ae88926198ab6505d3b0c981b86ddc49e51398',
-        'privacy-private.ru' => '017ae39b1c0ecf26cfba719b36d7a476fbdf2286006da3fef4b0ad5d8a160e24',
-        'privacy-private.tr' => '901cf3c3749843edc47407ce870ec1888ef400369783511922a15883f25c888d',
-        'privacy-private.uk' => 'd719e06917a517c5b061caa0d9393012a8bb9f88931f380ed9cc6f9a4982c599',
+        'privacy.pl' => '81a5d7f0ef6f93452b985a07e78eb0bc79237223d71f64688ca0c038f11a65b6',
+        'privacy.ru' => '2f9ece1e5c7d2f92c5bd9021709c222c456729194c0b2b2f7d91df2c782c4acf',
+        'privacy.tr' => 'ad5761f407b4a3b8d77a9ed522b7bbabc29cee2710b419aeb15fccd100b60023',
+        'privacy.uk' => '8447b767aa0f908cbbd17e8098277e5c27023392c9c7e1af346af2691ee36d4b',
+        'privacy-private.pl' => '4cb692916def585030204b4b9a770dd51d1897aadd117fd5e0933e42a1ae6efa',
+        'privacy-private.ru' => 'f100d9c4028924c917cb74aeaffd00a5c31fdc260a6c3acf7eabe9436550b059',
+        'privacy-private.tr' => 'c8fbd6540e8493d1a5466434f5c6f63efb29ad75df795a468bea4ca2e53e68bd',
+        'privacy-private.uk' => 'd7e092f7f4f92349ee1f2a3fa417f4e386d19b9500e91ca0b6432d03b0fb5854',
     ];
 
     /**
@@ -209,7 +218,12 @@ final class Migrations
     public const OLD_PAGE_HASHES = [
         'private' => [
             // Privacy policy de/en with the required checkbox in the booking form ("acknowledgement, not consent"),
-            // before the translations into the other parent languages (talkslot PR #39 up to expert review P1-9)
+            // after the summaries without names and before the translations into the other parent languages (schema
+            // version 22 up to expert review P1-9)
+            'f6a1a0488c648b7d524f41d6406718938fad59cb934a5c0a6d8b1631d9700d34',
+            '859517c15d6f539cf9d8506404abb6171bd7e8f46eb727e5b43826e738dcddca',
+            // Summary mails with time and name, the recommendation to delete them after 15 months (up to schema
+            // version 21, before the summaries without names)
             '41e56d82edcfea69af044fbef9639ab5f3e0667d831450fa1f593bce0b6623a1',
             'a2305054d982c4c4aba8a97698209e7146a247e86f7875fdc0c79b51acd6bdab',
             // Privacy policy de/en up to v1.6.0: "private service" without a data protection officer, legal
@@ -292,8 +306,13 @@ final class Migrations
             'f1ac0f64ece1e1ce11b4322831f8d121b6d5a3ea450183d6a277cf26d9c0f3b1',
         ],
         'school' => [
-            // Privacy policy de/en for public schools with the required checkbox in the booking form, before the
-            // translations into the other parent languages (up to expert review P1-9)
+            // Privacy policy de/en for public schools with the required checkbox in the booking form, after the
+            // summaries without names and before the translations into the other parent languages (schema version 22
+            // up to expert review P1-9)
+            '6d3917ebd6668be5ef53fd3d9215db22ffaf526a7e2db0aaad2c195c3bb873ef',
+            '89197fcf4e398d4e5de638b5efcbf0c3624f6dbf7d8b0a9fafa0a1803997c2c6',
+            // Summary mails with time and name, kept as a record of the meetings for 15 months (up to schema
+            // version 21, before the summaries without names)
             '6a3e56b92970cd83352b6d4fbff9ff64fbb6765bf8d622c9c66cd5bb8812f374',
             '5c1350ac669db8120b946879389dd3cfb6bb1720a86aa523d6df95520c2b7878',
             // Privacy policy de/en for public schools without the calendar download, the later confirmation
@@ -373,16 +392,21 @@ final class Migrations
         Db::execRaw("UPDATE rounds SET code_required = 1 WHERE COALESCE(access_pin, '') <> ''");
     }
 
-    /** Identifier of the current templates (changes with CURRENT_PAGE_HASHES). */
+    /**
+     * Identifier of the current templates (changes with CURRENT_PAGE_HASHES). ",base": since the version markers
+     * of the stored texts (LegalTexts::base()), so that an installation from before them runs refreshPages()
+     * once, which records them for the texts that have the wording of the current templates.
+     */
     public static function pagesVersion(): string
     {
-        return substr(hash('sha256', implode(',', self::CURRENT_PAGE_HASHES)), 0, 16);
+        return substr(hash('sha256', implode(',', self::CURRENT_PAGE_HASHES) . ',base'), 0, 16);
     }
 
     /**
      * Brings the stored legal notice and privacy policy up to date with the templates of the operator type:
      * texts that are missing or still exactly match a template (current or earlier, i.e. never edited) get the
-     * current template of that type; edited texts stay (LegalTexts::apply()). Installations from before the
+     * current template of that type; edited texts stay, their version markers tell the admins what the new
+     * template changed (LegalTexts::apply(), LegalTexts::outdated()). Installations from before the
      * operator type was asked for get "private" if all their texts are unedited templates of a private
      * service, as up to v1.6 (LegalTexts::detectType()); otherwise the texts stay as they are until an admin
      * chooses the type.
