@@ -25,9 +25,12 @@ foreach (App\LegalTexts::VARIANTS['privacy'] as $pvType => $pvName) {
         if ($pvSections($pvText) !== $pvSections($pvDe) || substr_count($pvText, "\n- ") !== substr_count($pvDe, "\n- ")) {
             $pvBad[] = "$pvLang: structure";
         }
-        // The notes on the operator type also find the wording of the translations (GDPR cited as 6(1)(e), art. 6 ust. 1 lit. e)
+        // The notes on the operator type also find the wording of the translations (GDPR cited as 6(1)(e), art. 6 ust. 1
+        // lit. e), also once the admins have filled in the German placeholders (e.g. [VORSCHRIFT IM SCHULGESETZ …])
         $pvOther = $pvType === 'school' ? 'private' : 'school';
-        if (App\LegalTexts::mismatches($pvText, $pvType) !== [] || App\LegalTexts::mismatches($pvText, $pvOther) !== [$pvOther === 'school' ? 'private' : 'school']) {
+        $pvFilled = str_replace(App\LegalTexts::placeholders($pvText), 'Testangabe', $pvText);
+        if (App\LegalTexts::mismatches($pvFilled, $pvType) !== [] || App\LegalTexts::mismatches($pvFilled, $pvOther) !== [$pvOther === 'school' ? 'private' : 'school']
+            || App\LegalTexts::mismatches($pvText, $pvOther) !== [$pvOther === 'school' ? 'private' : 'school']) {
             $pvBad[] = "$pvLang: markers";
         }
         if (App\LegalTexts::templateType('privacy', $pvText) !== $pvType) {
