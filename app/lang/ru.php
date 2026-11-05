@@ -24,6 +24,11 @@ return [
     'home.code.submit' => 'Далее',
     'notfound.title' => 'Страница не найдена',
     'notfound.text' => 'Такой страницы нет, или запись больше не ведётся.',
+    // Dead ends and the way on (expert review P2-1): code input on "not found", who to ask, why no slot is free
+    'notfound.code' => 'У вас есть код из приглашения?',
+    'contact' => 'Если у вас есть вопросы: {contact}',
+    'round.no_slots.full' => 'Всё время уже занято.',
+    'round.no_slots.closed' => 'Срок записи истёк: записаться здесь больше нельзя.',
     'error.title' => 'Произошла ошибка',
     'error.text' => 'Пожалуйста, попробуйте позже.',
     'error.contact' => 'Если ошибка повторяется, обратитесь, пожалуйста, к оператору этого сайта (см. {imprint}).',

@@ -24,6 +24,11 @@ return [
     'home.code.submit' => 'Devam',
     'notfound.title' => 'Bulunamadı',
     'notfound.text' => 'Bu sayfa mevcut değil veya randevu alma artık açık değil.',
+    // Dead ends and the way on (expert review P2-1): code input on "not found", who to ask, why no slot is free
+    'notfound.code' => 'Davetiyenizde bir kod mu var?',
+    'contact' => 'Sorularınız için: {contact}',
+    'round.no_slots.full' => 'Tüm saatler dolu.',
+    'round.no_slots.closed' => 'Randevu süresi doldu: buradan artık randevu alınamaz.',
     'error.title' => 'Bir hata oluştu',
     'error.text' => 'Lütfen daha sonra tekrar deneyin.',
     'error.contact' => 'Hata devam ederse lütfen bu sitenin işletmecisiyle iletişime geçin (bkz. {imprint}).',

@@ -1,4 +1,4 @@
-<?php /** @var array $user @var array $data @var array $errors */ use App\Csrf; ?>
+<?php /** @var array $user @var array $data @var array $errors @var string $generalContact the contact for parents set for all ('' = none) */ use App\Csrf; ?>
 <h1><?= e(__('Mein Profil')) ?></h1>
 <?php require __DIR__ . '/_errors.php'; ?>
 
@@ -24,6 +24,13 @@
       <label for="reply_to"><?= e(__('Antwortadresse für Eltern')) ?> <span class="muted small"><?= e(__('(optional)')) ?></span></label>
       <input type="email" id="reply_to" name="reply_to" maxlength="254" value="<?= e($data['reply_to'] ?? '') ?>" aria-describedby="rt-hint">
       <p class="hint" id="rt-hint"><?= e(__('Antworten der Eltern auf E-Mails zu ihrem Termin gehen an diese Adresse statt an Ihre E-Mail-Adresse, z. B. an Ihre dienstliche Adresse. Eltern sehen sie, sobald sie antworten.')) ?></p>
+    </div>
+    <div class="field">
+      <label for="parent_contact"><?= e(__('Kontakt für Eltern bei Fragen')) ?> <span class="muted small"><?= e(__('(optional)')) ?></span></label>
+      <input type="text" id="parent_contact" name="parent_contact" maxlength="<?= App\ParentContact::MAX_LENGTH ?>" value="<?= e($data['parent_contact'] ?? '') ?>" placeholder="<?= e(__('z. B. Sekretariat, Tel. 01234 5678 (Mo–Fr 8–12 Uhr)')) ?>" aria-describedby="pc-hint">
+      <p class="hint" id="pc-hint"><?= e(($generalContact ?? '') !== ''
+          ? __('Steht auf der Buchungsseite Ihrer Runden und auf der Seite gebuchter Termine, damit Eltern wissen, an wen sie sich wenden können, z. B. wenn alle Termine vergeben sind oder die Frist für Änderungen abgelaufen ist. Leer = der Kontakt für alle: {contact}', ['contact' => $generalContact])
+          : __('Steht auf der Buchungsseite Ihrer Runden und auf der Seite gebuchter Termine, damit Eltern wissen, an wen sie sich wenden können, z. B. wenn alle Termine vergeben sind oder die Frist für Änderungen abgelaufen ist.')) ?></p>
     </div>
     <div class="field">
       <label for="current_password_email"><?= e(__('Aktuelles Passwort')) ?> <span class="muted small"><?= e(__('(nur nötig, wenn Sie eine der beiden Adressen ändern)')) ?></span></label>

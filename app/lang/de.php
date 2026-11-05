@@ -27,6 +27,11 @@ return [
     'home.code.submit' => 'Weiter',
     'notfound.title' => 'Nicht gefunden',
     'notfound.text' => 'Diese Seite gibt es nicht, oder die Terminvergabe ist nicht mehr aktiv.',
+    // Dead ends and the way on (expert review P2-1): code input on "not found", who to ask, why no slot is free
+    'notfound.code' => 'Sie haben einen Code aus Ihrer Einladung?',
+    'contact' => 'Bei Fragen: {contact}',
+    'round.no_slots.full' => 'Alle Termine sind vergeben.',
+    'round.no_slots.closed' => 'Die Buchungsfrist ist abgelaufen: Hier lassen sich keine Termine mehr buchen.',
     'error.title' => 'Es ist ein Fehler aufgetreten',
     'error.text' => 'Bitte versuchen Sie es später erneut.',
     'error.contact' => 'Bleibt der Fehler bestehen, wenden Sie sich bitte an den Betreiber dieser Seite (siehe {imprint}).',

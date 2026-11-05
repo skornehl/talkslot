@@ -13,7 +13,7 @@
   <div class="field">
     <label for="email"><?= e(__('E-Mail-Adresse')) ?></label>
     <input type="email" id="email" name="email" required maxlength="254" autocapitalize="none" spellcheck="false" autocomplete="off" value="<?= e($data['email'] ?? '') ?>" aria-describedby="em-hint">
-    <p class="hint" id="em-hint"><?= $user ? e(__('Für Zusammenfassungen und neue Startpasswörter.')) : e(__('Dient als Benutzername. Die Zugangsdaten werden an diese Adresse geschickt.')) ?></p>
+    <p class="hint" id="em-hint"><?= $user ? e(__('Für Zusammenfassungen und neue Startpasswörter.')) : e(__('Die Einladung wird an diese Adresse geschickt.')) ?></p>
   </div>
   <div class="field">
     <label for="lang">Sprache / Language</label>
@@ -24,12 +24,11 @@
     </select>
     <p class="hint" id="lang-hint"><?= e(__('Sprache des Verwaltungsbereichs und der E-Mails an diese Person (Einladung, Zusammenfassungen).')) ?></p>
   </div>
-  <?php if ($user): ?>
   <div class="field">
-    <label for="username"><?= e(__('Benutzername (Login)')) ?></label>
-    <input type="text" id="username" name="username" required maxlength="254" autocapitalize="none" spellcheck="false" autocomplete="off" value="<?= e($data['username']) ?>">
+    <label for="username"><?= e(__('Benutzername (Login)')) ?><?php if (!$user): ?> <span class="muted small"><?= e(__('(optional)')) ?></span><?php endif; ?></label>
+    <input type="text" id="username" name="username"<?= $user ? ' required' : '' ?> maxlength="254" autocapitalize="none" spellcheck="false" autocomplete="off" value="<?= e($data['username']) ?>"<?= $user ? '' : ' aria-describedby="un-hint"' ?>>
+    <?php if (!$user): ?><p class="hint" id="un-hint"><?= e(__('Leer = die E-Mail-Adresse. Ein eigener Benutzername (z. B. „mmuster“) ist schwerer zu erraten, denn die E-Mail-Adresse sehen Eltern, wenn sie auf eine E-Mail antworten. Er steht in der Einladung.')) ?></p><?php endif; ?>
   </div>
-  <?php endif; ?>
   <?php if (!$isSelf): ?>
   <fieldset class="field">
     <legend><?= e(__('Rolle')) ?></legend>
