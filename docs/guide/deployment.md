@@ -101,10 +101,10 @@ users of the server could read the file until then (ask your web host how custom
 
 After switching, the deployment sends `POST /health` with the header `X-Health-Token`. The token is the
 hex-encoded HMAC-SHA256 of the word `health` with `APP_SECRET`, like the
-[web cron's]({{ '/guide/installation/' | relative_url }}), so there is no further secret to set up. Without
-the right token, or with `GET`, the address answers 404 like any unknown page. The request runs pending
-migrations; one that fails is reported by alert mail and fails the check instead of being ignored. The
-answer contains nothing but a status:
+[web cron's]({{ '/guide/installation/' | relative_url }}), so there is no further secret to set up. With a
+wrong token, or with `GET`, the address answers 404 like any unknown page; a request without the header is
+treated as an ordinary page address. The request runs pending migrations; one that fails is reported by
+alert mail and fails the check instead of being ignored. The answer contains nothing but a status:
 
 | Status | HTTP | Meaning |
 |---|---|---|
@@ -115,9 +115,12 @@ answer contains nothing but a status:
 | `migration_failed` | 503 | a migration failed; the alert mail and `app/var/php-error.log` have the details |
 | `schema_outdated` | 503 | the migrations are not through yet, e.g. another request is still running them (`Retry-After`) |
 
-The check tries for about 30 seconds before it switches back. The database is not rolled back; since
-migrations only add columns and tables, the previous version keeps working (see [Rollback](#rollback)).
-The run log names the status and what to check. To ask the health check yourself:
+The check tries six times, five seconds apart, before it switches back: about half a minute, up to a
+minute and a half if the database does not answer or a migration is still running. The database is not
+rolled back; since migrations only add columns and tables, the previous version keeps working (see
+[Rollback](#rollback)). That also holds for a migration that takes longer than the check: it finishes
+after the switch-back, and the previous version runs on the newer schema. The run log names the status
+and what to check. To ask the health check yourself:
 
 ```bash
 TOKEN=$(printf health | openssl dgst -sha256 -hmac "$APP_SECRET" | sed 's/.*= //')
@@ -129,8 +132,15 @@ secret `APP_SECRET` to the check; a [configuration-only repository](#deploying-f
 with `secrets: inherit` passes it on by itself. If it does not arrive (for example because your workflow
 lists its secrets one by one without `APP_SECRET`), the run warns and checks the pages only. Versions
 uploaded before the update have no health check: switching back to one of them checks its pages only,
-with a warning. If your database is MySQL, which has never been supported, deployments now stop with
-`db_unsupported` instead of breaking at the next migration.
+with a warning. Also note:
+
+- **Database version:** MySQL and MariaDB 10.5 or older (for example the MariaDB of Debian 11) have never
+  been supported. Deployments now stop with `db_unsupported` instead of breaking at a later migration,
+  until the database server is updated (MariaDB 10.5 has had no updates since mid-2025; ask your web
+  host). MariaDB Enterprise Server is recognised. A database proxy that answers `VERSION()` with its own
+  version (ProxySQL does by default) also leads to `db_unsupported`; let it pass on the server's version.
+- **A round at `/health` or `/cron`:** new rounds no longer get these addresses. A round that already has
+  one keeps it, because only requests with the key header reach the health check or the web cron.
 
 ## Rollback
 
@@ -226,4 +236,6 @@ shown in the footer of every page.
 `bin/build.sh` and `bin/deploy.sh` are plain shell scripts (bash, lftp, curl) and work from any CI or your
 own computer. Run `bin/deploy.sh` without arguments for its usage. Set `APP_SECRET` in the environment of
 `bin/deploy.sh activate` and `switch` so that the check includes the [health check](#health-check) (needs
-`openssl`); without it only the pages are checked.
+`openssl`); without it only the pages are checked. `openssl` gets `APP_SECRET` as an argument for a
+moment, so other users of the same computer could see it in the process list: deploy from a computer
+that only you use, or from a CI runner.
