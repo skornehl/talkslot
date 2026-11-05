@@ -98,9 +98,12 @@ another date, time or location, or the round another location or (as an admin) a
   their calendar, and the link to the round page to book again if the round still takes bookings. It has
   no personal link, as the booking is gone. A single entry is sent at once; several (a day, a round) go
   out from the [mail queue]({{ '/guide/operations/' | relative_url }}#mail-queue), with the next run of the
-  cron job or, on PHP-FPM, right after the page;
+  cron job or, on PHP-FPM, right after the page; cancellations of appointments within the next 24 hours go
+  first there;
 - a **change notice** with the current date, time, location and teacher when these changed (from the
-  mail queue). Their personal link stays valid.
+  mail queue). Their personal link stays valid, and the calendar file updates the appointment in their
+  calendar. If you change the same day again before the notice has gone out, the parents get one mail with
+  the latest details.
 
 Mails go to parents who booked with an e-mail address themselves, and to entries you made yourself once
 their parents got a confirmation or change notice from TalkSlot. Everybody else, and everybody if you untick
@@ -108,9 +111,19 @@ the box, is **not** notified: the dialogs and forms give the number, and the mes
 with date, time and address (once; after a deletion nothing else shows them), so that you can tell them in
 person. Appointments that are over concern nobody.
 
+If you give a booking (*Bearbeiten*) a **new e-mail address**, that address only gets change notices,
+cancellations and reminders once you have saved the entry with *Änderung per E-Mail mitteilen* and the mail
+went out; until then the message after saving says so, and the booking counts as your own entry
+(*selbst eingetragen*). Change notices after a change of a day or round are limited to 200 per hour from your
+account (set in the configuration, `rate_limits.teacher_bulk`); the message names the parents above it,
+so that you can tell them in person or send them the details later from their entry.
+
 Bookings that no longer fit after a change of times or breaks become **conflicts** (⚠). Their parents are
 not mailed yet: they hear of it when you move the booking (*Bearbeiten*, *Änderung per E-Mail mitteilen*
-ticked) or delete it (*Eltern per E-Mail informieren* ticked). Saving an entry with *Änderung per E-Mail
+ticked) or delete it (*Eltern per E-Mail informieren* ticked). If a conflict gets a new date, location or
+teacher at the same time, the warning after saving says that its parents do not know the new details yet.
+When a later change (of the day or a break) makes a conflict fit again, its parents get a change notice with
+the current details, if these changed since their last mail. Saving an entry with *Änderung per E-Mail
 mitteilen* also sends the current details without a change (at most 30 mails per hour from your account).
 
 Further actions on the round: edit, deactivate, **print view / PDF** (*Druckansicht / PDF*), and

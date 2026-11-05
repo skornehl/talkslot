@@ -46,7 +46,7 @@ $action = $booking ? url('/admin/booking/' . (int) $booking['id'] . '/edit') : u
     <label for="send_mail"><?= e($booking ? __('Änderung per E-Mail mitteilen (nur wenn eine Adresse eingetragen ist)') : __('Bestätigung mit Änderungslink per E-Mail senden (nur wenn eine Adresse eingetragen ist)')) ?></label>
   </div>
   <?php if ($booking): ?>
-  <p class="hint hint-indent" id="mail-hint"><?= e(__('Die E-Mail nennt die aktuellen Termindaten in der Sprache der Eltern und geht auch ohne Änderung hier hinaus, z. B. nachdem Datum oder Ort des Tages geändert wurden.')) ?></p>
+  <p class="hint hint-indent" id="mail-hint"><?= e(__('Die E-Mail nennt die aktuellen Termindaten in der Sprache der Eltern und geht auch ohne Änderung hier hinaus, z. B. nachdem Datum oder Ort des Tages geändert wurden.')) ?> <?= e(__('An eine neue Adresse gehen Änderungen, Absagen und Erinnerungen erst nach dieser E-Mail.')) ?></p>
   <?php endif; ?>
 
   <div class="actions">

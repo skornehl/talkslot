@@ -122,6 +122,8 @@ Wi-Fi).
 | `login_device` | 20 per hour | failed logins **per known device** (instead of `login_user`) |
 | `login_notice` | 1 per day | e-mails to an account whose `login_user` limit was reached |
 | `reauth` | 5 per 15 min | wrong passwords when confirming a change of admin rights, an e-mail address or ending all sessions, and when changing the own password (one counter per sign-in, not per IP address) |
+| `teacher_mail` | 30 per hour | mails to parents a teacher sends from an entry (confirmation, change notice), **per account** |
+| `teacher_bulk` | 200 per hour | change notices to parents after a teacher changed a day or a round, **per account**; parents above the limit are named to the teacher instead. Together with `teacher_mail` this keeps an account from sending mails to addresses of its choice in bulk |
 
 `csrf_min_age_seconds` (default 2) is the minimum time between loading and submitting a public form, a
 simple brake for bots.

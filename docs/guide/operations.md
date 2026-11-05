@@ -144,14 +144,17 @@ other up; the cron job waits up to 15 seconds for a run in progress.
 - **Except cancellations by the teacher.** When a teacher deletes a booking, a day, a round or an admin an
   account, with *Eltern per E-Mail informieren* ticked, the booking is gone before its cancellation is
   sent. Such an entry therefore keeps what this one mail needs (address, language, name, appointment and
-  teacher, as JSON in `mail_outbox.payload`, schema version 20), never a link or token, and is deleted like
-  the others: once sent, after 48 hours at the latest. A cancellation whose appointment has begun meanwhile
-  is dropped. Older versions drop such entries unsent, so a rollback loses at most the cancellations still
-  waiting.
+  teacher, as JSON in `mail_outbox.payload`, added with schema version 21), never a link or token, and is
+  deleted like the others: once sent, after 48 hours at the latest. After an admin deleted an account, it
+  keeps no address of the teacher (the mail goes without Reply-To). A cancellation whose appointment has
+  begun meanwhile is dropped; one for an appointment within the next 24 hours goes out like a single mail,
+  not held back by the hourly limit. Versions with schema version 20 or older drop such entries unsent, so
+  a rollback to one of them loses the cancellations still waiting.
 - **Nothing gets lost unnoticed.** The booking list shows *E-Mail nicht zugestellt* at an entry whose mail
   failed (with *neuer Versuch folgt* while it is retried), and admins see a notice on the overview when
   mails have waited for more than two hours, usually because the cron job does not run or the mail server
-  keeps refusing.
+  keeps refusing. Cancellations are the exception: their booking is gone, so one that is given up after
+  48 hours leaves no mark at an entry, only the notice on the overview while it waits.
 - **Without a cron job** mails can only go out on page views if PHP runs as PHP-FPM or LiteSpeed: the page
   is delivered first, then up to 10 due mails are sent (`mail_queue.after_response`). With Apache's
   mod_php that is not possible, so set up the cron job; the included `cron.yml` runs it hourly. Without it,

@@ -128,6 +128,8 @@ womöglich eine Adresse (Mobilfunknetze, Schul-WLAN).
 | `login_device` | 20 pro Stunde | fehlgeschlagene Anmeldungen **pro bekanntem Gerät** (statt `login_user`) |
 | `login_notice` | 1 pro Tag | E-Mails an ein Konto, dessen Limit `login_user` erreicht wurde |
 | `reauth` | 5 pro 15 Min. | falsche Passwörter beim Bestätigen einer Änderung von Admin-Rechten oder E-Mail-Adressen, beim Beenden aller Sitzungen und beim Ändern des eigenen Passworts (ein Zähler pro Anmeldung, nicht pro IP-Adresse) |
+| `teacher_mail` | 30 pro Stunde | E-Mails an Eltern, die eine Lehrkraft aus einem Eintrag schickt (Bestätigung, Änderungsmitteilung), **pro Konto** |
+| `teacher_bulk` | 200 pro Stunde | Änderungsmitteilungen an Eltern, nachdem eine Lehrkraft einen Tag oder eine Runde geändert hat, **pro Konto**; Eltern über der Grenze nennt die Meldung stattdessen der Lehrkraft. Zusammen mit `teacher_mail` verhindert das, dass ein Konto E-Mails in großer Zahl an selbst gewählte Adressen schickt |
 
 `csrf_min_age_seconds` (Standard 2) ist die Mindestzeit zwischen dem Laden und dem Absenden eines
 öffentlichen Formulars, eine einfache Bremse für Bots.

@@ -29,8 +29,16 @@ return [
     'Die Eltern von {count} Buchung(en) erhalten die neuen Termindaten per E-Mail in ihrer Sprache.' => 'The parents of {count} booking(s) will receive the new appointment details by email in their language.',
     'Die Eltern von {count} Buchung(en) erhalten eine Absage per E-Mail in ihrer Sprache.' => 'The parents of {count} booking(s) will receive a cancellation by email in their language.',
     'Keine E-Mail an die Eltern von {count} Buchung(en) (keine Adresse hinterlegt oder Eintrag nie per E-Mail bestätigt) – bitte persönlich informieren:' => 'No email to the parents of {count} booking(s) (no address stored, or an entry never confirmed by email) – please inform them in person:',
-    'Betroffen:' => 'Concerned:',
+    'Betroffen:' => 'Affected:',
     'Die Eltern erfahren davon, wenn Sie den Termin umbuchen (mit „Änderung per E-Mail mitteilen“) oder löschen (mit „Eltern per E-Mail informieren“); ohne E-Mail-Adresse bitte persönlich informieren.' => 'The parents learn about it when you move the appointment (with “Notify of the change by email”) or delete it (with “Inform parents by email”); without an email address, please inform them in person.',
+    // Limit of change notices per account and hour (ScheduleService::BULK_LIMIT)
+    'Keine E-Mail an die Eltern von {count} Buchung(en): Ihr Konto hat die Höchstzahl von Änderungsmitteilungen je Stunde erreicht. Bitte persönlich informieren oder später den Eintrag mit „Änderung per E-Mail mitteilen“ speichern:' => 'No email to the parents of {count} booking(s): your account has reached the maximum number of change notices per hour. Please inform them in person or save their entry later with “Notify of the change by email”:',
+    // Conflicts that got a new date, location or teacher (day: after the conflict warning; round: on its own)
+    'Bei {count} davon haben sich zugleich Datum, Ort oder Lehrkraft geändert; die Eltern kennen die neuen Daten noch nicht.' => 'For {count} of them, the date, location or teacher changed at the same time; the parents do not know the new details yet.',
+    'Achtung: {count} gebuchte(r) Termin(e) sind als Konflikt markiert und haben jetzt einen anderen Ort oder eine andere Lehrkraft; die Eltern kennen die neuen Daten noch nicht.' => 'Attention: {count} booked appointment(s) are marked as a conflict and now have a different location or teacher; the parents do not know the new details yet.',
+    // Entry (booking_form.php, AdminController::bookingUpdate()): a new address counts as unknown until a mail from the entry reached it
+    'An eine neue Adresse gehen Änderungen, Absagen und Erinnerungen erst nach dieser E-Mail.' => 'A new address receives changes, cancellations and reminders only after this email.',
+    'Neue E-Mail-Adresse ohne E-Mail gespeichert: Die Eltern erhalten dort Änderungen, Absagen und Erinnerungen erst, wenn Sie den Eintrag mit „Änderung per E-Mail mitteilen“ speichern.' => 'New email address saved without an email: the parents receive changes, cancellations and reminders there only once you save the entry with “Notify of the change by email”.',
     // Admin log
     'Eltern per E-Mail informiert' => 'parents informed by email',
     'Eltern von {count} Buchung(en) per E-Mail informiert' => 'parents of {count} booking(s) informed by email',

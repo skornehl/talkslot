@@ -282,7 +282,7 @@ All options are documented in [`config/config.sample.php`](config/config.sample.
 | `access_link_hours` | `48` | validity of invitation/reset links |
 | `summary_evening_hour` | `18` | time of the evening summary |
 | `mail_queue` | see file | mails per cron run (`batch`), seconds per run (`seconds`), reminders, summaries and mails to many parents after a change per hour (`hourly_limit`, `0` = no limit), sending after the response with PHP-FPM (`after_response`) |
-| `rate_limits` | see file | generous, since many parents share an IP (mobile CGNAT, school Wi-Fi) |
+| `rate_limits` | see file | generous, since many parents share an IP (mobile CGNAT, school Wi-Fi); mails to parents per teacher account and hour (`teacher_mail` from entries, `teacher_bulk` after a change of a day or round) |
 
 **Adding a language:** copy `app/lang/en.php` to e.g. `app/lang/it.php`, translate it, add the code to
 `languages` and a flag `public/assets/flags/it.svg` (admin translation form). Optionally add the legal templates

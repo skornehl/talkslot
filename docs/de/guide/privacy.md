@@ -13,7 +13,7 @@ TDDDG. Diese Seite erläutert die Designentscheidungen; sie ist keine Rechtsbera
 | Name und optionale E-Mail-Adresse einer Buchung | Datenbank | ab 0:00 Uhr am Tag nach dem Termin, bei einer Absage sofort |
 | Hash des persönlichen Änderungslinks (und der Links in der Erinnerung und in einer später verschickten Bestätigung) | Datenbank | mit der Buchung |
 | Eintrag der Mail-Warteschlange: welche E-Mail für welche Buchung oder welches Konto aussteht (ohne Adresse, Text oder Link) | Datenbank | nach dem Versand, spätestens nach 48 Stunden, mit der Buchung |
-| Absage durch die Lehrkraft in der Mail-Warteschlange: Adresse, Sprache, Name, Termin und Lehrkraft der gelöschten Buchung (ohne Link) | Datenbank | nach dem Versand, spätestens nach 48 Stunden |
+| Absage durch die Lehrkraft in der Mail-Warteschlange: Adresse, Sprache, Name, Termin und Lehrkraft (Name und Adresse für Antworten; keine Adresse, wenn das Konto gelöscht wurde) der gelöschten Buchung (ohne Link) | Datenbank | nach dem Versand, spätestens nach 48 Stunden |
 | Gekürzte, per HMAC gehashte IP-Adressen; HMAC-Hashes von Konto-IDs und Geräte-Cookies mit fehlgeschlagenen Anmeldungen | Datenbank (Rate Limiting) | spätestens nach 24 Stunden |
 | Geräte-Cookie eines Admin- oder Lehrkraft-Kontos (Zufallszahl, Zeitpunkt, Signatur) | Browser der Person | nach 365 Tagen, bei jeder Anmeldung erneuert |
 | Konten der Lehrkräfte | Datenbank | durch einen Admin; inaktive Konten ohne Runden in Gebrauch 15 Monate nach der letzten Anmeldung, zusammen mit ihren Entwürfen |
@@ -59,9 +59,13 @@ Datenschutzerklärung.
   E-Mail informieren*. Das ist der Zweck, für den die Adresse angegeben wurde (Absage und Änderung stehen
   in der Datenschutzerklärung). E-Mails gehen nur an Eltern, die selbst gebucht haben, oder deren Eintrag
   durch die Lehrkraft schon eine Bestätigung oder Änderungsmitteilung erhalten hat; Eltern, die nie eine
-  E-Mail von TalkSlot bekommen haben, erhalten auch keine Absage (die Regel der Erinnerung). Das verhindert
-  zugleich, dass ein Konto über selbst angelegte Einträge mit beliebigen Adressen und das Löschen eines
-  Tages E-Mails an beliebige Empfänger schickt. Der Audit-Eintrag nennt nur die Zahl der benachrichtigten
+  E-Mail von TalkSlot bekommen haben, erhalten auch keine Absage (die Regel der Erinnerung). Eine neue
+  Adresse, die die Lehrkraft bei einer Buchung einträgt, gilt als unbekannt, bis eine solche E-Mail aus dem
+  Eintrag sie erreicht hat, und Änderungsmitteilungen nach der Änderung eines Tages oder einer Runde sind
+  pro Konto und Stunde begrenzt (`rate_limits.teacher_bulk`, wie die 30 E-Mails pro Stunde aus Einträgen).
+  Das verhindert zugleich, dass ein Konto über selbst angelegte Einträge mit beliebigen Adressen oder
+  geänderte Adressen von Buchungen und das anschließende Ändern oder Löschen eines Tages E-Mails an
+  beliebige Empfänger schickt. Der Audit-Eintrag nennt nur die Zahl der benachrichtigten
   Eltern. Auf einen `mailto:`-Link an die Eltern wurde bewusst verzichtet, damit ihre Adressen nicht über
   das Mailprogramm des Browsers in private Postfächer gelangen. Wer keine E-Mail bekommt, wird in der
   Meldung danach einmal mit Termin und gegebenenfalls Adresse genannt (beides stand vorher auf der Seite

@@ -107,9 +107,12 @@ informieren*** angehakt. Die Eltern erhalten dann eine E-Mail in ihrer Sprache:
   annimmt. Sie enthält keinen persönlichen Link, denn die Buchung gibt es nicht mehr. Ein einzelner Eintrag
   geht sofort hinaus; mehrere (ein Tag, eine Runde) gehen über die
   [Mail-Warteschlange]({{ '/de/guide/operations/' | relative_url }}#mail-warteschlange) hinaus, mit dem
-  nächsten Lauf des Cronjobs oder, mit PHP-FPM, gleich nach der Seite;
+  nächsten Lauf des Cronjobs oder, mit PHP-FPM, gleich nach der Seite; Absagen für Termine in den nächsten
+  24 Stunden gehen dort zuerst hinaus;
 - eine **Änderungsmitteilung** mit aktuellem Datum, Uhrzeit, Ort und Lehrkraft, wenn sich davon etwas
-  geändert hat (über die Mail-Warteschlange). Ihr persönlicher Link bleibt gültig.
+  geändert hat (über die Mail-Warteschlange). Ihr persönlicher Link bleibt gültig, und die Kalenderdatei
+  aktualisiert den Termin in ihrem Kalender. Ändern Sie denselben Tag noch einmal, bevor die Mitteilung
+  hinausgegangen ist, bekommen die Eltern eine E-Mail mit dem letzten Stand.
 
 E-Mails gehen an Eltern, die selbst mit E-Mail-Adresse gebucht haben, und an Ihre eigenen Einträge, sobald
 deren Eltern eine Bestätigung oder Änderungsmitteilung von TalkSlot erhalten haben. Alle anderen, und alle,
@@ -117,11 +120,23 @@ wenn Sie das Häkchen herausnehmen, werden **nicht** benachrichtigt: Dialoge und
 und die Meldung danach nennt sie mit Datum, Uhrzeit und Adresse (einmalig; nach dem Löschen zeigt sie sonst
 nichts mehr an), damit Sie sie persönlich informieren können. Vergangene Termine betrifft das nicht.
 
+Geben Sie einer Buchung (*Bearbeiten*) eine **neue E-Mail-Adresse**, erhält diese Adresse Änderungen,
+Absagen und Erinnerungen erst, wenn Sie den Eintrag mit *Änderung per E-Mail mitteilen* gespeichert haben
+und die E-Mail hinausgegangen ist; bis dahin sagt das die Meldung nach dem Speichern, und die Buchung gilt
+als Ihr eigener Eintrag (*selbst eingetragen*). Änderungsmitteilungen nach einer Änderung eines Tages oder
+einer Runde sind auf 200 pro Stunde aus Ihrem Konto begrenzt (einstellbar in der Konfiguration,
+`rate_limits.teacher_bulk`); die Meldung nennt die Eltern darüber, damit Sie sie persönlich informieren oder
+ihnen die Daten später aus ihrem Eintrag schicken.
+
 Buchungen, die nach einer Änderung von Zeiten oder Pausen nicht mehr passen, werden zu **Konflikten** (⚠).
 Deren Eltern erhalten noch keine E-Mail: Sie erfahren davon, wenn Sie die Buchung umbuchen (*Bearbeiten*,
-*Änderung per E-Mail mitteilen* angehakt) oder löschen (*Eltern per E-Mail informieren* angehakt). Ein
-Eintrag, den Sie mit *Änderung per E-Mail mitteilen* speichern, schickt die aktuellen Daten auch ohne
-Änderung (höchstens 30 E-Mails pro Stunde aus Ihrem Konto).
+*Änderung per E-Mail mitteilen* angehakt) oder löschen (*Eltern per E-Mail informieren* angehakt). Bekommt
+ein Konflikt zugleich ein neues Datum, einen neuen Ort oder eine neue Lehrkraft, sagt die Warnung nach dem
+Speichern, dass seine Eltern die neuen Daten noch nicht kennen. Passt ein Konflikt nach einer späteren
+Änderung (des Tages oder einer Pause) wieder, erhalten seine Eltern eine Änderungsmitteilung mit den
+aktuellen Daten, wenn sich diese seit ihrer letzten E-Mail geändert haben. Ein Eintrag, den Sie mit
+*Änderung per E-Mail mitteilen* speichern, schickt die aktuellen Daten auch ohne Änderung (höchstens 30
+E-Mails pro Stunde aus Ihrem Konto).
 
 Weitere Aktionen für die Runde: bearbeiten, deaktivieren, ***Druckansicht / PDF*** und
 ***Duplizieren …***: eine Kopie mit neuem Link und Code, mit Zeiten, Pausen, gesperrten Terminen,

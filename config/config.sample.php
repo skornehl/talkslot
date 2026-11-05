@@ -99,6 +99,8 @@ return [
         'login_device' => [20, 3600], // failed logins per known device (instead of login_user)
         'login_notice' => [1, 86400], // e-mails to an account whose login_user limit was reached
         'reauth' => [5, 900],       // wrong passwords when confirming admin rights, e-mail changes, ending all sessions and changing the own password (per sign-in)
+        'teacher_mail' => [30, 3600], // mails to parents from entries (confirmation, change), per account
+        'teacher_bulk' => [200, 3600], // change notices to parents after a change of a day or round, per account
     ],
     'csrf_min_age_seconds' => 2,    // form can be submitted after N seconds at the earliest (bot brake)
 ];
