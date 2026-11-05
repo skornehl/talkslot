@@ -10,7 +10,7 @@ namespace App;
  */
 final class Migrations
 {
-    public const LATEST = 22;
+    public const LATEST = 25;
 
     /** Version => SQL statements */
     private const STEPS = [
@@ -179,6 +179,16 @@ final class Migrations
             'ALTER TABLE users ADD COLUMN IF NOT EXISTS summary_names TINYINT(1) NULL AFTER summary_deadline,
                 ADD COLUMN IF NOT EXISTS reply_to VARCHAR(254) NULL AFTER email',
             'ALTER TABLE users ALTER COLUMN summary_names SET DEFAULT 0',
+        ],
+        // 25: security events of an account, for the account holder only (expert review P2-9): password,
+        //     address, username, admin rights, sign-in limit; no IP. 23 and 24 belong to other changes.
+        25 => [
+            "CREATE TABLE IF NOT EXISTS security_events (
+                id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, user_id INT UNSIGNED NOT NULL, event VARCHAR(30) NOT NULL,
+                by_admin TINYINT(1) NOT NULL DEFAULT 0, created_at DATETIME NOT NULL,
+                KEY idx_security_events_user (user_id, created_at), KEY idx_security_events_created (created_at),
+                CONSTRAINT fk_security_events_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
         ],
     ];
 

@@ -86,7 +86,13 @@ final class AccountSecurity
      */
     public static function contactChanged(array $before, array $after, array $actor): void
     {
-        if (mb_strtolower((string) $after['email']) !== mb_strtolower((string) $before['email']) || $after['username'] !== $before['username']) {
+        $emailChanged = mb_strtolower((string) $after['email']) !== mb_strtolower((string) $before['email']);
+        if ($emailChanged || $after['username'] !== $before['username']) {
+            $byAdmin = (int) $actor['id'] !== (int) $before['id'];
+            SecurityEvents::record((int) $before['id'], $emailChanged ? SecurityEvents::EMAIL_CHANGED : SecurityEvents::USERNAME_CHANGED, $byAdmin);
+            if ($emailChanged && $after['username'] !== $before['username']) {
+                SecurityEvents::record((int) $before['id'], SecurityEvents::USERNAME_CHANGED, $byAdmin);
+            }
             self::send($before, static fn (): array => self::contactChangedText($before, $after, $actor));
         }
     }
@@ -98,6 +104,9 @@ final class AccountSecurity
      */
     public static function adminChange(string $event, ?array $account, array $actor): void
     {
+        if ($account !== null && in_array($event, [self::GRANTED, self::REVOKED], true)) {
+            SecurityEvents::record((int) $account['id'], $event === self::GRANTED ? SecurityEvents::ADMIN_GRANTED : SecurityEvents::ADMIN_REVOKED, true);
+        }
         $recipients = Db::all("SELECT * FROM users WHERE role = 'admin' AND is_active = 1 ORDER BY id");
         if ($event === self::INVITED) {
             $recipients = array_filter($recipients, static fn (array $r): bool => (int) $r['id'] !== (int) $account['id']);

@@ -205,6 +205,9 @@ final class Auth
             'started' => time(),
             'last' => time(),
             'csrf' => bin2hex(random_bytes(32)),
+            // For the account holder only (SecurityEvents): the sign-in before this one, failed attempts since
+            'previous_login' => $user['last_login_at'],
+            'failed_before' => (int) $user['failed_logins'],
         ];
         return true;
     }
@@ -234,6 +237,41 @@ final class Auth
             return;
         }
         Outbox::queueAccount((int) $user['id'], 'login_notice', Time::today());
+        SecurityEvents::record((int) $user['id'], SecurityEvents::LOGIN_LIMIT);
+        // Several accounts within a short time (e.g. passwords from a leak tried out): one alarm a day to all
+        // admins, without names (the accounts' holders got their own notice)
+        [$alarm, $alarmWindow] = RateLimiter::limits('login_alarm', 3, 3600);
+        if (!RateLimiter::hit('login_alarm', $alarm, $alarmWindow, 'accounts') && RateLimiter::hit('login_alarm_sent', 1, 86400, 'admins')) {
+            foreach (Db::all("SELECT id FROM users WHERE role = 'admin' AND is_active = 1") as $admin) {
+                Outbox::queueAccount((int) $admin['id'], 'login_alarm', Time::today());
+            }
+        }
+    }
+
+    /**
+     * Sends the alarm about the sign-in limit of several accounts (from the outbox, see lockoutNotice()) to an
+     * admin, in its language. null: no longer needed (account inactive, no admin, no valid address).
+     */
+    public static function deliverLoginAlarm(int $userId): ?bool
+    {
+        $user = Db::one("SELECT * FROM users WHERE id = ? AND is_active = 1 AND role = 'admin'", [$userId]);
+        if (!$user || !is_valid_email((string) $user['email'])) {
+            return null;
+        }
+        [$alarm, $alarmWindow] = RateLimiter::limits('login_alarm', 3, 3600);
+        return (bool) AdminI18n::with(AdminI18n::of($user), static function () use ($user, $alarm, $alarmWindow): bool {
+            $vars = ['app' => app_name(), 'url' => abs_url('/admin', ['lang' => null]), 'count' => $alarm, 'minutes' => (int) ceil($alarmWindow / 60)];
+            return Mailer::send((string) $user['email'], __('Sicherheitshinweis: viele fehlgeschlagene Anmeldungen bei {app}', $vars), implode("\n", [
+                __('Hallo {name},', ['name' => $user['display_name'] ?: $user['username']]),
+                '',
+                __('bei {app} ({url}) haben fehlgeschlagene Anmeldeversuche innerhalb von {minutes} Minuten bei mehr als {count} Konten das Limit pro Konto erreicht. Vermutlich probiert jemand Passwörter durch, z. B. aus einem Datenleck anderer Dienste.', $vars),
+                __('Die betroffenen Konten haben je eine E-Mail erhalten; auf ihren bekannten Geräten können sie sich weiter anmelden. Welche Konten es sind, sehen nur ihre Inhaber.'),
+                '',
+                __('Bitte erinnern Sie die Lehrkräfte daran, für TalkSlot kein Passwort zu verwenden, das sie auch anderswo nutzen. Halten die Versuche an, sprechen Sie mit dem Betreiber über die Zugriffsprotokolle des Hosters.'),
+                '',
+                __('Diese Nachricht geht an alle Admins, höchstens einmal am Tag.'),
+            ]));
+        });
     }
 
     /**
@@ -373,6 +411,7 @@ final class Auth
         );
         session_regenerate_id(true);
         self::endOtherSessions($userId, true);
+        SecurityEvents::record($userId, SecurityEvents::PASSWORD_CHANGED);
         // The new epoch revoked the account's known devices; this browser proved the password, it stays known
         TrustedDevice::remember($userId, self::deviceEpoch(Db::one('SELECT session_epoch FROM users WHERE id = ?', [$userId]) ?? []));
         session_write_close(); // the account's other tabs do not wait for the mail server

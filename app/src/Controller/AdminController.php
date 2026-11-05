@@ -25,6 +25,7 @@ use App\RateLimiter;
 use App\RoundCode;
 use App\ScheduleChange;
 use App\ScheduleService;
+use App\SecurityEvents;
 use App\SlotGenerator;
 use App\Slug;
 use App\Summaries;
@@ -241,6 +242,11 @@ final class AdminController
         }
         $result = Auth::attempt(Http::post('username'), Http::postRaw('password'));
         if ($result === true) {
+            // Failed attempts since the previous sign-in: only the account holder learns of them (P2-9)
+            $failed = (int) ($_SESSION['failed_before'] ?? 0);
+            if ($failed > 0) {
+                $this->flash('warning', __('Seit Ihrer vorigen Anmeldung gab es {count} fehlgeschlagene Anmeldeversuche für Ihr Konto. Waren Sie das nicht, versucht vermutlich jemand, Ihr Passwort zu erraten; verwenden Sie es auch anderswo, ändern Sie es bitte. Mehr unter „Mein Profil“.', ['count' => $failed]));
+            }
             self::redirectTo(Auth::returnPath(Http::post('next')));
         }
         http_response_code(401);
@@ -1368,11 +1374,19 @@ final class AdminController
 
     private function profile(array $errors = [], ?array $data = null): void
     {
+        $me = Auth::user();
         $this->render('admin/profile', [
             'title' => __('Mein Profil'),
-            'user' => Auth::user(),
-            'data' => $data ?? Auth::user(),
+            'user' => $me,
+            'data' => $data ?? $me,
             'errors' => $errors,
+            // Only the account's own (SecurityEvents): the previous sign-in and the failed attempts since
+            'security' => [
+                'events' => SecurityEvents::of((int) $me['id']),
+                'days' => SecurityEvents::retentionDays(),
+                'previous' => $_SESSION['previous_login'] ?? null,
+                'failed' => (int) ($_SESSION['failed_before'] ?? 0) + (int) $me['failed_logins'],
+            ],
         ]);
     }
 
@@ -1615,6 +1629,9 @@ final class AdminController
             ? __('Konto {account}: Einladung erneut gesendet', ['account' => self::accountLabel($user)])
             : __('Konto {account}: Link zum Zurücksetzen des Passworts gesendet', ['account' => self::accountLabel($user)]));
         $this->linkFlash($user, $user['last_login_at'] === null ? AccountLinks::INVITE : AccountLinks::RESET);
+        if ($user['last_login_at'] !== null) {
+            SecurityEvents::record($id, SecurityEvents::RESET_BY_ADMIN, true);
+        }
         Http::redirect('/admin/users');
     }
 
@@ -1728,6 +1745,7 @@ final class AdminController
         if ($user) {
             // The previous password stays valid until the link is used
             AccountLinks::send($user, AccountLinks::RESET);
+            SecurityEvents::record((int) $user['id'], SecurityEvents::RESET_REQUESTED);
         }
     }
 

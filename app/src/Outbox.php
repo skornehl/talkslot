@@ -28,7 +28,7 @@ namespace App;
 final class Outbox
 {
     /** Kind of mail => priority (lower goes first). */
-    public const KINDS = ['booked' => 1, 'changed' => 1, 'cancelled' => 1, 'login_notice' => 1, 'summary_deadline' => 2, 'summary_evening' => 2, 'reminder' => 3];
+    public const KINDS = ['booked' => 1, 'changed' => 1, 'cancelled' => 1, 'login_notice' => 1, 'login_alarm' => 1, 'summary_deadline' => 2, 'summary_evening' => 2, 'reminder' => 3];
     /** Priority of bulk mails: after single mails, so they respect the hourly limit (spread over hours), before reminders. */
     public const BULK = 2;
     /** Mails not sent after this long are given up (the booking shows "mail not delivered"). */
@@ -251,8 +251,11 @@ final class Outbox
             return isset($data['day_date'], $data['start_time']) && ScheduleService::upcoming($data) ? Notifier::teacherCancelled($data) : null;
         }
         if ($row['booking_id'] === null) {
-            return $row['kind'] === 'login_notice' ? Auth::deliverLockoutNotice((int) $row['user_id'])
-                : Summaries::deliver((string) $row['kind'], (int) $row['user_id'], (string) $row['ref']);
+            return match ((string) $row['kind']) {
+                'login_notice' => Auth::deliverLockoutNotice((int) $row['user_id']),
+                'login_alarm' => Auth::deliverLoginAlarm((int) $row['user_id']),
+                default => Summaries::deliver((string) $row['kind'], (int) $row['user_id'], (string) $row['ref']),
+            };
         }
         $b = BookingService::findById((int) $row['booking_id']);
         if (!$b || (string) $b['email'] === '' || $b['day_date'] < Time::today()) {

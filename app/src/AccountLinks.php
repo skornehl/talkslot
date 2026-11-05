@@ -52,6 +52,7 @@ final class AccountLinks
             [password_hash($password, PASSWORD_DEFAULT), $userId]
         );
         Auth::endOtherSessions($userId, false);
+        SecurityEvents::record($userId, SecurityEvents::PASSWORD_SET);
         AccountSecurity::passwordChanged(Db::one('SELECT * FROM users WHERE id = ?', [$userId]) ?? []);
     }
 
