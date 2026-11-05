@@ -44,7 +44,9 @@ Englisch umstellen.
 - **Zufallsanteil in der Adresse** (empfohlen), damit die Runde nicht durch Ausprobieren gefunden wird,
   und optional *Nur mit Rundencode*.
 - **Aktiv**: Eltern können buchen. Inaktive Runden nehmen keine Buchungen an, Eltern können aber weiterhin
-  absagen.
+  absagen. Solange sich noch keine Runde aktivieren lässt (z. B. weil die Admins noch Platzhalter in den
+  Rechtstexten ausfüllen müssen), sagt das Formular neben dem Häkchen, warum, und eine neue Runde ist
+  zunächst inaktiv: So speichern, alles vorbereiten und später auf der Seite der Runde aktivieren.
 
 ![Formular für eine neue Runde]({{ '/assets/img/admin-round-form.webp' | relative_url }})
 
