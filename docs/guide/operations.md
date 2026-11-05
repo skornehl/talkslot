@@ -137,15 +137,69 @@ TalkSlot writes its own log to `app/var/php-error.log`; PHP's own logging is swi
 messages may contain input. Values in quotes and brackets and e-mail addresses are removed before
 writing. The log is rotated at 5 MB (one previous file `php-error.log.1`).
 
-## Backups
+## Backups {#backups}
 
-Back up the **database** (e.g. `mysqldump --single-transaction`) and `config/config.php`. `app/var/` only
-holds sessions, the alert counter and logs and does not need a backup. Take a fresh database backup
-before an update whose release notes mention a database migration: a rollback switches the code, not the
-database.
+Back up the **database** and `config/config.php`. `app/var/` only holds sessions, the alert counter and logs
+and does not need a backup. Take a fresh database backup before an update whose release notes mention a
+database migration: a rollback switches the code, not the database.
 
-Keep in mind that bookings are personal data with a short life: restore a backup only as far as
-necessary and let the clean-up run afterwards.
+Bookings are personal data with a short life, while a backup keeps them as long as the backup exists. Keep
+**two kinds**, encrypted, with a fixed retention, and enter it in the record of processing and the privacy
+policy ([documents for the operator]({{ '/guide/operator-documents/' | relative_url }}#backups-and-retention)):
+
+| Kind | Contents | Retention |
+|---|---|---|
+| Configuration backup | `config.php`, the structure of every table and the data of all but those with parents' data | e.g. 12 months |
+| Full backup | `config.php` and the whole database | at most 14 days, then overwritten |
+
+The tables with parents' data are `bookings` and `mail_outbox`; `audit_log` and `rate_limits` are not needed
+either. With a table prefix (`db.prefix`, e.g. `tp_`) every table name starts with it; on a shared
+database export only the tables with your prefix.
+
+**With a shell** (user and password in `~/.my.cnf` under `[client]`, so that they appear neither on the
+command line nor in the shell history; `DB` = database, `P` = table prefix):
+
+```bash
+TABLES=$(mysql -N -e "SHOW TABLES" "$DB" | grep "^${P}")
+# Full backup
+mysqldump --single-transaction --default-character-set=utf8mb4 "$DB" $TABLES > talkslot-full-$(date +%F).sql
+# Configuration backup: every table's structure, the data without bookings, queued mails, log and rate limits
+CONF=talkslot-config-$(date +%F).sql
+mysqldump --single-transaction --default-character-set=utf8mb4 --no-data "$DB" $TABLES > "$CONF"
+mysqldump --single-transaction --default-character-set=utf8mb4 --no-create-info "$DB" \
+  $(echo "$TABLES" | grep -vE "^${P}(bookings|mail_outbox|audit_log|rate_limits)$") >> "$CONF"
+```
+
+**Without a shell** (phpMyAdmin or the host's tool): *Export → Custom*, select only the tables with your
+prefix, character set `utf8mb4`; for the configuration backup export the four tables above with their
+structure only. Many hosts also keep
+backups of their own: ask how long, and count that retention as well.
+
+Encrypt the files (e.g. `gpg -c` or an encrypted archive) and keep them away from the web server.
+
+### Restore
+
+Restore only what you need: a lost text or a round can often be entered again. A full backup brings back
+bookings that were cancelled or moved since, and reminders and summaries would go out for them.
+
+1. **Pause the cron job** (the *Cron* workflow or the external cron service) so that nothing is sent in
+   between.
+2. **Import** the backup into the database (`mysql … < file.sql`, or *Import* in phpMyAdmin).
+3. **Hold back the mails of the backup's time**, before the first request:
+   ```sql
+   DELETE FROM tp_mail_outbox;
+   UPDATE tp_bookings SET reminded_at = NOW() WHERE reminded_at IS NULL;
+   ```
+   (with your prefix instead of `tp_`). Parents of restored bookings then get no reminder; their links keep
+   working.
+4. **Open the admin area once**: database migrations run automatically if the backup is from an older
+   version. Then run the clean-up (`php bin/cron.php`, or resume the cron job): bookings whose day has passed
+   are deleted.
+5. **Tell the teachers** that bookings cancelled or moved after `[TIME OF THE BACKUP]` may be back in their
+   lists, so that they can check them with the parents.
+6. Resume the cron job.
+
+Test a restore once a year on a separate database (e.g. a copy with another prefix), and note the result.
 
 ## Changing secrets {#changing-secrets}
 
