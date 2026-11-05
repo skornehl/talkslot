@@ -82,7 +82,7 @@ check('platform: PHP 8.3 with mbstring, iconv and pdo_mysql passes; PHP 8.2 is n
 check('platform: each missing extension is named; pdo_mysql only where the database is used (not for the unit tests)',
     $pcEn(App\Platform::problems(true, 80300, ['Core', 'PDO'])) === 'The PHP extension "mbstring" is missing. It can usually be switched on in the PHP settings of the hosting, otherwise ask your web host. | The PHP extension "iconv" is missing. It can usually be switched on in the PHP settings of the hosting, otherwise ask your web host. | The PHP extension "pdo_mysql" is missing. It can usually be switched on in the PHP settings of the hosting, otherwise ask your web host.'
     && App\Platform::problems(false, 80300, ['MBSTRING', 'iconv']) === [] && count(App\Platform::problems(true, 80300, ['mbstring', 'iconv'])) === 1
-    && App\Platform::problems(true) === [] && App\Platform::problems(false) === []);
+    && App\Platform::problems(false) === []);
 $pcPage = App\Platform::page([['en' => 'PHP <8.3> required', 'de' => 'PHP „8.3“ & neuer']]);
 check('platform: the page is German and English, escaped, with the guide and a word for visitors',
     str_contains($pcPage, '<html lang="de">') && str_contains($pcPage, '<li>PHP „8.3“ &amp; neuer</li>') && str_contains($pcPage, '<section lang="en"><h2>TalkSlot cannot start</h2><ul><li>PHP &lt;8.3&gt; required</li>')

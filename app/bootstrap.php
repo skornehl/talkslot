@@ -22,10 +22,10 @@ spl_autoload_register(static function (string $class): void {
     }
 });
 
-// An old PHP version or a missing extension: a plain explanation instead of a blank 500 page. Every web
-// request needs the database; bin/cron.php and bin/install.php check for its extension themselves, the unit
+// An old PHP version or a missing extension: a plain explanation instead of a blank 500 page. The entry points
+// that use the database (public/*.php, bin/cron.php, bin/install.php) check for its driver as well; the unit
 // tests run without it.
-App\Platform::enforce(PHP_SAPI !== 'cli');
+App\Platform::enforce(false);
 
 require __DIR__ . '/helpers.php';
 

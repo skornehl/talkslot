@@ -19,7 +19,7 @@ final class Platform
     public const MIN_PHP_ID = 80300;
     /** Extensions every run needs */
     public const EXTENSIONS = ['mbstring', 'iconv'];
-    /** Needed wherever the database is used: every web request, not the unit tests */
+    /** Needed wherever the database is used: the web and the cron job, not the unit tests */
     public const DATABASE_EXTENSION = 'pdo_mysql';
 
     public const GUIDE_EN = 'https://skornehl.github.io/talkslot/guide/';
