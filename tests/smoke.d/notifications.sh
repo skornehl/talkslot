@@ -374,7 +374,7 @@ S_BEFORE=$(DBQ "SELECT CONCAT('email = ', QUOTE(email), ', reply_to = ', QUOTE(r
 SNAME=$(DBQ "SELECT display_name FROM tp_users WHERE id = $SU")
 DBQ "UPDATE tp_users SET email = '$(s_addr konto)', reply_to = NULL, summary_evening = 1, summary_deadline = 1 WHERE id = $SU"
 # A round for tomorrow: the same name and address twice, parents without an address, an entry by the teacher
-SR=$(curl -s -o /dev/null -w '%{redirect_url}' -b "$J" --data-urlencode "csrf=$ST" -d "title=Zusammenfassung+Test&booking_limit=none&is_active=1&booking_deadline_hours=0&cancel_deadline_hours=0&day_dates%5B%5D=$(date -d '+1 day' +%F)&start_time=09:00&end_time=11:30&slot_minutes=30" "$B/admin/round/new" | grep -o '[0-9]*$')
+SR=$(curl -s -o /dev/null -w '%{redirect_url}' -b "$J" --data-urlencode "csrf=$ST" -d "title=Zusammenfassung+Test&booking_limit=none&is_active=1&booking_deadline_hours=0&cancel_deadline_hours=0&day_dates%5B%5D=$(date -d '+1 day' +%F)&start_time=09:00&end_time=12:00&slot_minutes=30" "$B/admin/round/new" | grep -o '[0-9]*$')
 SRS=$(slugof "$SR")
 book "$SRS" "Anna Muster" "$(s_addr eltern)" >/dev/null
 book "$SRS" "anna muster" "$(s_addr eltern)" >/dev/null
@@ -450,12 +450,15 @@ S_ON=$(SPF --data-urlencode "reply_to=$(s_addr antwort)" -d "summary_names=1" | 
 S_MAIL=$(SPF --data-urlencode "reply_to=$(s_addr antwort)" --data-urlencode "email=privat-$SRUN@gmx.example" --data-urlencode "current_password=$PASS")
 S_REPLY=$(SPF --data-urlencode "reply_to=privat-$SRUN@gmx.example" --data-urlencode "current_password=$PASS")
 S_USER=$(curl -s -b "$J" --data-urlencode "csrf=$ST" -d "display_name=Fremd&email=fremd-$SRUN@gmx.example&role=teacher" "$B/admin/users/new")
+book "$SRS" "Antwort Fremd" "$(s_addr eltern3)" >/dev/null
 ALERTS '$f = "/srv/app/config/config.php"; file_put_contents($f, file_get_contents("$f.p14")) && unlink("$f.p14");'
 sleep 3
 check "names allowed: an account from before keeps them (notice, choice in the profile), saved both ways" \
   'echo "$SPN" | has "<input type=\"checkbox\" id=\"summary_names\" name=\"summary_names\" value=\"1\" checked>" && echo "$SDN" | has "Neu: Die Kalenderdatei Ihrer Zusammenfassungen enthält keine Namen mehr." && [ "$S_SEEN" = 1 ] && [ "$S_OFF" = 0 ] && [ "$S_ON" = 1 ]'
 check "allowed domains: a new address elsewhere is refused (account, reply address, new account); an address from before can stay, with hints" \
   'echo "$S_MAIL" | has "Bitte eine Adresse bei schule.example.org angeben" && echo "$S_REPLY" | has "Antwortadresse für Eltern: Bitte eine Adresse bei schule.example.org angeben" && echo "$S_USER" | has "Bitte eine Adresse bei schule.example.org angeben" && [ -z "$(DBQ "SELECT id FROM tp_users WHERE email = \"fremd-$SRUN@gmx.example\"")" ] && [ "$(DBQ "SELECT email FROM tp_users WHERE id = $SU")" = "$(s_addr konto)" ] && echo "$SPN" | has "Die Schule erlaubt nur Adressen bei schule.example.org." && echo "$SDN" | has "data-foreign-addresses>" && echo "$SDN" | has "Ihre E-Mail-Adresse ist keine dienstliche Adresse bei schule.example.org"'
+check "allowed domains: a reply address outside them is not used for the parents' mails" \
+  'S_R3=$($DC exec -T app php -r "echo file_get_contents(\"http://mail:8025/api/v1/search?query=to:$(s_addr eltern3)\");"); echo "$S_R3" | has "\"messages_count\":1," && ! echo "$S_R3" | has "\"ReplyTo\":[{"'
 
 # No session without the cookie; a link from another site (webmailer) opens the page in a signed-in browser
 SF0=$(s_files)
