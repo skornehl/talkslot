@@ -5,8 +5,8 @@ description: Updates, Migrationen, Fehlermeldungen, Logs, Backups und Fehlersuch
 
 ## Updates
 
-**Mit GitHub Actions** spielt jeder Push auf `main` – oder eine neue Versionsnummer in Ihrem Repository nur
-mit Konfiguration – das Update atomar aus; siehe [Deployment]({{ '/de/guide/deployment/' | relative_url }}).
+**Mit GitHub Actions** spielt jeder Push auf `main` (sobald seine Tests bestanden sind) – oder eine neue
+Version in Ihrem Repository nur mit Konfiguration – das Update atomar aus; siehe [Deployment]({{ '/de/guide/deployment/' | relative_url }}).
 
 **Von Hand:** Laden Sie die neuen Verzeichnisse `app/`, `bin/` und `public/` hoch (`config/config.php` und
 `app/var/` bleiben erhalten). Laden Sie zuerst `app/` und `bin/` hoch und `public/` zuletzt. Während des

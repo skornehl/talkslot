@@ -5,9 +5,9 @@ description: TalkSlot von Hand auf einen Webserver bringen. Automatische Deploym
 
 ## Voraussetzungen {#requirements}
 
-- **PHP 8.3 oder neuer** (getestet mit 8.3, 8.4 und 8.5) mit `pdo_mysql`, `mbstring` und `iconv`;
+- **PHP 8.3 oder neuer** (End-to-End-Tests auf 8.3 und 8.5, Unit-Tests auf 8.3–8.5) mit `pdo_mysql`, `mbstring` und `iconv`;
   `openssl` für SMTP mit TLS
-- **MariaDB 10.6 oder neuer.** Die Migrationen verwenden MariaDB-Syntax; MySQL wird nicht unterstützt.
+- **MariaDB 10.6 oder neuer** (getestet auf 10.6 und 11.8). Die Migrationen verwenden MariaDB-Syntax; MySQL wird nicht unterstützt.
 - **Apache** mit `mod_rewrite`, idealerweise `mod_headers`. Die Regeln stehen in `public/.htaccess`;
   andere Webserver brauchen gleichwertige Regeln (Front Controller, versteckte und interne Dateien
   sperren, Sicherheits-Header).

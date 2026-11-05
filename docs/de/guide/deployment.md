@@ -3,29 +3,34 @@ title: Deployment mit GitHub Actions
 description: Deployments ohne Ausfallzeit auf Shared Hosting per FTPS, mit automatischen Prüfungen und Rollback per Klick.
 ---
 
-TalkSlot bringt Workflows mit, die bei jedem Push auf `main` testen, bauen und per FTPS hochladen. Sie sind
-für Shared Hosting (Webspace) gedacht, bei dem Sie nur FTP-Zugang haben. Alles ist optional: Ohne die
-Variable `FTP_HOST` tun die Workflows für Deployment, Cronjob und Rollback nichts.
+TalkSlot bringt Workflows mit, die jeden Commit auf `main` testen, bauen und per FTPS hochladen, sobald alle
+seine Tests bestanden sind. Sie sind für Shared Hosting (Webspace) gedacht, bei dem Sie nur FTP-Zugang haben.
+Alles ist optional: Ohne die Variable `FTP_HOST` tun die Workflows für Deployment, Cronjob und Rollback nichts.
 
 ## So läuft ein Deployment ab
 
-1. **Testen und bauen.** Lint und Unit-Tests laufen, dann erstellt `bin/build.sh` das Paket und
+1. **Nur getesteter Code.** Ein Push auf `main` startet zuerst den Workflow *Tests* (Unit-, Smoke-, Browser-
+   und Deployment-Tests, auf der aktuellen und auf der Mindestplattform). *Deploy* beginnt erst, wenn dieser
+   Lauf fertig ist, und nur, wenn er genau für diesen Commit bestanden ist; sonst geht nichts live. Siehe
+   [Deploy-Gate](#deploy-gate).
+2. **Testen und bauen.** Lint (auf PHP 8.3, der Mindestversion, und 8.5) und die Unit-Tests laufen noch einmal
+   in einem Job ohne Secrets. Erst danach, und nur auf `main`, erstellt `bin/build.sh` das Paket und
    `bin/build-config.php` erzeugt `config.php` aus Ihren Variablen und Secrets. Fehlende oder ungültige
    Werte brechen den Lauf ab, bevor etwas hochgeladen wird.
-2. **Hochladen neben die laufende Version.** Die neue Version kommt in ein eigenes Verzeichnis
+3. **Hochladen neben die laufende Version.** Die neue Version kommt in ein eigenes Verzeichnis
    (`<APP_DIR>/releases/<name>/`, Assets nach `<WEB_DIR>/v/<name>/`). Die Live-Seite bleibt unberührt.
    Direkt nach dem Code wird ihre `config.php` nur für den Eigentümer lesbar gemacht
    ([Dateirechte](#permissions-of-configphp)). Anschließend wird jede Datei auf dem Server geprüft.
-3. **Umschalten in einem Schritt.** Die Zeigerdatei `<APP_DIR>/current` wird ersetzt (als `current.new`
+4. **Umschalten in einem Schritt.** Die Zeigerdatei `<APP_DIR>/current` wird ersetzt (als `current.new`
    hochgeladen, dann umbenannt). Ab diesem Moment beantwortet die neue Version jede Anfrage. Alter und neuer
    Code laufen nie gleichzeitig und können daher keine inkonsistenten Daten schreiben.
-4. **Prüfen.** Login-Seite, Startseite und das CSS der neuen Version werden abgerufen, und der
+5. **Prüfen.** Login-Seite, Startseite und das CSS der neuen Version werden abgerufen, und der
    [Health-Check](#health-check) der neuen Version muss bestätigen, dass sie mit der Datenbank arbeitet:
    erreichbar, MariaDB 10.6 oder neuer, alle Migrationen ausgeführt. Die Seiten allein funktionieren auch
    ohne Datenbank; ein falsches Datenbank-Passwort oder eine fehlgeschlagene Migration fällt daher nur dem
    Health-Check auf. Schlägt etwas fehl, schaltet der Workflow sofort auf die vorherige Version zurück,
    löscht die defekte und schlägt fehl.
-5. **Aufräumen.** Die fünf neuesten Versionen bleiben für Rollbacks auf dem Server; ihre `config.php`
+6. **Aufräumen.** Die fünf neuesten Versionen bleiben für Rollbacks auf dem Server; ihre `config.php`
    bekommt dieselben Rechte wie die neue.
 
 ```
@@ -49,9 +54,27 @@ Die Sessions liegen im gemeinsamen `app/var/`, daher wird durch ein Deployment n
    `APP_SECRET` und `INSTALL_KEY`.
 3. Empfohlen: Legen Sie ein Environment `production` an (*Settings → Environments*), erlauben Sie nur den
    Branch `main` und hinterlegen Sie die Secrets dort.
-4. Pushen Sie auf `main` oder starten Sie *Actions → Deploy → Run workflow*. Öffnen Sie dann `/install.php`,
-   legen Sie das Admin-Konto an und führen Sie `gh variable delete ALLOW_INSTALL` aus, damit der Installer
-   nicht mehr ausgeliefert wird.
+4. Pushen Sie auf `main` (das Deployment folgt, sobald die Tests bestanden sind) oder starten Sie
+   *Actions → Deploy → Run workflow*. Öffnen Sie dann `/install.php`, legen Sie das Admin-Konto an und führen
+   Sie `gh variable delete ALLOW_INSTALL` aus, damit der Installer nicht mehr ausgeliefert wird.
+
+### Deploy-Gate {#deploy-gate}
+
+- **Ein Push auf `main`** wird erst ausgespielt, wenn der Workflow *Tests* für diesen Commit bestanden ist
+  (`deploy.yml` startet per `workflow_run`). Ist `main` inzwischen weiter, wird der neuere Commit ausgespielt,
+  sobald seine eigenen Tests bestanden sind; scheitern sie, bleibt die Seite auf der Version, die gerade läuft.
+- **Run workflow** (*Actions → Deploy*) spielt das aktuelle `main` sofort aus, ohne auf die Tests zu warten,
+  etwa nach dem Ändern eines Secrets. Lint und Unit-Tests laufen trotzdem vorher.
+- **Releases** (*Actions → Release*) entstehen nur für einen Commit, für den *Tests* bestanden ist. Ein
+  [Repository nur mit Konfiguration](#deploying-from-your-own-repository), das ein Release ausspielt, bekommt
+  also nur getesteten Code.
+- **Branch-Schutz** stellen Sie im Repository ein (*Settings → Branches*: Pull Request und die Statuschecks von
+  *Tests* für `main` verlangen). Er entscheidet, ob eine ungetestete Änderung überhaupt auf `main` kommt; das
+  Gate oben entscheidet, ob sie live geht.
+- **Festgelegte Werkzeuge.** Die Workflows nutzen keine Actions von Dritten (der Code wird per `git` geholt).
+  Die Docker-Images der Tests und der Prüfung vor dem Deployment sind in `dev/Dockerfile` und
+  `dev/php-cli.Dockerfile` per Digest festgelegt, die mitgelieferten PHPMailer-Dateien über ihre
+  SHA-256-Prüfsummen (`app/vendor/phpmailer/SHA256SUMS`); Dependabot schlägt für beides Updates vor.
 
 ### Variablen und Secrets
 
@@ -172,8 +195,8 @@ gh workflow run "Switch version" -f target=prune      # nur die aktive Version b
 ```
 
 Auch nach dem Umschalten wird die Seite geprüft, einschließlich des [Health-Checks](#health-check) der
-Zielversion (bei Versionen von davor nur die Seiten). Der nächste Push auf `main` spielt wieder den
-neuesten Code aus.
+Zielversion (bei Versionen von davor nur die Seiten). Der nächste Commit auf `main`, dessen Tests bestanden
+sind, spielt wieder den neuesten Code aus.
 
 Die Datenbank wird **nicht** zurückgesetzt. Deshalb fügen Migrationen immer nur Spalten (mit
 Standardwerten) und Tabellen hinzu: Eine ältere Version funktioniert auch mit einem neueren Schema.
@@ -182,8 +205,16 @@ Standardwerten) und Tabellen hinzu: Eine ältere Version funktioniert auch mit e
 
 Sie brauchen keinen Fork. Ein kleines privates Repository, das nur die Konfiguration enthält, kann die
 wiederverwendbaren Workflows mit einer festen TalkSlot-Version aufrufen. Aktualisieren heißt dann, die
-Versionsnummer zu ändern.
+Version zu ändern.
 
+Legen Sie die Version über den **Commit-SHA des Releases** fest, mit der Version als Kommentar: Ein Tag lässt
+sich verschieben, ein Commit nicht. Sie finden ihn mit
+`git ls-remote https://github.com/skornehl/talkslot refs/tags/v1.9.0`. Übergeben Sie die Secrets, die der
+Workflow braucht, **einzeln** statt mit `secrets: inherit`, damit er keine anderen bekommt. Secrets im
+Environment `production` liest er dort direkt. TalkSlot-Versionen, die nach dem 5. November 2026
+veröffentlicht wurden, nehmen das an; bei einer älteren Version bleiben Sie bei `secrets: inherit`.
+
+{% raw %}
 ```yaml
 # .github/workflows/deploy.yml in Ihrem Repository
 name: Deploy
@@ -195,9 +226,19 @@ permissions:
   contents: read
 jobs:
   deploy:
-    uses: skornehl/talkslot/.github/workflows/deploy.yml@v1.2.0
-    secrets: inherit
+    uses: skornehl/talkslot/.github/workflows/deploy.yml@<Commit-SHA des Releases> # v1.9.0
+    secrets:
+      APP_SECRET: ${{ secrets.APP_SECRET }}
+      INSTALL_KEY: ${{ secrets.INSTALL_KEY }}
+      DB_NAME: ${{ secrets.DB_NAME }}
+      DB_USER: ${{ secrets.DB_USER }}
+      DB_PASS: ${{ secrets.DB_PASS }}
+      SMTP_USER: ${{ secrets.SMTP_USER }}
+      SMTP_PASS: ${{ secrets.SMTP_PASS }}
+      FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+      FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
 ```
+{% endraw %}
 
 {% raw %}
 ```yaml
@@ -214,16 +255,20 @@ permissions:
   contents: read
 jobs:
   switch:
-    uses: skornehl/talkslot/.github/workflows/switch.yml@v1.2.0
+    uses: skornehl/talkslot/.github/workflows/switch.yml@<Commit-SHA des Releases> # v1.9.0
     with:
       target: ${{ inputs.target }}
-    secrets: inherit
+    secrets:
+      APP_SECRET: ${{ secrets.APP_SECRET }}
+      FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+      FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
 ```
 {% endraw %}
 
 
 Die Workflows holen den TalkSlot-Code genau der Version aus der `uses:`-Zeile. Für ein Update ändern Sie
-diese Version in beiden Dateien. Diese Pull Requests kann Dependabot für Sie öffnen, mit
+diesen Commit und seinen Kommentar in beiden Dateien. Releases gibt es nur für Commits, deren Tests bestanden
+sind. Diese Pull Requests kann Dependabot für Sie öffnen (es ändert Commit und Versionskommentar), mit
 `.github/dependabot.yml`:
 
 ```yaml
