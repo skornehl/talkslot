@@ -236,9 +236,16 @@ admin has deliberately reworded are not flagged unless the template changes them
   sections in which they differ from the current template; once an admin has reconciled the text and
   confirmed it, only later template changes are shown.
 - With a marker, a section only counts as taken over once the text no longer has any line the template has
-  dropped since – also next to a placeholder or in place of a new placeholder. Without a marker it cannot be
+  dropped since – also next to a placeholder or in place of a new placeholder – and has every placeholder the
+  template has added since, also one without new wording around it (e.g. a note to check in square brackets
+  at the end of a line, or a paragraph that is only a placeholder): a placeholder may be filled in by
+  nothing, so otherwise the earlier line would look like the new one filled in. Without a marker it cannot be
   told whether such a line fills in a placeholder or still has the wording of an earlier template, so confirm
   the reconciliation once.
+- Taking over keeps the details filled in, also where they go on in the lines below a placeholder at the end
+  of a line (e.g. name, address and e-mail of the data protection officer). Whatever else the text had in
+  the sections taken over (own lines, details in a line the template changed) the form lists as not taken
+  over, so that nothing goes missing unnoticed, e.g. the contact details required by Art. 13(1)(b) GDPR.
 - Reconciling is logged with the admin's name (accountability, Art. 5(2) GDPR), so you can show when a
   correction of the template was taken over. The log is deleted after `audit_log_days` (90 days by default);
   if you need to show the reconciliation for longer, keep a copy of the entry before, e.g. together with the

@@ -38,6 +38,9 @@ check('line diff: removed and added lines in order, lines in both marked as such
 check('line diff with placeholders: a filled-in line is the same (the line of the text kept), a line that is only a placeholder is not filled in by any line',
     $pvDiff(['Land: Deutschland', 'Eigener Satz'], ['Land: [LAND]', '[[VERANTWORTLICHE]]'], true) === [[' ', 'Land: Deutschland'], ['-', 'Eigener Satz'], ['+', '[[VERANTWORTLICHE]]']]
     && $pvDiff(['Land: Deutschland'], ['Land: [LAND]']) === [['-', 'Land: Deutschland'], ['+', 'Land: [LAND]']]);
+check('line diff with placeholders: a line with little fixed text ("- [WEITERE …]") does not take a line away from the line it is (identical lines first)',
+    $pvDiff(['- **A:** eins', '- **B:** zwei'], ['- **A:** eins', '- [WEITERE EMPFÄNGER]', '- **B:** zwei'], true) === [[' ', '- **A:** eins'], ['+', '- [WEITERE EMPFÄNGER]'], [' ', '- **B:** zwei']]
+    && $pvDiff(['- **A:** eins', '- **C:** drei'], ['- **A:** eins', '- [WEITERE EMPFÄNGER]'], true) === [[' ', '- **A:** eins'], [' ', '- **C:** drei']]);
 
 echo "Privacy: version markers of the legal texts – what a newer template changed\n";
 $pvChanges = [App\LegalTexts::class, 'changes'];
@@ -102,6 +105,29 @@ $pvRenamed = str_replace('[ZUSTÄNDIGE LANDESDATENSCHUTZBEHÖRDE MIT ADRESSE]', 
 check('marker: a placeholder that only got a new name is filled in by the text as before (not listed, kept on taking over)',
     $pvRenamed !== $pvPrivate && $pvChanges($pvFill($pvRenamed), $pvRenamed, $pvPrivate) === [] && $pvFollows($pvFill($pvRenamed), ['type' => 'private', 'content' => $pvRenamed])
     && substr_count(App\LegalTexts::merge($pvFill($pvRenamed), $pvPrivate, ['Ihre Rechte'], $pvRenamed), 'Testangabe') === substr_count($pvFill($pvPrivate), 'Testangabe'));
+// A newer template that only adds a placeholder, without new fixed text: a note to check at the end of a line, a
+// second detail after [[HOSTER]], a paragraph of its own. A placeholder may be filled in by nothing, so the text's
+// earlier line would seem to fill in the new one
+$pvNote = '[BITTE PRÜFEN: NUTZEN SIE EINEN EXTERNEN MAILDIENST? DANN HIER MIT ANSCHRIFT NENNEN.]';
+$pvContract = '[AUFTRAGSVERARBEITUNG NACH ART. 28 DSGVO: VERTRAG VOM]';
+$pvAlone = '[BITTE PRÜFEN UND DANN LÖSCHEN: NUTZEN SIE EINEN EXTERNEN MAILDIENST? DANN OBEN NENNEN.]';
+$pvPlus = ['note' => str_replace($pvMail, "$pvMail $pvNote", $pvPrivate), 'host' => str_replace('- **Hosting:** [[HOSTER]]', "- **Hosting:** [[HOSTER]] $pvContract", $pvPrivate),
+    'alone' => str_replace($pvMail, "$pvMail\n\n$pvAlone", $pvPrivate)];
+check('marker: a placeholder the template added to a line or as a paragraph of its own is listed (web host filled in or not), a renamed one is not',
+    count(array_unique([$pvPrivate, ...array_values($pvPlus)])) === 4
+    && !array_filter($pvPlus, static fn (string $next): bool => $pvTitles($pvChanges($pvFill($pvPrivate), $pvPrivate, $next)) !== ['6. Empfänger']
+        || $pvTitles($pvChanges($pvFill($pvPrivate, false), $pvPrivate, $next)) !== ['6. Empfänger'])
+    && in_array(['+', "$pvMail $pvNote"], $pvChanges($pvFill($pvPrivate), $pvPrivate, $pvPlus['note'])[0]['diff'], true)
+    && in_array(['+', $pvAlone], $pvChanges($pvFill($pvPrivate), $pvPrivate, $pvPlus['alone'])[0]['diff'], true)
+    && $pvChanges($pvFill($pvPrivate), $pvPrivate, $pvRenamed) === []);
+// The other way round, with the current template: the marker is an earlier one without such a placeholder
+$pvWithout = ['note' => (string) preg_replace('/^(\*\*Datenschutzbeauftragte .*?)\h\[BITTE PRÜFEN[^\]]*\]$/mu', '$1', $pvPrivate),
+    'alone' => str_replace("[[VERANTWORTLICHE]]\n\n", '', $pvPrivate)];
+check('marker of an earlier template without a placeholder the current one has (a note to check, a paragraph of its own): the text does not follow it',
+    !in_array($pvPrivate, $pvWithout, true) && count(App\LegalTexts::placeholders($pvWithout['note'])) === count(App\LegalTexts::placeholders($pvPrivate)) - 1
+    && !array_filter($pvWithout, static fn (string $old): bool => $pvFollows($pvFill($old), ['type' => 'private', 'content' => $old]))
+    && $pvTitles($pvChanges($pvFill($pvWithout['note']), $pvWithout['note'], $pvPrivate)) === ['1. Verantwortliche']
+    && $pvTitles($pvChanges($pvFill($pvWithout['alone']), $pvWithout['alone'], $pvPrivate)) === ['1. Verantwortliche']);
 // Without a marker (edited before them): where the text differs from the current template
 $pvUnknown = $pvChanges($pvOwn, null, $pvPrivate);
 check('no marker: the sections that differ from the template (also own changes and own sections), lines only in the text and only in the template',
@@ -145,6 +171,55 @@ $pvOperatorMerged = $pvMerge($pvOperator, $pvPrivate, array_column($pvKnown, 'ke
 check('taken over: what the text has in place of a line that is only a placeholder ([[VERANTWORTLICHE]]) stays there',
     str_contains($pvOperatorMerged, "Terminvergabe ist:\n\nFörderverein XY e. V.\nvertreten durch den Vorstand\n\nDas gilt für alles")
     && !str_contains($pvOperatorMerged, '[[VERANTWORTLICHE]]') && $pvChanges($pvOperatorMerged, $pvV17, $pvPrivate) === []);
+$pvPlusMerged = static fn (string $k, bool $host = true): string => $pvMerge($pvFill($pvPrivate, $host), $pvPlus[$k], ['Empfänger'], $pvPrivate);
+$pvLost = [App\LegalTexts::class, 'lost'];
+check('taken over: a placeholder the template only added comes into the text (web host filled in or not), the other details stay',
+    !array_filter(['note' => $pvNote, 'host' => $pvContract, 'alone' => $pvAlone], static fn (string $p, string $k): bool => !in_array($p, App\LegalTexts::placeholders($pvPlusMerged($k)), true)
+        || !in_array($p, App\LegalTexts::placeholders($pvPlusMerged($k, false)), true), ARRAY_FILTER_USE_BOTH)
+    && str_contains($pvPlusMerged('note'), "- **Hosting:** Beispiel Hosting GmbH, Serverweg 1, 12345 Serverstadt\n$pvMail $pvNote\n")
+    && str_contains($pvPlusMerged('alone'), "$pvMail\n\n$pvAlone\n- **Übersetzung") && str_contains($pvPlusMerged('host', false), "- **Hosting:** [[HOSTER]] $pvContract\n")
+    && substr_count($pvPlusMerged('note'), 'Testangabe') === substr_count($pvFill($pvPrivate), 'Testangabe'));
+// The template adds a list item with little fixed text: inserted once, the other items each once
+$pvItem = str_replace($pvMail, "$pvMail\n- [WEITERE EMPFÄNGER, Z. B. EIN EXTERNER MAILDIENST, MIT ANSCHRIFT]", $pvPrivate);
+$pvItemMerged = $pvMerge($pvFill($pvPrivate), $pvItem, ['Empfänger'], $pvPrivate);
+check('taken over: a new list item that is little more than a placeholder is inserted where the template has it, no other item twice',
+    str_contains($pvItemMerged, "$pvMail\n- [WEITERE EMPFÄNGER, Z. B. EIN EXTERNER MAILDIENST, MIT ANSCHRIFT]\n- **Übersetzung")
+    && substr_count($pvItemMerged, '- **Übersetzung der Texte der Lehrkraft:**') === 1 && $pvTitles($pvChanges($pvFill($pvPrivate), $pvPrivate, $pvItem)) === ['6. Empfänger']);
+// Details that go on in the lines below a filled-in placeholder (name, address and e-mail of the school's data
+// protection officer; the web host with its address on an indented line) stay when the section is taken over
+$pvSchool = $pvTpl('privacy.de');
+$pvDuty = 'nutzen sie im Rahmen ihrer dienstlichen Aufgaben für die Schule.';
+$pvSchoolOld = str_replace($pvDuty, 'nutzen sie dienstlich.', $pvSchool);
+$pvDpo = "Frau Erika Muster, Schulamt Beispielstadt\nBehördlicher Datenschutz, Amtsweg 2, 12345 Beispielstadt\ndatenschutz@schulamt-beispiel.de";
+$pvDpoText = $pvFill(str_replace('[KONTAKTDATEN DER/DES DATENSCHUTZBEAUFTRAGTEN DER SCHULE]', $pvDpo, $pvSchoolOld));
+$pvDpoMerged = $pvMerge($pvDpoText, $pvSchool, ['Verantwortliche'], $pvSchoolOld);
+$pvHostText = str_replace('- **Hosting:** [[HOSTER]]', "- **Hosting:** Beispiel GmbH,\n  Serverweg 1, 12345 Serverstadt", $pvFill($pvEarlier['host'], false));
+$pvHostMerged = $pvMerge($pvHostText, $pvPrivate, ['Empfänger'], $pvEarlier['host']);
+check('taken over: details that go on in the lines below a filled-in placeholder stay (with or without a marker), the next list item is not part of them',
+    $pvSchoolOld !== $pvSchool && $pvTitles($pvChanges($pvDpoText, $pvSchoolOld, $pvSchool)) === ['1. Verantwortliche']
+    && str_contains($pvDpoMerged, "$pvDuty\n\n**Datenschutzbeauftragte bzw. Datenschutzbeauftragter der Schule:** $pvDpo\n\n# 2.")
+    && str_contains($pvMerge($pvDpoText, $pvSchool, ['Verantwortliche']), "Schule:** $pvDpo\n\n# 2.") && $pvLost($pvDpoText, $pvDpoMerged, ['Verantwortliche'], $pvSchoolOld) === []
+    && str_contains($pvHostMerged, "- **Hosting:** Beispiel GmbH,\n  Serverweg 1, 12345 Serverstadt\n$pvMail\n") && !str_contains($pvHostMerged, 'Früher')
+    && $pvLost($pvHostText, $pvHostMerged, ['Empfänger'], $pvEarlier['host']) === []);
+$pvDpoPara = $pvFill(str_replace('[KONTAKTDATEN DER/DES DATENSCHUTZBEAUFTRAGTEN DER SCHULE]', "$pvDpo\n\nEin eigener Absatz.", $pvSchoolOld));
+$pvHostItem = str_replace("Serverstadt\n", "Serverstadt\n- **Eigener Dienst:** Beispiel\n", $pvHostText);
+check('taken over: a paragraph after a blank line or a new list item is no longer part of the details above, it is listed as not taken over',
+    str_contains($pvMerge($pvDpoPara, $pvSchool, ['Verantwortliche'], $pvSchoolOld), "Schule:** $pvDpo\n\n# 2.")
+    && $pvLost($pvDpoPara, $pvMerge($pvDpoPara, $pvSchool, ['Verantwortliche'], $pvSchoolOld), ['Verantwortliche'], $pvSchoolOld) === ['Ein eigener Absatz.']
+    && str_contains($pvMerge($pvHostItem, $pvPrivate, ['Empfänger'], $pvEarlier['host']), "Serverstadt\n$pvMail\n")
+    && $pvLost($pvHostItem, $pvMerge($pvHostItem, $pvPrivate, ['Empfänger'], $pvEarlier['host']), ['Empfänger'], $pvEarlier['host']) === ['- **Eigener Dienst:** Beispiel']);
+$pvOwnLine = str_replace($pvMail, "$pvMail\n\nUnser eigener Satz zu den Empfängern.", $pvFill($pvPrivate));
+$pvBelow = (string) preg_replace('/^(Sie haben zudem das Recht.*Testangabe\.)$/mu', "$1\nDirekt darunter eine eigene Zeile.", $pvFill($pvRenamed));
+check('taken over: the line below one with a placeholder inside it is not part of its details; own lines where the template added a placeholder do not stand in for it',
+    $pvBelow !== $pvFill($pvRenamed)
+    && $pvLost($pvBelow, $pvMerge($pvBelow, $pvPrivate, ['Ihre Rechte'], $pvRenamed), ['Ihre Rechte'], $pvRenamed) === ['Direkt darunter eine eigene Zeile.']
+    && str_contains($pvMerge($pvOwnLine, $pvPlus['alone'], ['Empfänger'], $pvPrivate), "$pvMail\n\n$pvAlone\n")
+    && $pvLost($pvOwnLine, $pvMerge($pvOwnLine, $pvPlus['alone'], ['Empfänger'], $pvPrivate), ['Empfänger'], $pvPrivate) === ['Unser eigener Satz zu den Empfängern.']);
+check('taken over: the lines of the text the sections taken over no longer have are listed for the admin (own lines, details in a line the template changed), not the earlier wording of the template',
+    $pvLost($pvOwnLine, $pvMerge($pvOwnLine, $pvPlus['note'], ['Empfänger'], $pvPrivate), ['Empfänger'], $pvPrivate) === ['Unser eigener Satz zu den Empfängern.']
+    && $pvLost($pvFill($pvPrivate), $pvPlusMerged('host'), ['Empfänger'], $pvPrivate) === ['- **Hosting:** Beispiel Hosting GmbH, Serverweg 1, 12345 Serverstadt']
+    && $pvLost($pvFill($pvPrivate, false), $pvPlusMerged('host', false), ['Empfänger'], $pvPrivate) === [] && $pvLost($pvOwnLine, $pvOwnLine, [], $pvPrivate) === []
+    && $pvLost($pvFill($pvV17), $pvMerge($pvFill($pvV17), $pvPrivate, array_column($pvKnown, 'key'), $pvV17), array_column($pvKnown, 'key'), $pvV17) === ['**Datenschutzbeauftragte bzw. Datenschutzbeauftragter:** Testangabe']);
 $pvPartial = $pvMerge($pvOwn, $pvPrivate, ['Rechtsgrundlagen']);
 check('taken over: only the sections chosen, the others as they were (own sections too)',
     $pvTitles($pvChanges($pvPartial, null, $pvPrivate)) === ['1. Verantwortliche', '2. Zweck der Verarbeitung', '5. Speicherdauer und Löschung', '8. Sicherheit', '9. Ihre Rechte', '12. Kontakt']
@@ -164,14 +239,16 @@ check('unedited: a text that is exactly the template of its marker is replaced, 
     $pvReplace('privacy', 'de', $pvAdded, 'private', $pvAdded) === $pvPrivate && $pvReplace('privacy', 'de', $pvAdded, 'private') === null
     && $pvReplace('privacy', 'de', $pvAdded, 'private', $pvPrivate) === null && $pvReplace('privacy', 'de', $pvAdded . ' ', 'private', $pvAdded) === null);
 $pvUpdate = static fn (bool $known, ?array $changes = null): array => ['type' => 'private', 'known' => $known, 'base' => null, 'changes' => $changes ?? array_slice($known ? $pvKnown : $pvUnknown, 0, 2)];
-$pvForm = static fn (?array $update, bool $merged = false, ?string $loaded = null): string => App\View::capture('admin/page_form', ['title' => 'x',
-    'key' => 'privacy', 'lang' => 'de', 'content' => '', 'variants' => ['private', 'school'], 'loaded' => $loaded, 'type' => 'private', 'update' => $update, 'merged' => $merged, 'templateHash' => 'c0ffee']);
+$pvForm = static fn (?array $update, bool $merged = false, ?string $loaded = null, array $lost = []): string => App\View::capture('admin/page_form', ['title' => 'x',
+    'key' => 'privacy', 'lang' => 'de', 'content' => '', 'variants' => ['private', 'school'], 'loaded' => $loaded, 'type' => 'private', 'update' => $update, 'merged' => $merged,
+    'lost' => $lost, 'templateHash' => 'c0ffee']);
 $pvOwnOnly = [array_merge(end($pvUnknown), ['heading' => '# 12. Videosprechstunde'])];
 $pvDroppedChange = $pvChanges($pvFill($pvPrivate), $pvPrivate, $pvDropped);
 $pvForms = ['known' => $pvForm($pvUpdate(true)), 'unknown' => $pvForm($pvUpdate(false)), 'merged' => $pvForm($pvUpdate(true), true),
     'loaded' => $pvForm(null, false, 'school'), 'none' => $pvForm(null),
     'mergedOwn' => $pvForm($pvUpdate(false, [$pvUnknown[0], ...$pvOwnOnly]), true), 'mergedDropped' => $pvForm($pvUpdate(true, [$pvKnown[0], ...$pvDroppedChange]), true),
-    'ownOnly' => $pvForm($pvUpdate(false, $pvOwnOnly)), 'unknownOwn' => $pvForm($pvUpdate(false, [$pvUnknown[0], ...$pvOwnOnly]))];
+    'ownOnly' => $pvForm($pvUpdate(false, $pvOwnOnly)), 'unknownOwn' => $pvForm($pvUpdate(false, [$pvUnknown[0], ...$pvOwnOnly])),
+    'mergedLost' => $pvForm($pvUpdate(true), true, null, ['Unser eigener Satz <zu> den Empfängern.', '- **Hosting:** Beispiel GmbH'])];
 check('page form, newer template: what changed per section (old and new lines), take over the sections or confirm the reconciliation',
     str_contains($pvForms['known'], 'Die Vorlage „Privat betrieben“ wurde geändert, seit dieser Text auf ihr beruht.')
     && str_contains($pvForms['known'], '<summary>1. Verantwortliche</summary>') && str_contains($pvForms['known'], '<summary>2. Zweck der Verarbeitung</summary>')
@@ -200,6 +277,16 @@ check('page form, no marker: sections only in the text are left as they are when
     && !str_contains($pvForms['unknown'], 'bleiben beim Übernehmen unverändert')
     && !str_contains($pvForms['ownOnly'], '?merge=1') && str_contains($pvForms['ownOnly'], 'Diese Abschnitte gibt es nur in Ihrem Text.')
     && str_contains($pvForms['ownOnly'], 'name="base" value="private">') && !App\LegalTexts::mergeable($pvUpdate(false, $pvOwnOnly)) && App\LegalTexts::mergeable($pvUpdate(true, $pvDroppedChange)));
+check('page form, sections taken over: the lines of the text that are not taken over are listed to check (each one, escaped), else no such list',
+    str_contains($pvForms['mergedLost'], 'Aus Ihrem Text nicht übernommen (eigene Zeilen oder Ihre Angaben in Zeilen, die die Vorlage geändert hat) – bitte prüfen, ob etwas davon wieder in den Text gehört:')
+    && str_contains($pvForms['mergedLost'], '<li class="diff-del"><span aria-hidden="true">−</span> <span class="visually-hidden">nicht übernommen:</span> Unser eigener Satz &lt;zu&gt; den Empfängern.</li>')
+    && str_contains($pvForms['mergedLost'], 'nicht übernommen:</span> - **Hosting:** Beispiel GmbH</li>') && str_contains($pvForms['mergedLost'], 'data-legal-lost')
+    && !str_contains($pvForms['merged'], 'data-legal-lost') && !str_contains($pvForms['known'], 'data-legal-lost')
+    && str_contains(App\AdminI18n::with('en', static fn () => $pvForm($pvUpdate(true), true, null, ['x'])), 'Not taken over from your text'));
+$pvMarker = static fn (string $type, ?string $template): ?string => (new ReflectionMethod(App\LegalTexts::class, 'marker'))->invoke(null, $type, $template);
+check('version marker as stored: operator type and wording of the template; none without a template or for one too long for settings.value (an older one is cleared)',
+    json_decode((string) $pvMarker('private', $pvPrivate), true) === ['type' => 'private', 'content' => $pvPrivate] && $pvMarker('school', null) === null
+    && $pvMarker('school', str_repeat('ä', 33000)) === null && $pvMarker('school', str_repeat('a', 64000)) !== null);
 $pvTexts = static fn (array $texts): string => (string) (new ReflectionMethod(App\Controller\AdminController::class, 'outdatedTexts'))->invoke(null, $texts);
 check('note on the dashboard: per text its sections, more than three as their number, in the admin language',
     $pvTexts([['key' => 'privacy', 'lang' => 'de', 'changes' => array_slice($pvKnown, 0, 2)], ['key' => 'imprint', 'lang' => 'en', 'changes' => [['heading' => null]]]])

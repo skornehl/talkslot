@@ -257,9 +257,18 @@ Abschnitte, die ein Admin bewusst umformuliert hat, werden nur gemeldet, wenn di
   der Hinweis die Abschnitte, in denen sie von der aktuellen Vorlage abweichen; hat ein Admin den Text
   abgeglichen und das bestätigt, erscheinen nur noch spätere Änderungen der Vorlage.
 - Mit Vorlagenstand gilt ein Abschnitt erst als übernommen, wenn keine Zeile mehr im Text steht, die die
-  Vorlage seitdem gestrichen hat – auch nicht neben einem Platzhalter oder an Stelle eines neuen Platzhalters.
-  Ohne Vorlagenstand lässt sich nicht unterscheiden, ob eine solche Zeile einen Platzhalter ausfüllt oder noch
-  den Wortlaut einer früheren Vorlage hat; bestätigen Sie den Abgleich deshalb einmal.
+  Vorlage seitdem gestrichen hat – auch nicht neben einem Platzhalter oder an Stelle eines neuen Platzhalters –
+  und jeder Platzhalter im Text steht, den die Vorlage seitdem hinzugefügt hat, auch einer ohne neuen
+  Wortlaut drumherum (z. B. ein Prüfhinweis in eckigen Klammern am Zeilenende oder ein Absatz, der nur aus
+  einem Platzhalter besteht): Ein Platzhalter darf auch durch nichts ausgefüllt sein, sonst sähe die frühere
+  Zeile aus wie die neue, ausgefüllt. Ohne Vorlagenstand lässt sich nicht unterscheiden, ob eine solche Zeile
+  einen Platzhalter ausfüllt oder noch den Wortlaut einer früheren Vorlage hat; bestätigen Sie den Abgleich
+  deshalb einmal.
+- Beim Übernehmen bleiben die ausgefüllten Angaben erhalten, auch wo sie in den Zeilen unter einem Platzhalter
+  am Zeilenende weitergehen (z. B. Name, Anschrift und E-Mail-Adresse der oder des Datenschutzbeauftragten).
+  Was der Text in den übernommenen Abschnitten sonst noch hatte (eigene Zeilen, Angaben in einer Zeile, die die
+  Vorlage geändert hat), listet das Formular als nicht übernommen auf, damit nichts unbemerkt wegfällt, etwa
+  die Kontaktdaten nach Art. 13 Abs. 1 lit. b DSGVO.
 - Der Abgleich steht mit dem Namen des Admins im Protokoll (Rechenschaftspflicht, Art. 5 Abs. 2 DSGVO); so
   lässt sich zeigen, wann eine Korrektur der Vorlage übernommen wurde. Das Protokoll wird nach
   `audit_log_days` gelöscht (Standard 90 Tage); wer den Abgleich länger belegen muss, sichert den Eintrag

@@ -163,10 +163,13 @@ of these sections which lines the template removed (−) and added (+). You can 
 
 - **take the sections over:** *Abschnitte aus der Vorlage übernehmen* (*Take over the sections from the
   template*) puts your text into the form with these sections as worded in the template. Your details in
-  lines the template did not change (e.g. the supervisory authority) are kept, and so is what stands in place
-  of `[[VERANTWORTLICHE]]`; your own changes in these sections are not. A section the template has dropped is
-  removed, and the notice names it as removed. The differences stay visible below for comparison. Check the
-  form, fill in new `[PLACEHOLDERS]` and save;
+  lines the template did not change (e.g. the supervisory authority) are kept, also where they go on in the
+  lines below (e.g. name, address and e-mail of the data protection officer), and so is what stands in place
+  of `[[VERANTWORTLICHE]]`; your own changes in these sections are not. Whatever of your text is left out
+  (own lines, your details in a line the template changed) the notice lists as *nicht übernommen* (*not taken
+  over*): copy back what still belongs in the text. A section the template has dropped is removed, and the
+  notice names it as removed. The differences stay visible below for comparison. Check the form, fill in new
+  `[PLACEHOLDERS]` and save;
 - **adjust the text yourself** and tick *Abgleich erledigt* (*Reconciled*) when saving; or
 - **load the whole template** with *Vorlage laden* and fill it in again.
 
@@ -175,7 +178,9 @@ note disappears, and the log records who reconciled the text. If the template ch
 (e.g. by an update), TalkSlot saves the text but does not record the reconciliation, and tells you so. A text
 that already has everything the template changed since its version marker (or, without a marker, the wording
 of the current template with only its placeholders filled in) needs nothing: TalkSlot records the marker
-itself. For a text
+itself. A placeholder within a line stands for text up to the end of that line: if you have filled one in
+over several lines (e.g. the address of the data protection officer below the name), a text without a
+marker shows them as a difference until you confirm the reconciliation once. For a text
 edited before TalkSlot kept version markers, or one from the template of the other operator type, the template
 it started from is unknown: the note then lists the sections in which it differs from the current template
 (*weicht von der Vorlage ab*, *differs from the template*; filled-in placeholders do not count), with the lines

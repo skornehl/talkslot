@@ -1,8 +1,9 @@
-<?php /** @var string $key @var string $lang @var string $content @var list<string> $variants @var ?string $loaded @var ?string $type @var ?array{type: string, known: bool, base: ?string, changes: list<array{key: string, heading: ?string, dropped: bool, diff: list<array{0: string, 1: string}>}>} $update @var bool $merged @var string $templateHash */ use App\Csrf;
+<?php /** @var string $key @var string $lang @var string $content @var list<string> $variants @var ?string $loaded @var ?string $type @var ?array{type: string, known: bool, base: ?string, changes: list<array{key: string, heading: ?string, dropped: bool, diff: list<array{0: string, 1: string}>}>} $update @var bool $merged @var list<string> $lost @var string $templateHash */ use App\Csrf;
 use App\LegalTexts;
 $labels = ['school' => __('Von der Schule betrieben'), 'private' => __('Privat betrieben')];
 $update ??= null;
 $merged ??= false;
+$lost ??= [];
 $templateHash ??= '';
 // Version marker sent with the form (LegalTexts::base()): the template that was loaded or merged in
 $base = $loaded ?? ($merged ? $update['type'] : null);
@@ -24,8 +25,18 @@ $kept = $sections(static fn (array $c): bool => $c['dropped'] && !$update['known
           $taken !== '' ? __('Abschnitte aus der aktuellen Vorlage „{name}“ übernommen: {sections}.', ['name' => $labels[$update['type']], 'sections' => $taken]) : '',
           $removed !== '' ? __('Entfernt, weil die Vorlage sie nicht mehr enthält: {sections}.', ['sections' => $removed]) : '',
           $kept !== '' ? __('Unverändert, weil es sie nur in Ihrem Text gibt (eigene oder aus einer früheren Vorlage – bitte prüfen, ob sie noch zutreffen): {sections}.', ['sections' => $kept]) : '',
-          __('Ihre Angaben in Zeilen, die die Vorlage nicht geändert hat, bleiben erhalten, eigene Änderungen in übernommenen Abschnitten nicht. Der gespeicherte Text ändert sich erst, wenn Sie speichern – bitte vorher prüfen und neue Platzhalter in eckigen Klammern ersetzen.'),
+          __('Ihre Angaben in Zeilen, die die Vorlage nicht geändert hat, bleiben erhalten, auch wo sie in den Zeilen darunter weitergehen; eigene Änderungen in übernommenen Abschnitten nicht. Der gespeicherte Text ändert sich erst, wenn Sie speichern – bitte vorher prüfen und neue Platzhalter in eckigen Klammern ersetzen.'),
       ]))) ?></p>
+      <?php if ($lost): ?>
+        <p><?= e(__('Aus Ihrem Text nicht übernommen (eigene Zeilen oder Ihre Angaben in Zeilen, die die Vorlage geändert hat) – bitte prüfen, ob etwas davon wieder in den Text gehört:')) ?></p>
+        <div class="legal-diff" data-legal-lost>
+          <ul>
+            <?php foreach ($lost as $line): ?>
+              <li class="diff-del"><span aria-hidden="true">−</span> <span class="visually-hidden"><?= e(__('nicht übernommen:')) ?></span> <?= e($line) ?></li>
+            <?php endforeach; ?>
+          </ul>
+        </div>
+      <?php endif; ?>
       <p class="small"><?= e(__('Zum Vergleich die Unterschiede vor dem Übernehmen:')) ?></p>
     <?php else: ?>
       <p><?= e($update['known']

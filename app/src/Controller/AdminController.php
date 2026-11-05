@@ -1947,20 +1947,24 @@ final class AdminController
         // The template the form is reconciled with ("base"): only that one becomes the text's version marker on
         // saving, not a newer one an update brought meanwhile
         $template = $loaded ?? $update['type'] ?? null;
+        // Taken over: also the lines of the text that are left out (LegalTexts::lost()), for the admin to check
+        $keys = array_column($update['changes'] ?? [], 'key');
+        $content = match (true) {
+            $loaded !== null => (string) LegalTexts::template($key, $loaded, $lang),
+            $merged => LegalTexts::merge((string) $stored, (string) LegalTexts::template($key, $update['type'], $lang), $keys, $update['base']),
+            default => (string) $stored,
+        };
         $this->render('admin/page_form', [
             'title' => self::pageLabel($key) . ' (' . strtoupper($lang) . ')',
             'key' => $key,
             'lang' => $lang,
-            'content' => match (true) {
-                $loaded !== null => (string) LegalTexts::template($key, $loaded, $lang),
-                $merged => LegalTexts::merge((string) $stored, (string) LegalTexts::template($key, $update['type'], $lang), array_column($update['changes'], 'key'), $update['base']),
-                default => (string) $stored,
-            },
+            'content' => $content,
             'variants' => $variants,
             'loaded' => $loaded,
             'type' => $type,
             'update' => $update,
             'merged' => $merged,
+            'lost' => $merged ? LegalTexts::lost((string) $stored, $content, $keys, $update['base']) : [],
             'templateHash' => $template !== null ? hash('sha256', (string) LegalTexts::template($key, $template, $lang)) : '',
         ]);
     }

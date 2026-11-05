@@ -15,8 +15,11 @@ return [
     'Entfernt, weil die Vorlage sie nicht mehr enthält: {sections}.' => 'Removed because the template no longer contains them: {sections}.',
     'Unverändert, weil es sie nur in Ihrem Text gibt (eigene oder aus einer früheren Vorlage – bitte prüfen, ob sie noch zutreffen): {sections}.'
         => 'Left as they are because only your text has them (your own or from an earlier template – please check whether they still apply): {sections}.',
-    'Ihre Angaben in Zeilen, die die Vorlage nicht geändert hat, bleiben erhalten, eigene Änderungen in übernommenen Abschnitten nicht. Der gespeicherte Text ändert sich erst, wenn Sie speichern – bitte vorher prüfen und neue Platzhalter in eckigen Klammern ersetzen.'
-        => 'Your details in lines the template did not change are kept, your own changes in the sections taken over are not. The stored text only changes when you save – please check it first and replace new placeholders in square brackets.',
+    'Ihre Angaben in Zeilen, die die Vorlage nicht geändert hat, bleiben erhalten, auch wo sie in den Zeilen darunter weitergehen; eigene Änderungen in übernommenen Abschnitten nicht. Der gespeicherte Text ändert sich erst, wenn Sie speichern – bitte vorher prüfen und neue Platzhalter in eckigen Klammern ersetzen.'
+        => 'Your details in lines the template did not change are kept, also where they go on in the lines below; your own changes in the sections taken over are not. The stored text only changes when you save – please check it first and replace new placeholders in square brackets.',
+    'Aus Ihrem Text nicht übernommen (eigene Zeilen oder Ihre Angaben in Zeilen, die die Vorlage geändert hat) – bitte prüfen, ob etwas davon wieder in den Text gehört:'
+        => 'Not taken over from your text (your own lines, or your details in lines the template changed) – please check whether any of it belongs back in the text:',
+    'nicht übernommen:' => 'not taken over:',
     'Zum Vergleich die Unterschiede vor dem Übernehmen:' => 'For comparison, the differences before taking them over:',
     'Abschnitte, die es nur in Ihrem Text gibt, bleiben beim Übernehmen unverändert.' => 'Sections only your text has stay as they are.',
     'Diese Abschnitte gibt es nur in Ihrem Text. Prüfen Sie, ob sie noch zutreffen, passen Sie sie unten an oder löschen Sie sie, und bestätigen Sie den Abgleich beim Speichern.'

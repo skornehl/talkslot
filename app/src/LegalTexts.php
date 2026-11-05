@@ -133,25 +133,31 @@ final class LegalTexts
 
     /**
      * Lines removed ("-") and added ("+") from $old to $new, in order (longest common subsequence). With $fill
-     * a line of $old is the same as a line of $new it fills in (same()).
+     * a line of $old is the same as a line of $new it fills in (same()); of the alignments with the most such
+     * lines the one with the most identical lines, so that a line with little fixed text ("- [WEITERE …]")
+     * does not take a line of $old away from the line it really is.
      * @param list<string> $old
      * @param list<string> $new
      * @return list<array{0: string, 1: string}> [" ", the line of $old] for a line in both, else ["-"|"+", line]
      */
     public static function diff(array $old, array $new, bool $fill = false): array
     {
-        $same = static fn (string $a, string $b): bool => self::same($a, $b, $fill);
         $n = count($old);
         $m = count($new);
+        // Weight of a pair: 0 = not the same, else one more for an identical line than for a filled-in one (any
+        // number of identical lines weighs less than one pair more)
+        $weight = static fn (int $i, int $j): int => $old[$i] === $new[$j] ? $n + $m + 2 : (self::same($old[$i], $new[$j], $fill) ? $n + $m + 1 : 0);
         $lcs = array_fill(0, $n + 1, array_fill(0, $m + 1, 0));
         for ($i = $n - 1; $i >= 0; $i--) {
             for ($j = $m - 1; $j >= 0; $j--) {
-                $lcs[$i][$j] = $same($old[$i], $new[$j]) ? $lcs[$i + 1][$j + 1] + 1 : max($lcs[$i + 1][$j], $lcs[$i][$j + 1]);
+                $w = $weight($i, $j);
+                $lcs[$i][$j] = max($lcs[$i + 1][$j], $lcs[$i][$j + 1], $w > 0 ? $lcs[$i + 1][$j + 1] + $w : 0);
             }
         }
         $diff = [];
         for ($i = $j = 0; $i < $n || $j < $m;) {
-            if ($i < $n && $j < $m && $same($old[$i], $new[$j])) {
+            $w = $i < $n && $j < $m ? $weight($i, $j) : 0;
+            if ($w > 0 && $lcs[$i][$j] === $lcs[$i + 1][$j + 1] + $w) {
                 $diff[] = [' ', $old[$i++]];
                 $j++;
             } elseif ($j >= $m || ($i < $n && $lcs[$i + 1][$j] >= $lcs[$i][$j + 1])) {
@@ -182,7 +188,9 @@ final class LegalTexts
      * Lines of a text's section that are still the wording of an earlier template: lines the template removed
      * between $old (the version marker's section) and $lines (the current one) that the text has, also with
      * their placeholders filled in – unless the text's line is in the current template too, or fills in a line
-     * of it that says at least as much (a placeholder that only got a new name).
+     * of it that says at least as much without a placeholder more (a placeholder that only got a new name). A
+     * placeholder may be filled in by nothing, so a line the template only added a placeholder to (a check
+     * note in brackets) is filled in by the earlier line as well: that one is still the earlier wording.
      * @param list<string> $have
      * @param list<string> $old
      * @param list<string> $lines
@@ -191,10 +199,25 @@ final class LegalTexts
     private static function stale(array $have, array $old, array $lines): array
     {
         $removed = array_diff(array_column(array_filter(self::diff($old, $lines), static fn (array $d): bool => $d[0] === '-'), 1), $lines);
-        $match = static fn (string $line, array $templates): int => max([-1, ...array_map(
-            static fn (string $t): int => self::same($line, $t, true) ? self::literal($t) : -1, $templates)]);
+        // The best line of $templates the text's line fills in: most fixed text, then fewest placeholders
+        $match = static fn (string $line, array $templates): array => max([[-1, 0], ...array_map(static fn (string $t): array => self::same($line, $t, true)
+            ? [self::literal($t), -(int) preg_match_all(self::PLACEHOLDER, $t)] : [-1, 0], $templates)]);
         return $removed === [] ? [] : array_values(array_filter($have, static fn (string $line): bool => !in_array($line, $lines, true)
             && $match($line, $removed) > $match($line, $lines)));
+    }
+
+    /**
+     * Lines of a section that are nothing but a placeholder and new since the version marker's section $old,
+     * unless the text's section $have has them as they are. Such a placeholder may stand for nothing (fills()),
+     * so a text without it would seem to have the wording of the current template.
+     * @param list<string> $have
+     * @param list<string> $old
+     * @param list<string> $lines
+     * @return list<string>
+     */
+    private static function added(array $have, array $old, array $lines): array
+    {
+        return array_values(array_filter($lines, static fn (string $l): bool => self::literal($l) === 0 && !in_array($l, $old, true) && !in_array($l, $have, true)));
     }
 
     /**
@@ -204,7 +227,8 @@ final class LegalTexts
      * the sections in which the text differs from the template, with the lines only in the text ("-") and
      * only in the template ("+"), also sections only the text has. Left out either way: sections whose text
      * already has the wording of the current template (placeholders filled in) and, with a marker, none of
-     * the lines the template has removed since (stale()).
+     * the lines the template has removed since (stale()) but every line it added since that is nothing but a
+     * placeholder (added()).
      * @return list<array{key: string, heading: ?string, dropped: bool, diff: list<array{0: string, 1: string}>}>
      *     heading null = introduction; dropped: a section the current template does not have
      */
@@ -218,7 +242,9 @@ final class LegalTexts
             $lines = self::content($section);
             $old = $from !== null ? self::content($from[$key] ?? null) : null;
             $have = self::content($text[$key] ?? null);
-            if ($old === $lines || (self::fills(implode("\n", $have), implode("\n", $lines)) && ($old === null || self::stale($have, $old, $lines) === []))) {
+            $taken = self::fills(implode("\n", $have), implode("\n", $lines))
+                && ($old === null || (self::stale($have, $old, $lines) === [] && self::added($have, $old, $lines) === []));
+            if ($old === $lines || $taken) {
                 continue;
             }
             $changes[] = ['key' => $key, 'heading' => $section['heading'], 'dropped' => false, 'diff' => self::changed(self::diff($old ?? $have, $lines, $from === null))];
@@ -244,8 +270,9 @@ final class LegalTexts
 
     /**
      * The stored text with sections ($keys, see changes()) taken from the current template: their wording as in
-     * the template, keeping the lines the text already has with placeholders filled in (but not lines of the
-     * template of its version marker $base that the current one removed, stale()); sections new in the
+     * the template, keeping the lines the text already has with placeholders filled in, also where the details
+     * go on in the lines below (but not lines of the template of its version marker $base that the current one
+     * removed, stale()); what else the text had there, lost() lists; sections new in the
      * template are inserted where it has them. Sections the template no longer has are removed only with a
      * marker that has them (the template dropped them since); without one they may be the operator's own and
      * stay. The other sections stay as they are (one blank line between sections).
@@ -301,9 +328,34 @@ final class LegalTexts
     }
 
     /**
+     * Lines of the stored text that taking over the sections $keys (merge()) leaves out, for the admins to
+     * check: in these sections, lines the merged text $merged no longer has, except the wording of the template
+     * of the version marker $base (the current template's replaces it). Sections removed or left as they are
+     * are named as such.
+     * @param list<string> $keys
+     * @return list<string>
+     */
+    public static function lost(string $stored, string $merged, array $keys, ?string $base = null): array
+    {
+        $text = self::sections($stored);
+        $now = self::sections($merged);
+        $from = $base !== null ? self::sections($base) : [];
+        $lost = [];
+        foreach ($keys as $key) {
+            if (isset($text[$key], $now[$key])) {
+                $known = [...self::content($now[$key], false), ...self::content($from[$key] ?? null, false)];
+                array_push($lost, ...array_filter(self::content($text[$key], false), static fn (string $l): bool => !in_array($l, $known, true)));
+            }
+        }
+        return $lost;
+    }
+
+    /**
      * A section of the template, its lines replaced by those of the text's section that fill them in (a line
-     * that is only a placeholder by the text's lines in its place), except lines of the marker's section $old
-     * that the template removed (stale()).
+     * that is only a placeholder by the text's lines in its place, unless it is new since the marker), except
+     * lines of the marker's section $old that the template removed (stale()). A line that fills in a
+     * placeholder at its end keeps the lines after it in the same paragraph (no blank line between, no new list
+     * item, heading or quote): the details may go on there (name, address, e-mail).
      * @param array{heading: ?string, lines: list<string>}|null $section
      * @param array{heading: ?string, lines: list<string>} $template
      * @param array{heading: ?string, lines: list<string>}|null $old
@@ -311,26 +363,52 @@ final class LegalTexts
      */
     private static function mergeSection(?array $section, array $template, ?array $old): array
     {
-        $have = self::content($section, false);
+        // The text's lines with text: trimmed (as content()), as written, and whether each one goes on with the
+        // paragraph of the line before it
+        [$have, $raw, $joined, $blank] = [[], [], [], true];
+        foreach ($section['lines'] ?? [] as $line) {
+            if (trim($line) !== '') {
+                [$have[], $raw[], $joined[]] = [trim($line), rtrim($line), !$blank && preg_match('/^\h*(?:[-*+]\h|\d+[.)]\h|#|>)/u', $line) !== 1];
+            }
+            $blank = trim($line) === '';
+        }
         $want = self::content($template, false);
-        $have = $old !== null ? array_values(array_diff($have, self::stale($have, self::content($old, false), $want))) : $have;
+        $before = $old !== null ? self::content($old, false) : null;
+        $stale = $before !== null ? self::stale($have, $before, $want) : [];
+        $keep = array_keys(array_filter($have, static fn (string $l): bool => !in_array($l, $stale, true)));
+        $new = $before !== null ? self::added([], $before, $want) : [];
         // In the order of the template's lines: the text's line that fills one in, or else the template's line;
         // a line that is nothing but a placeholder ([[VERANTWORTLICHE]]) gets the text's other lines in its place
         // (between the same lines both have; the end counts as such a line)
         $fill = [];
         $own = [];
         $at = null;
-        foreach ([...self::diff($have, $want, true), [' ', null]] as [$op, $line]) {
+        $to = null; // [index in $fill, index in $have] of the line its paragraph goes on with
+        $i = $j = 0; // next line of the text ($keep) and of the template ($want)
+        foreach ([...self::diff(array_map(static fn (int $k): string => $have[$k], $keep), $want, true), [' ', null]] as [$op, $line]) {
             if ($op === '-') {
+                $k = $keep[$i++];
+                if ($to !== null && $joined[$k] && $to[1] === $k - 1) {
+                    $fill[$to[0]] .= "\n" . $raw[$k];
+                    $to[1] = $k;
+                    continue;
+                }
+                $to = null;
                 $own[] = $line;
             } elseif ($op === '+') {
-                $at ??= self::literal($line) === 0 ? count($fill) : null;
+                $at ??= self::literal($line) === 0 && !in_array($line, $new, true) ? count($fill) : null;
                 $fill[] = $line;
+                $j++;
             } else {
                 if ($at !== null && $own !== []) {
                     $fill[$at] = implode("\n", $own);
                 }
-                [$own, $at] = [[], null];
+                [$own, $at, $to] = [[], null, null];
+                if ($line !== null) {
+                    $k = $keep[$i++];
+                    $parts = preg_split(self::PLACEHOLDER, $want[$j]) ?: [];
+                    $to = $line !== $want[$j++] && count($parts) > 1 && trim((string) end($parts)) === '' ? [count($fill), $k] : null;
+                }
                 $fill[] = $line;
             }
         }
@@ -361,9 +439,14 @@ final class LegalTexts
      */
     public static function setBase(string $key, string $lang, string $type): void
     {
-        $template = self::template($key, $type, $lang);
+        Settings::set("legal_base.$key.$lang", self::marker($type, self::template($key, $type, $lang)));
+    }
+
+    /** The stored form of a version marker (base()); null = none: no template, or one too long for settings.value. */
+    private static function marker(string $type, ?string $template): ?string
+    {
         $json = $template !== null ? json_encode(['type' => $type, 'content' => $template], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) : false;
-        Settings::set("legal_base.$key.$lang", $json !== false && strlen($json) < 65000 ? $json : null);
+        return $json !== false && strlen($json) < 65000 ? $json : null;
     }
 
     /**

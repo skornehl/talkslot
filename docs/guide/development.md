@@ -77,7 +77,9 @@ and checks that PHP 7.4 and 8.2 get the message of `App\Platform` instead of a s
   Avoid renaming headings: a section is known by its heading without the number, a renamed one counts as a
   new section, and taking it over does not carry the filled-in details of the old one along. A placeholder
   inside a line stands for text up to the end of that line; only one alone on its line (like
-  `[[VERANTWORTLICHE]]`) may stand for several lines. Whenever what TalkSlot processes changes (data, recipients, retention periods,
+  `[[VERANTWORTLICHE]]`) may stand for several lines. A placeholder may also be filled in by nothing, so a
+  line that is little more than a placeholder (`- [WEITERE EMPFÄNGER]`) is filled in by almost any line:
+  give such a line some fixed wording of its own (`- **Weitere Empfänger:** [NAME UND ANSCHRIFT]`). Whenever what TalkSlot processes changes (data, recipients, retention periods,
   browser storage, kinds of mail), update the privacy templates of both operator types in German and
   English in the same change.
 - **Deployment variables:** every variable read by `bin/build-config.php` must be passed in the build step

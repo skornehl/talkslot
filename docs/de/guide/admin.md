@@ -180,10 +180,14 @@ entfernt (−) und hinzugefügt (+) hat. Danach können Sie:
 
 - **die Abschnitte übernehmen:** *Abschnitte aus der Vorlage übernehmen* lädt Ihren Text mit diesen
   Abschnitten in der Fassung der Vorlage ins Formular. Ihre Angaben in Zeilen, die die Vorlage nicht geändert
-  hat (z. B. die Aufsichtsbehörde), bleiben, ebenso was an Stelle von `[[VERANTWORTLICHE]]` steht; eigene
-  Änderungen in diesen Abschnitten nicht. Einen Abschnitt, den die Vorlage gestrichen hat, entfernt das
-  Übernehmen, und der Hinweis nennt ihn als „entfernt“. Zum Vergleich bleiben die Unterschiede darunter
-  sichtbar. Prüfen Sie das Formular, ersetzen Sie neue Platzhalter in eckigen Klammern und speichern Sie;
+  hat (z. B. die Aufsichtsbehörde), bleiben, auch wo sie in den Zeilen darunter weitergehen (z. B. Name,
+  Anschrift und E-Mail-Adresse der oder des Datenschutzbeauftragten), ebenso was an Stelle von
+  `[[VERANTWORTLICHE]]` steht; eigene Änderungen in diesen Abschnitten nicht. Was aus Ihrem Text dabei
+  wegfällt (eigene Zeilen, Ihre Angaben in einer Zeile, die die Vorlage geändert hat), listet der Hinweis als
+  „nicht übernommen“ auf: Übernehmen Sie daraus, was noch in den Text gehört. Einen Abschnitt, den die Vorlage
+  gestrichen hat, entfernt das Übernehmen, und der Hinweis nennt ihn als „entfernt“. Zum Vergleich bleiben die
+  Unterschiede darunter sichtbar. Prüfen Sie das Formular, ersetzen Sie neue Platzhalter in eckigen Klammern
+  und speichern Sie;
 - **den Text selbst anpassen** und beim Speichern *Abgleich erledigt* ankreuzen; oder
 - **die ganze Vorlage laden** (*Vorlage laden*) und neu ausfüllen.
 
@@ -192,7 +196,10 @@ des Textes, der Hinweis verschwindet, und das Protokoll hält fest, wer den Text
 Vorlage geändert, während das Formular offen war (z. B. durch ein Update), speichert TalkSlot den Text, vermerkt
 den Abgleich aber nicht und weist darauf hin. Ein Text, der schon alles enthält, was die Vorlage seit seinem
 Vorlagenstand geändert hat (oder ohne Vorlagenstand den Wortlaut der aktuellen Vorlage, nur die Platzhalter
-ausgefüllt), braucht nichts: TalkSlot vermerkt den Vorlagenstand selbst. Bei einem Text, der bearbeitet wurde, bevor TalkSlot Vorlagenstände
+ausgefüllt), braucht nichts: TalkSlot vermerkt den Vorlagenstand selbst. Ein Platzhalter innerhalb einer
+Zeile steht für Text bis zum Zeilenende: Haben Sie einen über mehrere Zeilen ausgefüllt (z. B. die Anschrift
+der oder des Datenschutzbeauftragten unter dem Namen), zeigt der Hinweis diese Zeilen bei einem Text ohne
+Vorlagenstand als Abweichung, bis Sie den Abgleich einmal bestätigen. Bei einem Text, der bearbeitet wurde, bevor TalkSlot Vorlagenstände
 festhielt, oder der aus der Vorlage der anderen Betriebsart stammt, ist die Ausgangsvorlage unbekannt: Der
 Hinweis nennt dann die Abschnitte, in denen er von der aktuellen Vorlage abweicht („weicht von der Vorlage
 ab“; ausgefüllte Platzhalter zählen nicht), mit den Zeilen, die nur in Ihrem Text (−) und nur in der Vorlage
