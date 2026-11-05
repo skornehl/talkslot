@@ -1,6 +1,12 @@
-# Dependabot watches the bundled libraries through composer.lock (TalkSlot does not run Composer).
-# After it raises a version, run bin/update-vendor.sh on the pull request branch and commit app/vendor/;
-# the unit tests fail until both match.
+# Dependabot keeps three things current (expert review P1-6):
+# - composer: the bundled libraries, through composer.lock (TalkSlot does not run Composer). After it raises a
+#   version, run bin/update-vendor.sh on the pull request branch and commit app/vendor/; the unit tests and the
+#   CI job "Static analysis" fail until both match.
+# - docker: the images of the test environment and of CI, pinned by digest in dev/Dockerfile and
+#   dev/php-cli.Dockerfile. Only new digests of the same version: which PHP and MariaDB versions are tested
+#   (the minimum and the current one) is decided by hand.
+# - github-actions: actions in .github/workflows/, should any be used (pinned by commit SHA with the version as
+#   a comment); the workflows currently fetch the code with git and need none.
 version: 2
 updates:
   - package-ecosystem: composer
@@ -9,4 +15,28 @@ updates:
       interval: weekly
     commit-message:
       prefix: fix
+      include: scope
+
+  - package-ecosystem: docker
+    directory: /dev
+    schedule:
+      interval: weekly
+    ignore:
+      - dependency-name: php
+        update-types: [version-update:semver-major, version-update:semver-minor]
+      - dependency-name: mariadb
+        update-types: [version-update:semver-major, version-update:semver-minor]
+    groups:
+      images:
+        patterns: ['*']
+    commit-message:
+      prefix: ci
+      include: scope
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: ci
       include: scope
