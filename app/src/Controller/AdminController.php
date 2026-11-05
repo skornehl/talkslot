@@ -327,12 +327,20 @@ final class AdminController
                 $dayData = ['dates' => [''], 'start' => $s['start'], 'end' => $s['end'], 'minutes' => $s['minutes'], 'breaks' => $s['breaks']];
             }
         }
+        $fresh = $data === null || $template !== null;
         $data ??= $round ?? [
             'title' => '', 'slug' => '', 'description' => '', 'location' => '', 'source_lang' => I18n::defaultLanguage(), 'is_active' => 1,
             'booking_deadline_hours' => 24, 'cancel_deadline_hours' => 12,
             'delete_after_hours' => 24, 'random_suffix' => 1,
             'code_required' => 0, 'booking_limit' => 'round', 'remind_parents' => 1, 'user_id' => Auth::id(),
         ];
+        // Rounds cannot go public yet (e.g. open placeholders in the legal texts): say so at the checkbox, and a new
+        // round starts inactive, so that it can be saved and prepared right away and activated later
+        $owner = $round && $round['is_active'] ? null : Db::one('SELECT * FROM users WHERE id = ?', [(int) ($data['user_id'] ?? Auth::id())]);
+        $blocker = $owner ? $this->publishBlocker($owner) : null;
+        if ($blocker !== null && !$round && $fresh) {
+            $data['is_active'] = 0;
+        }
         $this->render('admin/round_form', [
             'title' => $round ? __('Runde bearbeiten') : __('Neue Runde'),
             'round' => $round,
@@ -343,6 +351,7 @@ final class AdminController
             'errors' => $errors,
             'templates' => $round ? [] : Db::all('SELECT id, name FROM round_templates ORDER BY name'),
             'template' => $template,
+            'activationBlocked' => $blocker,
         ]);
     }
 
@@ -413,7 +422,7 @@ final class AdminController
         if (!$owner) {
             $errors[] = __('Bitte eine aktive Lehrkraft für die Runde wählen.');
         } elseif ($publishing && ($hint = $this->publishBlocker($owner)) !== null) {
-            $errors[] = $hint;
+            $errors[] = $hint . ' ' . self::saveInactiveHint();
         }
         // New round: create the appointment days right away
         $dayData = null;
@@ -1296,6 +1305,12 @@ final class AdminController
     // ---------------------------------------------------------------- Settings & texts
 
     // ---------------------------------------------------------------- Profile & password
+
+    /** The way on when a round cannot be activated yet: it can be saved inactive and activated later. */
+    private static function saveInactiveHint(): string
+    {
+        return __('Bis dahin können Sie die Runde ohne Häkchen bei „Aktiv“ speichern und alles vorbereiten; aktivieren Sie sie später auf der Seite der Runde.');
+    }
 
     /**
      * Why a round of this teacher may not be activated (yet), or null.

@@ -1,5 +1,6 @@
 <?php
-/** @var ?array $round @var array $data @var array $dayData @var array $errors @var array $parents upcoming bookings of the round, how many can be mailed */
+/** @var ?array $round @var array $data @var array $dayData @var array $errors @var array $parents upcoming bookings of the round, how many can be mailed
+ * @var ?string $activationBlocked why rounds cannot be activated yet (null = they can) */
 use App\Csrf;
 $action = $round ? url('/admin/round/' . (int) $round['id'] . '/edit') : url('/admin/round/new');
 ?>
@@ -135,9 +136,12 @@ $action = $round ? url('/admin/round/' . (int) $round['id'] . '/edit') : url('/a
 
 
   <div class="check">
-    <input type="checkbox" id="is_active" name="is_active" value="1"<?= !empty($data['is_active']) ? ' checked' : '' ?>>
+    <input type="checkbox" id="is_active" name="is_active" value="1"<?= !empty($data['is_active']) ? ' checked' : '' ?><?= ($activationBlocked ?? null) !== null ? ' aria-describedby="active-hint"' : '' ?>>
     <label for="is_active"><?= e(__('Aktiv (Eltern können über den Link buchen)')) ?></label>
   </div>
+  <?php if (($activationBlocked ?? null) !== null): /* the reason, and that saving without "Aktiv" works meanwhile */ ?>
+    <p class="hint hint-indent" id="active-hint" data-activation-blocked><?= e($activationBlocked) ?> <?= e(__('Bis dahin können Sie die Runde ohne Häkchen bei „Aktiv“ speichern und alles vorbereiten; aktivieren Sie sie später auf der Seite der Runde.')) ?></p>
+  <?php endif; ?>
 
   <div class="actions">
     <button type="submit" class="button button-primary"><?= e($round ? __('Speichern') : __('Runde mit Terminen anlegen')) ?></button>
