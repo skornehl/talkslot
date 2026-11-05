@@ -36,6 +36,11 @@ Rechte der genannten Dateien auf `600` oder geben Sie die Warnung an die technis
 enthalten die Passwörter für Datenbank und Mailversand. Könnten diese inzwischen in falsche Hände gelangt
 sein, siehe [Secrets austauschen]({{ '/de/guide/operations/' | relative_url }}#changing-secrets).
 
+Meldet die Übersicht, dass der Cronjob seit einem bestimmten Zeitpunkt nicht mehr vollständig gelaufen ist
+oder noch kein vollständiger Lauf verzeichnet ist, prüfen Sie den Cronjob auf dem Server bzw. den GitHub-Workflow *Cron* oder geben
+Sie die Warnung an die technische Betreuung weiter; siehe
+[Überwachung des Cronjobs]({{ '/de/guide/operations/' | relative_url }}#cron-monitoring).
+
 Meldet die Übersicht, dass die Einrichtung des Servers Aufmerksamkeit braucht, geben Sie die Liste an die
 technische Betreuung weiter: Sie nennt Optionen in `config/config.php`, die so nicht wirken (etwa wegen eines
 Tippfehlers), und einen Datenbankserver, der nicht MariaDB 10.6 oder neuer ist; siehe

@@ -68,6 +68,55 @@ check('round addresses: every fixed address of the app is reserved (routes incl.
     !array_diff(['admin', 'cron', 'health', 'b', 'impressum', 'privacy', 'assets', 'index', 'robots'], $opPaths)
     && !array_diff($opPaths, App\Slug::RESERVED));
 
+// Cron monitoring (expert review P1-2). Recording the runs, the dashboard notice and the alert mail need the
+// database: tests/smoke.d/operations.sh
+echo "Operations: cron monitoring\n";
+$opH = 3600;
+$opNow = 1_800_000_000;
+check('late: no completed run for cron_alert_hours (also exactly then); a run within them is fine',
+    App\CronMonitor::state($opNow - 3 * $opH, null, $opNow, 3) === 'late' && App\CronMonitor::state($opNow - 5 * $opH, $opNow - $opH, $opNow, 3) === 'late'
+    && App\CronMonitor::state($opNow - 3 * $opH + 1, null, $opNow, 3) === null && App\CronMonitor::state($opNow - 2 * $opH, $opNow - 9 * $opH, $opNow, 3) === null);
+check('never: no run at all, cron_alert_hours since the monitoring began; not before, and not without its start',
+    App\CronMonitor::state(null, $opNow - 3 * $opH, $opNow, 3) === 'never' && App\CronMonitor::state(null, $opNow - 3 * $opH + 1, $opNow, 3) === null
+    && App\CronMonitor::state(null, null, $opNow, 3) === null);
+check('cron_alert_hours = 0: monitoring off', App\CronMonitor::state($opNow - 99 * $opH, $opNow - 99 * $opH, $opNow, 0) === null);
+check('alert mail: due at an outage with no mail since the last run, then once a day',
+    App\CronMonitor::alertDue($opNow - 3 * $opH, 0, $opNow) && App\CronMonitor::alertDue($opNow - 3 * $opH, $opNow - 30 * $opH, $opNow)
+    && !App\CronMonitor::alertDue($opNow - 30 * $opH, $opNow - 23 * $opH, $opNow) && App\CronMonitor::alertDue($opNow - 30 * $opH, $opNow - 24 * $opH, $opNow));
+check('alert mail: a new outage within a day of the last mail (repaired, then down again) is mailed at once',
+    App\CronMonitor::alertDue($opNow - 3 * $opH, $opNow - 5 * $opH, $opNow) && App\CronMonitor::alertDue($opNow - 3 * $opH, $opNow - 3 * $opH, $opNow)
+    && !App\CronMonitor::alertDue($opNow - 3 * $opH, $opNow - 3 * $opH + 1, $opNow) && !App\CronMonitor::alertDue($opNow - 5 * $opH, $opNow - 3 * $opH, $opNow));
+$opHours = [];
+foreach ([[], ['cron_alert_hours' => 0], ['cron_alert_hours' => -2], ['cron_alert_hours' => '6']] as $opSet) {
+    App\Config::load($opSet + array_diff_key($cfg, ['cron_alert_hours' => 1]));
+    $opHours[] = App\CronMonitor::alertHours();
+}
+App\Config::load($cfg);
+check('cron_alert_hours: 3 by default, 0 (also below) switches it off (' . implode(',', $opHours) . ')', $opHours === [3, 0, 0, 6]);
+// Switched off, page views do not even read the settings: any database access throws here
+$opDbError = new ReflectionProperty(App\Db::class, 'connectError');
+$opSaved = $opDbError->getValue();
+$opDbError->setValue(null, new PDOException('no database in this test'));
+$opCheck = static function (int $hours) use ($cfg): bool {
+    App\Config::load(['cron_alert_hours' => $hours] + $cfg);
+    try {
+        App\CronMonitor::check();
+        return true;
+    } catch (PDOException) {
+        return false;
+    }
+};
+$opOff = $opCheck(0);
+$opOn = $opCheck(3);
+$opDbError->setValue(null, $opSaved);
+App\Config::load($cfg);
+check('cron_alert_hours = 0: page views skip the check without a database query (with 3 they read the settings)', $opOff && !$opOn);
+$opMail = implode("\n", App\CronMonitor::alertLines(mktime(10, 17, 0, 11, 5, 2026), 3));
+check('alert mail: since when, after how many hours, what to check (GitHub: 60 days, enable again), no address or token',
+    str_contains($opMail, 'seit dem 05.11.2026 10:17 Uhr nicht mehr vollständig gelaufen (gemeldet wird nach 3 Stunden)')
+    && str_contains($opMail, 'nach 60 Tagen ohne Aktivität ab') && str_contains($opMail, 'gh workflow enable cron.yml')
+    && str_contains($opMail, 'einmal am Tag') && !preg_match('/@|https?:|[0-9a-f]{32}/', $opMail));
+
 // Operations: start and platform checks (expert review P1-10). PHP version and extensions (App\Platform), the
 // configuration (App\ConfigSchema), the database server (App\Health) and the error page. With the database:
 // tests/smoke.d/operations.sh; on old PHP versions: the CI workflow (tests.yml)

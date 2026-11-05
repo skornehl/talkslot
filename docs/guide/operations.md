@@ -61,7 +61,57 @@ discarded. The operator gets a mail:
 
 Limits: if mail delivery itself is broken, no alert arrives. If the whole site is down (web host, PHP),
 it cannot report itself. The hourly cron workflow then fails and GitHub notifies you
-(*GitHub → Settings → Notifications → Actions*).
+(*GitHub → Settings → Notifications → Actions*). A cron job that stops without failing is reported by the
+site itself, see [cron monitoring](#cron-monitoring).
+
+## Cron monitoring {#cron-monitoring}
+
+The cron job deletes past bookings and sends the summaries, reminders and queued mails. If it stops,
+nothing fails visibly: the clean-up still runs on page views, but later and only when someone visits, and
+reminders and summaries may not go out at all (see [mail queue](#mail-queue)). So TalkSlot
+records every completed run of `bin/cron.php` or the web cron (`last_cron` in the `settings` table, apart
+from `last_cleanup`, which page views set as well) and checks it on page views:
+
+- **No completed run for 3 hours** (`cron_alert_hours`): with the hourly schedule that is two missed runs,
+  so a single run that GitHub delays or skips is no alarm yet. Admins see a warning on the dashboard with
+  the time of the last run and a link to this section, and the operator gets the alert mail *Cronjob läuft
+  nicht* (same recipient as the error alerts above). It is sent once per outage and again every 24 hours
+  while the outage lasts, with the time of the last run and what to check; no personal data. The next
+  completed run ends the warning.
+- **No completed run recorded at all** (a new installation, an update while the cron job was already down,
+  or a cron job that fails every time): 3 hours after the monitoring began, the dashboard asks the admins
+  to set up the cron job, or to look with `php bin/cron.php -v` where it fails. There is no
+  mail for this, so that installations relying on page views on purpose (with PHP-FPM or LiteSpeed, see
+  [mail queue](#mail-queue)) are not reminded every day.
+- **`cron_alert_hours = 0`** turns both off.
+
+The check runs on page views: a site nobody visits cannot report anything, but any visit, by parents as
+well, sends the alert mail when it is due. Teachers do not see the warning; only admins can have it fixed.
+
+A cron job that is repaired and stops again later counts as a new outage: it is mailed as soon as the
+3 hours have passed, even if the last mail is less than a day old.
+
+**False alarm after a rollback or a restored backup:** a version from before the cron monitoring does not
+record its runs, and a database backup holds the `last_cron` of its time. After a [rollback]({{ '/guide/deployment/' | relative_url }}#rollback)
+to such a version and the next deployment, or after restoring a backup, the first page view may therefore
+report an outage although the cron job kept running. The next run ends it (at the latest after an hour);
+to avoid the mail, start the cron job once by hand right after such a step (`php bin/cron.php`,
+*Run workflow* or `gh workflow run cron.yml`).
+
+### GitHub disables the cron workflow after 60 days {#github-60-days}
+
+If you use the included `cron.yml` in a **public** repository (a fork of TalkSlot or your own
+[configuration-only repository]({{ '/guide/deployment/' | relative_url }}#deploying-from-your-own-repository)),
+GitHub disables scheduled workflows when the repository has had no activity for 60 days. In a fork,
+scheduled workflows are off from the start. The workflow does not fail then, it simply stops running, so
+GitHub sends no failure notice; the cron monitoring notices it after 3 hours.
+
+It stays off until you enable it again: *Actions → Cron → Enable workflow*, or
+`gh workflow enable cron.yml`. Then start it once by hand to check it (*Run workflow*, or
+`gh workflow run cron.yml`); the warning on the dashboard disappears after the first completed run.
+
+GitHub also delays scheduled runs at busy times, especially at the start of every hour, and may drop some.
+That is why `cron.yml` runs at minute 17 and the monitoring waits for two missed runs.
 
 ## Logs
 

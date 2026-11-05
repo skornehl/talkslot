@@ -31,6 +31,7 @@ final class App
                 Cleanup::maybeRun();
                 // Mail queue fallback after the response (not for the web cron and the health check)
                 register_shutdown_function(self::afterResponse(...));
+                CronMonitor::check(); // on page views only: the web cron records its own run
             }
         } catch (\Throwable $e) {
             Alert::exception($e, 'Migration/Bereinigung'); // must not block the page
@@ -120,6 +121,7 @@ final class App
         Migrations::run();
         set_time_limit((int) Config::get('mail_queue.seconds', 20) + 60);
         echo json_encode(['status' => 'ok', 'db_server' => Health::serverStatus()] + Cleanup::run() + Summaries::run() + Reminders::run() + Outbox::process(wait: Outbox::CRON_WAIT));
+        CronMonitor::ran();
     }
 
     /**

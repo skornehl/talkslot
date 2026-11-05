@@ -31,3 +31,4 @@ if (in_array('-v', $argv, true)) {
         echo str_pad($k, 24) . $v . "\n";
     }
 }
+App\CronMonitor::ran(); // last: only a completed run counts (App\CronMonitor)
