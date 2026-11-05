@@ -177,23 +177,26 @@ Vor dem Start:
      Hostingvertrag), braucht die Schule mit dieser Person eine Vereinbarung nach Art. 28 DSGVO (Weisungen,
      Vertraulichkeit, Hoster als Unterauftragsverarbeiter, Übergabe aller Zugänge, Löschung bei
      Betriebsende), oder die Schule bzw. der Schulträger schließt den Hostingvertrag selbst ab.
-   - **Privat betrieben:** Der Betreiber (Sie selbst, Ihr Verein oder Ihr Träger) ist Verantwortlicher für
-     die Terminvergabe einschließlich der E-Mails, die sie verschickt; Lehrkräfte nutzen das Angebot für ihre
+   - **Privat betrieben:** Der Betreiber (Sie selbst, Ihr Verein oder Ihr Träger) ist Verantwortlicher für die
+     Terminvergabe einschließlich der E-Mails, die sie verschickt; Lehrkräfte nutzen das Angebot für ihre
      Elterngespräche. Das Gespräch selbst, Notizen, die Zusammenfassungen im Postfach der Lehrkraft und
      Ausdrucke gehören zur Arbeit der Lehrkraft an ihrer Schule: Verantwortlich ist dafür in der Regel die
      Schule, es gelten deren Regeln (die Vorlage empfiehlt, die Zusammenfassungen nach höchstens 15 Monaten zu
      löschen). Lehrkräfte sollten für ihr Konto die dienstliche E-Mail-Adresse angeben; sonst landen die
      Zusammenfassungen in einem privaten Postfach, eventuell bei einem Anbieter außerhalb der EU. Schulen
      können eigene Vorgaben haben, welche Dienste ihre Lehrkräfte nutzen dürfen; Lehrkräfte sollten das mit
-     ihrer Schulleitung oder der oder dem Datenschutzbeauftragten der Schule klären. Ordnet die Schule die
-     Nutzung an oder macht sie Vorgaben dazu, bestimmt sie Zwecke und Mittel mit: Dann passt die private
-     Vorlage nicht mehr, nötig ist die Betriebsart *von der Schule betrieben* mit einer Vereinbarung nach
-     Art. 28 DSGVO oder eine Vereinbarung nach Art. 26 DSGVO. Nutzt eine Lehrkraft das Angebot ohne Freigabe
-     der Schule, kann sie selbst Verantwortliche werden. Ist für den Betreiber eine Datenschutzbeauftragte bzw. ein
-     Datenschutzbeauftragter benannt, nennen Sie sie bzw. ihn in der Datenschutzerklärung statt des Satzes,
-     dass niemand benannt ist. Die Vorlage des Impressums ist auf eine Privatperson zugeschnitten: Ein Verein
-     oder freier Träger ergänzt die vertretungsberechtigte Person und, falls vorhanden, den Registereintrag
-     (§ 5 DDG).
+     ihrer Schulleitung oder der oder dem Datenschutzbeauftragten der Schule klären. Bestimmt die Schule über
+     die Terminvergabe selbst mit – etwa weil sie sie als ihr Werkzeug für Elterngespräche einführt, ihren
+     Lehrkräften die Nutzung vorschreibt oder Einstellungen, Löschfristen oder Admin-Konten vorgibt –, passt
+     die private Vorlage nicht mehr: Nötig ist dann die Betriebsart *von der Schule betrieben* mit einer
+     Vereinbarung nach Art. 28 DSGVO oder eine Vereinbarung nach Art. 26 DSGVO (dann sind die Texte
+     anzupassen, Art. 26 Abs. 2 DSGVO). Regeln der Schule nur für ihre Lehrkräfte, etwa die Freigabe des
+     Dienstes, die dienstliche E-Mail-Adresse oder Löschfristen für das Postfach, ändern daran nichts. Nutzt
+     eine Lehrkraft das Angebot ohne Freigabe der Schule, kann sie selbst Verantwortliche werden. Ist für den
+     Betreiber eine Datenschutzbeauftragte bzw. ein Datenschutzbeauftragter benannt, nennen Sie sie bzw. ihn
+     in der Datenschutzerklärung statt des Satzes, dass niemand benannt ist. Die Vorlage des Impressums ist
+     auf eine Privatperson zugeschnitten: Ein Verein oder freier Träger ergänzt die vertretungsberechtigte
+     Person und, falls vorhanden, den Registereintrag (§ 5 DDG).
 2. **Verantwortlicher:** Füllen Sie *Texte → Angaben für Impressum und Datenschutz* aus. Diese
    Angaben ersetzen `[[VERANTWORTLICHE]]`; ohne sie ist keine Runde öffentlich.
 3. **Hoster:** Setzen Sie `hosting` in der Konfiguration (bzw. `HOSTING_DE`/`HOSTING_EN` beim Deployment).

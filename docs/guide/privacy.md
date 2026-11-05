@@ -161,21 +161,24 @@ Before going live:
      agreement under Art. 28 GDPR with that person (instructions, confidentiality, the web host as
      sub-processor, handover of all access, deletion when operation ends), or the school (or its school
      authority) concludes the hosting contract itself.
-   - **Operated privately:** the operator (you, your association or your organisation) is the controller
-     for the booking service, including the mails it sends; teachers use the service for their parent
-     meetings. The meeting itself, notes, the summary mails in the teacher's mailbox and printed lists are the
-     teacher's work at their school: as a rule the school is responsible for them and its rules apply (the
-     template recommends deleting the summaries after at most 15 months). Teachers should give a work e-mail
-     address for their account; otherwise the summaries end up in a private mailbox, possibly with a provider
-     outside the EU. Schools may have their own rules on which services their teachers may use, so teachers
-     should check with their school management or the school's data protection officer. If the school
-     directs the use of the service or sets rules for it, it decides on purposes and means as well: then the
-     private template no longer fits, and you need the operator type *operated by the school* with an
-     agreement under Art. 28 GDPR, or an arrangement under Art. 26 GDPR. A teacher who uses the service
-     without the school's approval may become a controller themselves. If a data protection officer has been appointed for the operator, name them in the
-     privacy policy instead of the sentence that none is appointed. The imprint template is written for a
-     private person: an association or independent provider adds the person authorised to represent it and,
-     if it has one, its register entry (section 5 DDG).
+   - **Operated privately:** the operator (you, your association or your organisation) is the controller for
+     the booking service, including the mails it sends; teachers use the service for their parent meetings.
+     The meeting itself, notes, the summary mails in the teacher's mailbox and printed lists are the teacher's
+     work at their school: as a rule the school is responsible for them and its rules apply (the template
+     recommends deleting the summaries after at most 15 months). Teachers should give a work e-mail address
+     for their account; otherwise the summaries end up in a private mailbox, possibly with a provider outside
+     the EU. Schools may have their own rules on which services their teachers may use, so teachers should
+     check with their school management or the school's data protection officer. If the school has a say in
+     the booking service itself – e.g. it introduces it as its tool for parent meetings, requires its teachers
+     to use it, or sets its settings, retention or admin accounts – the private template no longer fits: you
+     then need the operator type *operated by the school* with an agreement under Art. 28 GDPR, or an
+     arrangement under Art. 26 GDPR (the texts then need adjusting, Art. 26(2) GDPR). Rules the school sets
+     only for its teachers, such as approving the service, the work e-mail address or how long to keep mails
+     in the mailbox, do not change this. A teacher who uses the service without the school's approval may
+     become a controller themselves. If a data protection officer has been appointed for the operator, name
+     them in the privacy policy instead of the sentence that none is appointed. The imprint template is
+     written for a private person: an association or independent provider adds the person authorised to
+     represent it and, if it has one, its register entry (section 5 DDG).
 2. **Controller:** fill in *Texte → Angaben für Impressum und Datenschutz*. These details replace
    `[[VERANTWORTLICHE]]`; without them no round is public.
 3. **Web host:** set `hosting` in the configuration (or `HOSTING_DE`/`HOSTING_EN` when deploying). It
