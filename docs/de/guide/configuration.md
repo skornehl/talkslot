@@ -163,9 +163,9 @@ womöglich eine Adresse (Mobilfunknetze, Schul-WLAN).
 | `move` | 10 pro Stunde | Umbuchungen durch Eltern (jede verschickt eine E-Mail), pro Buchung statt pro IP-Adresse |
 | `move_ip` | 30 pro Stunde | Umbuchungen durch Eltern über alle ihre Buchungen |
 | `round` | 15 pro Stunde | erfolgreiche Buchungen **einer Runde** (gegen eine Person, die alle Termine mit Fantasienamen belegt); Deploy-Variable `ROUND_BOOKING_LIMIT`. Bitte großzügig lassen: Bei einem Elternabend buchen viele Eltern über das Schul-WLAN |
-| `burst` | 5 pro 5 Min. | keine Grenze: Mehr Buchungen einer Runde von einer Adresse innerhalb des Zeitfensters schicken der Lehrkraft der Runde und allen Admins eine Warnung, höchstens eine pro Runde und Stunde |
-| `recipient` | 3 pro Stunde | E-Mails, die Eltern selbst auslösen (Bestätigung, Änderungsmitteilung, Absage, die nachträglich gesendete Bestätigung), **pro E-Mail-Adresse** (kleingeschrieben, ohne `+Zusatz`) statt pro IP-Adresse. Darüber wird trotzdem gebucht, umgebucht oder abgesagt, nur ohne E-Mail, und die Seite des Termins sagt das. E-Mails von Lehrkräften, Erinnerungen und Zusammenfassungen zählen nicht |
-| `recipient_day` | 10 pro Tag | dasselbe pro Adresse und Tag |
+| `burst` | 5 pro 5 Min. | keine Grenze: Mehr Buchungen einer Runde aus einem Netzwerk innerhalb des Zeitfensters schicken der Lehrkraft der Runde und allen Admins eine Warnung, höchstens eine pro Runde und Stunde |
+| `recipient` | 10 pro Stunde | E-Mails, die Eltern selbst auslösen (Bestätigung, Änderungsmitteilung, Absage, die nachträglich gesendete Bestätigung), **pro E-Mail-Adresse** (kleingeschrieben, ohne `+Zusatz`, bei Gmail ohne Punkte) statt pro IP-Adresse. Darüber wird trotzdem gebucht, umgebucht oder abgesagt, nur ohne E-Mail; nach dem Buchen oder Umbuchen sagt die Seite des Termins das. Eine Buchung, deren Bestätigung zurückgehalten wurde, behält keine Adresse, also geht auch später keine Erinnerung oder Änderungsmitteilung dorthin. E-Mails von Lehrkräften, Erinnerungen und Zusammenfassungen zählen nicht |
+| `recipient_day` | 20 pro Tag | dasselbe pro Adresse und Tag |
 | `confirm` | 2 pro 24 Stunden | Bestätigungs-E-Mails, die Eltern sich auf der Seite ihres Termins schicken, pro Buchung statt pro IP-Adresse (das Zeitfenster kann nicht länger als 24 Stunden sein) |
 | `login` | 5 pro 15 Min. | fehlgeschlagene Admin-Anmeldungen |
 | `login_user` | 20 pro Stunde | fehlgeschlagene Anmeldungen **pro Konto** von Geräten, die sich dort noch nie angemeldet haben |

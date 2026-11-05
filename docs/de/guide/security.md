@@ -35,13 +35,13 @@ keine öffentlichen Issues.
 - Spamschutz: Honeypot-Feld, Mindestzeit zum Ausfüllen eines Formulars, Rate-Limits.
 - Belegen aller Termine (eine Person bucht alle Termine einer Runde mit Fantasienamen): Erfolgreiche
   Buchungen sind pro Runde und gekürzter IP-Adresse begrenzt (standardmäßig 15 pro Stunde, großzügig wegen
-  des Schul-WLANs). Mehr als 5 Buchungen einer Runde von einer Adresse innerhalb von 5 Minuten schicken der
+  des Schul-WLANs). Mehr als 5 Buchungen einer Runde aus einem Netzwerk innerhalb von 5 Minuten schicken der
   Lehrkraft der Runde und allen Admins eine Warnung; unter jedem Tag löscht *Mehrere Buchungen löschen …*
   die Buchungen eines Zeitraums auf einmal. Eine Runde mit *Nur mit Rundencode* ist nur für die offen, die
   den Code bekommen haben – der beste Schutz für Runden, die sich an eine Klasse richten.
 - E-Mails unter dem Absender der Schule: Die E-Mails, die Eltern selbst auslösen (Bestätigung,
   Änderungsmitteilung, Absage, die nachträglich gesendete Bestätigung), gehen an eine Adresse höchstens
-  3-mal pro Stunde und 10-mal pro Tag; darüber klappt die Aktion trotzdem, nur ohne E-Mail. Die Adresse
+  10-mal pro Stunde und 20-mal pro Tag; darüber klappt die Aktion trotzdem, nur ohne E-Mail. Die Adresse
   wird dafür nur als HMAC-Hash gezählt und spätestens nach 24 Stunden gelöscht. Umbuchungen sind zusätzlich
   pro gekürzter IP-Adresse begrenzt, und der Betreiber erhält eine Warnmeldung, wenn Eltern in einer Stunde
   mehr als 100 E-Mails auslösen (`mail_alert_hourly`).

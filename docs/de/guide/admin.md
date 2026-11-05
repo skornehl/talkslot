@@ -111,7 +111,7 @@ können:
   Buchungen in der Runde …*), höchstens eine pro Runde und Stunde. Prüfen Sie die Buchungen; *Mehrere
   Buchungen löschen …* unter jedem Tag löscht die eines Zeitraums auf einmal, und *Nur mit Rundencode*
   verhindert eine Wiederholung. Der Betreiber (`alert_email`) erhält eine Warnmeldung, wenn Eltern in einer
-  Stunde mehr als 100 E-Mails auslösen; an eine Adresse gehen höchstens 3 solcher E-Mails pro Stunde (siehe
+  Stunde mehr als 100 E-Mails auslösen; an eine Adresse gehen höchstens 10 solcher E-Mails pro Stunde (siehe
   [Sicherheit]({{ '/de/guide/security/' | relative_url }})).
 - **Alle Sitzungen beenden** (unten auf der Seite *Benutzer*) meldet alle Konten auf allen Geräten ab, nur
   Ihre aktuelle Sitzung bleibt bestehen, z. B. nach einem verlorenen Gerät oder bei Verdacht auf einen

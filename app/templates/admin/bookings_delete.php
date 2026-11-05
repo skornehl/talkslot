@@ -28,7 +28,7 @@ $range = ['date' => fmt_date($day['day_date']), 'from' => $time($from), 'to' => 
   <p class="alert alert-info"><?= e(__('Am {date} gibt es zwischen {from} und {to} Uhr keine Buchungen.', $range)) ?></p>
   <p><a class="button" href="<?= e($back) ?>"><?= e(__('Zurück zur Runde')) ?></a></p>
 <?php else: ?>
-  <p><?= e(__('Buchungen am {date} zwischen {from} und {to} Uhr. Gelöscht werden die angehakten; entfernen Sie den Haken bei Einträgen, die echt sind.', $range)) ?></p>
+  <p><?= e(__('Buchungen am {date} zwischen {from} und {to} Uhr. Gelöscht werden die angehakten; entfernen Sie den Haken bei Einträgen, die echt sind. Ihre eigenen Einträge sind nicht angehakt.', $range)) ?></p>
   <?php
   $question = __('Die angehakten Buchungen endgültig löschen? Die Slots werden wieder frei.');
   $note = $mailable > 0 ? "\n\n" . __('Die Eltern mit E-Mail-Adresse erhalten eine Absage per E-Mail.') : '';
@@ -37,13 +37,14 @@ $range = ['date' => fmt_date($day['day_date']), 'from' => $time($from), 'to' => 
     <?= Csrf::adminField() ?>
     <div class="table-wrap">
     <table class="table">
+      <caption class="visually-hidden"><?= e(__('Buchungen am {date} zwischen {from} und {to} Uhr', $range)) ?></caption>
       <thead><tr><th scope="col"><span class="visually-hidden"><?= e(__('Löschen')) ?></span></th><th scope="col"><?= e(__('Zeit')) ?></th><th scope="col"><?= e(__('Eintrag')) ?></th><th scope="col"><?= e(__('Gebucht am')) ?></th></tr></thead>
       <tbody>
       <?php foreach ($bookings as $b): $bid = (int) $b['id']; ?>
         <tr>
-          <td><input type="checkbox" name="booking[]" value="<?= $bid ?>" id="booking-<?= $bid ?>" checked></td>
-          <td class="nowrap"><label for="booking-<?= $bid ?>"><?= e(fmt_range($b['start_time'], $b['end_time'])) ?></label></td>
-          <td><strong><?= e($b['name']) ?></strong><?php if ((string) $b['email'] !== ''): ?><br><span class="small"><?= e($b['email']) ?></span><?php endif; ?>
+          <td><input type="checkbox" name="booking[]" value="<?= $bid ?>" id="booking-<?= $bid ?>" aria-labelledby="time-<?= $bid ?> name-<?= $bid ?>"<?= $b['source'] === 'admin' ? '' : ' checked' ?>></td>
+          <td class="nowrap"><label for="booking-<?= $bid ?>" id="time-<?= $bid ?>"><?= e(fmt_range($b['start_time'], $b['end_time'])) ?></label></td>
+          <td><strong id="name-<?= $bid ?>"><?= e($b['name']) ?></strong><?php if ((string) $b['email'] !== ''): ?><br><span class="small"><?= e($b['email']) ?></span><?php endif; ?>
             <?php if ($b['source'] === 'admin'): ?> <span class="badge"><?= e(__('selbst eingetragen')) ?></span><?php endif; ?></td>
           <td class="small nowrap"><?= e(date('d.m.Y H:i', (int) strtotime((string) $b['created_at']))) ?></td>
         </tr>

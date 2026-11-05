@@ -33,12 +33,12 @@ not public issues.
 - Spam protection: honeypot field, minimum time to fill in a form, rate limits.
 - Slot squatting (one person taking all slots of a round with made-up names): successful bookings are
   limited per round and shortened IP address (15 per hour by default, generous because of school Wi-Fi).
-  More than 5 bookings of a round from one address within 5 minutes send a warning to the teacher of the
+  More than 5 bookings of a round from one network within 5 minutes send a warning to the teacher of the
   round and all admins; under each day, *Mehrere Buchungen löschen …* (delete several bookings) deletes the
   bookings of a time span at once. A round with *Nur mit Rundencode* (round code required) is only open to
   those who got the code, the best protection for rounds meant for one class.
 - Mails under the school's address: the mails parents trigger themselves (confirmation, change notice,
-  cancellation, the confirmation sent again) go to one address at most 3 times per hour and 10 times per day;
+  cancellation, the confirmation sent again) go to one address at most 10 times per hour and 20 times per day;
   above that the action still works, without a mail. The address is only counted as an HMAC hash and deleted
   after 24 hours at the latest. Rebookings are also limited per shortened IP address, and the operator gets
   an alert when parents trigger more than 100 mails in an hour (`mail_alert_hourly`).

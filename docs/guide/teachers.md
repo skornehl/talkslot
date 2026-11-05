@@ -77,10 +77,11 @@ Per day you see all slots with the bookings:
   and location in the parents' language, so it also goes out when you save without a change here, e.g.
   after the day got a new date or location; untick the box if you do not want to send it.
 - **Delete** (*Löschen*) a booking.
-- **Delete several bookings** (*Mehrere Buchungen löschen …*, under each day with bookings): enter a time
-  span; the next page lists the bookings of the appointments within it, each ticked. Untick the genuine ones
-  and delete the rest at once, e.g. after somebody took the slots with made-up names. The box *Eltern per
-  E-Mail informieren* is unticked there: cancellations to made-up addresses help nobody.
+- **Delete several bookings** (*Mehrere Buchungen löschen …*, under each day with at least two bookings):
+  enter a time span; the next page lists the bookings of the appointments within it, each ticked except your
+  own entries. Untick the genuine ones and delete the rest at once, e.g. after somebody took the slots with
+  made-up names. The box *Eltern per E-Mail informieren* is unticked there: cancellations to made-up
+  addresses help nobody.
 - **Add** (*Eintragen*) an appointment yourself, e.g. after a phone call. The confirmation mail with the
   change link is ticked as soon as you enter an e-mail address; it is the only way the parents learn about
   the entry.
@@ -97,10 +98,11 @@ If you change times or breaks, **booked appointments are never deleted**; slots 
 marked with ⚠ so you can move them.
 
 **Unusually many bookings:** if more than 5 bookings of your round come from the same network within 5
-minutes, you and all admins get a mail (*Auffällig viele Buchungen in der Runde …*), at most one per hour.
-These may be many parents on the school Wi-Fi at a parents' evening; please check the bookings anyway. From
-one network a round takes at most 15 bookings per hour (set by the admin, `rate_limits.round`); parents
-there see a hint to try another connection or to contact you.
+minutes, you and all admins get a mail (*Auffällig viele Buchungen in der Runde …*), at most one per hour
+(with the next run of the mail queue). These may be many parents on the school Wi-Fi at a parents'
+evening; please check the bookings anyway. From one network a round takes at most 15 bookings per hour
+(set in the configuration, `rate_limits.round`); parents there see a hint to try another connection or to
+contact you.
 
 **Parents hear about your changes by e-mail.** When you delete a booking, a day or a round, give a day
 another date, time or location, or the round another location or (as an admin) another teacher, the box

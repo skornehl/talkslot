@@ -25,35 +25,56 @@ check "bookings counted per round and network (HMAC of the round and the shorten
 ab_fill round "$(ab_hm "round:$ABR|$CK")" 1000
 P=$(curl -s "$B/$ABS")
 R2=$(curl -s -w '\n%{http_code}' --data-urlencode "csrf=$(echo "$P" | csrf)" -d "name=Zweite+Buchung&privacy=1&slot_id=$(ab_free "$P")" "$B/$ABS")
-check "round used up from this network: 429 with a way out (another connection, the teacher), nothing booked, other rounds still open" '[ "$(echo "$R2" | tail -1)" = 429 ] && echo "$R2" | grep -q "mobile Daten statt WLAN" && echo "$R2" | grep -q "direkt an die Lehrkraft" && [ "$(DBQ "SELECT COUNT(*) FROM tp_bookings WHERE name = \"Zweite Buchung\"")" = 0 ] && [[ "$(book "$ABS2" "Andere Runde" "")" == 303* ]]'
+check "round used up from this network: 429 with a way out (another connection, the teacher), nothing booked, other rounds still open" '[ "$(echo "$R2" | tail -1)" = 429 ] && echo "$R2" | grep -q "mobile Daten statt WLAN" && echo "$R2" | grep -q "auch dann nicht, wenden Sie sich bitte direkt an die Lehrkraft" && [ "$(DBQ "SELECT COUNT(*) FROM tp_bookings WHERE name = \"Zweite Buchung\"")" = 0 ] && [[ "$(book "$ABS2" "Andere Runde" "")" == 303* ]]'
+# Counted before booking, given back when nothing was booked (parallel requests cannot all pass the check)
+ab_fill round "$(ab_hm "round:$ABR|$CK")" 999
+B999=$(DBQ "SELECT COALESCE(SUM(hits), 0) FROM tp_rate_limits WHERE bucket = 'booking'")
+P=$(curl -s "$B/$ABS"); TAKEN=$(DBQ "SELECT slot_id FROM tp_bookings WHERE name = 'Erste Buchung'")
+X=$(curl -s -o /dev/null -w '%{http_code}' --data-urlencode "csrf=$(echo "$P" | csrf)" -d "name=Zu+Spaet&privacy=1&slot_id=$TAKEN" "$B/$ABS")
+check "a booking that fails (slot taken) gives its count back (round and network)" '[ "$X" = 422 ] && [ "$(ab_hits round "$(ab_hm "round:$ABR|$CK")")" = 999 ] && [ "$(DBQ "SELECT COALESCE(SUM(hits), 0) FROM tp_rate_limits WHERE bucket = \"booking\"")" = "$B999" ]'
+R2=$(book "$ABS" "Letzte Buchung" "")
+check "… the last one below the limit is booked and counted" '[[ "$R2" == 303* ]] && [ "$(ab_hits round "$(ab_hm "round:$ABR|$CK")")" = 1000 ]'
 
-# A burst from one network: one warning to the teacher of the round and to the admins
+# A burst from one network: one warning to the teacher of the round and to the admins, queued (not sent in
+# the request of whoever booked), none below the threshold
 ABH=$($DC exec -T app php -r 'echo password_hash("Missbrauch-Lehrkraft-1", PASSWORD_DEFAULT);')
 DBQ "INSERT INTO tp_users (username, password_hash, role, display_name, email, is_active, created_at) VALUES ('missbrauch-$AB@example.org', '$ABH', 'teacher', 'Herr Missbrauch', 'missbrauch-$AB@example.org', 1, NOW())"
 ABU=$(DBQ "SELECT id FROM tp_users WHERE username = 'missbrauch-$AB@example.org'")
 ABW=$(ab_round "Missbrauch Warnung" "$ABU"); ABWS=$(slugof "$ABW")
-ab_fill burst "$(ab_hm "round:$ABW|$CK")" 1000
 WSUB='subject:"Auffällig viele Buchungen"'
+ABQ() { DBQ "SELECT COUNT(*) FROM tp_mail_outbox WHERE kind = 'burst_warning' AND ref = 'round:$ABW'"; }
+R3=$(book "$ABWS" "Echter Name" "")
+check "a booking below the burst threshold: no warning" '[[ "$R3" == 303* ]] && [ "$(ABQ)" = 0 ]'
+ab_fill burst "$(ab_hm "round:$ABW|$CK")" 1000
 N0=$(ab_mails "to:lehrer@example.org $WSUB")
-R3=$(book "$ABWS" "Fantasie Eins" "")
-R4=$(book "$ABWS" "Fantasie Zwei" "")
+R3=$(book "$ABWS" "Fantasie Eins" ""); R4=$(book "$ABWS" "Fantasie Zwei" "")
+WQ=$(ABQ); WM=$(ab_mails "to:missbrauch-$AB@example.org $WSUB")
+$DC exec -T app php /srv/app/bin/cron.php > /dev/null
 WT=$(ab_text "to:missbrauch-$AB@example.org $WSUB")
-check "burst of bookings from one network: the bookings go through, one warning each to the teacher and the admin (not one per booking)" '[[ "$R3" == 303* ]] && [[ "$R4" == 303* ]] && [ "$(ab_mails "to:missbrauch-$AB@example.org $WSUB")" = 1 ] && [ "$(ab_mails "to:lehrer@example.org $WSUB")" = "$((N0 + 1))" ]'
-check "… which names the round and the way to clean up and protect it, without names of parents" 'echo "$WT" | grep -qF "Hallo Herr Missbrauch," && echo "$WT" | grep -qF "in der Runde „Missbrauch Warnung“ (Herr Missbrauch)" && echo "$WT" | grep -qF "mehr als 1000 Buchungen" && echo "$WT" | grep -qF "/admin/round/$ABW" && echo "$WT" | grep -qF "„Mehrere Buchungen löschen …“" && echo "$WT" | grep -qF "„Nur mit Rundencode“" && ! echo "$WT" | grep -q "Fantasie Eins"'
+WEXP=$(( $(DBQ "SELECT COUNT(*) FROM tp_users WHERE role = 'admin' AND is_active = 1") + 1 ))
+check "burst of bookings from one network: the bookings go through, one warning each to the teacher and the admins (not one per booking), sent after the response" '[[ "$R3" == 303* ]] && [[ "$R4" == 303* ]] && [ "$WQ" = "$WEXP" ] && [ "$WM" = 0 ] && [ "$(ab_mails "to:missbrauch-$AB@example.org $WSUB")" = 1 ] && [ "$(ab_mails "to:lehrer@example.org $WSUB")" = "$((N0 + 1))" ]'
+check "… which names the round, the way to clean up and to protect it and the limit, without names of parents" 'echo "$WT" | grep -qF "Hallo Herr Missbrauch," && echo "$WT" | grep -qF "in der Runde „Missbrauch Warnung“ (Herr Missbrauch)" && echo "$WT" | grep -qF "mehr als 1000 Buchungen" && echo "$WT" | grep -qF "Sehen die Namen echt aus, ist nichts zu tun." && echo "$WT" | grep -qF "/admin/round/$ABW" && echo "$WT" | grep -qF "„Mehrere Buchungen löschen …“" && echo "$WT" | grep -qF "die Option „Nur mit Rundencode“ wählen" && echo "$WT" | grep -qF "höchstens 1000 Buchungen pro Stunde" && ! echo "$WT" | grep -q "Fantasie Eins"'
+DBQ "UPDATE tp_rounds SET code_required = 1 WHERE id = $ABW"
+WD=$($DC exec -T app php -r 'require "/srv/app/app/bootstrap.php"; var_export([App\Abuse::deliverWarning((int) $argv[1], "round:" . $argv[2]), App\Abuse::deliverWarning((int) $argv[1], "round:0")]);' "$ABU" "$ABW")
+check "… for a round with a round code: a new code instead (the old one got out); round gone: dropped" '[ "$WD" = "array (
+  0 => true,
+  1 => NULL,
+)" ] && ab_text "to:missbrauch-$AB@example.org $WSUB" | grep -qF "Legen Sie unter „Bearbeiten“ einen neuen Code an"'
 
-# Mails parents trigger, per address: booked without a mail above the limit; lower case, without +tag
+# Mails parents trigger, per address: booked without a mail above the limit (and the booking keeps no address);
+# lower case, without +tag
 ABM=$(ab_round "Missbrauch Mails"); ABMS=$(slugof "$ABM")
 ab_fill recipient "$(ab_hm "mail:viel-$AB@example.org")" 1000
 R5=$(book "$ABMS" "Viel Post" "Viel-$AB+eins@Example.org")
 R6=$(book "$ABMS" "Wenig Post" "wenig-$AB@example.org")
-check "address with too many mails: booked, no confirmation, the page says so; counted in lower case without +tag" '[[ "$R5" == 303*mail=limited* ]] && curl -s "${R5#* }" | grep -q "data-mail-limited" && [ "$(ab_mails "to:viel-$AB")" = 0 ] && [ "$(DBQ "SELECT COUNT(*) FROM tp_bookings WHERE name = \"Viel Post\"")" = 1 ]'
+check "address with too many mails: booked, no confirmation, the page says so (no mails later either), the booking keeps no address" '[[ "$R5" == 303*mail=limited* ]] && curl -s "${R5#* }" | grep -q "data-mail-limited>Es wurde keine Bestätigung per E-Mail gesendet, und zu diesem Termin kommen auch später keine E-Mails" && [ "$(ab_mails "to:viel-$AB")" = 0 ] && [ "$(DBQ "SELECT COALESCE(email, \"none\") FROM tp_bookings WHERE name = \"Viel Post\"")" = none ]'
 check "another address: confirmation sent and counted per hour and per day" '[[ "$R6" == 303*mail=1* ]] && [ "$(ab_mails "to:wenig-$AB@example.org")" = 1 ] && [ "$(ab_hits recipient "$(ab_hm "mail:wenig-$AB@example.org")")" = 1 ] && [ "$(ab_hits recipient_day "$(ab_hm "mail:wenig-$AB@example.org")")" = 1 ]'
+ab_fill recipient_day "$(ab_hm "mail:tag-$AB@example.org")" 1000
+check "… the limit per day the same" '[[ "$(book "$ABMS" "Tages Post" "tag-$AB@example.org")" == 303*mail=limited* ]] && [ "$(ab_mails "to:tag-$AB")" = 0 ]'
 TOK5=$(echo "$R5" | grep -o '/b/[A-Za-z0-9_-]\{43\}' | cut -c4-)
 ID5=$(DBQ "SELECT id FROM tp_bookings WHERE name = 'Viel Post'")
 X=$(curl -s -w '\n%{http_code}' --data-urlencode "csrf=$(curl -s "$B/b/$TOK5" | csrf)" -d "action=mail&email=viel-$AB@example.org" "$B/b/$TOK5")
-check "confirmation sent again from the appointment page to such an address: refused (429, the same notice), not counted for the booking" '[ "$(echo "$X" | tail -1)" = 429 ] && echo "$X" | grep -q "schon zu viele E-Mails" && [ "$(ab_hits confirm "$(ab_hm "booking:$ID5")")" = 0 ] && [ "$(ab_mails "to:viel-$AB")" = 0 ]'
-X=$(curl -s -w '\n%{http_code}' --data-urlencode "csrf=$(curl -s "$B/b/$TOK5" | csrf)" -d "action=cancel&confirm=1" "$B/b/$TOK5")
-check "cancelled by the parents: cancelled, without a mail to such an address" '[ "$(echo "$X" | tail -1)" = 200 ] && [ -z "$(DBQ "SELECT id FROM tp_bookings WHERE id = $ID5")" ] && [ "$(ab_mails "to:viel-$AB")" = 0 ]'
+check "confirmation sent again from the appointment page to such an address: refused (429), counted for the booking (probing costs its budget)" '[ "$(echo "$X" | tail -1)" = 429 ] && echo "$X" | grep -q "Es wurde keine E-Mail gesendet: An diese Adresse" && [ "$(ab_hits confirm "$(ab_hm "booking:$ID5")")" = 1 ] && [ "$(ab_mails "to:viel-$AB")" = 0 ]'
 
 # Rebookings per network (each sends a mail) besides the limit per booking, with their own messages
 TOK6=$(echo "$R6" | grep -o '/b/[A-Za-z0-9_-]\{43\}' | cut -c4-)
@@ -65,10 +86,13 @@ check "rebookings used up from this network: 429 with the way out, booking not m
 DBQ "DELETE FROM tp_rate_limits WHERE bucket = 'move_ip'"
 ab_fill move "$(ab_hm "booking:$ID6")" 1000
 X=$(ab_move)
-check "… the limit per booking says it is this appointment (no hint about the network)" '[ "$(echo "$X" | tail -1)" = 429 ] && echo "$X" | grep -q "schon sehr oft umgebucht" && ! echo "$X" | grep -q "mobile Daten"'
+check "… the limit per booking says it is this appointment (no hint about the network), the network limit not counted" '[ "$(echo "$X" | tail -1)" = 429 ] && echo "$X" | grep -q "schon sehr oft umgebucht" && ! echo "$X" | grep -q "mobile Daten" && [ "$(ab_hits move_ip "$CK")" = 0 ]'
 DBQ "DELETE FROM tp_rate_limits WHERE bucket = 'move' AND key_hash = '$(ab_hm "booking:$ID6")'"
-X=$(ab_move)
-check "… below both limits moved; every attempt counted per network" '[ "$(echo "$X" | tail -1)" = 303 ] && [ "$(ab_hits move_ip "$CK")" = 2 ]'
+ab_fill recipient "$(ab_hm "mail:wenig-$AB@example.org")" 1000
+X=$(curl -s -o /dev/null -w '%{http_code} %{redirect_url}' --data-urlencode "csrf=$(curl -s "$B/b/$TOK6" | csrf)" -d "action=move&slot_id=$(ab_free "$(curl -s "$B/b/$TOK6")" 2)" "$B/b/$TOK6")
+check "… below both limits moved and counted per network; the address got too many: no change notice, the address stays" '[[ "$X" == 303*mail=limited* ]] && curl -s "${X#* }" | grep -q "data-mail-limited>Es wurde keine E-Mail gesendet" && [ "$(ab_hits move_ip "$CK")" = 1 ] && [ "$(ab_mails "to:wenig-$AB@example.org")" = 1 ] && [ "$(DBQ "SELECT email FROM tp_bookings WHERE id = $ID6")" = "wenig-$AB@example.org" ]'
+X=$(curl -s -w '\n%{http_code}' --data-urlencode "csrf=$(curl -s "$B/b/$TOK6" | csrf)" -d "action=cancel&confirm=1" "$B/b/$TOK6")
+check "cancelled by the parents with such an address: cancelled, without a mail" '[ "$(echo "$X" | tail -1)" = 200 ] && [ -z "$(DBQ "SELECT id FROM tp_bookings WHERE id = $ID6")" ] && [ "$(ab_mails "to:wenig-$AB@example.org")" = 1 ]'
 
 # Deleting several bookings of a day at once: list of a time span with boxes, then the ticked ones
 ABD=$(ab_round "Missbrauch Aufraeumen"); ABDS=$(slugof "$ABD")
@@ -76,30 +100,36 @@ for i in 1 2 3 4; do book "$ABDS" "Squatter $i" "" > /dev/null; done
 book "$ABDS" "Echte Mutter" "echt-$AB@example.org" > /dev/null
 book "$ABDS" "Spaete Buchung" "" > /dev/null
 DAYD=$(DBQ "SELECT id FROM tp_round_days WHERE round_id = $ABD")
+curl -s -o /dev/null -b "$J" -d "csrf=$AT&name=Eigener+Eintrag&lang=de" "$B/admin/slot/$(DBQ "SELECT id FROM tp_slots WHERE day_id = $DAYD AND start_time = '10:30:00'")/book"
 ABN() { DBQ "SELECT COUNT(*) FROM tp_bookings b JOIN tp_slots s ON s.id = b.slot_id WHERE s.day_id = $DAYD"; }
+ABBOX() { grep -o 'name="booking\[\]" value="[0-9]*" id="booking-[0-9]*" aria-labelledby="time-[0-9]* name-[0-9]*"[^>]*>' | grep -c "$1"; }
 RP=$(curl -s -b "$J" "$B/admin/round/$ABD")
-check "round page: under each day with bookings a form for a time span (the day's times preset)" 'echo "$RP" | grep -qF "action=\"/admin/day/$DAYD/bookings\"" && echo "$RP" | grep -qF "Mehrere Buchungen löschen …" && echo "$RP" | grep -q "name=\"from\" required value=\"09:00\""'
+check "round page: under a day with bookings a form for a time span (the day's times preset)" 'echo "$RP" | grep -qF "action=\"/admin/day/$DAYD/bookings\"" && echo "$RP" | grep -qF "Mehrere Buchungen löschen …" && echo "$RP" | grep -q "name=\"from\" required value=\"09:00\""'
 LP=$(curl -s -b "$J" "$B/admin/day/$DAYD/bookings?from=9&to=10:15")
-check "list of the time span: the appointments within it, each ticked, the box for the parents unticked; nothing deleted yet" '[ "$(echo "$LP" | grep -c "name=\"booking\[\]\" value=\"[0-9]*\" id=\"booking-[0-9]*\" checked")" = 5 ] && echo "$LP" | grep -q "Squatter 4" && echo "$LP" | grep -q "Echte Mutter" && ! echo "$LP" | grep -q "Spaete Buchung" && echo "$LP" | grep -q "<input type=\"checkbox\" id=\"notify\" name=\"notify\" value=\"1\">" && [ "$(ABN)" = 6 ]'
+check "list of the time span: the appointments within it, each ticked and labelled with time and name, the box for the parents unticked; nothing deleted yet" '[ "$(echo "$LP" | ABBOX "checked")" = 5 ] && [ "$(echo "$LP" | ABBOX "")" = 5 ] && echo "$LP" | grep -q "id=\"name-[0-9]*\">Squatter 4<" && echo "$LP" | grep -q "Echte Mutter" && ! echo "$LP" | grep -q "Spaete Buchung" && echo "$LP" | grep -q "<input type=\"checkbox\" id=\"notify\" name=\"notify\" value=\"1\">" && [ "$(ABN)" = 7 ]'
+LW=$(curl -s -b "$J" "$B/admin/day/$DAYD/bookings")
+check "list without a span: the whole day; the teacher's own entry unticked" '[ "$(echo "$LW" | ABBOX "")" = 7 ] && [ "$(echo "$LW" | ABBOX "checked")" = 6 ] && echo "$LW" | grep -q "Eigener Eintrag"'
 LR=$(curl -s -w '\n%{http_code}' -b "$J" "$B/admin/day/$DAYD/bookings?from=10:00&to=09:00")
-check "list: without a span the whole day; invalid or reversed times → a message and the form, no list; no bookings in the span → said so" '[ "$(curl -s -b "$J" "$B/admin/day/$DAYD/bookings" | grep -c "name=\"booking\[\]\"")" = 6 ] && [ "$(echo "$LR" | tail -1)" = 200 ] && echo "$LR" | grep -q "Bitte gültige Start- und Endzeit angeben" && ! echo "$LR" | grep -q "name=\"booking\[\]\"" && echo "$LR" | grep -q "name=\"from\"" && curl -s -b "$J" "$B/admin/day/$DAYD/bookings?from=10:45&to=11:00" | grep -q "keine Buchungen"'
+check "list: invalid or reversed times → a message and the form, no list; no bookings in the span → said so" '[ "$(echo "$LR" | tail -1)" = 200 ] && echo "$LR" | grep -q "Bitte gültige Start- und Endzeit angeben" && ! echo "$LR" | grep -q "name=\"booking\[\]\"" && echo "$LR" | grep -q "name=\"from\"" && curl -s -b "$J" "$B/admin/day/$DAYD/bookings?from=10:45&to=11:00" | grep -q "keine Buchungen"'
 SQ=$(DBQ "SELECT GROUP_CONCAT(id) FROM tp_bookings WHERE name LIKE 'Squatter %'")
-OTHER=$(DBQ "SELECT id FROM tp_bookings WHERE name = 'Wenig Post'")
+OTHER=$(DBQ "SELECT id FROM tp_bookings WHERE name = 'Andere Runde'")
 DEL=(); for id in ${SQ//,/ } $OTHER; do DEL+=(-d "booking%5B%5D=$id"); done
 NC=$(DBQ "SELECT COUNT(*) FROM tp_mail_outbox WHERE kind = 'cancelled'")
 X=$(curl -s -o /dev/null -w '%{http_code} %{redirect_url}' -b "$J" -d "csrf=$AT" "${DEL[@]}" "$B/admin/day/$DAYD/bookings/delete")
-check "the ticked ones deleted (an id of another day ignored), back to the day, without cancellations" '[[ "$X" == "303 "*"/admin/round/$ABD"* ]] && [ "$(ABN)" = 2 ] && [ -n "$(DBQ "SELECT id FROM tp_bookings WHERE id = $OTHER")" ] && [ "$(DBQ "SELECT COUNT(*) FROM tp_mail_outbox WHERE kind = \"cancelled\"")" = "$NC" ] && curl -s -b "$J" "$B/admin/round/$ABD" | grep -q "4 Buchung(en) gelöscht – die Slots sind wieder frei."'
+RP=$(curl -s -b "$J" "$B/admin/round/$ABD")
+check "the ticked ones deleted (an id of another day ignored), back to the day, without cancellations and without a list of people to inform" '[[ "$X" == "303 "*"/admin/round/$ABD"* ]] && [ "$(ABN)" = 3 ] && [ -n "$(DBQ "SELECT id FROM tp_bookings WHERE id = $OTHER")" ] && [ "$(DBQ "SELECT COUNT(*) FROM tp_mail_outbox WHERE kind = \"cancelled\"")" = "$NC" ] && echo "$RP" | grep -q "4 Buchung(en) gelöscht – die Slots sind wieder frei." && echo "$RP" | grep -q "Es wurden keine Absagen per E-Mail versendet." && ! echo "$RP" | grep -q "Betroffen:"'
 check "… logged without names: round, day, number" '[ "$(DBQ "SELECT COUNT(*) FROM tp_audit_log WHERE message LIKE \"Runde „Missbrauch Aufraeumen“ (%): Tag $(date -d "$AB_DAY" +%d.%m.%Y): 4 Buchung(en) auf einmal gelöscht\"")" = 1 ]'
 ECHT=$(DBQ "SELECT id FROM tp_bookings WHERE name = 'Echte Mutter'")
 curl -s -o /dev/null -b "$J" -d "csrf=$AT&booking%5B%5D=$ECHT&notify=1" "$B/admin/day/$DAYD/bookings/delete"
-check "with the box for the parents: a cancellation queued for each one with an address (bulk mail), logged as such" '[ "$(ABN)" = 1 ] && [ "$(DBQ "SELECT COUNT(*) FROM tp_mail_outbox WHERE kind = \"cancelled\" AND payload LIKE \"%echt-$AB@example.org%\" AND priority = 2")" = 1 ] && [ "$(DBQ "SELECT COUNT(*) FROM tp_audit_log WHERE message LIKE \"%1 Buchung(en) auf einmal gelöscht, Eltern von 1 Buchung(en) per E-Mail informiert\"")" = 1 ]'
+check "with the box for the parents: a cancellation queued for each one with an address (bulk mail), logged as such" '[ "$(ABN)" = 2 ] && [ "$(DBQ "SELECT COUNT(*) FROM tp_mail_outbox WHERE kind = \"cancelled\" AND payload LIKE \"%echt-$AB@example.org%\" AND priority = 2")" = 1 ] && [ "$(DBQ "SELECT COUNT(*) FROM tp_audit_log WHERE message LIKE \"%1 Buchung(en) auf einmal gelöscht, Eltern von 1 Buchung(en) per E-Mail informiert\"")" = 1 ]'
 DBQ "DELETE FROM tp_mail_outbox WHERE kind = 'cancelled' AND payload LIKE '%echt-$AB@example.org%'"
-check "nothing ticked: nothing deleted, a message" 'curl -s -o /dev/null -b "$J" -d "csrf=$AT" "$B/admin/day/$DAYD/bookings/delete" && [ "$(ABN)" = 1 ] && curl -s -b "$J" "$B/admin/round/$ABD" | grep -q "Keine Buchung ausgewählt"'
+NA=$(DBQ "SELECT COUNT(*) FROM tp_audit_log")
+check "nothing ticked, values that are no id, or none of this day (any more): nothing deleted, a message, nothing logged" 'curl -s -o /dev/null -b "$J" -d "csrf=$AT&booking=x&booking%5B%5D=abc" "$B/admin/day/$DAYD/bookings/delete" && curl -s -b "$J" "$B/admin/round/$ABD" | grep -q "Keine Buchung ausgewählt" && curl -s -o /dev/null -b "$J" -d "csrf=$AT&booking%5B%5D=$ECHT&booking%5B%5D=$OTHER" "$B/admin/day/$DAYD/bookings/delete" && curl -s -b "$J" "$B/admin/round/$ABD" | grep -q "Keine der ausgewählten Buchungen gibt es noch" && [ "$(ABN)" = 2 ] && [ "$(DBQ "SELECT COUNT(*) FROM tp_audit_log")" = "$NA" ]'
 JA=$(mktemp)
 curl -s -o /dev/null -c "$JA" -b "$JA" -d "csrf=$(curl -s -c "$JA" -b "$JA" "$B/admin/login" | csrf)&username=missbrauch-$AB@example.org&password=Missbrauch-Lehrkraft-1" "$B/admin/login"
 TA=$(curl -s -b "$JA" "$B/admin" | csrf)
 DAYW=$(DBQ "SELECT id FROM tp_round_days WHERE round_id = $ABW")
-check "teachers: for their own rounds (the list), not for others' (404 for the list and the deletion)" '[ "$(curl -s -o /dev/null -w "%{http_code}" -b "$JA" "$B/admin/day/$DAYW/bookings?from=09:00&to=11:00")" = 200 ] && [ "$(curl -s -o /dev/null -w "%{http_code}" -b "$JA" "$B/admin/day/$DAYD/bookings?from=09:00&to=11:00")" = 404 ] && [ "$(curl -s -o /dev/null -w "%{http_code}" -b "$JA" -d "csrf=$TA&booking%5B%5D=$(DBQ "SELECT id FROM tp_bookings WHERE name = \"Spaete Buchung\"")" "$B/admin/day/$DAYD/bookings/delete")" = 404 ] && [ "$(ABN)" = 1 ]'
+check "teachers: for their own rounds (the list), not for others' (404 for the list and the deletion)" '[ "$(curl -s -o /dev/null -w "%{http_code}" -b "$JA" "$B/admin/day/$DAYW/bookings?from=09:00&to=11:00")" = 200 ] && [ "$(curl -s -o /dev/null -w "%{http_code}" -b "$JA" "$B/admin/day/$DAYD/bookings?from=09:00&to=11:00")" = 404 ] && [ "$(curl -s -o /dev/null -w "%{http_code}" -b "$JA" -d "csrf=$TA&booking%5B%5D=$(DBQ "SELECT id FROM tp_bookings WHERE name = \"Spaete Buchung\"")" "$B/admin/day/$DAYD/bookings/delete")" = 404 ] && [ "$(ABN)" = 2 ]'
 rm -f "$JA"
 
 # Mail volume: above mail_alert_hourly the operator gets an alert, at most one per hour (in-process, script on

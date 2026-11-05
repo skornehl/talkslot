@@ -155,9 +155,9 @@ Wi-Fi).
 | `move` | 10 per hour | rebookings by parents (each sends a mail), per booking, not per IP address |
 | `move_ip` | 30 per hour | rebookings by parents of all their bookings |
 | `round` | 15 per hour | successful bookings **of one round** (against one person taking all slots with made-up names); deployment variable `ROUND_BOOKING_LIMIT`. Keep it generous: during a parents' evening many parents book over the school Wi-Fi |
-| `burst` | 5 per 5 min | not a limit: more bookings of one round from one address within the window send a warning to the teacher of the round and all admins, at most one per round and hour |
-| `recipient` | 3 per hour | mails parents trigger themselves (confirmation, change notice, cancellation, the confirmation sent again from the appointment page), **per e-mail address** (in lower case, without a `+tag`), not per IP address. Above it the booking, change or cancellation still happens, only without a mail, and the appointment page says so. Mails from teachers, reminders and summaries do not count |
-| `recipient_day` | 10 per day | the same per address and day |
+| `burst` | 5 per 5 min | not a limit: more bookings of one round from one network within the window send a warning to the teacher of the round and all admins, at most one per round and hour |
+| `recipient` | 10 per hour | mails parents trigger themselves (confirmation, change notice, cancellation, the confirmation sent again from the appointment page), **per e-mail address** (in lower case, without a `+tag`, Gmail without dots), not per IP address. Above it the booking, change or cancellation still happens, only without a mail; after booking or moving the appointment page says so. A booking whose confirmation was held back keeps no address, so no reminder or change notice goes there later either. Mails from teachers, reminders and summaries do not count |
+| `recipient_day` | 20 per day | the same per address and day |
 | `confirm` | 2 per 24 hours | confirmation mails parents send to themselves from the appointment page, per booking, not per IP address (the window cannot be longer than 24 hours) |
 | `login` | 5 per 15 min | failed admin logins |
 | `login_user` | 20 per hour | failed logins **per account**, from devices that have not signed in to it before |

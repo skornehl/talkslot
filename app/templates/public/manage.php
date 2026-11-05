@@ -3,7 +3,8 @@
  * Confirmation and change page (reachable only via the secret link).
  * @var array $booking @var string $token @var bool $canChange @var bool $canMove @var array $days
  * @var string $csrf @var string $done @var bool $mailed @var bool $mailQueued @var bool $remember @var array $errors
- * @var bool $mailLimited no mail after booking or moving: the address got too many (App\Abuse)
+ * @var bool $mailLimited no mail after booking or moving: the address got too many (App\Abuse); after booking the
+ *   booking keeps no address then
  * @var string $open section whose form was sent with an error (move, cancel, mail): shown opened
  * @var string $mailTo address entered for the confirmation mail (only after an error)
  */
@@ -23,7 +24,7 @@ $doneText = ['booked' => 'manage.booked', 'changed' => 'manage.changed', 'sent' 
     <p><strong><?= e(t($doneText)) ?></strong></p>
     <?php if ($mailed): ?><p><?= e(t('manage.mail_sent')) ?></p><?php endif; ?>
     <?php if ($mailQueued): ?><p data-mail-queued><?= e(t('manage.mail_queued')) ?></p><?php endif; ?>
-    <?php if (!empty($mailLimited)): ?><p data-mail-limited><?= e(t('manage.mail_limited')) ?></p><?php endif; ?>
+    <?php if ($mailLimited): ?><p data-mail-limited><?= e(t($done === 'booked' ? 'manage.mail_limited_booked' : 'manage.mail_limited')) ?></p><?php endif; ?>
   </div>
 <?php endif; ?>
 

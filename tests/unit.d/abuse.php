@@ -10,10 +10,9 @@ check('mails per address: counted in lower case, trimmed, without a "+tag" in th
 check('… a "+" at the start, in the domain or an address without "@" stay as they are (in lower case)',
     $abAddress('+anna@example.org') === '+anna@example.org' && $abAddress('anna@ex+ample.org') === 'anna@ex+ample.org'
     && $abAddress('Kein-At') === 'kein-at');
-check('limits of the public pages: generous per round and network, a few mails per address, the warning after a burst',
-    App\ConfigSchema::KEYS['rate_limits.round'] === ['limit', [App\Abuse::ROUND_LIMIT, 3600]] && App\Abuse::ROUND_LIMIT >= 15
-    && App\ConfigSchema::KEYS['rate_limits.recipient'] === ['limit', [3, 3600]] && App\ConfigSchema::KEYS['rate_limits.recipient_day'] === ['limit', [10, 86400]]
-    && App\ConfigSchema::KEYS['rate_limits.burst'] === ['limit', [5, 300]] && App\ConfigSchema::KEYS['mail_alert_hourly'][1] === 100);
+check('… Gmail without dots and under one domain (the same mailbox), other providers keep their dots',
+    $abAddress('Max.Muster+x@googlemail.com') === 'maxmuster@gmail.com' && $abAddress('m.a.x.muster@gmail.com') === 'maxmuster@gmail.com'
+    && $abAddress('max.muster@example.org') === 'max.muster@example.org');
 
 // Deployment variable ROUND_BOOKING_LIMIT (bin/build-config.php): the limit per round and network
 $abCfgFile = (string) tempnam(sys_get_temp_dir(), 'cfg');

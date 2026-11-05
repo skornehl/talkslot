@@ -84,11 +84,11 @@ Pro Tag sehen Sie alle Termine mit den Buchungen:
   hinaus, wenn Sie hier nichts ändern, etwa nachdem der Tag ein anderes Datum oder einen anderen Ort
   bekommen hat; soll keine E-Mail hinausgehen, nehmen Sie das Häkchen heraus.
 - ***Löschen***: eine Buchung entfernen.
-- ***Mehrere Buchungen löschen …*** (unter jedem Tag mit Buchungen): einen Zeitraum angeben; die nächste
-  Seite listet die Buchungen der Termine darin, jede angehakt. Nehmen Sie bei den echten den Haken heraus
-  und löschen Sie den Rest auf einmal, z. B. wenn jemand die Termine mit Fantasienamen belegt hat. Das
-  Häkchen *Eltern per E-Mail informieren* ist dort nicht gesetzt: Absagen an ausgedachte Adressen helfen
-  niemandem.
+- ***Mehrere Buchungen löschen …*** (unter jedem Tag mit mindestens zwei Buchungen): einen Zeitraum
+  angeben; die nächste Seite listet die Buchungen der Termine darin, jede angehakt außer Ihren eigenen
+  Einträgen. Nehmen Sie bei den echten den Haken heraus und löschen Sie den Rest auf einmal, z. B. wenn
+  jemand die Termine mit Fantasienamen belegt hat. Das Häkchen *Eltern per E-Mail informieren* ist dort
+  nicht gesetzt: Absagen an ausgedachte Adressen helfen niemandem.
 - ***Eintragen***: selbst einen Termin eintragen, z. B. nach einem Telefonat. Die Bestätigungs-E-Mail mit
   Änderungslink ist angehakt, sobald Sie eine E-Mail-Adresse eintragen; nur so erfahren die Eltern von
   dem Eintrag.
@@ -107,10 +107,10 @@ passen, werden mit ⚠ markiert, damit Sie sie verschieben können.
 
 **Auffällig viele Buchungen:** Kommen innerhalb von 5 Minuten mehr als 5 Buchungen Ihrer Runde aus demselben
 Netzwerk, erhalten Sie und alle Admins eine E-Mail (*Auffällig viele Buchungen in der Runde …*), höchstens
-eine pro Stunde. Das können viele Eltern im Schul-WLAN bei einem Elternabend sein; prüfen Sie die Buchungen
-trotzdem. Aus einem Netzwerk nimmt eine Runde höchstens 15 Buchungen pro Stunde an (einstellbar durch den
-Admin, `rate_limits.round`); Eltern dort sehen den Hinweis, es über eine andere Verbindung zu versuchen oder
-sich an Sie zu wenden.
+eine pro Stunde (mit dem nächsten Lauf der E-Mail-Warteschlange). Das können viele Eltern im Schul-WLAN bei
+einem Elternabend sein; prüfen Sie die Buchungen trotzdem. Aus einem Netzwerk nimmt eine Runde höchstens 15
+Buchungen pro Stunde an (einstellbar in der Konfiguration, `rate_limits.round`); Eltern dort sehen den
+Hinweis, es über eine andere Verbindung zu versuchen oder sich an Sie zu wenden.
 
 **Die Eltern erfahren Ihre Änderungen per E-Mail.** Wenn Sie eine Buchung, einen Tag oder eine Runde
 löschen, einem Tag ein anderes Datum, eine andere Uhrzeit oder einen anderen Ort geben oder der Runde einen

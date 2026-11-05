@@ -1003,9 +1003,9 @@ final class AdminController
 
     /**
      * Deleting several bookings of a day at once (expert review P1-7, after slots were taken with made-up names):
-     * the bookings of the appointments within ?from–?to (without them the whole day), each with a box (ticked),
-     * so the teacher keeps the genuine ones. Nothing is deleted here (GET); dayBookingsDelete() deletes the
-     * ticked ones.
+     * the bookings of the appointments within ?from–?to (without them all of the day, conflicts outside its
+     * times too), each with a box, so the teacher keeps the genuine ones: ticked, except the teacher's own
+     * entries. Nothing is deleted here (GET); dayBookingsDelete() deletes the ticked ones.
      */
     private function dayBookingsForm(int $id): void
     {
@@ -1015,10 +1015,14 @@ final class AdminController
         $from = $span ? (string) $day['start_time'] : Time::normalizeTime(Http::query('from'));
         $to = $span ? (string) $day['end_time'] : Time::normalizeTime(Http::query('to'));
         $valid = $from && $to && $from < $to;
-        $bookings = $valid ? Db::all(
-            BookingService::DETAIL_SQL . ' WHERE d.id = ? AND s.start_time >= ? AND s.end_time <= ? ORDER BY s.start_time, b.id',
-            [$id, $from, $to]
-        ) : [];
+        $bookings = match (true) {
+            !$valid => [],
+            $span => Db::all(BookingService::DETAIL_SQL . ' WHERE d.id = ? ORDER BY s.start_time, b.id', [$id]),
+            default => Db::all(
+                BookingService::DETAIL_SQL . ' WHERE d.id = ? AND s.start_time >= ? AND s.end_time <= ? ORDER BY s.start_time, b.id',
+                [$id, $from, $to]
+            ),
+        };
         foreach ($bookings as &$b) {
             $b['mailable'] = ScheduleService::upcoming($b) && ScheduleService::mailable($b);
         }
@@ -1045,11 +1049,17 @@ final class AdminController
             Http::redirect('/admin/round/' . $day['round_id'], [], 'day-' . $id);
         }
         // The cancellations go to the outbox (bulk mails), nothing is sent while the page waits
-        [$deleted, $parents] = ScheduleService::deleteBookings($id, array_values($ids), Http::post('notify') === '1');
+        $notify = Http::post('notify') === '1';
+        [$deleted, $parents] = ScheduleService::deleteBookings($id, array_values($ids), $notify);
+        if ($deleted === 0) { // deleted meanwhile (another tab, the parents) or not of this day
+            $this->flash('error', __('Keine der ausgewählten Buchungen gibt es noch – es wurde nichts gelöscht.'));
+            Http::redirect('/admin/round/' . $day['round_id'], [], 'day-' . $id);
+        }
         $this->audit(fn () => __('Tag {date}: {count} Buchung(en) auf einmal gelöscht', ['date' => self::when($day['day_date']), 'count' => $deleted])
             . self::parentsAudit($parents), (int) $day['round_id']);
         $this->flash('success', __('{count} Buchung(en) gelöscht – die Slots sind wieder frei.', ['count' => $deleted]));
-        $this->parentsFlash($parents);
+        // Without the box nobody is told on purpose (made-up names): no list of people to inform
+        $notify ? $this->parentsFlash($parents) : $this->flash('info', __('Es wurden keine Absagen per E-Mail versendet.'));
         Http::redirect('/admin/round/' . $day['round_id'], [], 'day-' . $id);
     }
 

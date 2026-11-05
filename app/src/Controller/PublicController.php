@@ -274,22 +274,39 @@ final class PublicController
             return;
         }
 
+        // The booking counts before it is made, so that parallel requests cannot all pass the check above;
+        // given back if nothing was booked
+        $withinIp = RateLimiter::hit('booking', $limit, $window);
+        $withinRound = Abuse::reserve($round);
+        $giveBack = static function () use ($round): void {
+            RateLimiter::undo('booking');
+            Abuse::release($round);
+        };
+        if (!$withinIp || !$withinRound) {
+            $giveBack();
+            http_response_code(429);
+            $this->round($slug, [t('err.rate')], $old, true);
+            return;
+        }
         try {
             [$id, $token] = BookingService::book($round, (int) $old['slot_id'], self::cleanName($old['name']), $old['email'] ?: null, I18n::lang());
         } catch (BookingException $e) {
             // Hits of the multiple-booking limit count like bookings: slows down probing
             // whether a name already has an appointment
-            if (in_array($e->getMessage(), [BookingService::LIMIT_ROUND, BookingService::LIMIT_DAY], true)) {
-                RateLimiter::hit('booking', $limit, $window);
+            if (!in_array($e->getMessage(), [BookingService::LIMIT_ROUND, BookingService::LIMIT_DAY], true)) {
+                $giveBack();
             }
             $this->round($slug, [t('err.' . $e->getMessage())], ['slot_id' => ''] + $old, true);
             return;
         }
-        RateLimiter::hit('booking', $limit, $window);
         Abuse::booked($round);
 
-        // Sent right away; if that fails it is queued and the page says it will follow
+        // Sent right away; if that fails it is queued and the page says it will follow. Held back because the
+        // address got too many mails: the booking keeps no address, so no reminder or change notice goes there
         $mail = self::notify((array) BookingService::findById($id), 'booked', $token);
+        if ($mail === Abuse::LIMITED) {
+            BookingService::forgetEmail($id);
+        }
         Http::redirect('/b/' . $token, ['done' => 'booked', 'mail' => self::mailParam($mail), 'remember' => $old['remember'] ? self::rememberSignature($token) : null]);
     }
 
@@ -387,22 +404,25 @@ final class PublicController
                 return;
             }
             // Every rebooking sends an email: at most 10 per hour per booking and 30 per truncated IP (against
-            // mail floods through many bookings)
+            // mail floods through many bookings); the one per IP counts only rebookings made, so that other
+            // parents in the same network keep theirs
             [$moveLimit, $moveWindow] = RateLimiter::limits('move', 10, 3600);
             [$ipLimit, $ipWindow] = RateLimiter::limits('move_ip', 30, 3600);
-            if (!RateLimiter::hit('move_ip', $ipLimit, $ipWindow)) {
-                http_response_code(429);
-                $this->manage($token, [t('err.rate')]);
-                return;
-            }
             if (!RateLimiter::hit('move', $moveLimit, $moveWindow, 'booking:' . $booking['id'])) {
                 http_response_code(429);
                 $this->manage($token, [t('err.rate_move')]);
                 return;
             }
+            if (!RateLimiter::hit('move_ip', $ipLimit, $ipWindow)) {
+                RateLimiter::undo('move_ip');
+                http_response_code(429);
+                $this->manage($token, [t('err.rate')]);
+                return;
+            }
             try {
                 BookingService::move($booking, $slotId, false);
             } catch (BookingException $e) {
+                RateLimiter::undo('move_ip');
                 $this->manage($token, [t('err.' . $e->getMessage())]);
                 return;
             }
@@ -444,9 +464,9 @@ final class PublicController
             $this->manage($token, [t('manage.mail.limit')]);
             return;
         }
-        // Also limited per address (Abuse): many bookings must not send many mails to one stranger
+        // Also limited per address (Abuse): many bookings must not send many mails to one stranger. The attempt
+        // still counts for the booking, so that probing addresses costs its budget
         if (!Abuse::mailAllowed($email)) {
-            RateLimiter::undo('confirm', 'booking:' . $booking['id']);
             http_response_code(429);
             $this->manage($token, [t('manage.mail_limited')]);
             return;
