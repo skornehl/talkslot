@@ -95,6 +95,12 @@ A taken-over session or a misused admin account must not be able to take over ot
   deleted. Please do not filter these mails away: they are often the only way to notice misuse.
 - **Password links** are only sent by mail and never shown on screen. A reset by an admin tells the person
   that their previous password no longer works.
+- **Misuse of the public pages:** when more than 5 bookings of a round come from one network within 5
+  minutes, the teacher of the round and all admins get a mail (*Auffällig viele Buchungen in der Runde …*),
+  at most one per round and hour. Check the bookings; *Mehrere Buchungen löschen …* under each day deletes
+  those of a time span at once, and *Nur mit Rundencode* keeps it from happening again. The operator
+  (`alert_email`) gets an alert when parents trigger more than 100 mails in an hour; to one address at most 3
+  such mails per hour go out (see [Security]({{ '/guide/security/' | relative_url }}#built-in-protections)).
 - **Alle Sitzungen beenden** (end all sessions, at the bottom of *Benutzer*) signs out every account on
   every device except your current session, e.g. after a lost device or a suspected break-in. It needs
   your password, and all admins get a mail. What else to do in such a case is described under

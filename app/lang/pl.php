@@ -92,7 +92,8 @@ return [
     'err.deadline' => 'Tego terminu nie można już zarezerwować – upłynął termin rezerwacji.',
     'err.csrf' => 'Formularz wygasł. Prosimy spróbować ponownie.',
     'err.too_fast' => 'Zbyt szybko. Prosimy wysłać formularz ponownie za kilka sekund.',
-    'err.rate' => 'Zbyt wiele zapytań. Prosimy spróbować ponownie później.',
+    'err.rate' => 'Zbyt wiele zapytań z Państwa sieci (zdarza się to, gdy wiele osób korzysta z tej samej sieci Wi-Fi). Prosimy spróbować ponownie później lub przez inne połączenie, np. dane mobilne zamiast Wi-Fi. Jeśli to nie pomoże, prosimy skontaktować się bezpośrednio z nauczycielem.',
+    'err.rate_move' => 'Ten termin był w ciągu ostatniej godziny zmieniany już bardzo wiele razy. Prosimy spróbować ponownie później lub skontaktować się bezpośrednio z nauczycielem.',
     'err.spam' => 'Nie udało się zapisać rezerwacji.',
 
     'manage.title' => 'Twój termin',
@@ -102,6 +103,7 @@ return [
     'manage.link_label' => 'Twój osobisty link',
     'manage.mail_sent' => 'Potwierdzenie z tym linkiem zostało wysłane na Państwa adres e-mail.',
     'manage.mail_queued' => 'Nie udało się teraz wysłać potwierdzenia. Zostanie ono automatycznie wysłane na Państwa adres e-mail, gdy tylko będzie to znów możliwe. Mimo to prosimy zachować swój link.',
+    'manage.mail_limited' => 'Potwierdzenie nie zostało wysłane e-mailem: na ten adres wysłano w krótkim czasie zbyt wiele wiadomości. Prosimy zachować link w inny sposób, np. jako zakładkę.',
     'manage.copy' => 'Kopiuj link',
     'manage.copied' => 'Skopiowano ✓',
     'manage.copy.prompt' => 'Skopiuj link:',

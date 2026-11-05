@@ -60,5 +60,8 @@ in person, the teacher contacts you directly.
   date in your browser, so you see it when you open the round again. Each booking gets its own entry. Nothing
   is sent to the server. You can delete an entry any time (your appointment stays booked); after a
   cancellation and after the day of the appointment it disappears by itself.
+- **Too many requests from your network:** many parents on the same Wi-Fi (e.g. at school) can use up a
+  limit together. Try again later or over another connection, such as mobile data; otherwise contact the
+  teacher.
 - **Privacy:** the booking site sets no cookies and does not track you. Your details are deleted
   automatically the day after the appointment.

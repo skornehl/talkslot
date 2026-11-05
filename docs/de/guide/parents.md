@@ -66,5 +66,8 @@ oder wenn die Lehrkraft Sie lieber selbst informiert, meldet sie sich persönlic
   erneut öffnen. Jede Buchung bekommt einen eigenen Eintrag. Dabei wird nichts an den Server übertragen. Sie
   können einen Eintrag jederzeit löschen (Ihr Termin bleibt bestehen); nach einer Absage und nach dem Tag
   des Termins verschwindet er von selbst.
+- **Zu viele Anfragen aus Ihrem Netzwerk:** Viele Eltern im selben WLAN (z. B. in der Schule) können
+  gemeinsam ein Limit aufbrauchen. Versuchen Sie es später oder über eine andere Verbindung, etwa mobile
+  Daten; sonst wenden Sie sich an die Lehrkraft.
 - **Datenschutz:** Die Buchungsseite setzt keine Cookies und verfolgt Sie nicht. Ihre Angaben werden am Tag
   nach dem Termin automatisch gelöscht.
