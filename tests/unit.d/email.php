@@ -15,7 +15,8 @@ check('domains with umlauts and other scripts become punycode (RFC 3492), ASCII 
     . ($emWrong ? ' (wrong: ' . implode(', ', array_keys($emWrong)) . ')' : ''), !$emWrong);
 check('domains that cannot be converted: empty label, invalid UTF-8, a label longer than 63 characters once encoded',
     App\Email::domainToAscii('müller..de') === null && App\Email::domainToAscii("m\xFCller.de") === null
-    && App\Email::domainToAscii(str_repeat('ä', 60) . '.de') === null && App\Email::domainToAscii('.müller.de') === null);
+    && App\Email::domainToAscii(str_repeat('ä', 60) . '.de') === null && App\Email::domainToAscii('.müller.de') === null
+    && App\Email::domainToAscii(implode('', array_map(static fn (int $c): string => mb_chr($c, 'UTF-8'), range(0x4E00, 0x4E00 + 29))) . '.de') === null);
 // ü typed as u + combining diaeresis: the same domain as ü where intl's Normalizer exists, refused without it
 $emCombined = App\Email::domainToAscii("mu\u{0308}ller.de");
 check('a combining mark: NFC with the Normalizer (' . (class_exists(Normalizer::class) ? 'present' : 'missing') . '), otherwise refused',

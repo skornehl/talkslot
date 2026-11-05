@@ -8,7 +8,7 @@
 <?php else: ?>
   <p><?= __h('Legt die Datenbanktabellen und das erste Konto (Admin) an. Weitere Lehrkräfte legen Sie danach im Admin-Bereich unter „Benutzer“ an. Die Datenbank-Zugangsdaten stehen in {file}.', ['file' => '<code>config/config.php</code>']) ?></p>
   <?php require __DIR__ . '/admin/_errors.php'; ?>
-  <form method="post" class="card form-grid" novalidate>
+  <form method="post" class="card form-grid">
     <div class="field">
       <label for="install_key"><?= __h('Installationsschlüssel (aus config.php, {key})', ['key' => '<code>install_key</code>']) ?></label>
       <input type="password" id="install_key" name="install_key" required autocomplete="off">
@@ -31,7 +31,7 @@
     </div>
     <div class="field">
       <label for="notify_email"><?= e(__('E-Mail für Zusammenfassungen (optional)')) ?></label>
-      <input type="email" id="notify_email" name="notify_email" value="<?= e($old['notify_email'] ?? '') ?>">
+      <input type="text" inputmode="email" autocomplete="email" spellcheck="false" autocapitalize="none" id="notify_email" name="notify_email" value="<?= e($old['notify_email'] ?? '') ?>">
     </div>
     <?php $operatorType = $old['operator_type'] ?? null; require __DIR__ . '/admin/_operator_type.php'; ?>
     <p class="small"><?= e(__('Danach richten sich die Vorlagen für Impressum und Datenschutzerklärung. Sie können die Betriebsart später im Admin-Bereich unter „Texte“ ändern.')) ?></p>

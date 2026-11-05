@@ -88,7 +88,7 @@ prüfen.
 | Option | Standard | Bedeutung | Deployment |
 |---|---|---|---|
 | `mail.transport` | `mail` | `mail` (PHP `mail()`), `smtp` (mitgeliefertes PHPMailer) oder `none` | `MAIL_TRANSPORT` |
-| `mail.from_address` | – | Absenderadresse (Domain mit SPF/DKIM); zugleich der Envelope-Absender, Unzustellbarkeitsmeldungen landen also in diesem Postfach (siehe [Unzustellbare E-Mails](#bounces)); ein Postfach, das jemand liest, keine No-Reply-Adresse | `MAIL_FROM` |
+| `mail.from_address` | – | Absenderadresse (Domain mit SPF/DKIM); zugleich der Envelope-Absender, Unzustellbarkeitsmeldungen landen also in diesem Postfach (siehe [Unzustellbare E-Mails](#bounces)); verwenden Sie ein Postfach, das jemand liest, keine No-Reply-Adresse | `MAIL_FROM` |
 | `mail.from_name` | `TalkSlot` | Absendername; folgt beim Deployment `APP_NAME` | `MAIL_FROM_NAME` |
 | `mail.reply_to` | – | optional; E-Mails an Eltern nutzen die Antwortadresse der Lehrkraft (*Mein Profil*) oder sonst ihre E-Mail-Adresse als Antwortadresse | `MAIL_REPLY_TO` |
 | `mail.smtp.host` / `port` | – / `587` | | `SMTP_HOST` / `SMTP_PORT` |

@@ -84,7 +84,7 @@ Per day you see all slots with the bookings:
   change link; if the confirmation of an entry you added yourself never arrived, delete the entry and add
   it again with the right address instead, so that the parents get the link. A mail the mail server first
   accepted can still bounce later (e.g. a typo in the address); such an entry has no badge, and whoever reads
-  the sender mailbox of the installation tells you.
+  the sender mailbox of the installation should tell you.
 - **Addresses like `eltern@xn--mller-kva.de`** are addresses with umlauts in the domain (`eltern@müller.de`),
   written the way mail servers need them. They work as they are, also when you copy them.
 - **Block** (*Sperren*) a slot so nobody can book it, and release it again.
