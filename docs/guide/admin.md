@@ -34,6 +34,10 @@ permissions of the files it lists to `600` or pass the warning on to whoever run
 the database and mail passwords. If these may have got out in the meantime, see
 [Changing secrets]({{ '/guide/operations/' | relative_url }}#changing-secrets).
 
+If the dashboard says that the cron job has not completed a run since a given time, or that no completed run
+has been recorded yet, check the cron job on the server or the GitHub workflow *Cron*, or pass the warning on to whoever runs
+the server; see [cron monitoring]({{ '/guide/operations/' | relative_url }}#cron-monitoring).
+
 ## Accounts
 
 Under *Benutzer* (users) → *+ Neuer Benutzer* (new user) enter **name and e-mail address** and choose the

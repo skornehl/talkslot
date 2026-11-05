@@ -117,7 +117,9 @@ ersetzen müssen; bis dahin
 - [ ] HTTPS aktiv, `http://` leitet auf `https://` um
 - [ ] `install.php` liefert 404; `config/config.php` ist für andere nicht lesbar
 - [ ] `debug` ist `false`, `alert_email` ist gesetzt
-- [ ] Cronjob oder Web-Cron läuft (`bin/cron.php -v` gibt die Anzahlen aus)
+- [ ] Cronjob oder Web-Cron läuft (`bin/cron.php -v` gibt die Anzahlen aus); bleibt er stehen, sehen Admins
+      eine Warnung in der Übersicht, und Sie erhalten eine Warnmeldung
+      ([Überwachung des Cronjobs]({{ '/de/guide/operations/' | relative_url }}#cron-monitoring))
 - [ ] Testbuchung mit E-Mail-Adresse: Die E-Mail kommt an und wird nicht als Spam markiert
 - [ ] Admin-Angaben, Impressum und Datenschutzerklärung vollständig in allen angebotenen Sprachen (keine
       Platzhalter in eckigen Klammern mehr; das Dashboard zeigt keinen Hinweis)

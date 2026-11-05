@@ -36,6 +36,11 @@ Rechte der genannten Dateien auf `600` oder geben Sie die Warnung an die technis
 enthalten die Passwörter für Datenbank und Mailversand. Könnten diese inzwischen in falsche Hände gelangt
 sein, siehe [Secrets austauschen]({{ '/de/guide/operations/' | relative_url }}#changing-secrets).
 
+Meldet die Übersicht, dass der Cronjob seit einem bestimmten Zeitpunkt nicht mehr vollständig gelaufen ist
+oder noch kein vollständiger Lauf verzeichnet ist, prüfen Sie den Cronjob auf dem Server bzw. den GitHub-Workflow *Cron* oder geben
+Sie die Warnung an die technische Betreuung weiter; siehe
+[Überwachung des Cronjobs]({{ '/de/guide/operations/' | relative_url }}#cron-monitoring).
+
 ## Konten
 
 Unter *Benutzer* → *+ Neuer Benutzer* geben Sie **Name und E-Mail-Adresse** ein und wählen die **Rolle**:

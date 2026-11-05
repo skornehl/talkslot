@@ -222,7 +222,9 @@ updates:
 ```
 
 Variables and secrets live in your repository (or its `production` environment). For the hourly cron
-job copy [`cron.yml`](https://github.com/skornehl/talkslot/blob/main/.github/workflows/cron.yml).
+job copy [`cron.yml`](https://github.com/skornehl/talkslot/blob/main/.github/workflows/cron.yml). If the
+repository is public, GitHub disables the schedule after 60 days without activity in it; TalkSlot then
+warns you (see [cron monitoring]({{ '/guide/operations/' | relative_url }}#github-60-days)).
 
 ## Releases
 

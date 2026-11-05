@@ -230,6 +230,8 @@ final class AdminController
             'showOwner' => $all,
             // config.php readable for every user of the server (only admins can have that fixed)
             'configExposed' => Auth::isAdmin() ? \App\Config::exposedFiles() : [],
+            // Cron job late or never run (only admins can have it fixed)
+            'cron' => Auth::isAdmin() ? \App\CronMonitor::status() : null,
             'profileHints' => $this->profileHints(),
             'operatorMissing' => !Operator::ready(),
             'typeMissing' => !Auth::isAdmin() && Operator::ready() && Operator::type() === null,
