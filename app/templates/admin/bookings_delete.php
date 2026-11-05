@@ -1,7 +1,7 @@
 <?php
 /**
  * Deleting several bookings of a day at once (AdminController::dayBookingsForm()): the bookings of the appointments
- * within $from–$to, each with a box, ticked. @var array $round @var array $day @var string $from @var string $to
+ * within $from–$to, each with a box, ticked except the teacher's own entries. @var array $round @var array $day @var string $from @var string $to
  * (as entered if invalid) @var list<string> $errors @var list<array> $bookings BookingService::DETAIL_SQL rows plus
  * 'mailable' @var int $mailable of them, how many parents could get a cancellation
  */

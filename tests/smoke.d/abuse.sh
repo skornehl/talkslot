@@ -34,6 +34,13 @@ X=$(curl -s -o /dev/null -w '%{http_code}' --data-urlencode "csrf=$(echo "$P" | 
 check "a booking that fails (slot taken) gives its count back (round and network)" '[ "$X" = 422 ] && [ "$(ab_hits round "$(ab_hm "round:$ABR|$CK")")" = 999 ] && [ "$(DBQ "SELECT COALESCE(SUM(hits), 0) FROM tp_rate_limits WHERE bucket = \"booking\"")" = "$B999" ]'
 R2=$(book "$ABS" "Letzte Buchung" "")
 check "… the last one below the limit is booked and counted" '[[ "$R2" == 303* ]] && [ "$(ab_hits round "$(ab_hm "round:$ABR|$CK")")" = 1000 ]'
+# Parallel bookings at the limit (they all pass the early check): only one gets through
+ABP=$(ab_round "Missbrauch Parallel"); ABPS=$(slugof "$ABP"); ABPF=$(mktemp)
+ab_fill round "$(ab_hm "round:$ABP|$CK")" 999
+P=$(curl -s "$B/$ABPS"); PC=$(echo "$P" | csrf)
+for n in 1 2 3 4 5 6 7 8; do curl -s -o /dev/null -w '%{http_code}\n' --data-urlencode "csrf=$PC" -d "name=Parallel+$n&privacy=1&slot_id=$(ab_free "$P" "$n")" "$B/$ABPS" >> "$ABPF" & done; wait
+check "parallel bookings one below the limit: exactly one gets through, the others get 429 and give their count back ($(sort "$ABPF" | uniq -c | tr -s ' \n' ' '))" '[ "$(grep -c "^303$" "$ABPF")" = 1 ] && [ "$(grep -c "^429$" "$ABPF")" = 7 ] && [ "$(DBQ "SELECT COUNT(*) FROM tp_bookings b JOIN tp_slots s ON s.id = b.slot_id JOIN tp_round_days d ON d.id = s.day_id WHERE d.round_id = $ABP")" = 1 ] && [ "$(ab_hits round "$(ab_hm "round:$ABP|$CK")")" = 1000 ]'
+rm -f "$ABPF"
 
 # A burst from one network: one warning to the teacher of the round and to the admins, queued (not sent in
 # the request of whoever booked), none below the threshold
@@ -55,11 +62,15 @@ WEXP=$(( $(DBQ "SELECT COUNT(*) FROM tp_users WHERE role = 'admin' AND is_active
 check "burst of bookings from one network: the bookings go through, one warning each to the teacher and the admins (not one per booking), sent after the response" '[[ "$R3" == 303* ]] && [[ "$R4" == 303* ]] && [ "$WQ" = "$WEXP" ] && [ "$WM" = 0 ] && [ "$(ab_mails "to:missbrauch-$AB@example.org $WSUB")" = 1 ] && [ "$(ab_mails "to:lehrer@example.org $WSUB")" = "$((N0 + 1))" ]'
 check "… which names the round, the way to clean up and to protect it and the limit, without names of parents" 'echo "$WT" | grep -qF "Hallo Herr Missbrauch," && echo "$WT" | grep -qF "in der Runde „Missbrauch Warnung“ (Herr Missbrauch)" && echo "$WT" | grep -qF "mehr als 1000 Buchungen" && echo "$WT" | grep -qF "Sehen die Namen echt aus, ist nichts zu tun." && echo "$WT" | grep -qF "/admin/round/$ABW" && echo "$WT" | grep -qF "„Mehrere Buchungen löschen …“" && echo "$WT" | grep -qF "die Option „Nur mit Rundencode“ wählen" && echo "$WT" | grep -qF "höchstens 1000 Buchungen pro Stunde" && ! echo "$WT" | grep -q "Fantasie Eins"'
 DBQ "UPDATE tp_rounds SET code_required = 1 WHERE id = $ABW"
-WD=$($DC exec -T app php -r 'require "/srv/app/app/bootstrap.php"; var_export([App\Abuse::deliverWarning((int) $argv[1], "round:" . $argv[2]), App\Abuse::deliverWarning((int) $argv[1], "round:0")]);' "$ABU" "$ABW")
-check "… for a round with a round code: a new code instead (the old one got out); round gone: dropped" '[ "$WD" = "array (
-  0 => true,
-  1 => NULL,
-)" ] && ab_text "to:missbrauch-$AB@example.org $WSUB" | grep -qF "Legen Sie unter „Bearbeiten“ einen neuen Code an"'
+# In-process (script on stdin for the coverage run): the warning for a round with a code, a round gone, an account gone
+WD=$($DC exec -T app php -- "$ABU" "$ABW" <<'PHP'
+<?php
+require '/srv/app/app/bootstrap.php';
+[, $user, $round] = $argv;
+echo json_encode([App\Abuse::deliverWarning((int) $user, "round:$round"), App\Abuse::deliverWarning((int) $user, 'round:0'), App\Abuse::deliverWarning(0, "round:$round")]);
+PHP
+)
+check "… for a round with a round code: a new code instead (the old one got out); round or account gone: dropped ($WD)" '[ "$WD" = "[true,null,null]" ] && ab_text "to:missbrauch-$AB@example.org $WSUB" | grep -qF "Legen Sie unter „Bearbeiten“ einen neuen Code an"'
 
 # Mails parents trigger, per address: booked without a mail above the limit (and the booking keeps no address);
 # lower case, without +tag
@@ -155,4 +166,4 @@ PHP
 )
 check "mail volume above mail_alert_hourly: one alert to the operator (not one per mail), without addresses; 0 = off ($VA)" '[ "$VA" = "1|1|betrieb@example.org|[TalkSlot] Ungewöhnlich viele E-Mails an Eltern|none" ]'
 
-DBQ "DELETE FROM tp_rounds WHERE id IN ($ABR, $ABR2, $ABM, $ABD); DELETE FROM tp_users WHERE id = $ABU; DELETE FROM tp_rate_limits WHERE bucket IN ('round', 'burst', 'burst_notice', 'recipient', 'recipient_day', 'move', 'move_ip', 'mail_volume')"
+DBQ "DELETE FROM tp_rounds WHERE id IN ($ABR, $ABR2, $ABP, $ABM, $ABD); DELETE FROM tp_users WHERE id = $ABU; DELETE FROM tp_rate_limits WHERE bucket IN ('round', 'burst', 'burst_notice', 'recipient', 'recipient_day', 'move', 'move_ip', 'mail_volume')"
