@@ -99,7 +99,7 @@ The check runs on page views: a site nobody visits cannot report anything, but a
 well, sends the alert mail when it is due. Teachers do not see the warning; only admins can have it fixed.
 
 A cron job that is repaired and stops again later counts as a new outage: it is mailed as soon as
-`cron_alert_hours` have passed, even if the last mail is less than a day old.
+`cron_alert_hours` hours have passed, even if the last mail is less than a day old.
 
 **False alarm after a rollback or a restored backup:** a version from before the cron monitoring does not
 record its runs, and a database backup holds the `last_cron` of its time. After a [rollback]({{ '/guide/deployment/' | relative_url }}#rollback)

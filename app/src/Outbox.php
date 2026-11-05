@@ -216,11 +216,12 @@ final class Outbox
 
     /**
      * Hours after which waiting mails are shown to admins: LATE_HOURS, or cron_alert_hours if longer (the
-     * cron job sends them; with the GitHub workflow it often runs only every few hours, see CronMonitor).
+     * cron job sends them; with the GitHub workflow it often runs only every few hours, see CronMonitor), but
+     * always before mails are given up (MAX_AGE_HOURS), so that the notice can appear at all.
      */
     public static function lateHours(): int
     {
-        return max(self::LATE_HOURS, CronMonitor::alertHours());
+        return min(max(self::LATE_HOURS, CronMonitor::alertHours()), self::MAX_AGE_HOURS - 1);
     }
 
     /**

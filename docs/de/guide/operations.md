@@ -107,7 +107,7 @@ auch durch Eltern, verschickt die Warnmeldung, wenn sie fällig ist. Lehrkräfte
 beheben lassen können sie nur Admins.
 
 Fällt ein reparierter Cronjob später erneut aus, ist das ein neuer Ausfall: Er wird gemeldet, sobald
-`cron_alert_hours` um sind, auch wenn die letzte Meldung noch keinen Tag zurückliegt.
+`cron_alert_hours` Stunden um sind, auch wenn die letzte Meldung noch keinen Tag zurückliegt.
 
 **Fehlalarm nach einem Rollback oder einem eingespielten Backup:** Eine Version von vor der Überwachung
 speichert ihre Läufe nicht, und ein Datenbank-Backup enthält das `last_cron` seiner Zeit. Nach einem
