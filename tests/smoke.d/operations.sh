@@ -33,8 +33,11 @@ DBQ "UPDATE tp_rounds SET slug = 'cron' WHERE id = $RID"
 OP_RC=$(curl -s -w '\n%{http_code}' "$B/cron")
 OP_CW=$(op_code -d '' -H "X-Cron-Token: falsch" "$B/cron")
 DBQ "UPDATE tp_rounds SET slug = '$SLUG' WHERE id = $RID"
+# op_round <response with the status in the last line> <slug>: the page of that round (here its code prompt)
+op_round() { [ "$(printf '%s\n' "$1" | tail -1)" = 200 ] && printf '%s\n' "$1" | grep -q "action=\"[^\"]*/$2\""; }
 check "a round at /health or /cron from before keeps its page; with the key header the address is the health check or the web cron" \
-  'for p in "$OP_RP" "$OP_RC"; do [ "$(echo "$p" | tail -1)" = 200 ] && echo "$p" | grep -q "Elternsprechtag Größe Übung" || exit 1; done && op_is "$OP_H" 200 ok && [ "$OP_CW" = 404 ]'
+  'op_round "$OP_RP" health && op_round "$OP_RC" cron && op_is "$OP_H" 200 ok && [ "$OP_CW" = 404 ]' \
+  || echo "    $(printf '%s\n' "$OP_RP" | tail -1) $(printf '%s\n' "$OP_RC" | tail -1) $OP_CW"
 
 # A migration that fails is reported by the health check (503 + alert mail) instead of being swallowed, while
 # pages are still served (that is why the deployment cannot rely on them); here the settings table is missing.
