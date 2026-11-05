@@ -163,19 +163,29 @@ of these sections which lines the template removed (−) and added (+). You can 
 
 - **take the sections over:** *Abschnitte aus der Vorlage übernehmen* (*Take over the sections from the
   template*) puts your text into the form with these sections as worded in the template. Your details in
-  lines the template did not change (e.g. the supervisory authority) are kept, your own changes in these
-  sections are not. Check the form, fill in new `[PLACEHOLDERS]` and save;
+  lines the template did not change (e.g. the supervisory authority) are kept, and so is what stands in place
+  of `[[VERANTWORTLICHE]]`; your own changes in these sections are not. A section the template has dropped is
+  removed, and the notice names it as removed. The differences stay visible below for comparison. Check the
+  form, fill in new `[PLACEHOLDERS]` and save;
 - **adjust the text yourself** and tick *Abgleich erledigt* (*Reconciled*) when saving; or
 - **load the whole template** with *Vorlage laden* and fill it in again.
 
 Saving after taking over, loading or ticking the box makes the current template the text's version marker, the
-note disappears, and the log records who reconciled the text. A text that already has the wording of the
-current template (only its placeholders filled in) needs nothing: TalkSlot records the marker itself. For a text
+note disappears, and the log records who reconciled the text. If the template changed while the form was open
+(e.g. by an update), TalkSlot saves the text but does not record the reconciliation, and tells you so. A text
+that already has everything the template changed since its version marker (or, without a marker, the wording
+of the current template with only its placeholders filled in) needs nothing: TalkSlot records the marker
+itself. For a text
 edited before TalkSlot kept version markers, or one from the template of the other operator type, the template
 it started from is unknown: the note then lists the sections in which it differs from the current template
 (*weicht von der Vorlage ab*, *differs from the template*; filled-in placeholders do not count), with the lines
-only in your text (−) and only in the template (+). Confirm the reconciliation once, and from then on you only
-see what later templates change.
+only in your text (−) and only in the template (+). This includes sections only your text has: without a
+marker it is not known whether they are your own or from an earlier template, so taking over leaves them as
+they are (the notice names them as left unchanged); check yourself whether they still apply. Confirm the
+reconciliation once, and from then on you only see what later templates change.
+
+If a section in your text has another heading than in the template (e.g. "# 5. How long we keep data"), taking
+over adds the template's section as well; delete the old one before saving.
 
 If no operator type is chosen (installations from before it, with edited texts), the dashboard shows
 *Bitte Betriebsart wählen* (*Please choose the operator type*), and no round can be activated until an

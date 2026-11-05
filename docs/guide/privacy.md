@@ -232,8 +232,17 @@ admin has deliberately reworded are not flagged unless the template changes them
   have the wording of the current template (only the placeholders filled in). Otherwise the hint lists the
   sections in which they differ from the current template; once an admin has reconciled the text and
   confirmed it, only later template changes are shown.
+- With a marker, a section only counts as taken over once the text no longer has any line the template has
+  dropped since – also next to a placeholder or in place of a new placeholder. Without a marker it cannot be
+  told whether such a line fills in a placeholder or still has the wording of an earlier template, so confirm
+  the reconciliation once.
 - Reconciling is logged with the admin's name (accountability, Art. 5(2) GDPR), so you can show when a
-  correction of the template was taken over.
+  correction of the template was taken over. The log is deleted after `audit_log_days` (90 days by default);
+  if you need to show the reconciliation for longer, keep a copy of the entry before, e.g. together with the
+  saved version of the text.
+- Templates exist in German and English. Privacy policies in the other languages (Polish, Russian, Turkish,
+  Ukrainian) are not compared with any template: when the notice reports a change to the German or English
+  version, please update the translations yourself.
 
 The hints on the operator type above stay: they explain why a wording does not fit, whatever the marker says.
 

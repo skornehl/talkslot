@@ -252,8 +252,17 @@ Abschnitte, die ein Admin bewusst umformuliert hat, werden nur gemeldet, wenn di
   Update einen, wenn sie den Wortlaut der aktuellen Vorlage haben (nur die Platzhalter ausgefüllt). Sonst nennt
   der Hinweis die Abschnitte, in denen sie von der aktuellen Vorlage abweichen; hat ein Admin den Text
   abgeglichen und das bestätigt, erscheinen nur noch spätere Änderungen der Vorlage.
+- Mit Vorlagenstand gilt ein Abschnitt erst als übernommen, wenn keine Zeile mehr im Text steht, die die
+  Vorlage seitdem gestrichen hat – auch nicht neben einem Platzhalter oder an Stelle eines neuen Platzhalters.
+  Ohne Vorlagenstand lässt sich nicht unterscheiden, ob eine solche Zeile einen Platzhalter ausfüllt oder noch
+  den Wortlaut einer früheren Vorlage hat; bestätigen Sie den Abgleich deshalb einmal.
 - Der Abgleich steht mit dem Namen des Admins im Protokoll (Rechenschaftspflicht, Art. 5 Abs. 2 DSGVO); so
-  lässt sich zeigen, wann eine Korrektur der Vorlage übernommen wurde.
+  lässt sich zeigen, wann eine Korrektur der Vorlage übernommen wurde. Das Protokoll wird nach
+  `audit_log_days` gelöscht (Standard 90 Tage); wer den Abgleich länger belegen muss, sichert den Eintrag
+  vorher, z. B. zusammen mit der gespeicherten Fassung des Textes.
+- Vorlagen gibt es auf Deutsch und Englisch. Datenschutzerklärungen in den anderen Sprachen (Polnisch,
+  Russisch, Türkisch, Ukrainisch) vergleicht TalkSlot mit keiner Vorlage: Meldet der Hinweis eine Änderung der
+  deutschen oder englischen Fassung, gleichen Sie die Übersetzungen bitte selbst ab.
 
 Die Hinweise zur Betriebsart oben bleiben: Sie erklären, warum ein Wortlaut nicht passt, unabhängig vom
 Vorlagenstand.

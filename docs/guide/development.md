@@ -73,7 +73,11 @@ and checks that PHP 7.4 and 8.2 get the message of `App\Platform` instead of a s
   you the new hashes. Edited texts need no new hint in `AdminController::legalHints()`: their version
   markers show admins the changed sections by themselves (`LegalTexts::outdated()`). Keep sections under
   first-level headings (`# 5. …`) and put each paragraph or list item on one line, so the comparison works
-  per section and line. Whenever what TalkSlot processes changes (data, recipients, retention periods,
+  per section and line; a unit test checks that the four privacy templates have the same numbered sections.
+  Avoid renaming headings: a section is known by its heading without the number, a renamed one counts as a
+  new section, and taking it over does not carry the filled-in details of the old one along. A placeholder
+  inside a line stands for text up to the end of that line; only one alone on its line (like
+  `[[VERANTWORTLICHE]]`) may stand for several lines. Whenever what TalkSlot processes changes (data, recipients, retention periods,
   browser storage, kinds of mail), update the privacy templates of both operator types in German and
   English in the same change.
 - **Deployment variables:** every variable read by `bin/build-config.php` must be passed in the build step

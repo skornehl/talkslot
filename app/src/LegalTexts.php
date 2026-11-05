@@ -65,15 +65,28 @@ final class LegalTexts
 
     /**
      * Whether a text is a template with its placeholders filled in: each [PLACEHOLDER] of $template replaced by
-     * any text (also several lines, or nothing together with the blank in front of it), the rest the same.
+     * any text up to the end of its line (or nothing together with the blank in front of it), the rest the same.
+     * A placeholder alone on its line ([[VERANTWORTLICHE]]) may stand for several lines or none, unless the
+     * text still has it: then it stands for nothing else (so that it cannot take in lines a newer template
+     * no longer has).
      */
     public static function fills(string $text, string $template): bool
     {
         $parts = preg_split(self::PLACEHOLDER, $template) ?: [$template];
+        preg_match_all(self::PLACEHOLDER, $template, $found);
         $last = count($parts) - 1;
         $re = '';
         foreach ($parts as $i => $part) {
-            $re .= $i < $last ? preg_quote(rtrim($part), '/') . '\s*.*?' : preg_quote($part, '/');
+            if ($i === $last) {
+                $re .= preg_quote($part, '/');
+                break;
+            }
+            $alone = preg_match('/(?:^|\n)\h*$/', $part) === 1 && preg_match('/^\h*(?:\n|$)/', $parts[$i + 1]) === 1;
+            $re .= match (true) {
+                $alone && str_contains($text, $found[0][$i]) => preg_quote($part . $found[0][$i], '/'),
+                $alone => preg_quote(rtrim($part), '/') . '\s*.*?',
+                default => preg_quote(rtrim($part, " \t"), '/') . '\h*[^\n]*?',
+            };
         }
         return $text === $template || ($last > 0 && preg_match('/^' . $re . '$/su', $text) === 1);
     }
@@ -120,16 +133,14 @@ final class LegalTexts
 
     /**
      * Lines removed ("-") and added ("+") from $old to $new, in order (longest common subsequence). With $fill
-     * a line of $old is the same as a line of $new it fills in (fills()), unless that line is nothing but a
-     * placeholder: it would be filled in by any line.
+     * a line of $old is the same as a line of $new it fills in (same()).
      * @param list<string> $old
      * @param list<string> $new
      * @return list<array{0: string, 1: string}> [" ", the line of $old] for a line in both, else ["-"|"+", line]
      */
     public static function diff(array $old, array $new, bool $fill = false): array
     {
-        $same = static fn (string $a, string $b): bool => $a === $b
-            || ($fill && trim((string) preg_replace(self::PLACEHOLDER, '', $b)) !== '' && self::fills($a, $b));
+        $same = static fn (string $a, string $b): bool => self::same($a, $b, $fill);
         $n = count($old);
         $m = count($new);
         $lcs = array_fill(0, $n + 1, array_fill(0, $m + 1, 0));
@@ -153,13 +164,49 @@ final class LegalTexts
     }
 
     /**
+     * Whether a line of a text is a line of a template: the same, or with $fill one that fills it in
+     * (fills()), unless the template's line is nothing but a placeholder: it would be filled in by any line.
+     */
+    private static function same(string $line, string $template, bool $fill): bool
+    {
+        return $line === $template || ($fill && self::literal($template) > 0 && self::fills($line, $template));
+    }
+
+    /** Length of a template's line without its placeholders: how much a line that fills it in has to match. */
+    private static function literal(string $line): int
+    {
+        return strlen(trim((string) preg_replace(self::PLACEHOLDER, '', $line)));
+    }
+
+    /**
+     * Lines of a text's section that are still the wording of an earlier template: lines the template removed
+     * between $old (the version marker's section) and $lines (the current one) that the text has, also with
+     * their placeholders filled in – unless the text's line is in the current template too, or fills in a line
+     * of it that says at least as much (a placeholder that only got a new name).
+     * @param list<string> $have
+     * @param list<string> $old
+     * @param list<string> $lines
+     * @return list<string>
+     */
+    private static function stale(array $have, array $old, array $lines): array
+    {
+        $removed = array_diff(array_column(array_filter(self::diff($old, $lines), static fn (array $d): bool => $d[0] === '-'), 1), $lines);
+        $match = static fn (string $line, array $templates): int => max([-1, ...array_map(
+            static fn (string $t): int => self::same($line, $t, true) ? self::literal($t) : -1, $templates)]);
+        return $removed === [] ? [] : array_values(array_filter($have, static fn (string $line): bool => !in_array($line, $lines, true)
+            && $match($line, $removed) > $match($line, $lines)));
+    }
+
+    /**
      * What a stored text is missing from the current template, per section. With its version marker ($base,
      * see base()): the sections the template changed since, with the lines removed from and added to the
      * template; own changes to sections the template did not change are the operator's business. Without one:
      * the sections in which the text differs from the template, with the lines only in the text ("-") and
-     * only in the template ("+"). Sections whose text already has the wording of the current template
-     * (placeholders filled in) are left out either way.
-     * @return list<array{key: string, heading: ?string, diff: list<array{0: string, 1: string}>}> heading null = introduction
+     * only in the template ("+"), also sections only the text has. Left out either way: sections whose text
+     * already has the wording of the current template (placeholders filled in) and, with a marker, none of
+     * the lines the template has removed since (stale()).
+     * @return list<array{key: string, heading: ?string, dropped: bool, diff: list<array{0: string, 1: string}>}>
+     *     heading null = introduction; dropped: a section the current template does not have
      */
     public static function changes(string $stored, ?string $base, string $current): array
     {
@@ -171,14 +218,16 @@ final class LegalTexts
             $lines = self::content($section);
             $old = $from !== null ? self::content($from[$key] ?? null) : null;
             $have = self::content($text[$key] ?? null);
-            if ($old !== $lines && !self::fills(implode("\n", $have), implode("\n", $lines))) {
-                $changes[] = ['key' => $key, 'heading' => $section['heading'], 'diff' => self::changed(self::diff($old ?? $have, $lines, $from === null))];
+            if ($old === $lines || (self::fills(implode("\n", $have), implode("\n", $lines)) && ($old === null || self::stale($have, $old, $lines) === []))) {
+                continue;
             }
+            $changes[] = ['key' => $key, 'heading' => $section['heading'], 'dropped' => false, 'diff' => self::changed(self::diff($old ?? $have, $lines, $from === null))];
         }
-        // Sections the template no longer has, as long as the text still has them
+        // Sections the template no longer has, as long as the text still has them: with a marker those the
+        // template dropped since, without one all sections only in the text (own ones too)
         foreach ($from ?? $text as $key => $section) {
             if (!isset($now[$key]) && self::content($text[$key] ?? null) !== []) {
-                $changes[] = ['key' => $key, 'heading' => $section['heading'], 'diff' => self::diff(self::content($section), [])];
+                $changes[] = ['key' => $key, 'heading' => $section['heading'], 'dropped' => true, 'diff' => self::diff(self::content($section), [])];
             }
         }
         return $changes;
@@ -195,15 +244,18 @@ final class LegalTexts
 
     /**
      * The stored text with sections ($keys, see changes()) taken from the current template: their wording as in
-     * the template, keeping the lines the text already has with placeholders filled in; sections new in the
-     * template are inserted where it has them, sections it no longer has are removed. The other sections stay
-     * as they are (one blank line between sections).
+     * the template, keeping the lines the text already has with placeholders filled in (but not lines of the
+     * template of its version marker $base that the current one removed, stale()); sections new in the
+     * template are inserted where it has them. Sections the template no longer has are removed only with a
+     * marker that has them (the template dropped them since); without one they may be the operator's own and
+     * stay. The other sections stay as they are (one blank line between sections).
      * @param list<string> $keys
      */
-    public static function merge(string $stored, string $current, array $keys): string
+    public static function merge(string $stored, string $current, array $keys, ?string $base = null): string
     {
         $text = self::sections($stored);
         $now = self::sections($current);
+        $from = $base !== null ? self::sections($base) : [];
         // A section new in the template goes after the one before it in the template that the text has
         $after = [];
         $prev = '';
@@ -217,11 +269,11 @@ final class LegalTexts
         $blocks = [];
         foreach ($text as $key => $section) {
             $take = in_array($key, $keys, true);
-            if (!$take || isset($now[$key])) {
-                $blocks[] = $take ? self::mergeSection($section, $now[$key]) : $section;
+            if (!$take || isset($now[$key]) || !isset($from[$key])) {
+                $blocks[] = $take && isset($now[$key]) ? self::mergeSection($section, $now[$key], $from[$key] ?? null) : $section;
             }
             foreach ($after[$key] ?? [] as $new) {
-                $blocks[] = self::mergeSection(null, $now[$new]);
+                $blocks[] = self::mergeSection(null, $now[$new], $from[$new] ?? null);
             }
         }
         $out = [];
@@ -238,18 +290,53 @@ final class LegalTexts
     }
 
     /**
-     * A section of the template, its lines replaced by those of the text's section that fill them in.
+     * Whether taking over the sections (merge()) changes anything for a text behind its template (updates()):
+     * sections the template has, or with a version marker sections it dropped since. Sections only in a text
+     * without a marker stay (they may be the operator's own).
+     * @param array{known: bool, changes: list<array{dropped: bool}>} $update
+     */
+    public static function mergeable(array $update): bool
+    {
+        return array_filter($update['changes'], static fn (array $c): bool => !$c['dropped'] || $update['known']) !== [];
+    }
+
+    /**
+     * A section of the template, its lines replaced by those of the text's section that fill them in (a line
+     * that is only a placeholder by the text's lines in its place), except lines of the marker's section $old
+     * that the template removed (stale()).
      * @param array{heading: ?string, lines: list<string>}|null $section
      * @param array{heading: ?string, lines: list<string>} $template
+     * @param array{heading: ?string, lines: list<string>}|null $old
      * @return array{heading: ?string, lines: list<string>}
      */
-    private static function mergeSection(?array $section, array $template): array
+    private static function mergeSection(?array $section, array $template, ?array $old): array
     {
-        // In the order of the template's lines: the text's line that fills one in, or the template's line
-        $fill = array_values(array_filter(self::diff(self::content($section, false), self::content($template, false), true), static fn (array $d): bool => $d[0] !== '-'));
+        $have = self::content($section, false);
+        $want = self::content($template, false);
+        $have = $old !== null ? array_values(array_diff($have, self::stale($have, self::content($old, false), $want))) : $have;
+        // In the order of the template's lines: the text's line that fills one in, or else the template's line;
+        // a line that is nothing but a placeholder ([[VERANTWORTLICHE]]) gets the text's other lines in its place
+        // (between the same lines both have; the end counts as such a line)
+        $fill = [];
+        $own = [];
+        $at = null;
+        foreach ([...self::diff($have, $want, true), [' ', null]] as [$op, $line]) {
+            if ($op === '-') {
+                $own[] = $line;
+            } elseif ($op === '+') {
+                $at ??= self::literal($line) === 0 ? count($fill) : null;
+                $fill[] = $line;
+            } else {
+                if ($at !== null && $own !== []) {
+                    $fill[$at] = implode("\n", $own);
+                }
+                [$own, $at] = [[], null];
+                $fill[] = $line;
+            }
+        }
         $lines = [];
         foreach ($template['lines'] as $line) {
-            $lines[] = trim($line) === '' ? $line : array_shift($fill)[1];
+            $lines[] = trim($line) === '' ? $line : array_shift($fill);
         }
         return ['heading' => $template['heading'], 'lines' => $lines];
     }
@@ -267,29 +354,46 @@ final class LegalTexts
             ? ['type' => (string) $base['type'], 'content' => $base['content']] : null;
     }
 
-    /** Records the current template of the operator type as the version marker of a stored text (base()). */
+    /**
+     * Records the current template of the operator type as the version marker of a stored text (base()).
+     * settings.value is a TEXT column (64 KB): for a longer template of one's own the text gets no marker
+     * (an older one would claim a reconciliation with a template it never had).
+     */
     public static function setBase(string $key, string $lang, string $type): void
     {
         $template = self::template($key, $type, $lang);
         $json = $template !== null ? json_encode(['type' => $type, 'content' => $template], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) : false;
-        // settings.value is a TEXT column (64 KB): a longer template of one's own stays without a marker
-        if ($json !== false && strlen($json) < 65000) {
-            Settings::set("legal_base.$key.$lang", $json);
-        }
+        Settings::set("legal_base.$key.$lang", $json !== false && strlen($json) < 65000 ? $json : null);
     }
 
-    /** Whether a text has the wording of the current template of the operator type (placeholders filled in). */
-    public static function follows(string $key, string $lang, string $content, string $type): bool
+    /**
+     * The template a text was last reconciled with, from its version marker $base (base()) if that is of the
+     * operator type; null = unknown (no marker, or one of the other type: not reconciled with this one).
+     * @param array{type: string, content: string}|null $base
+     */
+    private static function since(?array $base, string $type): ?string
+    {
+        return ($base['type'] ?? null) === $type ? $base['content'] : null;
+    }
+
+    /**
+     * Whether a text is up to date with the current template of the operator type: with its version marker
+     * $base (base()), it has what the template changed since (changes()); without one (or one of the other
+     * type), the wording of the template, placeholders filled in.
+     * @param array{type: string, content: string}|null $base
+     */
+    public static function follows(string $key, string $lang, string $content, string $type, ?array $base = null): bool
     {
         $current = self::template($key, $type, $lang);
-        return $current !== null && self::changes($content, null, $current) === [];
+        return $current !== null && self::changes($content, self::since($base, $type), $current) === [];
     }
 
     /**
      * What a stored text is missing from the current template of the operator type (changes()): "known" with a
-     * version marker of that type, otherwise the differences to the template. null = nothing to do: up to date,
-     * no type chosen yet (the admins are asked for it first) or no template in this language.
-     * @return array{type: string, known: bool, changes: list<array{key: string, heading: ?string, diff: list<array{0: string, 1: string}>}>}|null
+     * version marker of that type, otherwise the differences to the template; "base" the template of that
+     * marker. null = nothing to do: up to date, no type chosen yet (the admins are asked for it first) or no
+     * template in this language.
+     * @return array{type: string, known: bool, base: ?string, changes: list<array{key: string, heading: ?string, dropped: bool, diff: list<array{0: string, 1: string}>}>}|null
      */
     public static function updates(string $key, string $lang, string $stored, ?string $type): ?array
     {
@@ -298,15 +402,15 @@ final class LegalTexts
         if ($current === null || $stored === $current || ($base['content'] ?? null) === $current) {
             return null;
         }
-        $known = ($base['type'] ?? null) === $type; // a marker of the other type: the text was not reconciled with this one
-        $changes = self::changes($stored, $known ? $base['content'] : null, $current);
-        return $changes !== [] ? ['type' => (string) $type, 'known' => $known, 'changes' => $changes] : null;
+        $since = self::since($base, (string) $type);
+        $changes = self::changes($stored, $since, $current);
+        return $changes !== [] ? ['type' => (string) $type, 'known' => $since !== null, 'base' => $since, 'changes' => $changes] : null;
     }
 
     /**
      * The stored texts of the offered languages that are behind the current template of the operator type
      * (updates()), legal notice first.
-     * @return list<array{key: string, lang: string, type: string, known: bool, changes: list<array{key: string, heading: ?string, diff: list<array{0: string, 1: string}>}>}>
+     * @return list<array{key: string, lang: string, type: string, known: bool, base: ?string, changes: list<array{key: string, heading: ?string, dropped: bool, diff: list<array{0: string, 1: string}>}>}>
      */
     public static function outdated(): array
     {
@@ -438,8 +542,9 @@ final class LegalTexts
     /**
      * Stores the templates of the operator type wherever a text of an offered language is missing or an
      * unedited template (replacement()), with the template as its version marker (base()). Edited texts are
-     * never touched; one that has the wording of the current template (placeholders filled in) gets it as its
-     * version marker, e.g. a text edited before the markers were recorded.
+     * never touched; one that is up to date with the current template (follows(): with its marker, it has what
+     * the template changed since; without one, e.g. edited before the markers were recorded, the wording of the
+     * template with placeholders filled in) gets it as its version marker.
      * @return int number of texts written
      */
     public static function apply(string $type): int
@@ -449,7 +554,8 @@ final class LegalTexts
         foreach (self::KEYS as $key) {
             foreach (I18n::languages() as $lang) {
                 $text = $stored[$key][$lang] ?? null;
-                $base = self::base($key, $lang)['content'] ?? null;
+                $marker = self::base($key, $lang);
+                $base = $marker['content'] ?? null;
                 $new = self::replacement($key, $lang, $text, $type, $base);
                 if ($new !== null) {
                     Db::run(
@@ -459,7 +565,7 @@ final class LegalTexts
                     );
                     self::setBase($key, $lang, $type);
                     $written++;
-                } elseif ($text !== null && $base !== self::template($key, $type, $lang) && self::follows($key, $lang, $text, $type)) {
+                } elseif ($text !== null && $base !== self::template($key, $type, $lang) && self::follows($key, $lang, $text, $type, $marker)) {
                     self::setBase($key, $lang, $type);
                 }
             }

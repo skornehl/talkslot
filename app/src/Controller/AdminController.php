@@ -238,7 +238,7 @@ final class AdminController
             'operatorMissing' => !Operator::ready(),
             'typeMissing' => !Auth::isAdmin() && Operator::ready() && Operator::type() === null,
             'textsOpen' => !Auth::isAdmin() && Operator::ready() && LegalTexts::open() !== [],
-            'legalHints' => Auth::isAdmin() ? array_merge(self::operatorHints(), self::legalHints()) : [],
+            'legalHints' => Auth::isAdmin() ? array_merge(self::operatorHints(), self::legalHints(LegalTexts::outdated())) : [],
             // Offboarding: active accounts nobody has signed in to for a long time (only the number)
             'unusedAccounts' => Auth::isAdmin() ? (int) Db::value(
                 'SELECT COUNT(*) FROM users WHERE is_active = 1 AND COALESCE(last_login_at, created_at) < ?',
@@ -1699,10 +1699,12 @@ final class AdminController
     // ---------------------------------------------------------------- Global texts (admin)
 
     /**
-     * Notes on outdated, hand-edited legal texts (they are not replaced automatically).
+     * Notes on outdated, hand-edited legal texts (they are not replaced automatically); with $outdated
+     * (LegalTexts::outdated()) also those on texts behind the current template (outdatedHints()).
+     * @param ?list<array{key: string, lang: string, known: bool, changes: list<array{heading: ?string}>}> $outdated
      * @return list<string>
      */
-    private static function legalHints(): array
+    private static function legalHints(?array $outdated = null): array
     {
         $list = static fn (array $rows) => strtoupper(implode(', ', array_column($rows, 'lang')));
         $hints = [];
@@ -1757,16 +1759,7 @@ final class AdminController
         if ($noReminder) {
             $hints[] = __('Die Datenschutzerklärung ({languages}) erwähnt die Erinnerung an Eltern am Vortag noch nicht – bitte den Punkt „E-Mail-Adresse“ in Abschnitt 2 an die Vorlage anpassen (oder die Erinnerung in den Runden abschalten).', ['languages' => $list($noReminder)]);
         }
-        // Texts behind the current template of the operator type (version markers, LegalTexts::outdated()): the
-        // sections the template changed since a text was stored from or reconciled with it, or for a text
-        // edited before the markers existed, the sections in which it differs from the template
-        $outdated = LegalTexts::outdated();
-        if ($known = array_filter($outdated, static fn (array $t): bool => $t['known'])) {
-            $hints[] = __('Die Vorlagen wurden geändert, seit diese Texte auf ihnen beruhen – {texts}. Bearbeitete Texte werden nicht automatisch ersetzt: Beim jeweiligen Text unter „Texte“ sehen Sie, was sich geändert hat, und können die Abschnitte übernehmen.', ['texts' => self::outdatedTexts($known)]);
-        }
-        if ($unknown = array_filter($outdated, static fn (array $t): bool => !$t['known'])) {
-            $hints[] = __('Diese Texte weichen von der aktuellen Vorlage ab, und es ist nicht bekannt, mit welchem Stand der Vorlage sie zuletzt abgeglichen wurden – {texts}. Bearbeitete Texte werden nicht automatisch ersetzt: Beim jeweiligen Text unter „Texte“ sehen Sie die Unterschiede und können die Abschnitte übernehmen oder den Abgleich bestätigen.', ['texts' => self::outdatedTexts($unknown)]);
-        }
+        array_push($hints, ...($outdated !== null ? self::outdatedHints($outdated) : []));
         $hosting = array_values(array_filter(
             array_column(Db::all("SELECT DISTINCT lang FROM pages WHERE page_key = 'privacy' AND content LIKE '%[[HOSTER]]%' ORDER BY lang"), 'lang'),
             static fn ($l) => !\App\Hosting::configured((string) $l)
@@ -1817,6 +1810,25 @@ final class AdminController
             $langs[$t['key']][] = strtoupper($t['lang']);
         }
         return implode(', ', array_map(static fn (string $key, array $l): string => self::pageLabel($key) . ' (' . implode(', ', $l) . ')', array_keys($langs), $langs));
+    }
+
+    /**
+     * Notes on the texts behind the current template of the operator type (version markers,
+     * LegalTexts::outdated()): the sections the template changed since a text was stored from or reconciled
+     * with it, or for a text edited before the markers existed, the sections in which it differs from it.
+     * @param list<array{key: string, lang: string, known: bool, changes: list<array{heading: ?string}>}> $outdated
+     * @return list<string>
+     */
+    private static function outdatedHints(array $outdated): array
+    {
+        $hints = [];
+        if ($known = array_filter($outdated, static fn (array $t): bool => $t['known'])) {
+            $hints[] = __('Die Vorlagen wurden geändert, seit diese Texte auf ihnen beruhen – {texts}. Bearbeitete Texte werden nicht automatisch ersetzt: Beim jeweiligen Text unter „Texte“ sehen Sie, was sich geändert hat, und können die Abschnitte übernehmen.', ['texts' => self::outdatedTexts($known)]);
+        }
+        if ($unknown = array_filter($outdated, static fn (array $t): bool => !$t['known'])) {
+            $hints[] = __('Diese Texte weichen von der aktuellen Vorlage ab, und es ist nicht bekannt, mit welchem Stand der Vorlage sie zuletzt abgeglichen wurden – {texts}. Bearbeitete Texte werden nicht automatisch ersetzt: Beim jeweiligen Text unter „Texte“ sehen Sie die Unterschiede und können die Abschnitte übernehmen oder den Abgleich bestätigen.', ['texts' => self::outdatedTexts($unknown)]);
+        }
+        return $hints;
     }
 
     /**
@@ -1871,14 +1883,17 @@ final class AdminController
 
     private function texts(): void
     {
+        $outdated = LegalTexts::outdated();
         $this->render('admin/texts', [
             'operatorContact' => Operator::contact(),
             'operatorType' => Operator::type(),
             'privacyTemplate' => LegalTexts::VARIANTS['privacy'][Operator::type() ?? 'school'],
             'operatorHints' => self::operatorHints(),
+            // The notes on wording of the privacy template point to its file, those on newer templates to the text
             'legalHints' => self::legalHints(),
+            'outdatedHints' => self::outdatedHints($outdated),
             // Per text "<key>/<lang>": behind the template, with (true) or without a version marker
-            'outdated' => array_column(array_map(static fn (array $t): array => [$t['key'] . '/' . $t['lang'], $t['known']], LegalTexts::outdated()), 1, 0),
+            'outdated' => array_column(array_map(static fn (array $t): array => [$t['key'] . '/' . $t['lang'], $t['known']], $outdated), 1, 0),
             'title' => __('Impressum & Datenschutz'),
             'languages' => I18n::languages(),
             'mailTransport' => (string) \App\Config::get('mail.transport', 'mail'),
@@ -1898,15 +1913,19 @@ final class AdminController
         $stored = Db::value('SELECT content FROM pages WHERE page_key = ? AND lang = ?', [$key, $lang]);
         // What the current template of the operator type changed since the text's version marker, or where the
         // text differs from it; ?merge=1 puts the text with these sections taken from the template into the form
+        // (not the sections only the text has, unless the marker shows that the template dropped them)
         $update = $loaded === null && $stored !== null ? LegalTexts::updates($key, $lang, (string) $stored, $type) : null;
-        $merged = $update !== null && Http::query('merge') === '1';
+        $merged = $update !== null && Http::query('merge') === '1' && LegalTexts::mergeable($update);
+        // The template the form is reconciled with ("base"): only that one becomes the text's version marker on
+        // saving, not a newer one an update brought meanwhile
+        $template = $loaded ?? $update['type'] ?? null;
         $this->render('admin/page_form', [
             'title' => self::pageLabel($key) . ' (' . strtoupper($lang) . ')',
             'key' => $key,
             'lang' => $lang,
             'content' => match (true) {
                 $loaded !== null => (string) LegalTexts::template($key, $loaded, $lang),
-                $merged => LegalTexts::merge((string) $stored, (string) LegalTexts::template($key, $update['type'], $lang), array_column($update['changes'], 'key')),
+                $merged => LegalTexts::merge((string) $stored, (string) LegalTexts::template($key, $update['type'], $lang), array_column($update['changes'], 'key'), $update['base']),
                 default => (string) $stored,
             },
             'variants' => $variants,
@@ -1914,6 +1933,7 @@ final class AdminController
             'type' => $type,
             'update' => $update,
             'merged' => $merged,
+            'templateHash' => $template !== null ? hash('sha256', (string) LegalTexts::template($key, $template, $lang)) : '',
         ]);
     }
 
@@ -1927,17 +1947,22 @@ final class AdminController
             [$key, $lang, $content, Time::nowSql(), $content, Time::nowSql()]
         );
         // Version marker (LegalTexts::base()): the template the form was loaded from or the admin reconciled the
-        // text with ("base", an operator type), else the current template of the type if the text has its wording
+        // text with ("base", an operator type) if it is still the one the form showed ("base_hash"), else the
+        // current template of the type if the text is up to date with it (LegalTexts::follows())
         $type = Operator::type();
         $base = in_array(Http::post('base'), Operator::TYPES, true) ? Http::post('base') : null;
-        if (($from = $base ?? ($type !== null && LegalTexts::follows($key, $lang, $content, $type) ? $type : null)) !== null) {
+        $changed = $base !== null && !hash_equals(hash('sha256', (string) LegalTexts::template($key, $base, $lang)), Http::post('base_hash'));
+        $base = $changed ? null : $base;
+        if (($from = $base ?? ($type !== null && LegalTexts::follows($key, $lang, $content, $type, LegalTexts::base($key, $lang)) ? $type : null)) !== null) {
             LegalTexts::setBase($key, $lang, $from);
         }
         $vars = ['page' => self::pageLabel($key), 'lang' => strtoupper($lang)];
         $this->audit(fn () => $base !== null
             ? __('{page} ({lang}) geändert und mit dem aktuellen Stand der Vorlage „{template}“ abgeglichen', $vars + ['template' => $base === 'school' ? __('Von der Schule betrieben') : __('Privat betrieben')])
             : __('{page} ({lang}) geändert', $vars));
-        $this->flash('success', __('Text gespeichert.'));
+        $this->flash($changed ? 'warning' : 'success', $changed
+            ? __('Text gespeichert, aber nicht als abgeglichen vermerkt: Die Vorlage wurde geändert, während das Formular offen war (z. B. durch ein Update). Bitte prüfen Sie den Hinweis zur Vorlage erneut.')
+            : __('Text gespeichert.'));
         Http::redirect('/admin/page/' . $key . '/' . $lang);
     }
 

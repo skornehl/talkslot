@@ -11,8 +11,18 @@ return [
     '{page} ({lang}) geändert und mit dem aktuellen Stand der Vorlage „{template}“ abgeglichen' => '{page} ({lang}) changed and reconciled with the current state of the template “{template}”',
     'Vorlage geändert' => 'template changed',
     'weicht von der Vorlage ab' => 'differs from the template',
-    'Abschnitte aus der aktuellen Vorlage „{name}“ übernommen: {sections}. Ihre Angaben in Zeilen, die die Vorlage nicht geändert hat, bleiben erhalten, eigene Änderungen in diesen Abschnitten nicht. Der gespeicherte Text ändert sich erst, wenn Sie speichern – bitte vorher prüfen und neue Platzhalter in eckigen Klammern ersetzen.'
-        => 'Sections taken over from the current template “{name}”: {sections}. Your details in lines the template did not change are kept, your own changes in these sections are not. The stored text only changes when you save – please check it first and replace new placeholders in square brackets.',
+    'Abschnitte aus der aktuellen Vorlage „{name}“ übernommen: {sections}.' => 'Sections taken over from the current template “{name}”: {sections}.',
+    'Entfernt, weil die Vorlage sie nicht mehr enthält: {sections}.' => 'Removed because the template no longer contains them: {sections}.',
+    'Unverändert, weil es sie nur in Ihrem Text gibt (eigene oder aus einer früheren Vorlage – bitte prüfen, ob sie noch zutreffen): {sections}.'
+        => 'Left as they are because only your text has them (your own or from an earlier template – please check whether they still apply): {sections}.',
+    'Ihre Angaben in Zeilen, die die Vorlage nicht geändert hat, bleiben erhalten, eigene Änderungen in übernommenen Abschnitten nicht. Der gespeicherte Text ändert sich erst, wenn Sie speichern – bitte vorher prüfen und neue Platzhalter in eckigen Klammern ersetzen.'
+        => 'Your details in lines the template did not change are kept, your own changes in the sections taken over are not. The stored text only changes when you save – please check it first and replace new placeholders in square brackets.',
+    'Zum Vergleich die Unterschiede vor dem Übernehmen:' => 'For comparison, the differences before taking them over:',
+    'Abschnitte, die es nur in Ihrem Text gibt, bleiben beim Übernehmen unverändert.' => 'Sections only your text has stay as they are.',
+    'Diese Abschnitte gibt es nur in Ihrem Text. Prüfen Sie, ob sie noch zutreffen, passen Sie sie unten an oder löschen Sie sie, und bestätigen Sie den Abgleich beim Speichern.'
+        => 'Only your text has these sections. Check whether they still apply, adjust or delete them below, and confirm the reconciliation when saving.',
+    'Text gespeichert, aber nicht als abgeglichen vermerkt: Die Vorlage wurde geändert, während das Formular offen war (z. B. durch ein Update). Bitte prüfen Sie den Hinweis zur Vorlage erneut.'
+        => 'Text saved, but not recorded as reconciled: the template changed while the form was open (e.g. by an update). Please check the notice on the template again.',
     'Die Vorlage „{name}“ wurde geändert, seit dieser Text auf ihr beruht. Bearbeitete Texte werden nicht automatisch ersetzt. Geändert hat sich (− bisher in der Vorlage, + neu in der Vorlage):'
         => 'The template “{name}” has changed since this text was based on it. Edited texts are never replaced automatically. What has changed (− previously in the template, + new in the template):',
     'Mit welchem Stand der Vorlage „{name}“ dieser Text zuletzt abgeglichen wurde, ist nicht bekannt: Er wurde bearbeitet, bevor TalkSlot das festgehalten hat, oder stammt aus der Vorlage der anderen Betriebsart. In diesen Abschnitten weicht er von der aktuellen Vorlage ab (− nur in Ihrem Text, + nur in der Vorlage; ausgefüllte Platzhalter zählen nicht als Abweichung):'

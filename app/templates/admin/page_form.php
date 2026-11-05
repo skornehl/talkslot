@@ -1,22 +1,37 @@
-<?php /** @var string $key @var string $lang @var string $content @var list<string> $variants @var ?string $loaded @var ?string $type @var ?array{type: string, known: bool, changes: list<array{key: string, heading: ?string, diff: list<array{0: string, 1: string}>}>} $update @var bool $merged */ use App\Csrf;
+<?php /** @var string $key @var string $lang @var string $content @var list<string> $variants @var ?string $loaded @var ?string $type @var ?array{type: string, known: bool, base: ?string, changes: list<array{key: string, heading: ?string, dropped: bool, diff: list<array{0: string, 1: string}>}>} $update @var bool $merged @var string $templateHash */ use App\Csrf;
 use App\LegalTexts;
 $labels = ['school' => __('Von der Schule betrieben'), 'private' => __('Privat betrieben')];
 $update ??= null;
 $merged ??= false;
+$templateHash ??= '';
 // Version marker sent with the form (LegalTexts::base()): the template that was loaded or merged in
-$base = $loaded ?? ($merged ? $update['type'] : null); ?>
+$base = $loaded ?? ($merged ? $update['type'] : null);
+// Sections by what taking them over does: from the template, removed (dropped by the template since the
+// marker), or kept (only in a text without a marker: possibly the operator's own)
+$sections = static fn (callable $which): string => implode(', ', array_map(static fn (array $c): string => LegalTexts::sectionTitle($c['heading']),
+    array_filter($update['changes'] ?? [], $which)));
+$taken = $sections(static fn (array $c): bool => !$c['dropped']);
+$removed = $sections(static fn (array $c): bool => $c['dropped'] && $update['known']);
+$kept = $sections(static fn (array $c): bool => $c['dropped'] && !$update['known']); ?>
 <p class="breadcrumb"><a href="<?= e(url('/admin/texts')) ?>"><?= e(__('Texte')) ?></a> › <?= e($title) ?></p>
 <h1><?= e($title) ?></h1>
 <?php if ($loaded !== null): ?>
   <div class="alert alert-info" role="status"><p><?= e(__('Vorlage „{name}“ geladen. Sie ersetzt den gespeicherten Text erst, wenn Sie speichern. Ersetzen Sie danach alle Platzhalter in eckigen Klammern.', ['name' => $labels[$loaded]])) ?><?= $type !== null && $loaded !== $type ? ' <strong>' . e(__('Sie passt nicht zur gewählten Betriebsart „{type}“.', ['type' => $labels[$type]])) . '</strong>' : '' ?></p></div>
-<?php elseif ($merged): ?>
-  <div class="alert alert-info" role="status" data-legal-merged><p><?= e(__('Abschnitte aus der aktuellen Vorlage „{name}“ übernommen: {sections}. Ihre Angaben in Zeilen, die die Vorlage nicht geändert hat, bleiben erhalten, eigene Änderungen in diesen Abschnitten nicht. Der gespeicherte Text ändert sich erst, wenn Sie speichern – bitte vorher prüfen und neue Platzhalter in eckigen Klammern ersetzen.', [
-      'name' => $labels[$update['type']], 'sections' => implode(', ', array_map(static fn (array $c): string => LegalTexts::sectionTitle($c['heading']), $update['changes']))])) ?></p></div>
 <?php elseif ($update !== null): ?>
-  <div class="alert alert-warning legal-update" role="status" data-legal-update>
-    <p><?= e($update['known']
-        ? __('Die Vorlage „{name}“ wurde geändert, seit dieser Text auf ihr beruht. Bearbeitete Texte werden nicht automatisch ersetzt. Geändert hat sich (− bisher in der Vorlage, + neu in der Vorlage):', ['name' => $labels[$update['type']]])
-        : __('Mit welchem Stand der Vorlage „{name}“ dieser Text zuletzt abgeglichen wurde, ist nicht bekannt: Er wurde bearbeitet, bevor TalkSlot das festgehalten hat, oder stammt aus der Vorlage der anderen Betriebsart. In diesen Abschnitten weicht er von der aktuellen Vorlage ab (− nur in Ihrem Text, + nur in der Vorlage; ausgefüllte Platzhalter zählen nicht als Abweichung):', ['name' => $labels[$update['type']]])) ?></p>
+  <div class="alert <?= $merged ? 'alert-info' : 'alert-warning' ?> legal-update" role="status" <?= $merged ? 'data-legal-merged' : 'data-legal-update' ?>>
+    <?php if ($merged): ?>
+      <p><?= e(implode(' ', array_filter([
+          $taken !== '' ? __('Abschnitte aus der aktuellen Vorlage „{name}“ übernommen: {sections}.', ['name' => $labels[$update['type']], 'sections' => $taken]) : '',
+          $removed !== '' ? __('Entfernt, weil die Vorlage sie nicht mehr enthält: {sections}.', ['sections' => $removed]) : '',
+          $kept !== '' ? __('Unverändert, weil es sie nur in Ihrem Text gibt (eigene oder aus einer früheren Vorlage – bitte prüfen, ob sie noch zutreffen): {sections}.', ['sections' => $kept]) : '',
+          __('Ihre Angaben in Zeilen, die die Vorlage nicht geändert hat, bleiben erhalten, eigene Änderungen in übernommenen Abschnitten nicht. Der gespeicherte Text ändert sich erst, wenn Sie speichern – bitte vorher prüfen und neue Platzhalter in eckigen Klammern ersetzen.'),
+      ]))) ?></p>
+      <p class="small"><?= e(__('Zum Vergleich die Unterschiede vor dem Übernehmen:')) ?></p>
+    <?php else: ?>
+      <p><?= e($update['known']
+          ? __('Die Vorlage „{name}“ wurde geändert, seit dieser Text auf ihr beruht. Bearbeitete Texte werden nicht automatisch ersetzt. Geändert hat sich (− bisher in der Vorlage, + neu in der Vorlage):', ['name' => $labels[$update['type']]])
+          : __('Mit welchem Stand der Vorlage „{name}“ dieser Text zuletzt abgeglichen wurde, ist nicht bekannt: Er wurde bearbeitet, bevor TalkSlot das festgehalten hat, oder stammt aus der Vorlage der anderen Betriebsart. In diesen Abschnitten weicht er von der aktuellen Vorlage ab (− nur in Ihrem Text, + nur in der Vorlage; ausgefüllte Platzhalter zählen nicht als Abweichung):', ['name' => $labels[$update['type']]])) ?></p>
+    <?php endif; ?>
     <?php foreach ($update['changes'] as $c): ?>
       <details class="legal-diff">
         <summary><?= e(LegalTexts::sectionTitle($c['heading'])) ?></summary>
@@ -29,8 +44,12 @@ $base = $loaded ?? ($merged ? $update['type'] : null); ?>
         </ul>
       </details>
     <?php endforeach; ?>
-    <p><a class="button" href="<?= e(url('/admin/page/' . $key . '/' . $lang, ['merge' => '1'])) ?>"><?= e(__('Abschnitte aus der Vorlage übernehmen')) ?></a></p>
-    <p class="small"><?= e(__('Übernehmen lädt Ihren Text mit diesen Abschnitten in der Fassung der Vorlage in das Formular; Ihre Angaben in Zeilen, die die Vorlage nicht geändert hat, bleiben. Gespeichert wird erst mit „Speichern“. Oder Sie passen den Text unten selbst an und bestätigen den Abgleich beim Speichern.')) ?></p>
+    <?php if (!$merged && LegalTexts::mergeable($update)): ?>
+      <p><a class="button" href="<?= e(url('/admin/page/' . $key . '/' . $lang, ['merge' => '1'])) ?>"><?= e(__('Abschnitte aus der Vorlage übernehmen')) ?></a></p>
+      <p class="small"><?= e(__('Übernehmen lädt Ihren Text mit diesen Abschnitten in der Fassung der Vorlage in das Formular; Ihre Angaben in Zeilen, die die Vorlage nicht geändert hat, bleiben. Gespeichert wird erst mit „Speichern“. Oder Sie passen den Text unten selbst an und bestätigen den Abgleich beim Speichern.')) ?><?= $kept !== '' ? ' ' . e(__('Abschnitte, die es nur in Ihrem Text gibt, bleiben beim Übernehmen unverändert.')) : '' ?></p>
+    <?php elseif (!$merged): ?>
+      <p class="small"><?= e(__('Diese Abschnitte gibt es nur in Ihrem Text. Prüfen Sie, ob sie noch zutreffen, passen Sie sie unten an oder löschen Sie sie, und bestätigen Sie den Abgleich beim Speichern.')) ?></p>
+    <?php endif; ?>
   </div>
 <?php endif; ?>
 <?php if ($variants): ?>
@@ -44,6 +63,7 @@ $base = $loaded ?? ($merged ? $update['type'] : null); ?>
 <form method="post" action="<?= e(url('/admin/page/' . $key . '/' . $lang)) ?>" class="card form-grid">
   <?= Csrf::adminField() ?>
   <?php if ($base !== null): ?><input type="hidden" name="base" value="<?= e($base) ?>"><?php endif; ?>
+  <?php if ($base !== null || $update !== null): ?><input type="hidden" name="base_hash" value="<?= e($templateHash) ?>"><?php endif; ?>
   <div class="field">
     <label for="content"><?= e(__('Text')) ?></label>
     <textarea id="content" name="content" rows="28" class="mono" aria-describedby="md-hint"><?= e($content) ?></textarea>

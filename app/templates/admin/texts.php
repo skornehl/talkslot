@@ -1,4 +1,4 @@
-<?php /** @var array $languages @var string $mailTransport @var string $mailFrom @var string $operatorContact @var ?string $operatorType @var list<string> $operatorHints @var string $privacyTemplate @var array<string, bool> $outdated */ use App\Csrf;
+<?php /** @var array $languages @var string $mailTransport @var string $mailFrom @var string $operatorContact @var ?string $operatorType @var list<string> $operatorHints @var string $privacyTemplate @var list<string> $legalHints @var list<string> $outdatedHints @var array<string, bool> $outdated */ use App\Csrf;
 // Behind the current template (LegalTexts::outdated()): with a version marker "changed", otherwise "differs"
 $outdated ??= [];
 $behind = static fn (string $page): string => isset($outdated[$page])
@@ -24,6 +24,9 @@ $behind = static fn (string $page): string => isset($outdated[$page])
 </section>
 <?php foreach ($legalHints ?? [] as $h): ?>
   <div class="alert alert-warning" role="status"><p><?= e($h) ?> <?= __h('Die Vorlage steht in {file} bzw. {file2}.', ['file' => '<code>app/templates/pages/' . e($privacyTemplate) . '.de.md</code>', 'file2' => '<code>' . e($privacyTemplate) . '.en.md</code>']) ?></p></div>
+<?php endforeach; ?>
+<?php foreach ($outdatedHints ?? [] as $h): ?>
+  <div class="alert alert-warning" role="status" data-legal-outdated><p><?= e($h) ?></p></div>
 <?php endforeach; ?>
 <section class="card">
   <p><?= __h('Diese Texte gelten für die gesamte Plattform. In Impressum und Datenschutzerklärung wird die Stelle {controller} automatisch durch die Angaben oben ersetzt. {hoster} in der Datenschutzerklärung wird durch die Angaben zum Hoster aus der Konfiguration ersetzt.', ['controller' => '<code>[[VERANTWORTLICHE]]</code>', 'hoster' => '<code>[[HOSTER]]</code>']) ?></p>
