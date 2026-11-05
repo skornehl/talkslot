@@ -14,4 +14,5 @@ $c['mail']['smtp'] = ['host' => 'mail', 'port' => 1025, 'encryption' => 'none', 
 $c['rate_limits'] = ['attempt' => [1000, 3600], 'booking' => [1000, 3600], 'manage' => [1000, 3600], 'login' => [10, 900]];
 $c['csrf_min_age_seconds'] = 0;
 $c['summary_evening_hour'] = 0; // tests: daily summary at any time
+$c['cron_alert_hours'] = 3; // tests: the cron monitoring with hours that are quick to simulate
 return $c;

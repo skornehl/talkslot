@@ -546,6 +546,13 @@ check('build-config: placeholder CHANGE_ME → abort', $rc === 1 && str_contains
 check('build-config: unknown admin language → abort', $rc === 1 && str_contains($err, 'ADMIN_LANGUAGE must be de or en'));
 [$rc] = $run(['bin/build-config.php', $cfgFile], ['ADMIN_LANGUAGE' => 'EN'] + $envOk);
 check('build-config: admin language taken over', $rc === 0 && (static fn ($f) => require $f)($cfgFile)['admin_language'] === 'en');
+[$rc] = $run(['bin/build-config.php', $cfgFile], ['CRON_ALERT_HOURS' => '3'] + $envOk);
+$cronHours = $rc === 0 ? (static fn ($f) => require $f)($cfgFile)['cron_alert_hours'] : null;
+[$rc0] = $run(['bin/build-config.php', $cfgFile], $envOk);
+$cronDefault = $rc0 === 0 ? (static fn ($f) => require $f)($cfgFile)['cron_alert_hours'] : null;
+[$rcBad, , $err] = $run(['bin/build-config.php', $cfgFile], ['CRON_ALERT_HOURS' => 'drei'] + $envOk);
+check('build-config: CRON_ALERT_HOURS taken over, default 12 without it, not a number → abort',
+    $cronHours === 3 && $cronDefault === 12 && $rcBad === 1 && str_contains($err, 'CRON_ALERT_HOURS must be a whole number'));
 [$rc, , $err] = $run(['bin/build-config.php', $cfgFile], ['APP_SECRET' => 'kurz'] + $envOk);
 check('build-config: secret too short → abort', $rc === 1 && str_contains($err, 'too short'));
 [$rc] = $run(['bin/build-config.php', $cfgFile], $envOk);

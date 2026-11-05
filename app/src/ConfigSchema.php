@@ -54,7 +54,7 @@ final class ConfigSchema
         'access_link_hours' => ['int', 48, 1, null],
         'cleanup_on_request' => ['bool', true],
         'cleanup_interval_minutes' => ['int', 15, 1, null],
-        'cron_alert_hours' => ['int', 3, 0, null],
+        'cron_alert_hours' => ['int', CronMonitor::DEFAULT_HOURS, 0, null],
         'mail_queue.batch' => ['int', 100, 1, null],
         'mail_queue.seconds' => ['int', 20, 1, null],
         'mail_queue.hourly_limit' => ['int', 0, 0, null],

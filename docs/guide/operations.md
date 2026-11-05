@@ -72,18 +72,26 @@ reminders and summaries may not go out at all (see [mail queue](#mail-queue)). S
 records every completed run of `bin/cron.php` or the web cron (`last_cron` in the `settings` table, apart
 from `last_cleanup`, which page views set as well) and checks it on page views:
 
-- **No completed run for 3 hours** (`cron_alert_hours`): with the hourly schedule that is two missed runs,
-  so a single run that GitHub delays or skips is no alarm yet. Admins see a warning on the dashboard with
+- **No completed run for 12 hours** (`cron_alert_hours`, deployment variable `CRON_ALERT_HOURS`): GitHub
+  starts scheduled workflows late when it is busy, in practice often only every 4 to 8 hours instead of
+  hourly, so the included workflow *Cron* would cause a shorter limit to alarm all the time. With the
+  server's own hourly cron job, 3 hours fit (two missed runs). Admins see a warning on the dashboard with
   the time of the last run and a link to this section, and the operator gets the alert mail *Cronjob läuft
   nicht* (same recipient as the error alerts above). It is sent once per outage and again every 24 hours
   while the outage lasts, with the time of the last run and what to check; no personal data. The next
   completed run ends the warning.
 - **No completed run recorded at all** (a new installation, an update while the cron job was already down,
-  or a cron job that fails every time): 3 hours after the monitoring began, the dashboard asks the admins
+  or a cron job that fails every time): `cron_alert_hours` after the monitoring began, the dashboard asks the admins
   to set up the cron job, or to look with `php bin/cron.php -v` where it fails. There is no
   mail for this, so that installations relying on page views on purpose (with PHP-FPM or LiteSpeed, see
   [mail queue](#mail-queue)) are not reminded every day.
 - **`cron_alert_hours = 0`** turns both off.
+
+**Punctual reminders need a punctual cron job.** Reminders the evening before, the summaries and retries of
+mails go out when the cron job runs. With the GitHub workflow they can therefore arrive hours late, e.g. a
+reminder for 18:00 only at night. If that matters, set up a cron job at your web host that runs
+`php bin/cron.php` every hour (or calls the [web cron]({{ '/guide/installation/' | relative_url }}) with its
+key), and set `CRON_ALERT_HOURS` to 3.
 
 The check runs on page views: a site nobody visits cannot report anything, but any visit, by parents as
 well, sends the alert mail when it is due. Teachers do not see the warning; only admins can have it fixed.

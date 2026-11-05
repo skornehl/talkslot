@@ -8,8 +8,9 @@ namespace App;
  * GitHub disabled the scheduled workflow: in public repositories it does so after 60 days without activity.
  *
  * Every completed cron run stores its time as "last_cron", apart from "last_cleanup", which the clean-up on
- * page views sets as well. Without a completed run for cron_alert_hours (default 3: two hours behind the
- * hourly schedule, so that a single run GitHub delays or skips is no alarm yet), admins see a warning on the
+ * page views sets as well. Without a completed run for cron_alert_hours (default 12: GitHub starts scheduled
+ * workflows late, in practice often only every 4 to 8 hours, so a shorter default would alarm all the time;
+ * with the server's own cron job a lower value such as 3 fits), admins see a warning on the
  * dashboard and the operator gets an alert mail (App\Alert): once per outage, repeated daily while it lasts.
  * Page views check this; the web cron does not, it reports its own run.
  *
@@ -20,6 +21,8 @@ namespace App;
 final class CronMonitor
 {
     public const REPEAT_SECONDS = 86400;
+    /** Default of cron_alert_hours (see above) */
+    public const DEFAULT_HOURS = 12;
 
     /** At the end of a completed cron run. */
     public static function ran(): void
@@ -30,7 +33,7 @@ final class CronMonitor
     /** Hours without a completed run after which admins are warned (0 = monitoring off). */
     public static function alertHours(): int
     {
-        return max(0, (int) Config::get('cron_alert_hours', 3));
+        return max(0, (int) Config::get('cron_alert_hours', self::DEFAULT_HOURS));
     }
 
     /**

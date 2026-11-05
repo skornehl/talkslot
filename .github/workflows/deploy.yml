@@ -103,6 +103,7 @@ jobs:
           DB_USER: ${{ secrets.DB_USER }}
           DB_PASS: ${{ secrets.DB_PASS }}
           ALERT_EMAIL: ${{ vars.ALERT_EMAIL }}
+          CRON_ALERT_HOURS: ${{ vars.CRON_ALERT_HOURS }}
           APP_NAME: ${{ vars.APP_NAME }}
           LANGUAGES: ${{ vars.LANGUAGES }}
           DEFAULT_LANGUAGE: ${{ vars.DEFAULT_LANGUAGE }}

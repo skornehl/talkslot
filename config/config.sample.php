@@ -76,9 +76,10 @@ return [
         'after_response' => true,
     ],
 
-    // Cron monitoring: without a completed cron run for this many hours (3 = two hourly runs missed), admins
-    // see a warning on the dashboard and the operator gets an alert mail, repeated daily while it lasts. 0 = off
-    'cron_alert_hours' => 3,
+    // Cron monitoring: without a completed cron run for this many hours, admins see a warning on the dashboard
+    // and the operator gets an alert mail, repeated daily while it lasts. 0 = off. 12 suits the GitHub workflow
+    // "Cron", which GitHub often starts only every 4 to 8 hours; with the server's own hourly cron job, 3 fits.
+    'cron_alert_hours' => 12,
 
     // Daily summary for teachers and reminders to parents are sent for the next day from this hour on (local time)
     'summary_evening_hour' => 18,

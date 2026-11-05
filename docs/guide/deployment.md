@@ -69,6 +69,7 @@ Sessions live in the shared `app/var/`, so nobody is logged out by a deployment.
 | `LANGUAGES`, `DEFAULT_LANGUAGE`, `ADMIN_LANGUAGE` | variables | | see [Configuration]({{ '/guide/configuration/' | relative_url }}) |
 | `HOSTING_DE`, `HOSTING_EN` | variables | | web host for the privacy policy |
 | `MAIL_FROM`, `MAIL_FROM_NAME`, `MAIL_REPLY_TO`, `ALERT_EMAIL` | variables | | mail settings |
+| `CRON_ALERT_HOURS` | variable | | hours without a completed cron run before admins are warned (default 12, `0` = off; see [cron monitoring]({{ '/guide/operations/' | relative_url }}#cron-monitoring)) |
 | `MAIL_TRANSPORT`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_ENCRYPTION` | variables | | for SMTP |
 | `SMTP_USER`, `SMTP_PASS` | secrets | | for SMTP |
 | `CONFIG_MODE` | variable | | permissions of `config.php` on the server: `600` (default), `640` or `keep`; modes readable for others are rejected; see below |

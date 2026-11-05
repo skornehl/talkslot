@@ -76,20 +76,28 @@ gehen womöglich gar nicht hinaus (siehe [Mail-Warteschlange](#mail-warteschlang
 oder dem Web-Cron (`last_cron` in der Tabelle `settings`, getrennt von `last_cleanup`, das auch
 Seitenaufrufe setzen) und prüft ihn bei Seitenaufrufen:
 
-- **Seit 3 Stunden kein vollständiger Lauf** (`cron_alert_hours`): Beim stündlichen Takt sind das zwei
-  ausgefallene Läufe, ein einzelner Lauf, den GitHub verzögert oder auslässt, löst also noch nichts aus.
-  Admins sehen in der Übersicht eine Warnung mit der Zeit des letzten Laufs und einem Link auf diesen
+- **Seit 12 Stunden kein vollständiger Lauf** (`cron_alert_hours`, Deploy-Variable `CRON_ALERT_HOURS`):
+  GitHub startet geplante Workflows bei hoher Last verspätet, in der Praxis oft nur alle 4 bis 8 Stunden statt
+  stündlich. Mit dem mitgelieferten Workflow *Cron* würde ein kürzerer Wert also ständig Alarm schlagen. Mit
+  einem stündlichen Cronjob auf dem Server passen 3 Stunden (zwei ausgefallene Läufe). Admins sehen in der Übersicht eine Warnung mit der Zeit des letzten Laufs und einem Link auf diesen
   Abschnitt, und der Betreiber erhält die Warnmeldung *Cronjob läuft nicht* (Empfänger wie bei den
   Fehlermeldungen oben). Sie kommt einmal pro Ausfall und alle 24 Stunden erneut, solange er anhält, mit der
   Zeit des letzten Laufs und den Punkten, die zu prüfen sind; ohne personenbezogene Daten. Der nächste
   vollständige Lauf beendet die Warnung.
 - **Noch gar kein vollständiger Lauf verzeichnet** (neue Installation, Update, während der Cronjob schon
-  ausgefallen war, oder ein Cronjob, der jedes Mal scheitert): 3 Stunden nach Beginn der Überwachung bittet
+  ausgefallen war, oder ein Cronjob, der jedes Mal scheitert): `cron_alert_hours` nach Beginn der Überwachung bittet
   die Übersicht die Admins, den Cronjob einzurichten oder mit `php bin/cron.php -v` nachzusehen, woran er
   scheitert.
   Eine E-Mail gibt es dafür nicht, damit Installationen, die bewusst auf Seitenaufrufe setzen (mit PHP-FPM
   oder LiteSpeed, siehe [Mail-Warteschlange](#mail-warteschlange)), nicht jeden Tag daran erinnert werden.
 - **`cron_alert_hours = 0`** schaltet beides ab.
+
+**Pünktliche Erinnerungen brauchen einen pünktlichen Cronjob.** Die Erinnerungen am Vorabend, die
+Zusammenfassungen und weitere Versuche für E-Mails gehen hinaus, wenn der Cronjob läuft. Mit dem
+GitHub-Workflow können sie deshalb Stunden zu spät kommen, z. B. eine Erinnerung für 18 Uhr erst nachts. Ist
+das wichtig, richten Sie beim Webhoster einen Cronjob ein, der stündlich `php bin/cron.php` ausführt (oder den
+[Web-Cron]({{ '/de/guide/installation/' | relative_url }}) mit seinem Schlüssel aufruft), und setzen Sie
+`CRON_ALERT_HOURS` auf 3.
 
 Geprüft wird bei Seitenaufrufen: Eine Seite, die niemand aufruft, kann nichts melden, aber jeder Aufruf,
 auch durch Eltern, verschickt die Warnmeldung, wenn sie fällig ist. Lehrkräfte sehen die Warnung nicht;
