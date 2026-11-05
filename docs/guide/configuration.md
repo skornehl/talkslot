@@ -53,6 +53,17 @@ again). Bookings, change links, invitation and password links are random tokens 
 | `db.name` | – | `DB_NAME` (defaults to the user name) |
 | `db.user` / `db.pass` | – | `DB_USER` / `DB_PASS` |
 | `db.prefix` | `tp_` | `DB_PREFIX`; letters, digits and `_`, empty for no prefix |
+| `db.ssl_ca` | – | `DB_SSL_CA`; path of the CA certificate for an encrypted connection, see below |
+
+**Encrypted connection.** On most shared hosting the database runs on the same server or in the hoster's
+internal network, and the connection needs no encryption. If it runs on another server reached over a
+network you do not trust, set `db.ssl_ca` to the path of the CA certificate (PEM) that signed the database
+server's certificate, on the web server (e.g. `/etc/ssl/certs/ca-certificates.crt` if the certificate comes
+from a public CA; your hoster tells you which file). The connection is then encrypted, and it fails unless
+the server shows a certificate from that CA for exactly the name in `db.host` (a host name, not an IP
+address, unless the certificate names it). A path that does not exist or cannot be read stops the app with a
+message naming `db.ssl_ca`; a certificate that does not match shows up as *Cannot connect to MySQL using
+SSL* in the alert mail and as `db_unreachable` in the [health check]({{ '/guide/deployment/' | relative_url }}#health-check).
 
 ## Languages
 

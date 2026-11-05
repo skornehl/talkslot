@@ -63,6 +63,7 @@ Sessions live in the shared `app/var/`, so nobody is logged out by a deployment.
 | `DB_USER`, `DB_PASS` | secrets | yes | database |
 | `DB_NAME` | secret | | defaults to `DB_USER` |
 | `DB_HOST`, `DB_PORT`, `DB_PREFIX` | variables | | defaults `localhost`, `3306`, `tp_` |
+| `DB_SSL_CA` | variable | | CA certificate for an encrypted database connection, a path on the web server ([`db.ssl_ca`]({{ '/guide/configuration/' | relative_url }}#database)) |
 | `APP_SECRET` | secret | yes | at least 32 characters; also the key of the [health check](#health-check) |
 | `INSTALL_KEY` | secret | for installing | together with variable `ALLOW_INSTALL=1` |
 | `APP_NAME` | variable | | name shown to parents and in mails |
@@ -112,7 +113,7 @@ alert mail and fails the check instead of being ignored. The answer contains not
 |---|---|---|
 | `ok` | 200 | database reachable, every migration applied |
 | `not_installed` | 200 | empty database: the installer has not run yet (first deployment) |
-| `db_unreachable` | 503 | no connection: check `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASS` |
+| `db_unreachable` | 503 | no connection: check `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASS` (and `DB_SSL_CA` if set) |
 | `db_unsupported` | 503 | not MariaDB 10.6 or newer (MySQL is not supported) |
 | `migration_failed` | 503 | a migration failed; the alert mail and `app/var/php-error.log` have the details |
 | `schema_outdated` | 503 | the migrations are not through yet, e.g. another request is still running them (`Retry-After`) |

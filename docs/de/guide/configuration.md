@@ -56,6 +56,18 @@ Abgemeldet wird dadurch niemand; dafür gibt es *Benutzer → Alle Sitzungen bee
 | `db.name` | – | `DB_NAME` (standardmäßig der Benutzername) |
 | `db.user` / `db.pass` | – | `DB_USER` / `DB_PASS` |
 | `db.prefix` | `tp_` | `DB_PREFIX`; Buchstaben, Ziffern und `_`, leer für kein Präfix |
+| `db.ssl_ca` | – | `DB_SSL_CA`; Pfad des CA-Zertifikats für eine verschlüsselte Verbindung, siehe unten |
+
+**Verschlüsselte Verbindung.** Bei den meisten Shared-Hosting-Angeboten läuft die Datenbank auf demselben
+Server oder im internen Netz des Hosters, und die Verbindung braucht keine Verschlüsselung. Läuft sie auf
+einem anderen Server, der über ein nicht vertrauenswürdiges Netz erreicht wird, setzen Sie `db.ssl_ca` auf den
+Pfad des CA-Zertifikats (PEM), das das Zertifikat des Datenbankservers signiert hat, und zwar auf dem
+Webserver (z. B. `/etc/ssl/certs/ca-certificates.crt`, wenn das Zertifikat von einer öffentlichen CA stammt;
+welche Datei, sagt Ihnen der Hoster). Die Verbindung ist dann verschlüsselt und kommt nur zustande, wenn der
+Server ein Zertifikat dieser CA für genau den Namen in `db.host` vorzeigt (ein Hostname, keine IP-Adresse,
+außer das Zertifikat nennt sie). Ein Pfad, den es nicht gibt oder der nicht lesbar ist, hält die App mit
+einer Meldung zu `db.ssl_ca` an; ein unpassendes Zertifikat zeigt sich als *Cannot connect to MySQL using
+SSL* in der Fehler-E-Mail und als `db_unreachable` im [Health-Check]({{ '/de/guide/deployment/' | relative_url }}#health-check).
 
 ## Sprachen {#languages}
 

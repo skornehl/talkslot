@@ -101,6 +101,8 @@ $config['db'] = [
     'pass' => $env('DB_PASS'),
     // Table prefix (variable DB_PREFIX, default tp_; set empty = no prefix)
     'prefix' => $prefix,
+    // CA certificate of a database on another server, a path on the web server (DB_SSL_CA; empty = no TLS)
+    'ssl_ca' => $env('DB_SSL_CA'),
 ];
 $config['alert_email'] = $env('ALERT_EMAIL');
 // Names in the summaries for teachers only where the school allows them (SUMMARY_NAMES=1)

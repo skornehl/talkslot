@@ -99,6 +99,7 @@ jobs:
           DB_HOST: ${{ vars.DB_HOST }}
           DB_PORT: ${{ vars.DB_PORT }}
           DB_PREFIX: ${{ vars.DB_PREFIX || 'tp_' }}
+          DB_SSL_CA: ${{ vars.DB_SSL_CA }}
           DB_NAME: ${{ secrets.DB_NAME }}
           DB_USER: ${{ secrets.DB_USER }}
           DB_PASS: ${{ secrets.DB_PASS }}

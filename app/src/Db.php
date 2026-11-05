@@ -79,13 +79,7 @@ final class Db
                 $c['name'] ?? ''
             );
             try {
-                self::$pdo = new PDO($dsn, (string) ($c['user'] ?? ''), (string) ($c['pass'] ?? ''), [
-                    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-                    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-                    PDO::ATTR_EMULATE_PREPARES => false,
-                    PDO::ATTR_STRINGIFY_FETCHES => false,
-                    PDO::ATTR_TIMEOUT => 5, // don't hang for minutes if the database goes down
-                ]);
+                self::$pdo = new PDO($dsn, (string) ($c['user'] ?? ''), (string) ($c['pass'] ?? ''), self::options($c));
             } catch (PDOException $e) {
                 self::$connectError = $e;
                 throw $e;
@@ -94,6 +88,37 @@ final class Db
             self::$pdo->exec("SET SESSION sql_mode = 'STRICT_ALL_TABLES,NO_ZERO_DATE,NO_ENGINE_SUBSTITUTION'");
         }
         return self::$pdo;
+    }
+
+    /**
+     * Options of the connection. With db.ssl_ca (the CA certificate of the database server as a PEM file) the
+     * connection is encrypted with TLS, and the server must show a certificate signed by that CA for the host
+     * name in db.host; otherwise it fails. Without it the connection is not encrypted, which is fine when the
+     * database runs on the same server or in the hoster's internal network.
+     * @param array<string, mixed> $db the db section of the configuration
+     * @return array<int, mixed>
+     */
+    public static function options(array $db): array
+    {
+        $options = [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            PDO::ATTR_EMULATE_PREPARES => false,
+            PDO::ATTR_STRINGIFY_FETCHES => false,
+            PDO::ATTR_TIMEOUT => 5, // don't hang for minutes if the database goes down
+        ];
+        $ca = trim((string) ($db['ssl_ca'] ?? ''));
+        if ($ca !== '') {
+            $options[self::mysqlAttribute('SSL_CA')] = $ca;
+            $options[self::mysqlAttribute('SSL_VERIFY_SERVER_CERT')] = true;
+        }
+        return $options;
+    }
+
+    /** Pdo\Mysql::ATTR_<name> from PHP 8.4 on; PHP 8.3 only has PDO::MYSQL_ATTR_<name> (deprecated since 8.5). */
+    private static function mysqlAttribute(string $name): int
+    {
+        return (int) constant(class_exists(\Pdo\Mysql::class) ? \Pdo\Mysql::class . '::ATTR_' . $name : PDO::class . '::MYSQL_ATTR_' . $name);
     }
 
     public static function run(string $sql, array $params = []): PDOStatement
