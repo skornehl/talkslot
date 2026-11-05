@@ -81,7 +81,7 @@ final class LegalTexts
                 $re .= preg_quote($part, '/');
                 break;
             }
-            $alone = preg_match('/(?:^|\n)\h*$/', $part) === 1 && preg_match('/^\h*(?:\n|$)/', $parts[$i + 1]) === 1;
+            $alone = preg_match('/(?:^|\n)\h*$/u', $part) === 1 && preg_match('/^\h*(?:\n|$)/u', $parts[$i + 1]) === 1;
             $re .= match (true) {
                 $alone && str_contains($text, $found[0][$i]) => preg_quote($part . $found[0][$i], '/'),
                 $alone => preg_quote(rtrim($part), '/') . '\s*.*?',
