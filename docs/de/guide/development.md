@@ -23,7 +23,7 @@ config/           config.sample.php → config.php (nicht in Git)
 public/           Document Root: index.php (Front Controller), install.php, .htaccess, assets/
 dev/              Docker-Umgebung, reset.sh, demo.sh
 docs/             diese Website (GitHub Pages, Jekyll)
-tests/            unit.php, smoke.sh, browser.mjs, deploy.sh
+tests/            unit.php, smoke.sh, integration.php, browser.mjs, deploy.sh, coverage/, phpstan.neon
 ```
 
 ## Tests
@@ -31,8 +31,10 @@ tests/            unit.php, smoke.sh, browser.mjs, deploy.sh
 ```bash
 php tests/unit.php      # Unit-Tests, keine Datenbank nötig; die CI führt sie unter PHP 8.3, 8.4 und 8.5 aus
 tests/smoke.sh          # ~300 End-to-End-Prüfungen gegen das Docker-Setup (vorher dev/reset.sh)
+php tests/integration.php  # Services gegen die Datenbank in einem Wegwerf-Schema (Teil des Smoke-Tests)
 node tests/browser.mjs  # das JavaScript in Headless-Chrome (vorher dev/reset.sh && dev/demo.sh)
 tests/deploy.sh         # das atomare Deployment über lftp file:// unter Last, Zurückschalten bei Fehlern (braucht lftp, openssl und die Datenbank)
+dev/phpstan.sh          # statische Analyse mit PHPStan (lädt das festgelegte PHAR nach dev/data/)
 ```
 
 Der Smoke-Test deckt ab: Login und Sperre, Kontoverwaltung, Datentrennung zwischen Lehrkräften, CSRF,
@@ -56,6 +58,31 @@ Außerdem laufen die Smoke-Tests gegen MariaDB 10.6, die Mindestversion (`MARIAD
 `dev/compose.yml`), und sie prüft, dass PHP 7.4 und 8.2 die Meldung von `App\Platform` erhalten statt eines
 Syntaxfehlers.
 
+### Messen statt schätzen
+
+- **Warnungen lassen die Tests scheitern.** Die App protokolliert PHP-Warnungen, Hinweise (Notices) und
+  Deprecations nur (`app/var/php-error.log`) und läuft weiter. `tests/unit.php` macht daraus Fehler; nach dem
+  Smoke-Test und in jedem CI-Job schlägt `tests/php-errors.sh` bei jeder solchen Zeile der App im Fehler-Log fehl
+  (Zeilen aus Testcode, der sie absichtlich auslöst, zählen nicht).
+- **Zeilenabdeckung.** Die CI baut den App-Container mit PCOV (`COVERAGE=1 docker compose -f dev/compose.yml up
+  -d --build`): `tests/coverage/prepend.php` zeichnet die Zeilen jeder Anfrage und jedes CLI-Skripts der Unit-,
+  Smoke-, Integrations-, Browser- und Deploy-Tests auf, `tests/coverage/report.php` führt sie zusammen. Die
+  Zusammenfassung des CI-Laufs zeigt die Abdeckung je Datei; bei einem Pull Request sind geänderte Zeilen, die
+  kein Test ausführt, im Diff markiert. Der Lauf schlägt fehl, wenn die Gesamtabdeckung unter `COVERAGE_MIN` in
+  `.github/workflows/tests.yml` fällt (erhöhen Sie den Wert, wenn die Abdeckung steigt) oder wenn kein Test eine
+  PHP-Datei überhaupt lädt. Lokal nach den Tests in einem solchen Container:
+  `docker compose -f dev/compose.yml exec app php tests/coverage/report.php`.
+- **Statische Analyse.** `dev/phpstan.sh` führt [PHPStan](https://phpstan.org/) auf Stufe 6 aus
+  (`tests/phpstan.neon`), die CI ebenso. Die Fehler, die es bei der Einführung schon gab, stehen in
+  `tests/phpstan-baseline.neon`; jeder neue lässt den Lauf scheitern. Werttypen von Arrays sind noch nicht
+  verlangt. PHPStan ist nur ein Entwicklungswerkzeug: Das Skript lädt eine festgelegte Version und prüft ihre
+  Prüfsumme, die App und ihr Build enthalten es nie.
+- **Integrationstests** (`tests/integration.php`) rufen die Services direkt gegen die Datenbank auf, ohne HTTP.
+  Jeder Lauf legt die Tabellen aus `schema.sql` unter einem zufälligen Präfix (`it<hex>_`) in der konfigurierten
+  Datenbank an und löscht sie am Ende wieder; die Daten einer Installation oder eines laufenden Smoke-Tests
+  bleiben unberührt. `App\Time::setNow()` hält die Uhr an, sodass Fristen und Löschfristen ohne verschobene
+  Zeitstempel in der Datenbank getestet werden (das geht auch in Unit-Tests).
+
 ## Konventionen
 
 - **Sprache:** Code, Kommentare, Commits und Dokumentation auf Englisch. Der Admin-Bereich ist deutsch;
@@ -65,6 +92,13 @@ Syntaxfehlers.
   Releases werden daraus abgeleitet.
 - **Datenbank:** ausschließlich Prepared Statements; das SQL-Audit im Unit-Test schlägt bei
   eingesetzten (verketteten) Variablen fehl.
+- **Reguläre Ausdrücke auf Text** bekommen den Modifikator `u`, wo Bytes und Zeichen sich unterscheiden: ein
+  Nicht-ASCII-Zeichen im Muster, `\R`, `\h`, `\v`, `\X`, `\p{…}`, `\x{…}`. Ohne ihn zerteilen sie UTF-8-Zeichen
+  (polnische, russische, ukrainische Namen und Mails). Ein Unit-Test prüft jedes Muster im Code.
+- **Smoke-Prüfungen** testen HTTP-Status, die Datenbank oder einen stabilen Marker im Template (`data-…`,
+  Hilfsfunktion `marker` in `tests/smoke.sh`) statt des Wortlauts einer Seite, der sich ändert. Das zählt vor
+  allem bei Prüfungen, dass etwas *nicht* angezeigt wird: Nach einer Umformulierung bestünden sie, ohne noch
+  etwas zu prüfen.
 - **Admin-Routen:** Tragen Sie eine Route in `AdminController::ROUTES` mit der Rolle, die sie braucht, als
   viertem Element ein (`'teacher'` für jedes angemeldete Konto, `'admin'` nur für Admin-Konten). Eine Route
   ohne bekannte Rolle ist nur für Admins erreichbar. GET-Routen dürfen keine Daten verändern; der Smoke-Test

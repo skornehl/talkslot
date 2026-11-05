@@ -140,7 +140,8 @@ ganz aus. Deshalb startet `cron.yml` zur Minute 17. Weil Läufe trotzdem oft Stu
 TalkSlot schreibt ein eigenes Log nach `app/var/php-error.log`; das Logging von PHP selbst ist abgeschaltet,
 weil dessen Meldungen Eingaben enthalten können. Werte in Anführungszeichen und Klammern sowie
 E-Mail-Adressen werden vor dem Schreiben entfernt. Das Log wird bei 5 MB rotiert (eine Vorgängerdatei
-`php-error.log.1`).
+`php-error.log.1`). PHP-Warnungen gehen zusätzlich als Fehler-E-Mail hinaus; Hinweise und veraltete Aufrufe
+(`PHP Notice`, `PHP Deprecated`, etwa nach einem PHP-Update) werden nur protokolliert.
 
 ## Backups
 
