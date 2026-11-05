@@ -67,15 +67,17 @@ Syntaxfehlers.
   auf Deutsch). Der Admin-Bereich ist je Konto deutsch oder englisch, die Elternseiten gibt es in sechs Sprachen.
 - **Admin-Texte** stehen im Code auf Deutsch und laufen durch `__()`: `__('Runde gespeichert.')` gibt den
   deutschen Text unverändert zurück und für ein englisches Konto den Eintrag aus den Wörterbüchern in
-  `app/lang/admin/en/*.php` (eine Datei pro Thema; alle werden zusammengeführt, ein Text braucht also nur
-  einen Eintrag). Platzhalter werden in beiden Sprachen gefüllt: `__('{count} Termine', ['count' => $n])`.
-  `__h()` macht dasselbe für HTML und setzt die Werte unmaskiert ein (für Links, die der Aufrufer selbst
-  gebaut und maskiert hat). JavaScript im Admin-Bereich nutzt `L('…')` mit `app/lang/admin/en/js.php`. Ein
-  Unit-Test schlägt fehl bei einem Text ohne englischen Eintrag, bei einem Eintrag, den niemand nutzt, und
-  bei abweichenden Platzhaltern. E-Mails an ein Konto folgen dessen Sprache (`AdminI18n::with()`).
+  `app/lang/admin/en/*.php` (eine Datei pro Thema, alle zusammengeführt; ein Text braucht genau einen
+  Eintrag, ein zweiter in einer anderen Datei wird ignoriert). Übergeben Sie den deutschen Text als
+  String-Literal, damit der Unit-Test ihn findet; Platzhalter werden in beiden Sprachen gefüllt:
+  `__('{count} Termine', ['count' => $n])`. `__h()` macht dasselbe für HTML und setzt die Werte unmaskiert
+  ein (für Links, die der Aufrufer selbst gebaut und maskiert hat). JavaScript im Admin-Bereich nutzt
+  `L('…')`; dessen Texte gehören nach `app/lang/admin/en/js.php`, das einzige Wörterbuch, das der Browser
+  bekommt. Ein Unit-Test schlägt fehl bei einem Text ohne englischen Eintrag, bei einem Eintrag, den niemand
+  nutzt, und bei abweichenden Platzhaltern. E-Mails an ein Konto folgen dessen Sprache (`AdminI18n::with()`).
 - **Elterntexte** laufen durch `t('schlüssel')` mit `app/lang/{de,en,pl,ru,tr,uk}.php`; jeder Schlüssel muss
-  in jeder Sprache vorhanden sein (ein Unit-Test prüft das). Neue polnische, russische, türkische und
-  ukrainische Texte sollten Muttersprachler gegenlesen.
+  in jeder Sprache vorhanden sein (ein Unit-Test prüft das). Lassen Sie neue polnische, russische, türkische
+  und ukrainische Texte von Muttersprachlern gegenlesen.
 - **Commits:** [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `docs:`, …);
   Releases werden daraus abgeleitet.
 - **Datenbank:** ausschließlich Prepared Statements; das SQL-Audit im Unit-Test schlägt bei
@@ -85,8 +87,8 @@ Syntaxfehlers.
   ohne bekannte Rolle ist nur für Admins erreichbar. GET-Routen dürfen keine Daten verändern; der Smoke-Test
   ruft jede GET-Route der Tabelle auf und schlägt bei einem Platzhalter fehl, den er noch nicht füllen kann
   (dann die IDs in `tests/smoke.d/security.sh` ergänzen).
-- **Migrationen** (`app/src/Migrations.php`) sind additiv, damit ein Rollback auf die vorige Version weiter
-  funktioniert; die Regeln stehen unten unter [Migrationen](#migrationen).
+- **Migrationen** (`app/src/Migrations.php`) sind additiv, damit ein Rollback auf die vorige Version derselben
+  Major-Version weiter funktioniert; die Regeln stehen unten unter [Migrationen](#migrationen).
 - **Rechtstext-Vorlagen:** Aktualisieren Sie nach einer Änderung an `app/templates/pages/*.md` die
   `CURRENT_PAGE_HASHES` und verschieben Sie die alten Hashes nach `OLD_PAGE_HASHES`, damit unbearbeitete
   Texte automatisch aktualisiert werden. Der Unit-Test nennt Ihnen die neuen Hashes. Für bearbeitete Texte
@@ -127,32 +129,46 @@ Jede Anfrage, die keine Datei unter `public/` trifft, landet in `public/index.ph
 ruft `App::run()` auf:
 
 1. Weiterleitung auf HTTPS (`force_https`) und die Sicherheits-Header.
-2. Auf einem installierten System: `Migrations::run()` bringt die Datenbank auf den neuesten Stand (immer nur
-   eine Anfrage, unter `GET_LOCK`), danach folgen die gespeicherten Rechtstexte neueren Vorlagen;
-   `Cleanup::maybeRun()` übernimmt die Bereinigung, falls kein Cronjob läuft (höchstens alle
-   `cleanup_interval_minutes`, reserviert per Compare-and-Set auf `settings.last_cleanup`); nach der Antwort
-   gehen fällige E-Mails der Warteschlange hinaus. Ein Fehler in diesem Schritt löst eine Fehler-E-Mail aus,
-   blockiert die Seite aber nicht.
+2. Auf einem installierten System, bei jeder Anfrage außer den beiden unten:
+   - `Migrations::run()` bringt die Datenbank auf den neuesten Stand (immer nur eine Anfrage, unter
+     `GET_LOCK`); unbearbeitete Rechtstexte werden danach durch neuere Vorlagen ersetzt (siehe
+     *Rechtstext-Vorlagen* oben).
+   - `Cleanup::maybeRun()` führt die Datenbankschritte der Bereinigung aus, höchstens alle
+     `cleanup_interval_minutes` (reserviert per Compare-and-Set auf `settings.last_cleanup`;
+     `cleanup_on_request` schaltet das ab).
+   - `CronMonitor::check()` bemerkt einen Cronjob, der nicht mehr läuft.
+   - Nach der Antwort gehen fällige E-Mails der Warteschlange hinaus (wo PHP die Antwort vorher abschließen
+     kann, z. B. PHP-FPM; siehe `mail_queue.after_response`).
+
+   Ein Fehler in diesem Schritt löst eine Fehler-E-Mail aus, blockiert die Seite aber nicht.
 3. Ein Formular, das von einer anderen Website abgeschickt wurde, bekommt 403, bevor etwas verarbeitet wird.
-4. `POST /cron` mit `X-Cron-Token` und `POST /health` mit `X-Health-Token` sind der Web-Cron und die
-   Prüfung des Deployments; ohne den Header sind diese Pfade gewöhnliche Rundenadressen.
+4. `POST /cron` mit `X-Cron-Token` und `POST /health` mit `X-Health-Token` sind der Web-Cron und der
+   Health-Check des Deployments; sie migrieren erst, nachdem sie ihren Schlüssel geprüft haben. Ohne den
+   Header gelten diese Pfade als Adresse einer Runde (`/<slug>`).
 5. `/admin…` geht an `AdminController::dispatch()` (Session, CSRF-Token, Routentabelle mit Rollen), alles
    andere an `PublicController::dispatch()` (Sprache aus `?lang=`, dem Formular oder dem Browser).
 
-Die Controller geben Templates mit `View::render()` aus, das die Variablen an das Template übergibt; jede
-Ausgabe läuft über `e()`.
+Die Controller geben Templates mit `View::render()` aus, das die Variablen an das Template übergibt. Jeder Wert
+im HTML wird maskiert: mit `e()` oder von `__h()` und dem Markdown-Renderer, die selbst maskieren.
 
 ### Sperrreihenfolge
 
 Schreibzugriffe, die Buchungen betreffen, sperren Zeilen in einer festen Reihenfolge: **Runde → ihre Tage →
-Termine (mit ihrem Tag) → Buchungen**. Eine Buchung läuft in `Db::transaction()`: Mit Buchungslimit sperrt sie
-die Runde (`BookingService::lockForLimit()`), dann den Termin zusammen mit seinem Tag (`lockSlot()`), dann
-prüft sie, ob der Termin schon gebucht ist. `UNIQUE(slot_id)` ist die harte Garantie; ein Deadlock wird einmal
-wiederholt (`retryOnDeadlock()`). Das Löschen oder Ändern eines Tages, einer Runde oder eines Kontos
-(`ScheduleService::LOCKS`) und der Neuaufbau der Termine eines Tages (`SlotGenerator::sync()`) sperren in
-derselben Reihenfolge. Halten Sie sie auch in neuem Code ein: Sonst kann jede von zwei Anfragen die Sperre
-halten, auf die die andere wartet. E-Mails gehen erst nach dem Commit hinaus (direkt oder über die
-Warteschlange), nie innerhalb der Transaktion.
+Termine → Buchungen**. Das Löschen oder Ändern eines Tages, einer Runde oder eines Kontos
+(`ScheduleService::LOCKS`) und der Neuaufbau der Termine eines Tages (`SlotGenerator::sync()`) halten sie ein;
+das Löschen eines Kontos sperrt vorher die Zeilen der aktiven Admins, damit immer ein Admin bleibt
+(`AccountSecurity`).
+
+Eine Buchung läuft in `Db::transaction()`: Mit Buchungslimit sperrt sie die Runde
+(`BookingService::lockForLimit()`), dann den Termin zusammen mit seinem Tag in einem verknüpften
+`SELECT … FOR UPDATE` (`lockSlot()`), dann prüft sie, ob der Termin schon gebucht ist. Diese Verknüpfung ist
+die einzige Stelle, an der ein Termin vor seinem Tag gesperrt werden kann; eine Buchung kann sich deshalb mit
+einem `sync()` desselben Tages kreuzen, und InnoDB beendet dann eine der beiden als Deadlock. Buchungen sind
+darauf eingestellt: Sie wiederholen bei einem Deadlock oder Sperr-Timeout einmal (`retryOnDeadlock()`) und
+melden den Termin danach als vergeben, und `UNIQUE(slot_id)` ist die harte Garantie gegen Doppelbuchungen. Die
+Seite der Lehrkraft wiederholt nicht. Für neuen Code: den Tag vor seinen Terminen sperren und neue
+Schreibzugriffe auf Elternseite in `retryOnDeadlock()` einbetten. E-Mails gehen erst nach dem Commit hinaus
+(direkt oder über die Warteschlange), nie innerhalb der Transaktion.
 
 Hintergrundarbeiten nutzen stattdessen benannte Sperren: Migrationen und die Warteschlange `GET_LOCK`;
 Erinnerungen und Zusammenfassungen reservieren ihre Zeilen mit `UPDATE … WHERE reminded_at IS NULL` und
@@ -166,16 +182,16 @@ Rückfallebene aus. Was wann gelöscht wird:
 
 | Daten | Gelöscht |
 | --- | --- |
-| Buchungen (Name, E-Mail-Adresse) | ab Mitternacht nach dem Tag des Termins; bei einer Absage sofort, außerdem mit ihrem Tag, ihrer Runde oder ihrem Konto |
-| Runden | nach ihrem letzten Tag deaktiviert, wenn sie in Gebrauch waren, `delete_after_hours` später gelöscht (je Runde; leer = bleibt) |
-| E-Mail-Warteschlange | nach dem Versand; nach 48 Stunden, wenn der Versand weiter scheitert |
-| Ratenlimits (gehashte, gekürzte IP-Adressen) | nach 24 Stunden |
+| Buchungen (Name, E-Mail-Adresse) | um Mitternacht nach dem Tag des Termins; bei einer Absage sofort, außerdem mit ihrem Tag, ihrer Runde oder ihrem Konto |
+| Runden | nach ihrem letzten Tag deaktiviert, wenn sie in Gebrauch waren, `delete_after_hours` später gelöscht (je Runde; nicht gesetzt = nie gelöscht) |
+| E-Mail-Warteschlange (Verweise, keine Texte) | nach dem Versand oder wenn nicht mehr nötig, mit ihrer Buchung oder ihrem Konto; spätestens nach 48 Stunden (`Outbox::MAX_AGE_HOURS`) |
+| Rate-Limits (HMACs gekürzter IP-Adressen und von Kontonamen) | nach 24 Stunden |
 | Versandprotokoll der Zusammenfassungen | nach 60 Tagen |
 | Admin-Protokoll | nach `audit_log_days` (Standard 90) |
 | Deaktivierte Lehrkraft-Konten ohne Runden in Gebrauch | nach 15 Monaten ohne Anmeldung |
 
 Neue personenbezogene Daten brauchen ihren Löschschritt in `Cleanup::run()` (mit Test), eine Zeile in dieser
-Tabelle und in den Datenschutz-Vorlagen beider Betriebsarten.
+Tabelle und in den Datenschutz-Vorlagen beider Betriebsarten (von der Schule oder privat betrieben).
 
 ### Migrationen
 
@@ -184,37 +200,45 @@ direkt. Eine bestehende führt beim nächsten Aufruf die fehlenden Schritte aus 
 
 - Fügen Sie einen Schritt unter der nächsten Nummer hinzu, erhöhen Sie `LATEST` und ändern Sie `schema.sql`
   im selben Commit. Ein veröffentlichter Schritt wird nie mehr geändert.
-- Schritte sind **additiv und wiederholbar**: `ADD COLUMN IF NOT EXISTS` mit Standardwert, `CREATE TABLE IF
-  NOT EXISTS`, `ADD KEY IF NOT EXISTS`, Datenänderungen, die bei erneutem Lauf dasselbe Ergebnis liefern. Ein
+- Schritte sind **additiv und wiederholbar**: `ADD COLUMN IF NOT EXISTS`, `CREATE TABLE IF NOT EXISTS`,
+  `ADD KEY IF NOT EXISTS`, Datenänderungen, die bei erneutem Lauf dasselbe Ergebnis liefern. Eine neue
+  `NOT NULL`-Spalte braucht einen Standardwert, weil die `INSERT`s der vorigen Version sie nicht nennen
+  (Schritt 22 zeigt, wie eine Spalte mit `NULL` dazukommt, deren Standardwert nur neue Zeilen bekommen). Ein
   abgebrochener Schritt kann dann einfach erneut laufen, und die vorige Version arbeitet mit dem neuen Schema,
   weil sie ignoriert, was sie nicht kennt. Darauf verlässt sich das Rollback mit einem Klick: Es schaltet den
   Code um, nicht die Datenbank.
+- PHP-Arbeit eines Schritts (Daten nachtragen) gehört unter seiner Nummer in `Migrations::steps()`, wie bei den
+  Schritten 7 und 10, und muss ebenfalls wiederholbar sein.
+- Eine neue Tabelle gehört in `Db::TABLES`, sonst bekommt sie kein Tabellenpräfix; keine Spalte darf wie eine
+  Tabelle heißen (Unit-Tests prüfen beides).
 - **Nicht** in einer Minor-Version: Spalten oder Tabellen umbenennen oder löschen, Typ oder Kollation einer
-  Spalte ändern, `ON DELETE RESTRICT`. Sie brechen die vorige Version. Sie warten auf eine Major-Version und
-  kommen in zwei Schritten (erweitern, dann einschränken): die neue Spalte ergänzen und nutzen, die alte erst in
-  einer späteren Major-Version entfernen. Schritt 3 (Umbenennen von `admin_users`, Löschen von Spalten) stammt
-  aus der Zeit vor dieser Regel.
-- Während die Dateien eines Updates hochgeladen werden, kann neuer Code kurz auf das alte Schema treffen. Code,
-  der eine neue Spalte liest, fällt auf das alte Verhalten zurück, bis der Schritt gelaufen ist (z. B.
-  `RoundAccess::required()`).
+  Spalte ändern, neue `UNIQUE`- oder Fremdschlüssel-Constraints auf bestehenden Spalten, `ON DELETE RESTRICT`.
+  Sie können die vorige Version brechen oder an vorhandenen Daten scheitern. Sie warten auf eine Major-Version
+  und kommen in zwei Schritten (erst erweitern, dann zurückbauen, „Expand/Contract“): die neue Spalte ergänzen
+  und nutzen, die alte erst in einer späteren Major-Version entfernen. Schritt 3 (Umbenennen von
+  `admin_users`, Löschen von Spalten) stammt aus der Zeit vor dieser Regel.
+- Während die Dateien eines Updates hochgeladen werden, kann neuer Code kurz auf das alte Schema treffen. Wo das
+  zählt (eine Seite, die nicht scheitern darf), sollte der Code auf das alte Verhalten zurückfallen, bis der
+  Schritt gelaufen ist, wie `RoundAccess::required()`.
 - Die Schritte nutzen MariaDB-Syntax (10.6 oder neuer); MySQL wird nicht unterstützt.
-- Parallele Branches: Zwei Branches, die dieselbe Schrittnummer hinzufügen, lassen sich in Git ohne Konflikt
-  zusammenführen, und PHP behält nur den letzten Array-Schlüssel. Prüfen Sie vor der Wahl einer Nummer `main`
-  und die offenen Branches.
+- Parallele Branches: Zwei Branches, die einen Schritt unter derselben Nummer hinzufügen, geraten in Git in
+  Konflikt, und wer beim Auflösen beide Blöcke behält, verliert einen davon unbemerkt (PHP behält von zwei
+  gleichen Array-Schlüsseln nur den letzten). Nummerieren Sie stattdessen einen um, und prüfen Sie vor der Wahl
+  einer Nummer `main` und die offenen Branches.
 
-## Sicherheitskorrekturen
+## Sicherheitskorrekturen (Maintainer) {#sicherheitskorrekturen}
 
-Sicherheitslücken werden vertraulich gemeldet (siehe [Sicherheit]({{ '/de/guide/security/' | relative_url }}#sicherheitslücke-melden)
-und `SECURITY.md`), nie in einem öffentlichen Issue. Der Maintainer bearbeitet eine Meldung als GitHub Security
-Advisory:
+Sicherheitslücken werden vertraulich gemeldet (siehe [Sicherheit]({{ '/de/guide/security/' | relative_url }})
+und [`SECURITY.md`](https://github.com/skornehl/talkslot/blob/main/SECURITY.md), englisch), nie in einem
+öffentlichen Issue. Der Maintainer bearbeitet eine Meldung als GitHub Security Advisory:
 
-1. Die Meldung bestätigen und in einem Entwurf des Advisorys bewerten (betroffene Versionen, Schweregrad).
+1. Die Meldung bestätigen und in einem Advisory-Entwurf bewerten (betroffene Versionen, Schweregrad).
 2. Die Korrektur im **temporären privaten Fork** des Advisorys schreiben, nicht in einem öffentlichen Branch
-   oder Pull Request, und Unit- und Smoke-Tests lokal ausführen: Vor dem Release wird nichts über die Lücke
-   öffentlich.
-3. Die Korrektur aus dem Advisory mergen, sofort ein Release erstellen (`release.yml`) und das Advisory mit der
-   korrigierten Version veröffentlichen (bei Bedarf eine CVE beantragen). Danach die selbst betriebenen
-   Installationen aktualisieren.
+   oder Pull Request, und Unit- und Smoke-Tests lokal ausführen (dort läuft keine CI). Vor dem Merge wird
+   nichts über die Lücke öffentlich.
+3. Die Korrektur aus dem Advisory mergen, gleich danach *Actions → Release* (`release.yml`) starten und das
+   Advisory mit der korrigierten Version veröffentlichen (bei Bedarf eine CVE beantragen). Danach die selbst
+   betriebenen Installationen aktualisieren.
 
 Sicherheitskorrekturen gibt es nur für das jeweils neueste Release.
 

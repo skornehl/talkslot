@@ -66,12 +66,13 @@ and checks that PHP 7.4 and 8.2 get the message of `App\Platform` instead of a s
   German). The admin area is German or English per account, the parent pages come in six languages.
 - **Admin texts** are written in German in the code and pass through `__()`: `__('Runde gespeichert.')`
   returns the German text as it is and, for an English account, the entry of the dictionaries in
-  `app/lang/admin/en/*.php` (one file per topic; all of them are merged, so a text needs only one entry).
-  Placeholders are filled in both languages: `__('{count} Termine', ['count' => $n])`. `__h()` does the same
+  `app/lang/admin/en/*.php` (one file per topic, all merged; a text needs exactly one entry, as a second
+  one in another file is ignored). Pass the German text as a string literal, so that the unit test finds it;
+  placeholders are filled in both languages: `__('{count} Termine', ['count' => $n])`. `__h()` does the same
   for HTML and inserts the values unescaped (for links the caller has built and escaped). JavaScript in the
-  admin area uses `L('…')` with `app/lang/admin/en/js.php`. A unit test fails for a text without an English
-  entry, for an entry nobody uses and for different placeholders. Mails to an account follow its language
-  (`AdminI18n::with()`).
+  admin area uses `L('…')`; its texts belong in `app/lang/admin/en/js.php`, the only dictionary the browser
+  gets. A unit test fails for a text without an English entry, for an entry nobody uses and for different
+  placeholders. Mails to an account follow its language (`AdminI18n::with()`).
 - **Parent texts** pass through `t('key')` with `app/lang/{de,en,pl,ru,tr,uk}.php`; every key must exist in
   every language (a unit test checks this). Ask native speakers to review new Polish, Russian, Turkish and
   Ukrainian texts.
@@ -82,8 +83,8 @@ and checks that PHP 7.4 and 8.2 get the message of `App\Platform` instead of a s
   (`'teacher'` for every signed-in account, `'admin'` for admin accounts only). A route without a known role
   is admin-only. GET routes must not change data; the smoke test opens every GET route of the table and
   fails for a placeholder it cannot fill yet (extend the IDs in `tests/smoke.d/security.sh`).
-- **Migrations** (`app/src/Migrations.php`) are additive, so that a rollback to the previous version keeps
-  working; see [Migrations](#migrations) below for the rules.
+- **Migrations** (`app/src/Migrations.php`) are additive, so that a rollback to the previous version of the
+  same major version keeps working; see [Migrations](#migrations) below for the rules.
 - **Legal templates:** after changing `app/templates/pages/*.md`, update `CURRENT_PAGE_HASHES` and move
   the old hashes to `OLD_PAGE_HASHES`, so unedited texts are upgraded automatically. The unit test tells
   you the new hashes. Edited texts need no new hint in `AdminController::legalHints()`: their version
@@ -122,30 +123,41 @@ Every request that is not a file under `public/` reaches `public/index.php`, whi
 `App::run()`:
 
 1. HTTPS redirect (`force_https`) and the security headers.
-2. On an installed system: `Migrations::run()` brings the database up to date (one request at a time, under
-   `GET_LOCK`), then the stored legal texts follow newer templates; `Cleanup::maybeRun()` runs the clean-up
-   as a fallback for a missing cron job (at most every `cleanup_interval_minutes`, claimed with a
-   compare-and-set on `settings.last_cleanup`); after the response, due mails of the outbox go out. A
-   failure here sends an alert mail but does not block the page.
+2. On an installed system, for every request except the two below:
+   - `Migrations::run()` brings the database up to date (one request at a time, under `GET_LOCK`); unedited
+     legal texts are then replaced by newer templates (see *Legal templates* above).
+   - `Cleanup::maybeRun()` runs the database steps of the clean-up, at most every `cleanup_interval_minutes`
+     (claimed with a compare-and-set on `settings.last_cleanup`; `cleanup_on_request` turns it off).
+   - `CronMonitor::check()` notices a cron job that stopped.
+   - After the response, due mails of the outbox go out (where PHP can finish the response first, e.g.
+     PHP-FPM; see `mail_queue.after_response`).
+
+   A failure in this step sends an alert mail but does not block the page.
 3. A form posted from another site gets 403 before anything is processed.
 4. `POST /cron` with `X-Cron-Token` and `POST /health` with `X-Health-Token` are the web cron and the
-   deployment's health check; without the header these paths are ordinary round addresses.
+   deployment's health check; they migrate only after checking their key. Without the header these paths
+   are treated as the address of a round (`/<slug>`).
 5. `/admin…` goes to `AdminController::dispatch()` (session, CSRF token, route table with roles),
    everything else to `PublicController::dispatch()` (language from `?lang=`, the form or the browser).
 
-Controllers render templates with `View::render()`, which hands the variables to the template; every output
-goes through `e()`.
+Controllers render templates with `View::render()`, which hands the variables to the template. Every value
+in the HTML is escaped: with `e()`, or by `__h()` and the Markdown renderer, which escape on their own.
 
 ### Locking order
 
-Writes that concern bookings lock rows in one order: **round → its days → slots (with their day) →
-bookings**. A booking runs in `Db::transaction()`: with a booking limit it locks the round
-(`BookingService::lockForLimit()`), then the slot joined with its day (`lockSlot()`), then checks for a
-booking of the slot. `UNIQUE(slot_id)` is the hard guarantee; a deadlock is retried once
-(`retryOnDeadlock()`). Deleting or changing a day, a round or an account (`ScheduleService::LOCKS`) and
-rebuilding the slots of a day (`SlotGenerator::sync()`) lock in the same order. Keep it for new code:
-otherwise two requests can each hold the lock the other one waits for. Mails go out after the commit
-(directly or through the outbox), never inside the transaction.
+Writes that concern bookings lock rows in one order: **round → its days → slots → bookings**. Deleting or
+changing a day, a round or an account (`ScheduleService::LOCKS`) and rebuilding the slots of a day
+(`SlotGenerator::sync()`) follow it; an account's deletion first locks the rows of the active admins, so
+that one admin always remains (`AccountSecurity`).
+
+A booking runs in `Db::transaction()`: with a booking limit it locks the round (`BookingService::lockForLimit()`),
+then the slot together with its day in one joined `SELECT … FOR UPDATE` (`lockSlot()`), then checks for a
+booking of the slot. That join is the one place where a slot may be locked before its day, so a booking can
+cross a `sync()` of the same day; InnoDB then ends one of them as a deadlock. Bookings expect this: they
+retry once on a deadlock or lock wait timeout (`retryOnDeadlock()`) and then report the slot as taken, and
+`UNIQUE(slot_id)` is the hard guarantee against double bookings. The teacher's side does not retry. For new
+code: lock the day before its slots, and wrap new writes on the parents' side in `retryOnDeadlock()`. Mails
+go out after the commit (directly or through the outbox), never inside the transaction.
 
 Background work takes named locks instead: migrations and the outbox use `GET_LOCK`; reminders and summaries
 claim their rows with `UPDATE … WHERE reminded_at IS NULL` and `INSERT IGNORE`, so that two runs at the same
@@ -158,16 +170,16 @@ sends the outbox; page requests run the same database steps as a fallback. What 
 
 | Data | Deleted |
 | --- | --- |
-| Bookings (name, e-mail address) | from midnight after the day of the appointment; at once when cancelled, and with their day, round or account |
-| Rounds | deactivated after their last day if they were in use, deleted `delete_after_hours` later (per round; empty = kept) |
-| Mail queue | once sent; after 48 hours if sending keeps failing |
-| Rate limits (hashed, truncated IP addresses) | after 24 hours |
+| Bookings (name, e-mail address) | at midnight after the day of the appointment; at once when cancelled, and with their day, round or account |
+| Rounds | deactivated after their last day if they were in use, deleted `delete_after_hours` later (per round; unset = never deleted) |
+| Mail queue (references, no texts) | once sent or no longer needed, with its booking or account; at the latest after 48 hours (`Outbox::MAX_AGE_HOURS`) |
+| Rate limits (HMACs of truncated IP addresses and of account names) | after 24 hours |
 | Summary delivery log | after 60 days |
 | Admin log | after `audit_log_days` (default 90) |
 | Deactivated teacher accounts without rounds in use | after 15 months without login |
 
 New personal data needs its deletion step in `Cleanup::run()` (with a test), a line in this table and in
-the privacy templates of both operator types.
+the privacy templates of both operator types (operated by the school or privately).
 
 ### Migrations
 
@@ -176,31 +188,42 @@ directly. An existing one runs the missing steps of `Migrations::STEPS` on the n
 
 - Add a step under the next number, raise `LATEST` and change `schema.sql` in the same commit. A step that
   has been released is never changed.
-- Steps are **additive and repeatable**: `ADD COLUMN IF NOT EXISTS` with a default, `CREATE TABLE IF NOT
-  EXISTS`, `ADD KEY IF NOT EXISTS`, data updates that give the same result when run again. An interrupted
-  step can then simply run again, and the previous version works with the new schema, because it ignores
-  what it does not know. That is what the one-click rollback relies on: it switches the code, not the
-  database.
+- Steps are **additive and repeatable**: `ADD COLUMN IF NOT EXISTS`, `CREATE TABLE IF NOT EXISTS`,
+  `ADD KEY IF NOT EXISTS`, data updates that give the same result when run again. A new `NOT NULL` column
+  needs a default, as the previous version's `INSERT`s do not name it (step 22 shows how to add a nullable
+  column whose default only new rows get). An interrupted step can then simply run again, and the previous
+  version works with the new schema, because it ignores what it does not know. That is what the one-click
+  rollback relies on: it switches the code, not the database.
+- PHP work of a step (filling in data) goes into `Migrations::steps()` under its number, like steps 7 and
+  10, and must be repeatable as well.
+- A new table goes into `Db::TABLES`, or it does not get the table prefix; no column may be named like a
+  table (unit tests check both).
 - **Not** in a minor version: renaming or dropping columns and tables, changing a column's type or
-  collation, `ON DELETE RESTRICT`. They break the previous version. They wait for a major version and go in
-  two steps (expand, then contract): add the new column and use it, drop the old one only in a later major
-  version. Step 3 (renaming `admin_users`, dropping columns) dates from before this rule.
-- While the files of an update are uploaded, new code may meet the old schema for a moment. Code that reads
-  a new column falls back to the old behaviour until the step has run (e.g. `RoundAccess::required()`).
+  collation, new `UNIQUE` or foreign key constraints on existing columns, `ON DELETE RESTRICT`. They can
+  break the previous version or fail on existing data. They wait for a major version and go in two steps
+  (expand, then contract): add the new column and use it, drop the old one only in a later major version.
+  Step 3 (renaming `admin_users`, dropping columns) dates from before this rule.
+- While the files of an update are uploaded, new code may meet the old schema for a moment. Where that
+  matters (a page that must not fail), let the code fall back to the old behaviour until the step has run,
+  as `RoundAccess::required()` does.
 - The steps use MariaDB syntax (10.6 or newer); MySQL is not supported.
-- Parallel branches: two branches that add the same step number merge without a conflict in Git, and PHP
-  keeps only the last array key. Before taking a number, check `main` and the open branches.
+- Parallel branches: two branches that add a step under the same number conflict in Git, and keeping both
+  blocks when resolving it loses one of them silently (PHP keeps only the last of two equal array keys).
+  Renumber one of them instead, and check `main` and the open branches before taking a number.
 
-## Security fixes
+## Security fixes (maintainers) {#security-fixes}
 
 Vulnerabilities are reported privately (see [Security]({{ '/guide/security/' | relative_url }}#reporting-a-vulnerability)
-and `SECURITY.md`), never in a public issue. The maintainer handles a report as a GitHub Security Advisory:
+and [`SECURITY.md`](https://github.com/skornehl/talkslot/blob/main/SECURITY.md)), never in a public issue.
+The maintainer handles a report as a GitHub Security Advisory:
 
 1. Confirm the report and assess it in a draft advisory (affected versions, severity).
 2. Fix it in the advisory's **temporary private fork**, not in a public branch or pull request, and run the
-   unit and smoke tests locally: nothing about the issue becomes public before the release.
-3. Merge the fix from the advisory, release at once (`release.yml`) and publish the advisory with the fixed
-   version (request a CVE if the issue is worth one). Then update the installations you run.
+   unit and smoke tests locally (CI does not run there). Nothing about the issue becomes public before the
+   merge.
+3. Merge the fix from the advisory, start *Actions → Release* (`release.yml`) right after it and publish the
+   advisory with the fixed version (request a CVE if the issue is worth one). Then update the installations
+   you run.
 
 Only the latest release gets security fixes.
 
