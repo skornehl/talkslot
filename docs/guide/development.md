@@ -60,16 +60,19 @@ and checks that PHP 7.4 and 8.2 get the message of `App\Platform` instead of a s
 ### Measuring instead of guessing
 
 - **Warnings fail the tests.** The app only logs PHP warnings, notices and deprecations (`app/var/php-error.log`)
-  and carries on. `tests/unit.php` turns them into errors; after the smoke test and in every CI job
-  `tests/php-errors.sh` fails for any such line of the app in the error log (lines of test code that provoke
-  them on purpose do not count).
+  and carries on. `tests/unit.php` turns them into errors and at the end also fails for those that app code
+  caught; after the smoke and deployment tests and in every CI job `tests/php-errors.sh` fails for any such line
+  of the app in the error log (lines of test code that provoke them on purpose do not count).
 - **Line coverage.** CI builds the app container with PCOV (`COVERAGE=1 docker compose -f dev/compose.yml up -d
   --build`): `tests/coverage/prepend.php` records the lines of every request and CLI script of the unit, smoke,
   integration, browser and deployment tests, and `tests/coverage/report.php` merges them. The job summary of
   the run shows the coverage per file; for a pull request, changed lines that no test executes are marked in the
-  diff. The run fails if the total drops below `COVERAGE_MIN` in `.github/workflows/tests.yml` (raise it when
-  the coverage rises) or if no test loads a PHP file at all. Locally, after the tests in such a container:
-  `docker compose -f dev/compose.yml exec -w /srv/app app php tests/coverage/report.php`.
+  diff. **A pull request must not lower the coverage:** the run on `main` records its coverage as the commit
+  status `coverage`, and a pull request's run fails if it is more than 0.05 percentage points below it (a few
+  lines depend on timing). Every run also fails below `COVERAGE_MIN` in `.github/workflows/tests.yml` or if no
+  test loads a PHP file at all. Locally, after the tests in such a container:
+  `docker compose -f dev/compose.yml exec -w /srv/app app php tests/coverage/report.php`. The raw data collect in
+  `/tmp/talkslot-coverage` in the container; empty it before a new run, or line numbers of older code mix in.
 - **Static analysis.** `dev/phpstan.sh` runs [PHPStan](https://phpstan.org/) at level 6 (`tests/phpstan.neon`);
   CI does the same. The errors that existed when it was introduced are listed in `tests/phpstan-baseline.neon`;
   every new one fails. Value types of arrays are not required yet. PHPStan is a development tool only: the
@@ -77,8 +80,10 @@ and checks that PHP 7.4 and 8.2 get the message of `App\Platform` instead of a s
 - **Integration tests** (`tests/integration.php`) call the services directly against the database, without
   HTTP. Every run creates the tables of `schema.sql` under a random prefix (`it<hex>_`) in the configured
   database and drops them at the end; the data of an installation or a running smoke test stay untouched.
+  `dev/reset.sh` drops tables an interrupted run left behind. The script only runs with `debug` in `config.php`
+  (the Docker environment) or `TALKSLOT_INTEGRATION=1`, never by accident against a live installation.
   `App\Time::setNow()` fixes the clock, so deadlines and deletion periods are tested without moving
-  timestamps in the database (it works in unit tests too).
+  timestamps in the database (it works in unit tests too; `time()`, e.g. for the rate limits, is not affected).
 
 ## Conventions
 

@@ -9,6 +9,8 @@
  * (it<hex>_) in the configured database, dropped again at the end, also after a failure. The data of an
  * installation or of a running smoke test (prefix tp_) stay untouched. A transaction with rollback would not do:
  * DDL commits implicitly, and lock tests need a second connection. The clock is fixed with App\Time::setNow().
+ * It only runs with "debug" in config.php (the Docker environment) or TALKSLOT_INTEGRATION=1, never by accident
+ * against a live installation.
  */
 declare(strict_types=1);
 
@@ -21,12 +23,20 @@ use App\Db;
 use App\SlotGenerator;
 use App\Time;
 
-// Warnings and deprecations fail the run, as in tests/unit.php
+if (!App\Config::get('debug', false) && getenv('TALKSLOT_INTEGRATION') !== '1') {
+    fwrite(STDERR, "tests/integration.php creates and drops tables: only with \"debug\" in config.php or TALKSLOT_INTEGRATION=1\n");
+    exit(2);
+}
+
+// Warnings and deprecations fail the run, as in tests/unit.php, also those that app code catches
+$itWarnings = [];
 set_error_handler(static function (int $type, string $message, string $file, int $line): bool {
     if (!(error_reporting() & $type)) {
         return false;
     }
-    throw new ErrorException($message . ' in ' . str_replace(dirname(__DIR__), '', $file) . ':' . $line, 0, $type, $file, $line);
+    $place = App\ErrorPage::relativePath($file) . ':' . $line;
+    $GLOBALS['itWarnings'][] = "$message ($place)";
+    throw new ErrorException("$message in $place", 0, $type, $file, $line);
 });
 
 $fail = 0;
@@ -58,6 +68,8 @@ register_shutdown_function(static function () use ($pdo, $ours): void {
     if ($pdo->inTransaction()) {
         $pdo->rollBack();
     }
+    // Never wait a day (lock_wait_timeout) for a metadata lock that a failed test left behind
+    $pdo->exec('SET SESSION lock_wait_timeout = 30');
     if ($tables = $ours()) {
         $pdo->exec('SET FOREIGN_KEY_CHECKS = 0');
         $pdo->exec('DROP TABLE `' . implode('`, `', $tables) . '`');
@@ -65,7 +77,7 @@ register_shutdown_function(static function () use ($pdo, $ours): void {
     }
 });
 
-echo "Throwaway schema\n";
+echo "Throwaway schema $prefix\n";
 $schema = (string) preg_replace('/^\s*--.*$/m', '', (string) file_get_contents(APP_ROOT . '/app/schema.sql'));
 // Names of foreign keys are unique per database, not per table: the throwaway tables get names of their own
 foreach (explode(';', str_replace('CONSTRAINT fk_', 'CONSTRAINT ' . $prefix . 'fk_', $schema)) as $stmt) {
@@ -122,13 +134,18 @@ $db = (array) $cfg['db'];
 $other = new PDO(sprintf('mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4', $db['host'] ?? 'localhost', (int) ($db['port'] ?? 3306), $db['name'] ?? ''),
     (string) ($db['user'] ?? ''), (string) ($db['pass'] ?? ''), [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
 $other->beginTransaction();
-$other->prepare(Db::prefix('SELECT id FROM slots WHERE id = ? FOR UPDATE'))->execute([$ids[3]]);
-$pdo->exec('SET SESSION innodb_lock_wait_timeout = 1');
-$t = microtime(true);
-$locked = refused(static fn () => BookingService::book($round, $ids[3], 'Eva Ernst', null, 'de'));
-$waited = microtime(true) - $t;
-$other->rollBack();
-$pdo->exec('SET SESSION innodb_lock_wait_timeout = DEFAULT');
+try {
+    $other->prepare(Db::prefix('SELECT id FROM slots WHERE id = ? FOR UPDATE'))->execute([$ids[3]]);
+    $pdo->exec('SET SESSION innodb_lock_wait_timeout = 1');
+    $t = microtime(true);
+    $locked = refused(static fn () => BookingService::book($round, $ids[3], 'Eva Ernst', null, 'de'));
+    $waited = microtime(true) - $t;
+} finally {
+    // Also after a failure: the open transaction would block dropping the tables at the end
+    $other->rollBack();
+    $other = null;
+    $pdo->exec('SET SESSION innodb_lock_wait_timeout = DEFAULT');
+}
 check(sprintf('slot locked by another transaction: two attempts, then "taken" (%.1f s)', $waited), $locked === BookingService::TAKEN && $waited >= 2);
 
 echo "Changing the day\n";
@@ -152,5 +169,6 @@ check('from 0:00 the day after: bookings deleted, round expired; the round itsel
     $first['bookings_deleted'] === 3 && $first['rounds_expired'] === 1 && $first['rounds_deleted'] === 0
     && $second['rounds_deleted'] === 1 && Db::value('SELECT COUNT(*) FROM rounds') === 0 && Db::value('SELECT COUNT(*) FROM slots') === 0);
 
+check('no PHP warning, notice or deprecation, also none that app code caught' . ($itWarnings ? ': ' . implode('; ', array_unique($itWarnings)) : ''), $itWarnings === []);
 echo $fail === 0 ? "ALL INTEGRATION TESTS PASSED\n" : "$fail FAILED\n";
 exit($fail === 0 ? 0 : 1);

@@ -19,6 +19,18 @@ check('cancel deadline across the change to winter time: the same clock time on 
     ['day_date' => '2026-10-25', 'start_time' => '14:00:00', 'cancel_deadline_hours' => 24], '2026-10-24 13:59:59', '2026-10-24 14:00:00'));
 App\Time::setNow(null);
 check('Time::setNow(null): the real time again', abs(App\Time::now()->getTimestamp() - time()) <= 2);
+App\Time::setNow(new DateTimeImmutable('2026-11-30 16:59:30', new DateTimeZone('UTC')));
+$qZone = App\Time::nowSql();
+App\Time::setNow(null);
+// The clock is a test hook: no code of the app sets it
+$qSetters = [];
+foreach (array_merge(glob("$root/app/src/*.php") ?: [], glob("$root/app/src/*/*.php") ?: [], glob("$root/app/templates/*/*.php") ?: [], glob("$root/bin/*.php") ?: [], glob("$root/public/*.php") ?: [], ["$root/app/bootstrap.php", "$root/app/helpers.php"]) as $f) {
+    if (preg_match('/Time::setNow\s*\(/', (string) preg_replace('/^\s*(?:\*|\/\/).*$/m', '', (string) file_get_contents($f)))) {
+        $qSetters[] = substr($f, strlen($root) + 1);
+    }
+}
+check('fixed clock: a moment in another time zone counts in the configured one; only tests set it' . ($qSetters ? ' (' . implode(', ', $qSetters) . ')' : ''),
+    $qZone === '2026-11-30 17:59:30' && !$qSetters);
 
 // tests/unit.php turns warnings into failures; the app logs deprecations under their own name
 $strict = null;
@@ -28,6 +40,7 @@ try {
     $loud = $none['missing'];
 } catch (ErrorException $e) {
     $strict = $e;
+    array_pop($unitWarnings); // provoked on purpose
 }
 check('unit tests: a warning fails the run (ErrorException), one suppressed with @ does not', $strict !== null && $strict->getSeverity() === E_WARNING
     && str_contains($strict->getMessage(), 'Undefined array key') && !isset($quiet));
@@ -95,7 +108,8 @@ check('php-errors.sh: nothing new, or no log at all → exit 0', $rc === 0 && $o
 
 // Regular expressions on text need the u modifier wherever bytes and characters differ: a literal
 // non-ASCII character, \R (at the byte 0x85, P0-1), \h, \v (bytes 0xA0, 0x85), \X, \p, \x{…} would otherwise
-// split UTF-8 characters. \s, \w, "." and ASCII classes only match ASCII bytes without it and stay allowed.
+// split UTF-8 characters. \s and \w match only ASCII without it; "." and negated classes match single bytes, which
+// is harmless where they only skip text or stop at an ASCII character, so they stay allowed (no false alarms).
 $utf8Files = [];
 foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator("$root/app/src", FilesystemIterator::SKIP_DOTS)) as $f) {
     $utf8Files[] = (string) $f;
@@ -144,8 +158,16 @@ check('coverage report: lines merged over all processes, only files of the check
 unlink("$cov/root/app/src/B.php");
 [$rcAt] = $report(['--min=60']);
 [$rcBelow, , $errBelow] = $report(['--min=60.1', '--github']);
-check('coverage report: --min fails below the minimum (the coverage must not go down)', $rcAt === 0 && $rcBelow === 1
+check('coverage report: --min fails below the minimum (the floor of every run)', $rcAt === 0 && $rcBelow === 1
     && str_contains($errBelow, 'Line coverage 60.0 % is below the minimum of 60.1 %'));
+// A pull request against the coverage of its target branch (commit status "coverage" of main, see tests.yml)
+[$rcBase, $outBase] = $report(['--baseline=60.04', "--total=$cov/total.txt"]);
+[$rcDrop, $outDrop, $errDrop] = $report(['--baseline=60.06', '--github']);
+[$rcNone] = $report(['--baseline=']);
+check('coverage report: --baseline fails only below the target branch minus 0.05 points; --total writes the exact value',
+    $rcBase === 0 && str_contains($outBase, 'Target branch: 60.04 %, this run: 60.00 %') && (string) @file_get_contents("$cov/total.txt") === '60.000'
+    && $rcDrop === 1 && str_contains($errDrop, 'Line coverage 60.00 % is lower than 60.06 % on the target branch')
+    && str_contains($outDrop, '::error title=Coverage lower than on the target branch::') && $rcNone === 0);
 $diff = "diff --git a/app/src/A.php b/app/src/A.php\n--- a/app/src/A.php\n+++ b/app/src/A.php\n@@ -1,0 +4,2 @@\n+neu\n+++ sieht aus wie ein Kopf\n"
     . "@@ -7,2 +7,2 @@\n davor\n-alt\n\\ No newline at end of file\n+geändert\n\\ No newline at end of file\n"
     . "--- a/README.md\n+++ b/README.md\n@@ -1 +1 @@\n-x\n+y\n";

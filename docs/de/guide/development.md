@@ -61,17 +61,22 @@ Syntaxfehlers.
 ### Messen statt schätzen
 
 - **Warnungen lassen die Tests scheitern.** Die App protokolliert PHP-Warnungen, Hinweise (Notices) und
-  Deprecations nur (`app/var/php-error.log`) und läuft weiter. `tests/unit.php` macht daraus Fehler; nach dem
-  Smoke-Test und in jedem CI-Job schlägt `tests/php-errors.sh` bei jeder solchen Zeile der App im Fehler-Log fehl
-  (Zeilen aus Testcode, der sie absichtlich auslöst, zählen nicht).
+  Deprecations nur (`app/var/php-error.log`) und läuft weiter. `tests/unit.php` macht daraus Fehler und
+  scheitert am Ende auch an solchen, die App-Code abgefangen hat; nach dem Smoke- und dem Deploy-Test und in jedem
+  CI-Job schlägt `tests/php-errors.sh` bei jeder solchen Zeile der App im Fehler-Log fehl (Zeilen aus Testcode, der
+  sie absichtlich auslöst, zählen nicht).
 - **Zeilenabdeckung.** Die CI baut den App-Container mit PCOV (`COVERAGE=1 docker compose -f dev/compose.yml up
   -d --build`): `tests/coverage/prepend.php` zeichnet die Zeilen jeder Anfrage und jedes CLI-Skripts der Unit-,
   Smoke-, Integrations-, Browser- und Deploy-Tests auf, `tests/coverage/report.php` führt sie zusammen. Die
   Zusammenfassung des CI-Laufs zeigt die Abdeckung je Datei; bei einem Pull Request sind geänderte Zeilen, die
-  kein Test ausführt, im Diff markiert. Der Lauf schlägt fehl, wenn die Gesamtabdeckung unter `COVERAGE_MIN` in
-  `.github/workflows/tests.yml` fällt (erhöhen Sie den Wert, wenn die Abdeckung steigt) oder wenn kein Test eine
-  PHP-Datei überhaupt lädt. Lokal nach den Tests in einem solchen Container:
-  `docker compose -f dev/compose.yml exec -w /srv/app app php tests/coverage/report.php`.
+  kein Test ausführt, im Diff markiert. **Ein Pull Request darf die Abdeckung nicht senken:** Der Lauf auf `main`
+  hinterlegt seine Abdeckung als Commit-Status `coverage`, und der Lauf eines Pull Requests schlägt fehl, wenn er
+  mehr als 0,05 Prozentpunkte darunter liegt (einige wenige Zeilen hängen vom Timing ab). Außerdem scheitert jeder
+  Lauf unter `COVERAGE_MIN` in `.github/workflows/tests.yml` oder wenn kein Test eine PHP-Datei überhaupt lädt.
+  Lokal nach den Tests in einem solchen Container:
+  `docker compose -f dev/compose.yml exec -w /srv/app app php tests/coverage/report.php`. Die Rohdaten sammeln
+  sich in `/tmp/talkslot-coverage` im Container; leeren Sie das Verzeichnis vor einem neuen Lauf, sonst mischen
+  sich Zeilennummern von älterem Code hinein.
 - **Statische Analyse.** `dev/phpstan.sh` führt [PHPStan](https://phpstan.org/) auf Stufe 6 aus
   (`tests/phpstan.neon`), die CI ebenso. Die Fehler, die es bei der Einführung schon gab, stehen in
   `tests/phpstan-baseline.neon`; jeder neue lässt den Lauf scheitern. Werttypen von Arrays sind noch nicht
@@ -80,8 +85,11 @@ Syntaxfehlers.
 - **Integrationstests** (`tests/integration.php`) rufen die Services direkt gegen die Datenbank auf, ohne HTTP.
   Jeder Lauf legt die Tabellen aus `schema.sql` unter einem zufälligen Präfix (`it<hex>_`) in der konfigurierten
   Datenbank an und löscht sie am Ende wieder; die Daten einer Installation oder eines laufenden Smoke-Tests
-  bleiben unberührt. `App\Time::setNow()` hält die Uhr an, sodass Fristen und Löschfristen ohne verschobene
-  Zeitstempel in der Datenbank getestet werden (das geht auch in Unit-Tests).
+  bleiben unberührt. `dev/reset.sh` löscht Tabellen, die ein abgebrochener Lauf zurückgelassen hat. Das Skript
+  läuft nur mit `debug` in `config.php` (der Docker-Umgebung) oder `TALKSLOT_INTEGRATION=1`, nie versehentlich gegen
+  eine echte Installation. `App\Time::setNow()` hält die Uhr an, sodass Fristen und Löschfristen ohne verschobene
+  Zeitstempel in der Datenbank getestet werden (das geht auch in Unit-Tests; `time()` etwa für die Ratenlimits
+  bleibt davon unberührt).
 
 ## Konventionen
 

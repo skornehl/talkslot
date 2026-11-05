@@ -12,8 +12,9 @@ SHA256=85157dba3d95d77ca603d2b7303aa78a538f9e3b56ccad07dd794c53aa96d1ae
 PHAR=dev/data/phpstan-$VERSION.phar
 if [ ! -f "$PHAR" ]; then
   mkdir -p dev/data
-  curl -sSfL --retry 3 -o "$PHAR.part" "https://github.com/phpstan/phpstan/releases/download/$VERSION/phpstan.phar"
-  mv "$PHAR.part" "$PHAR"
+  PART=$(mktemp dev/data/phpstan.XXXXXX) # a file of its own: two runs at once do not write into the same one
+  curl -sSfL --retry 3 -o "$PART" "https://github.com/phpstan/phpstan/releases/download/$VERSION/phpstan.phar" || { rm -f "$PART"; exit 1; }
+  mv "$PART" "$PHAR"
 fi
 if ! echo "$SHA256  $PHAR" | sha256sum -c --status; then
   rm -f "$PHAR"

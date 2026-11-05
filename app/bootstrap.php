@@ -73,7 +73,12 @@ set_error_handler(static function (int $type, string $message, string $file, int
     if (!(error_reporting() & $type)) {
         return false;
     }
-    $kind = in_array($type, [E_WARNING, E_USER_WARNING], true) ? 'Warning' : (in_array($type, [E_DEPRECATED, E_USER_DEPRECATED], true) ? 'Deprecated' : 'Notice');
+    $kind = match (true) {
+        in_array($type, [E_WARNING, E_USER_WARNING], true) => 'Warning',
+        in_array($type, [E_DEPRECATED, E_USER_DEPRECATED], true) => 'Deprecated',
+        in_array($type, [E_USER_ERROR, E_RECOVERABLE_ERROR], true) => 'Error',
+        default => 'Notice',
+    };
     App\ErrorPage::writeLog(sprintf('PHP %s: %s (%s:%d)', $kind, App\ErrorPage::sanitize($message), App\ErrorPage::relativePath($file), $line));
     if (in_array($type, [E_WARNING, E_USER_WARNING], true)) {
         App\Alert::phpError($type, $message, $file, $line);

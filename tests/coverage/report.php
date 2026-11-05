@@ -3,10 +3,13 @@
  * Line coverage report (expert review P1-14): merges what tests/coverage/prepend.php collected during the unit,
  * smoke and browser tests and prints the coverage per file and in total.
  *
- *   php tests/coverage/report.php [--min=<percent>] [--diff=<file>|-] [--github] [--markdown=<file>]
- *                                 [--dir=<raw data>] [--root=<checkout>]
+ *   php tests/coverage/report.php [--min=<percent>] [--baseline=<percent>] [--total=<file>] [--diff=<file>|-]
+ *                                 [--github] [--markdown=<file>] [--dir=<raw data>] [--root=<checkout>]
  *
- * --min       fails (exit 1) if the total is below this percentage: the coverage must not go down
+ * --min       fails (exit 1) if the total is below this percentage, the floor for every run
+ * --baseline  the coverage of the target branch (CI: commit status "coverage" of main): fails if the total is
+ *             lower by more than BASELINE_TOLERANCE, so a pull request cannot lower the coverage
+ * --total     writes the total with three decimals to this file (CI: the commit status of main)
  * --diff      a unified diff (git diff), "-" = standard input: lists the changed lines that no test executes
  * --github    additionally as annotations of the workflow run (GitHub Actions)
  * --markdown  writes a summary in Markdown to this file (the job summary in CI)
@@ -23,11 +26,15 @@ const UNLOADED_OK = [
     // Template of app_root.php in the web directory; tests/deploy.sh loads the copy the build makes of it
     'bin/app-root.php',
 ];
+// Percentage points a run may lie below the target branch: a few lines depend on timing (a retry after a lock
+// wait, a request that arrives after a deadline), about three of some 5,600
+const BASELINE_TOLERANCE = 0.05;
 
-$opt = getopt('', ['min:', 'diff:', 'github', 'markdown:', 'dir:', 'root:']);
+$opt = getopt('', ['min:', 'baseline:', 'total:', 'diff:', 'github', 'markdown:', 'dir:', 'root:']);
 $root = rtrim((string) ($opt['root'] ?? dirname(__DIR__, 2)), '/');
 $dir = (string) ($opt['dir'] ?? sys_get_temp_dir() . '/talkslot-coverage');
 $min = isset($opt['min']) ? (float) $opt['min'] : null;
+$baseline = isset($opt['baseline']) && is_numeric($opt['baseline']) ? (float) $opt['baseline'] : null;
 $github = isset($opt['github']);
 
 // The files that count, relative to the checkout
@@ -151,10 +158,15 @@ foreach ($changed as $f => $lines) {
 
 $unexpected = array_values(array_diff($unloaded, UNLOADED_OK));
 $below = $min !== null && $percent < $min;
+$dropped = $baseline !== null && $percent < $baseline - BASELINE_TOLERANCE;
+$exact = static fn (float $p): string => number_format($p, 2) . ' %';
 
 // Plain text
 printf("Line coverage of unit, smoke and browser tests: %d of %d lines = %s%s, %d processes\n",
     $covered, $total, $pct($percent), $min !== null ? ' (minimum ' . $pct($min) . ')' : '', count($raw));
+if ($baseline !== null) {
+    printf("Target branch: %s, this run: %s%s\n", $exact($baseline), $exact($percent), $dropped ? ' (lower)' : '');
+}
 foreach ($rows as $r) {
     if ($r['covered'] < $r['total']) {
         printf("%7s %5d/%-5d %-48s %s\n", $pct(100 * $r['covered'] / $r['total']), $r['covered'], $r['total'], $r['file'], $fmt($r['missing']));
@@ -184,12 +196,16 @@ if ($github) {
     if ($below) {
         printf("::error title=Coverage below the minimum::Line coverage %s is below the minimum of %s.\n", $pct($percent), $pct($min));
     }
+    if ($dropped) {
+        printf("::error title=Coverage lower than on the target branch::Line coverage %s is lower than %s on the target branch: cover the new lines with tests.\n", $exact($percent), $exact((float) $baseline));
+    }
 }
 
 if (isset($opt['markdown'])) {
     $md = "### Line coverage: " . $pct($percent) . "\n\n"
         . "$covered of $total lines of PHP executed by the unit, smoke and browser tests"
-        . ($min !== null ? ' (minimum: ' . $pct($min) . ($below ? ', **not reached**' : '') . ')' : '') . ".\n\n";
+        . ($min !== null ? ' (minimum: ' . $pct($min) . ($below ? ', **not reached**' : '') . ')' : '') . ".\n\n"
+        . ($baseline !== null ? 'Target branch: ' . $exact($baseline) . ', this run: ' . $exact($percent) . ($dropped ? ' (**lower**)' : '') . ".\n\n" : '');
     if (isset($opt['diff'])) {
         $md .= $uncoveredChanged ? "**Changed lines that no test executes**\n\n" : "Every changed line is executed by a test.\n\n";
         foreach ($uncoveredChanged as $f => $r) {
@@ -215,4 +231,10 @@ if ($unexpected) {
 if ($below) {
     fwrite(STDERR, 'Line coverage ' . $pct($percent) . ' is below the minimum of ' . $pct($min) . "\n");
 }
-exit($below || $unexpected ? 1 : 0);
+if ($dropped) {
+    fwrite(STDERR, 'Line coverage ' . $exact($percent) . ' is lower than ' . $exact((float) $baseline) . " on the target branch\n");
+}
+if (isset($opt['total'])) {
+    file_put_contents((string) $opt['total'], sprintf('%.3f', $percent));
+}
+exit($below || $dropped || $unexpected ? 1 : 0);
