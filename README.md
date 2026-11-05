@@ -13,8 +13,10 @@ schools (GDPR/DSGVO, TDDDG) and multilingual families.
   direct link per language.
 - **For teachers:** any number of booking rounds with several days, breaks and a live preview; see who
   booked when, move or add bookings, print lists, get a summary mail the evening before.
-- **For the school:** admins invite the teachers, see all rounds and maintain the legal pages for the
-  school. Bookings are deleted automatically the day after the appointment.
+- **For the school:** admins invite the teachers, see all rounds and maintain the legal pages, with
+  templates for both ways of running it: by the school itself or privately (a private person, association
+  or independent provider whose service teachers use). Bookings are deleted automatically the day after the
+  appointment.
 - **For the operator:** PHP 8.3+ and MariaDB, no framework, no Composer, no Node, no external CDNs.
   Optional zero-downtime deployment via GitHub Actions and FTPS, including one-click rollback.
 
@@ -83,7 +85,10 @@ schools (GDPR/DSGVO, TDDDG) and multilingual families.
   turned off per round; entries made by the teacher only after the parents got a confirmation).
 - A mail the mail server refused is retried from a **mail queue** and marked *E-Mail nicht zugestellt*
   in the booking list; admins see mails that wait too long.
-- Imprint and privacy policy per language, editable (simple Markdown). The school's details replace
+- Imprint and privacy policy per language, editable (simple Markdown), with templates per operator type:
+  *operated by the school* (public body, Art. 6(1)(e) GDPR, the school's data protection officer) or
+  *operated privately* (Art. 6(1)(b)/(f) GDPR, legal notice of a private, non-commercial service). Unedited
+  texts follow the operator type; hints point out texts that do not fit it. The operator's details replace
   `[[VERANTWORTLICHE]]` automatically; no round is public until they are filled in.
 
 **Automatic clean-up**
@@ -146,16 +151,19 @@ App: <http://localhost:8080>, admin: <http://localhost:8080/admin>. Mails end up
      ```
 2. **Configure:** copy `config/config.sample.php` to `config/config.php` and fill in at least `base_url`,
    `secret` (`openssl rand -hex 32`), `db` and `mail`. Set `install_key` (16+ characters) for the next step.
-3. **Install:** open `https://your-site/install.php`, enter the install key and create the admin account.
+3. **Install:** open `https://your-site/install.php`, enter the install key, create the admin account and
+   choose the operator type (operated by the school or privately; it decides the legal templates).
    The installer locks itself and tries to delete itself; remove `install.php` if it is still there.
-   Alternatively via SSH: `php bin/install.php <username> [email]`.
+   Alternatively via SSH: `php bin/install.php <username> [email]` (asks for the password and the type).
 4. **Cron:** run `php bin/cron.php` hourly (`5 * * * *`). Without shell access, use the web cron:
    `POST /cron` with header `X-Cron-Token: <HMAC-SHA256 of "cron" with your secret>`; the included
    workflow `.github/workflows/cron.yml` does exactly that.
-5. **Legal texts:** log in as admin, fill in *Texte → Angaben für Impressum und Datenschutz*, then
-   check *Texte*: the privacy policy is installed for a public school (a template for private operators can
-   be loaded on the text form). Replace the remaining `[PLACEHOLDERS]` (data protection officer, provisions
-   of your state, server log retention, supervisory authority); until then no round can be activated.
+5. **Legal texts:** log in as admin, fill in *Texte → Angaben für Impressum und Datenschutz* and check the
+   operator type there, then check *Texte*: imprint and privacy policy come from the templates of that type
+   (the other type's templates can be loaded on the text form). Replace the remaining `[PLACEHOLDERS]` (data
+   protection officer, for a school the provisions of your state, server log retention, supervisory
+   authority); until then no round can be activated. After updating an installation from before the
+   operator type, an admin may have to choose it first (*Bitte Betriebsart wählen* on the dashboard).
    The web host comes from `hosting` in `config.php`. The templates cover Art. 13 GDPR but do not replace legal advice.
 
 ### Go-live checklist
@@ -167,6 +175,7 @@ App: <http://localhost:8080>, admin: <http://localhost:8080/admin>. Mails end up
 - [ ] Cron job runs (`php bin/cron.php -v` prints the counts; the dashboard warns admins if it stops)
 - [ ] Test booking with e-mail: mail arrives (not in spam)
 - [ ] Admin contact details, imprint and privacy policy (all languages) complete, no `[PLACEHOLDERS]` left
+- [ ] Operator type (school or private) matches who really runs TalkSlot
 - [ ] Data processing agreement (DPA/AVV) with your web host
 - [ ] Teacher invitation tested; test round booked, moved and cancelled on a phone, then deleted
 
@@ -281,8 +290,9 @@ All options are documented in [`config/config.sample.php`](config/config.sample.
 | `rate_limits` | see file | generous, since many parents share an IP (mobile CGNAT, school Wi-Fi) |
 
 **Adding a language:** copy `app/lang/en.php` to e.g. `app/lang/it.php`, translate it, add the code to
-`languages` and a flag `public/assets/flags/it.svg` (admin translation form). Optionally add `app/templates/pages/{imprint,privacy}.it.md`;
-otherwise the legal pages fall back to English.
+`languages` and a flag `public/assets/flags/it.svg` (admin translation form). Optionally add the legal templates
+`app/templates/pages/{imprint,imprint-private,privacy,privacy-private}.it.md` (with their hashes in
+`Migrations::CURRENT_PAGE_HASHES`); otherwise the legal pages fall back to English.
 
 ## Security
 

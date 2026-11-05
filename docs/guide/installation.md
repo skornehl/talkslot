@@ -54,15 +54,22 @@ passwords and the secret. The dashboard warns admins as long as every user of th
 
 Open `https://your-site/install.php`, enter the install key and create the admin account (username,
 password with 12 characters up to 72 bytes that is not easy to guess, e-mail address; the same
-[password rules]({{ '/guide/security/' | relative_url }}) apply as for every account). The installer
-creates the tables, copies the imprint and privacy templates into the database, locks itself and tries
-to delete itself. Delete `public/install.php` yourself if it is still there.
+[password rules]({{ '/guide/security/' | relative_url }}) apply as for every account). Choose the
+**operator type** (*Betriebsart*): *operated by the school* (a public body) or *operated privately* (a private
+person, association or independent provider whose service teachers use). It decides the templates for imprint
+and privacy policy, see [Privacy and legal]({{ '/guide/privacy/' | relative_url }}#operated-by-the-school-or-privately);
+you can change it later under *Texte*. The installer creates the tables, copies the imprint and privacy
+templates of that type into the database, locks itself and tries to delete itself. Delete
+`public/install.php` yourself if it is still there.
 
 With shell access you can install from the command line instead:
 
 ```bash
-php bin/install.php <username> [email]   # asks for the password
+php bin/install.php <username> [email]   # asks for the password and the operator type (school or private)
 ```
+
+In a script, pass the three answers on standard input, one per line: password, password again, `school` or
+`private`.
 
 ## 4. Set up the cron job
 
@@ -89,11 +96,12 @@ been delivered. Without a cron job, reminders and summaries may therefore not be
 ## 5. Fill in the legal details
 
 Log in as admin and open *Texte*. Fill in *Angaben für Impressum und Datenschutz* (name of the
-school or person, address, e-mail). Until then **no round is public**. Then check *Texte*: the privacy
-policy is installed as the template for a public school (a template for private operators can be loaded
-on the text form). Imprint and privacy policy contain `[PLACEHOLDERS]` (data protection officer, provisions
-of your state, server log retention at your web host, supervisory authority) that you must replace; until
-then **no round can be activated**. See [Privacy and legal]({{ '/guide/privacy/' | relative_url }}).
+school or person, address, e-mail) and check the operator type there. Until then **no round is public**.
+Then check *Texte*: imprint and privacy policy are installed from the templates of the operator type (the
+templates of the other type can be loaded on the text form). They contain `[PLACEHOLDERS]` (data protection
+officer, for a school the provisions of your state, server log retention at your web host, supervisory
+authority) that you must replace; until then **no round can be activated**. See
+[Privacy and legal]({{ '/guide/privacy/' | relative_url }}).
 
 ## Go-live checklist
 
@@ -105,6 +113,7 @@ then **no round can be activated**. See [Privacy and legal]({{ '/guide/privacy/'
 - [ ] Test booking with e-mail address: the mail arrives and is not marked as spam
 - [ ] Admin details, imprint and privacy policy complete in all languages you offer (no `[PLACEHOLDERS]`
       left; the dashboard shows no hint)
-- [ ] Data processing agreement (DPA, *AVV*) with your web host; if someone other than the school runs the
-      server, an agreement under Art. 28 GDPR between the school and that person
+- [ ] Operator type under *Texte* matches who really runs TalkSlot (the school or privately)
+- [ ] Data processing agreement (DPA, *AVV*) with your web host; if the school is the operator but someone
+      else runs the server, an agreement under Art. 28 GDPR between the school and that person
 - [ ] Teacher invitation tested; a test round booked, moved and cancelled on a phone, then deleted

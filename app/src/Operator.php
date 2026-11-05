@@ -4,17 +4,26 @@ declare(strict_types=1);
 namespace App;
 
 /**
- * Operator of the platform (usually the school), represented by the admin accounts.
+ * Operator of the platform, represented by the admin accounts.
  *
  * Under data protection law the operator is the controller for all rounds. Its details
  * ("Angaben für Impressum und Datenschutz", maintained by any admin under "Texte")
  * replace the placeholder [[VERANTWORTLICHE]] in the legal notice and privacy policy.
  * Without these details no rounds are publicly reachable.
+ *
+ * The operator type says who that is: the school itself as a public body ("school") or a private
+ * person, association or independent provider whose service teachers use ("private"). It decides the
+ * templates of legal notice and privacy policy and the notes on them (LegalTexts).
  */
 final class Operator
 {
     public const PLACEHOLDER = '[[VERANTWORTLICHE]]';
+    /** Operator types, in the order offered */
+    public const TYPES = ['school', 'private'];
     private const SETTING = 'controller_contact';
+    private const TYPE_SETTING = 'operator_type';
+    /** '1' while the type was only taken over on an update (Migrations::refreshPages) and no admin has saved it */
+    private const TYPE_AUTO_SETTING = 'operator_type_auto';
 
     /** SQL condition for public queries: the same check as ready(). */
     public static function readySql(): string
@@ -25,6 +34,8 @@ final class Operator
     private static ?array $admin = null;
     private static bool $loaded = false;
     private static ?string $contact = null;
+    private static ?string $type = null;
+    private static bool $typeLoaded = false;
 
     /** The oldest active admin account (recipient of error reports if no alert_email is configured). */
     public static function admin(): ?array
@@ -89,11 +100,46 @@ final class Operator
         return str_replace(self::PLACEHOLDER, $contact !== '' ? $contact : $fallback, $content);
     }
 
+    /** Operator type ("school" or "private"); null = not chosen yet (installations from before the choice). */
+    public static function type(): ?string
+    {
+        if (!self::$typeLoaded) {
+            $type = Settings::get(self::TYPE_SETTING);
+            self::$type = in_array($type, self::TYPES, true) ? $type : null;
+            self::$typeLoaded = true;
+        }
+        return self::$type;
+    }
+
+    /** Stores the operator type; $auto: taken over on an update, not chosen by an admin (yet). */
+    public static function saveType(string $type, bool $auto = false): void
+    {
+        Settings::set(self::TYPE_SETTING, $type);
+        Settings::set(self::TYPE_AUTO_SETTING, $auto ? '1' : null);
+        self::forget();
+    }
+
+    /** true while the operator type was only taken over on an update and no admin has confirmed it. */
+    public static function typeAuto(): bool
+    {
+        return self::type() !== null && Settings::get(self::TYPE_AUTO_SETTING) === '1';
+    }
+
+    /** Name of an operator type as admins choose it (installer, "Texte"). */
+    public static function typeLabel(string $type): string
+    {
+        return $type === 'private'
+            ? __('Wird privat betrieben (Privatperson, Verein, freier Träger)')
+            : __('Wird von der Schule betrieben (öffentliche Stelle)');
+    }
+
     /** Reload after changes within the same request. */
     public static function forget(): void
     {
         self::$admin = null;
         self::$loaded = false;
         self::$contact = null;
+        self::$type = null;
+        self::$typeLoaded = false;
     }
 }

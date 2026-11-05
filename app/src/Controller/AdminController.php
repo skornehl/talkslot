@@ -234,6 +234,7 @@ final class AdminController
             'cron' => Auth::isAdmin() ? \App\CronMonitor::status() : null,
             'profileHints' => $this->profileHints(),
             'operatorMissing' => !Operator::ready(),
+            'typeMissing' => !Auth::isAdmin() && Operator::ready() && Operator::type() === null,
             'textsOpen' => !Auth::isAdmin() && Operator::ready() && LegalTexts::open() !== [],
             'legalHints' => Auth::isAdmin() ? array_merge(self::operatorHints(), self::legalHints()) : [],
             // Offboarding: active accounts nobody has signed in to for a long time (only the number)
@@ -1211,8 +1212,9 @@ final class AdminController
     /**
      * Why a round of this teacher may not be activated (yet), or null.
      * Required: the teacher's display name (parents see it), the operator's details for legal notice and
-     * privacy policy (the operator is the controller for all rounds) and both texts without open
-     * [PLACEHOLDERS]. Only checked when a round goes public: rounds already active stay online.
+     * privacy policy (the operator is the controller for all rounds), the operator type (it decides which
+     * legal texts fit) and both texts without open [PLACEHOLDERS]. Only checked when a round goes public:
+     * rounds already active stay online.
      */
     private function publishBlocker(array $owner): ?string
     {
@@ -1220,6 +1222,11 @@ final class AdminController
             return Auth::isAdmin()
                 ? __('Bevor Runden aktiviert werden können, tragen Sie bitte unter „Texte“ die Angaben für Impressum und Datenschutz ein (die Schule bzw. der Betreiber ist für alle Runden datenschutzrechtlich verantwortlich).')
                 : __('Runden können erst aktiviert werden, wenn ein Admin die Angaben für Impressum und Datenschutz hinterlegt hat.');
+        }
+        if (Operator::type() === null) {
+            return Auth::isAdmin()
+                ? __('Bevor Runden aktiviert werden können, wählen Sie bitte unter „Texte“ die Betriebsart: Wird die Terminvergabe von der Schule oder privat betrieben?')
+                : __('Runden können erst aktiviert werden, wenn ein Admin die Betriebsart (von der Schule oder privat betrieben) gewählt hat.');
         }
         if (($open = LegalTexts::open()) !== []) {
             return Auth::isAdmin()
@@ -1710,16 +1717,31 @@ final class AdminController
         if ($old) {
             $hints[] = __('Die Datenschutzerklärung ({languages}) beschreibt noch das alte Modell (Lehrkräfte verantwortlich, Betreiberin als Auftragsverarbeiterin). Verantwortlich ist jetzt der Betreiber (die Angaben für Impressum und Datenschutz) – bitte Abschnitt 1, 6 und 9 an die Vorlage anpassen.', ['languages' => $list($old)]);
         }
-        // Template up to v1.5: "private service" without a data protection officer, legal bases for private
-        // operators only, "cancel at any time"
-        $private = Db::all(
-            "SELECT lang FROM pages WHERE page_key IN ('imprint', 'privacy') AND (content LIKE '%für dieses private Angebot nicht bestellt%'
-                OR content LIKE '%appointed for this private service%' OR content LIKE '%privates, nicht kommerzielles Angebot%'
-                OR content LIKE '%private, non-commercial service%' OR content LIKE '%jederzeit selbst über Ihren persönlichen Link absagen%'
-                OR content LIKE '%cancel your appointment yourself at any time%') GROUP BY lang ORDER BY lang"
-        );
-        if ($private) {
-            $hints[] = __('Impressum bzw. Datenschutzerklärung ({languages}) folgen noch der alten Vorlage („privates Angebot“ ohne Datenschutzbeauftragte, Termin „jederzeit“ absagen). Für eine öffentliche Schule sind darin Rechtsgrundlagen, Datenschutzbeauftragte und Rechte falsch angegeben – bitte mit der passenden neuen Vorlage abgleichen („Vorlage laden“ beim jeweiligen Text).', ['languages' => $list($private)]);
+        // Wording that does not fit the operator type (LegalTexts::mismatches()), per kind the languages
+        $mismatch = [];
+        foreach (Db::all("SELECT lang, content FROM pages WHERE page_key IN ('imprint', 'privacy') ORDER BY lang") as $row) {
+            foreach (LegalTexts::mismatches((string) $row['content'], Operator::type()) as $kind) {
+                $mismatch[$kind][(string) $row['lang']] = ['lang' => $row['lang']];
+            }
+        }
+        if (isset($mismatch['old'])) {
+            // Operated by the school, but the template up to v1.6: "private service" without a data protection
+            // officer, legal bases for private operators only, "cancel at any time"
+            $hints[] = __('Impressum bzw. Datenschutzerklärung ({languages}) folgen noch der alten Vorlage („privates Angebot“ ohne Datenschutzbeauftragte, Termin „jederzeit“ absagen). Für eine öffentliche Schule sind darin Rechtsgrundlagen, Datenschutzbeauftragte und Rechte falsch angegeben – bitte mit der passenden neuen Vorlage abgleichen („Vorlage laden“ beim jeweiligen Text).', ['languages' => $list($mismatch['old'])]);
+        }
+        if (isset($mismatch['private'])) {
+            $hints[] = __('Die Datenschutzerklärung ({languages}) stützt sich auf Art. 6 Abs. 1 lit. b bzw. f DSGVO wie die Vorlage „Privat betrieben“. Für eine öffentliche Schule gilt Art. 6 Abs. 1 lit. e DSGVO in Verbindung mit dem Schulgesetz des Landes – bitte mit der Vorlage „Von der Schule betrieben“ abgleichen („Vorlage laden“) oder die Betriebsart prüfen.', ['languages' => $list($mismatch['private'])]);
+        }
+        if (isset($mismatch['school'])) {
+            $hints[] = __('Impressum bzw. Datenschutzerklärung ({languages}) enthalten noch Angaben der Vorlage für Schulen (Art. 6 Abs. 1 lit. e DSGVO, Schulgesetz, Datenschutzbeauftragte der Schule). Für eine privat betriebene Terminvergabe passen sie nicht – bitte mit der Vorlage „Privat betrieben“ abgleichen („Vorlage laden“ beim jeweiligen Text) oder die Betriebsart prüfen.', ['languages' => $list($mismatch['school'])]);
+        }
+        if (isset($mismatch['scope'])) {
+            // Operated privately, but the private template up to talkslot PR #39: the operator as controller for
+            // all booked appointments and a promised deletion of the summary mails in the teacher's mailbox
+            $hints[] = __('Die Datenschutzerklärung ({languages}) nennt den Betreiber noch als Verantwortlichen für „alle darüber gebuchten Termine“ und sagt vermutlich auch die Löschung der Zusammenfassungen im Postfach der Lehrkraft zu. Bei privatem Betrieb ist er nur für die Terminvergabe verantwortlich; für das Gespräch und das Postfach der Lehrkraft gelten die Regeln der Schule – bitte die Abschnitte 1, 4, 5 und 9 mit der Vorlage „Privat betrieben“ abgleichen („Vorlage laden“).', ['languages' => $list($mismatch['scope'])]);
+        }
+        if (isset($mismatch['anytime'])) {
+            $hints[] = __('Die Datenschutzerklärung ({languages}) sagt noch, Eltern könnten ihren Termin „jederzeit“ selbst absagen. Das geht nur bis zur Änderungsfrist der Terminrunde – bitte den Satz in Abschnitt 9 an die Vorlage anpassen.', ['languages' => $list($mismatch['anytime'])]);
         }
         $noPlaceholder = Db::all("SELECT lang FROM pages WHERE page_key IN ('imprint', 'privacy') AND content NOT LIKE '%[[VERANTWORTLICHE]]%' GROUP BY lang ORDER BY lang");
         if ($noPlaceholder) {
@@ -1744,8 +1766,8 @@ final class AdminController
     }
 
     /**
-     * What is missing before rounds can go public: the operator's details and the open placeholders in the
-     * texts (shown to admins on the dashboard and the texts page).
+     * What is missing before rounds can go public: the operator's details, the operator type and the open
+     * placeholders in the texts (shown to admins on the dashboard and the texts page).
      * @return list<string>
      */
     private static function operatorHints(): array
@@ -1755,6 +1777,11 @@ final class AdminController
             $hints[] = __('Die Angaben für Impressum und Datenschutz fehlen – ohne sie ist keine Runde öffentlich erreichbar.');
         } elseif (!str_contains(Operator::contact(), '@')) {
             $hints[] = __('In den Angaben für Impressum und Datenschutz fehlt eine E-Mail-Adresse (für das Impressum vorgeschrieben).');
+        }
+        if (Operator::type() === null) {
+            $hints[] = __('Bitte Betriebsart wählen: Wird die Terminvergabe von der Schule oder privat betrieben? Danach richten sich die Vorlagen und Hinweise für Impressum und Datenschutzerklärung. Bis dahin lassen sich keine Runden aktivieren; bereits aktive Runden bleiben erreichbar.');
+        } elseif (Operator::typeAuto()) {
+            $hints[] = __('Die Betriebsart wurde beim Update auf „{type}“ gesetzt, weil Impressum und Datenschutzerklärung noch unverändert der bisherigen Vorlage entsprachen. Bitte prüfen Sie das unter „Texte“ und speichern Sie die Angaben dort einmal.', ['type' => Operator::typeLabel((string) Operator::type())]);
         }
         if (($open = LegalTexts::open()) !== []) {
             $hints[] = __('Impressum bzw. Datenschutzerklärung enthalten noch offene Platzhalter in eckigen Klammern – {texts}. Solange sie nicht ersetzt sind, lassen sich keine Runden aktivieren; bereits aktive Runden bleiben erreichbar.', ['texts' => self::openTexts($open, true)]);
@@ -1780,16 +1807,41 @@ final class AdminController
         return implode(', ', array_map(static fn (string $key, array $l): string => self::pageLabel($key) . ' (' . implode(', ', $l) . ')', array_keys($langs), $langs));
     }
 
+    /**
+     * Details for legal notice and privacy policy and the operator type. A changed type replaces the texts
+     * nobody has edited by the templates of the new type (LegalTexts::apply()); a form without the type
+     * leaves it unchanged.
+     */
     private function operatorSave(): void
     {
         $contact = Http::post('controller_contact');
+        $type = Http::post('operator_type');
         if (mb_strlen($contact) > 2000) {
             $this->flash('error', __('Die Angaben sind zu lang (höchstens 2000 Zeichen).'));
             Http::redirect('/admin/texts');
         }
+        if ($type !== '' && ($error = \App\Installer::validateType($type)) !== null) {
+            $this->flash('error', $error);
+            Http::redirect('/admin/texts');
+        }
         Operator::save($contact);
         $this->audit(fn () => __('Angaben für Impressum und Datenschutz geändert'));
-        $this->flash('success', __('Angaben für Impressum und Datenschutz gespeichert.'));
+        $message = __('Angaben für Impressum und Datenschutz gespeichert.');
+        if ($type !== '') {
+            $changed = $type !== Operator::type();
+            $confirmed = !$changed && Operator::typeAuto();
+            Operator::saveType($type);
+            if ($changed) {
+                $replaced = LegalTexts::apply($type);
+                $this->audit(fn () => __('Betriebsart geändert: {type}', ['type' => Operator::typeLabel($type)])
+                    . ($replaced > 0 ? ' ' . __('({count} unveränderte Vorlagentexte ersetzt)', ['count' => $replaced]) : ''));
+                $message .= $replaced > 0 ? ' ' . __('{count} unveränderte Vorlagentexte wurden durch die Vorlagen der neuen Betriebsart ersetzt.', ['count' => $replaced]) : '';
+            } elseif ($confirmed) {
+                // The type taken over on an update (Migrations::refreshPages) is now the admin's choice
+                $this->audit(fn () => __('Betriebsart bestätigt (beim Update übernommen): {type}', ['type' => Operator::typeLabel($type)]));
+            }
+        }
+        $this->flash('success', $message);
         Http::redirect('/admin/texts');
     }
 
@@ -1797,6 +1849,8 @@ final class AdminController
     {
         $this->render('admin/texts', [
             'operatorContact' => Operator::contact(),
+            'operatorType' => Operator::type(),
+            'privacyTemplate' => LegalTexts::VARIANTS['privacy'][Operator::type() ?? 'school'],
             'operatorHints' => self::operatorHints(),
             'legalHints' => self::legalHints(),
             'title' => __('Impressum & Datenschutz'),
@@ -1809,8 +1863,11 @@ final class AdminController
     private function pageForm(string $key, string $lang): void
     {
         $this->assertLang($lang);
-        // Templates for this language; ?template=<variant> puts one into the form (saved only with "Speichern")
-        $variants = array_values(array_filter(array_keys(LegalTexts::VARIANTS[$key]), static fn (string $v): bool => LegalTexts::template($key, $v, $lang) !== null));
+        // Templates for this language, the one of the operator type first; ?template=<type> puts one into the
+        // form (saved only with "Speichern")
+        $type = Operator::type();
+        $variants = array_values(array_filter(array_unique([...($type !== null ? [$type] : []), ...array_keys(LegalTexts::VARIANTS[$key])]),
+            static fn (string $v): bool => LegalTexts::template($key, $v, $lang) !== null));
         $loaded = in_array(Http::query('template'), $variants, true) ? Http::query('template') : null;
         $this->render('admin/page_form', [
             'title' => self::pageLabel($key) . ' (' . strtoupper($lang) . ')',
@@ -1820,6 +1877,7 @@ final class AdminController
                 : (string) Db::value('SELECT content FROM pages WHERE page_key = ? AND lang = ?', [$key, $lang]),
             'variants' => $variants,
             'loaded' => $loaded,
+            'type' => $type,
         ]);
     }
 

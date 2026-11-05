@@ -51,8 +51,11 @@ this language.
 
 **Adding a language:** copy `app/lang/en.php` to e.g. `app/lang/it.php` and translate it (`lang.name` is
 the language's own name, shown in the language choice), add a flag `public/assets/flags/it.svg` (used in
-the translation form of the admin area) and the code to `languages`. Optionally add
-`app/templates/pages/imprint.it.md` and `privacy.it.md`; without them the legal pages fall back to English.
+the translation form of the admin area) and the code to `languages`. Optionally add the legal templates
+`app/templates/pages/{imprint,imprint-private,privacy,privacy-private}.it.md`, all four (one per page and
+operator type, so that both operated by the school and operated privately get them), with their hashes in
+`Migrations::CURRENT_PAGE_HASHES` (the unit test names any missing one); without them the legal pages fall
+back to English.
 Please have native speakers review translations.
 
 ## Mail

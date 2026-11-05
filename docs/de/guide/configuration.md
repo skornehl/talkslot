@@ -55,8 +55,11 @@ Protokoll werden in dieser Sprache geschrieben.
 die Datei (`lang.name` ist der Name der Sprache in ihr selbst, so steht er in der Sprachwahl), legen Sie
 eine Flagge `public/assets/flags/it.svg` an (für das Übersetzungsformular im Adminbereich) und tragen Sie
 den Code in `languages`
-ein. Optional ergänzen Sie `app/templates/pages/imprint.it.md` und `privacy.it.md`; ohne diese Dateien
-zeigen die Rechtsseiten die englische Fassung. Bitte lassen Sie Übersetzungen von Muttersprachlern
+ein. Optional ergänzen Sie die Vorlagen der Rechtstexte
+`app/templates/pages/{imprint,imprint-private,privacy,privacy-private}.it.md`, und zwar alle vier (je Seite
+und Betriebsart, damit sie bei Betrieb durch die Schule und bei privatem Betrieb vorhanden sind), mit ihren
+Hashes in `Migrations::CURRENT_PAGE_HASHES` (der Unit-Test nennt fehlende); ohne diese Dateien zeigen die
+Rechtsseiten die englische Fassung. Bitte lassen Sie Übersetzungen von Muttersprachlern
 prüfen.
 
 ## E-Mail

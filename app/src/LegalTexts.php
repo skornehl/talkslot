@@ -7,11 +7,14 @@ namespace App;
  * Legal notice and privacy policy: the stored texts as parents see them, their open placeholders and the
  * templates in app/templates/pages.
  *
- * Templates: "<key>.<lang>.md" is the default and is installed. For the privacy policy it is written for a
- * public school (Art. 6(1)(e) GDPR in conjunction with state law); "privacy-private.<lang>.md" is the variant
- * for a private operator (Art. 6(1)(b) and (f)), which admins load into the text form themselves.
+ * Templates: one per page and operator type (Operator::type(), VARIANTS). "school": the school runs the
+ * platform as a public body and is the controller (Art. 6(1)(e) GDPR in conjunction with the state school act,
+ * the school's data protection officer, legal notice of a public body). "private": a private person,
+ * association or independent provider runs it and is the controller, teachers use the service (Art. 6(1)(b)
+ * and (f), legal notice of a private, non-commercial service). The installer stores the templates of the
+ * chosen type; on a change of type or a template update apply() replaces the texts nobody has edited.
  *
- * Details only the school can provide (data protection officer, state law, log retention, supervisory
+ * Details only the operator can provide (data protection officer, state law, log retention, supervisory
  * authority) are placeholders in square brackets in upper case, e.g. [ZUSTÄNDIGE LANDESDATENSCHUTZBEHÖRDE].
  * As long as a text still contains one, no round can be activated (rounds already active stay online).
  */
@@ -19,10 +22,27 @@ final class LegalTexts
 {
     public const KEYS = ['imprint', 'privacy'];
 
-    /** Template variants per page: variant => file name without ".<lang>.md" (the first one is installed) */
+    /** Templates per page: operator type (Operator::TYPES) => file name without ".<lang>.md" */
     public const VARIANTS = [
-        'imprint' => ['default' => 'imprint'],
-        'privacy' => ['public' => 'privacy', 'private' => 'privacy-private'],
+        'imprint' => ['school' => 'imprint', 'private' => 'imprint-private'],
+        'privacy' => ['school' => 'privacy', 'private' => 'privacy-private'],
+    ];
+
+    /**
+     * Wording that belongs to a template of a certain kind (mismatches()): "old" the templates up to v1.6 (a
+     * "private service" without a data protection officer, its legal notice, cancelling "at any time"),
+     * "anytime" only the last of these, "private" the legal bases of a private operator (Art. 6(1)(b), (f)),
+     * "school" the school template (Art. 6(1)(e), state school act, the school's data protection officer),
+     * "scope" a private template up to talkslot PR #39: the operator named as controller "for all appointments
+     * booked through it", i.e. also for the meeting and the summary mails in the teacher's mailbox.
+     */
+    private const MARKERS = [
+        'old' => '/für dieses private Angebot nicht bestellt|appointed for this private service|privates, nicht kommerzielles Angebot'
+            . '|private, non-commercial service|jederzeit selbst über Ihren persönlichen Link absagen|cancel your appointment yourself at any time/iu',
+        'anytime' => '/jederzeit selbst über Ihren persönlichen Link absagen|cancel your appointment yourself at any time/iu',
+        'private' => '/Art\. 6 Abs\. 1 lit\. [bf] DSGVO|Art\. 6\(1\)\([bf]\) GDPR/iu',
+        'school' => '/Art\. 6 Abs\. 1 lit\. e\b|Art\. 6\(1\)\(e\)|Schulgesetz|school act|Datenschutzbeauftragte[nr]? der Schule|school\'s data protection officer/iu',
+        'scope' => '/alle darüber gebuchten Termine ist:|all appointments booked through it is:/iu',
     ];
 
     /**
@@ -64,11 +84,116 @@ final class LegalTexts
         return $open;
     }
 
-    /** Template of a page in one variant and language (null if there is none). */
-    public static function template(string $key, string $variant, string $lang): ?string
+    /** Template of a page for an operator type in one language (null if there is none). */
+    public static function template(string $key, string $type, string $lang): ?string
     {
-        $name = self::VARIANTS[$key][$variant] ?? null;
+        $name = self::VARIANTS[$key][$type] ?? null;
         $file = APP_ROOT . "/app/templates/pages/$name.$lang.md";
         return $name !== null && preg_match('/^[a-z]{2}$/', $lang) && is_file($file) ? (string) file_get_contents($file) : null;
+    }
+
+    /**
+     * Operator type a stored text is an unedited template of: one of the current templates of this page or
+     * an earlier one (Migrations::OLD_PAGE_HASHES). null = edited (or never a template).
+     */
+    public static function templateType(string $key, string $content): ?string
+    {
+        $hash = hash('sha256', $content);
+        $types = array_flip(self::VARIANTS[$key] ?? []);
+        foreach (Migrations::CURRENT_PAGE_HASHES as $file => $current) {
+            $type = $types[(string) preg_replace('/\.[a-z]{2}$/', '', $file)] ?? null;
+            if ($type !== null && $current === $hash) {
+                return $type;
+            }
+        }
+        foreach (Migrations::OLD_PAGE_HASHES as $type => $hashes) {
+            if (in_array($hash, $hashes, true)) {
+                return $type;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * What to store instead of a text for the operator type: its template if the text is missing or an
+     * unedited template (of either type, current or earlier). null = keep it: edited, already the right
+     * template, or no template in this language.
+     */
+    public static function replacement(string $key, string $lang, ?string $stored, string $type): ?string
+    {
+        $new = self::template($key, $type, $lang);
+        return $new === null || $stored === $new || ($stored !== null && self::templateType($key, $stored) === null) ? null : $new;
+    }
+
+    /**
+     * Operator type of an installation from before the type was asked for, from its stored texts: "private"
+     * if every text with a template is an unedited template of a private service (what the templates up to
+     * v1.6 described), otherwise null – the admins have to choose.
+     * @param array<string, array<string, string>> $stored page key => language => text
+     */
+    public static function detectType(array $stored): ?string
+    {
+        $types = [];
+        foreach ($stored as $key => $texts) {
+            foreach ($texts as $lang => $content) {
+                if (self::template($key, 'private', (string) $lang) !== null) {
+                    $types[] = self::templateType($key, $content);
+                }
+            }
+        }
+        return array_values(array_unique($types)) === ['private'] ? 'private' : null;
+    }
+
+    /**
+     * Wording in a text that does not fit the operator type (null = not chosen yet), for the notes to admins:
+     * for a school "old" (the template up to v1.6) or else "private" (legal bases of a private operator); for a
+     * private operator "school" (school template), "scope" (controller also for the meeting and the teacher's
+     * mailbox) and "anytime" (cancelling "at any time", also without a type).
+     * @return list<string>
+     */
+    public static function mismatches(string $content, ?string $type): array
+    {
+        $has = static fn (string $kind): bool => (bool) preg_match(self::MARKERS[$kind], $content);
+        if ($type === 'school') {
+            return $has('old') ? ['old'] : ($has('private') ? ['private'] : []);
+        }
+        return array_values(array_filter($type === 'private' ? ['school', 'scope', 'anytime'] : ['anytime'], $has));
+    }
+
+    /** @return array<string, array<string, string>> stored texts of the offered languages: page key => language => text */
+    public static function stored(): array
+    {
+        $stored = [];
+        foreach (Db::all("SELECT page_key, lang, content FROM pages WHERE page_key IN ('imprint', 'privacy') ORDER BY page_key, lang") as $row) {
+            if (in_array($row['lang'], I18n::languages(), true)) {
+                $stored[(string) $row['page_key']][(string) $row['lang']] = (string) $row['content'];
+            }
+        }
+        return $stored;
+    }
+
+    /**
+     * Stores the templates of the operator type wherever a text of an offered language is missing or an
+     * unedited template (replacement()). Edited texts are never touched.
+     * @return int number of texts written
+     */
+    public static function apply(string $type): int
+    {
+        $stored = self::stored();
+        $written = 0;
+        foreach (self::KEYS as $key) {
+            foreach (I18n::languages() as $lang) {
+                $new = self::replacement($key, $lang, $stored[$key][$lang] ?? null, $type);
+                if ($new !== null) {
+                    Db::run(
+                        'INSERT INTO pages (page_key, lang, content, updated_at) VALUES (?, ?, ?, ?)
+                         ON DUPLICATE KEY UPDATE content = VALUES(content), updated_at = VALUES(updated_at)',
+                        [$key, $lang, $new, Time::nowSql()]
+                    );
+                    $written++;
+                }
+            }
+        }
+        return $written;
     }
 }

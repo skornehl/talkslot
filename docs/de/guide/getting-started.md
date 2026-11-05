@@ -28,8 +28,8 @@ dev/demo.sh        # optional: drei Demo-Runden mit Buchungen
 | Adminbereich | <http://localhost:8080/admin> | Benutzer `sabrina`, Passwort `Sehr-Sicheres-Dev-Pw1` |
 | E-Mails | <http://localhost:8025> | Mailpit |
 
-`dev/reset.sh` löscht alle Tabellen und installiert neu; führen Sie es aus, wann immer Sie einen sauberen
-Stand möchten.
+`dev/reset.sh` löscht alle Tabellen und installiert neu (als *von der Schule betrieben*); führen Sie es aus,
+wann immer Sie einen sauberen Stand möchten.
 
 Die Docker-Umgebung hat keinen Cronjob. Etwa 3 Stunden nach dem ersten Seitenaufruf meldet die Übersicht
 deshalb, dass noch kein vollständiger Lauf des Cronjobs verzeichnet ist ([Überwachung des Cronjobs]({{ '/de/guide/operations/' | relative_url }}#cron-monitoring));

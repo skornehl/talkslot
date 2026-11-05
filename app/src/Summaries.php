@@ -161,7 +161,7 @@ final class Summaries
         }
         $lines[] = '';
         $lines[] = '--';
-        $lines[] = __('Diese Zusammenfassung können Sie im Profil abbestellen. Bitte löschen Sie sie spätestens 15 Monate nach dem Termin (siehe Datenschutzhinweise).');
+        $lines[] = __('Diese Zusammenfassung können Sie im Profil abbestellen. Bitte löschen Sie sie nach den Vorgaben Ihrer Schule, spätestens 15 Monate nach dem Termin.');
 
         $attachments = $rows ? [[
             'name' => $icsName,
