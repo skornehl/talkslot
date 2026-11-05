@@ -45,7 +45,8 @@ schools (GDPR/DSGVO, TDDDG) and multilingual families.
 - Only free slots are shown, grouped by day. Required: name and acknowledging the privacy notice; e-mail is
   optional.
 - Personal link to **move or cancel**; confirmation and change mails contain an `.ics` file that updates the
-  same calendar entry when the booking is moved. The confirmation page offers *Copy link*, *Add to
+  same calendar entry when the booking is moved (titled with the round and the teacher), cancellations one
+  that removes it. The confirmation page offers *Copy link*, *Add to
   calendar*, *Share* (where the device has it, with a warning) and the confirmation by e-mail afterwards
   (the address is not stored).
 - **Multiple bookings** per round configurable: one per person per round, one per person per day, or allowed.
@@ -68,9 +69,12 @@ schools (GDPR/DSGVO, TDDDG) and multilingual families.
   (e.g. "parent-teacher day, 08:00–16:00, 15 minutes"); deadlines for booking and changes; ready-to-copy
   invitation text with a direct link per parent language and the round's rule on multiple bookings.
 - Bookings: overview, edit, move, delete, add manually (with a mail to the parents, ticked as soon as an
-  address is entered). Changed times never delete bookings, conflicts are flagged with ⚠. Dialogs, hints
-  and messages say clearly that parents are not notified automatically of deletions, of a new date or
-  location for a day and of a new location or teacher for the round. Deleting a day or a round with
+  address is entered). Changed times never delete bookings, conflicts are flagged with ⚠.
+- **Parents are told about changes:** deleting a booking, a day, a round or an account sends a
+  cancellation (with a calendar file that removes the appointment), a new date, time or location for a
+  day and a new location or teacher for the round send the new details, in the parents' language, with
+  the box *Eltern per E-Mail informieren* ticked by default. Parents without an address, or whom the
+  system never mailed, are named once for the teacher to tell in person. Deleting a day or a round with
   bookings needs an extra tick, checked on the server. Print view per round or day.
 - Translation of title and description **in the teacher's browser** (Chrome/Edge Translator API with a
   local model, no text leaves the device), manually editable.
@@ -272,7 +276,7 @@ All options are documented in [`config/config.sample.php`](config/config.sample.
 | `hosting` | – | web host per language, replaces `[[HOSTER]]` in the privacy policy |
 | `access_link_hours` | `48` | validity of invitation/reset links |
 | `summary_evening_hour` | `18` | time of the evening summary |
-| `mail_queue` | see file | mails per cron run (`batch`), seconds per run (`seconds`), reminders and summaries per hour (`hourly_limit`, `0` = no limit), sending after the response with PHP-FPM (`after_response`) |
+| `mail_queue` | see file | mails per cron run (`batch`), seconds per run (`seconds`), reminders, summaries and mails to many parents after a change per hour (`hourly_limit`, `0` = no limit), sending after the response with PHP-FPM (`after_response`) |
 | `cron_alert_hours` | `3` | warn admins and mail the operator after this many hours without a completed cron run (`0` = off) |
 | `rate_limits` | see file | generous, since many parents share an IP (mobile CGNAT, school Wi-Fi) |
 
@@ -325,6 +329,8 @@ otherwise the legal pages fall back to English.
   the light/dark choice stores only `light`/`dark`.
 - The mandatory checkbox is worded as *acknowledgement* of the privacy notice, not as consent (Art. 13 GDPR).
 - Automatic deletion as described above; summary mails to teachers contain no parent e-mail addresses.
+- The mail queue holds references only; a cancellation by the teacher keeps just what that one mail needs
+  (no link) until it is sent, at most 48 hours.
 
 ## Tests
 

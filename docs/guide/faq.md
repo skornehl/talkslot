@@ -8,6 +8,15 @@ Yes. The e-mail address is optional. Without it, parents get their personal chan
 confirmation page. There they can copy it, add the appointment to their calendar (the link is in the
 calendar entry) or have the confirmation sent to an e-mail address after all; that address is not stored.
 
+## Are parents told when a teacher cancels or moves their appointment?
+
+Yes, by e-mail in their language, if they gave an address: a cancellation when the teacher deletes the
+booking, its day or the round (or an admin the teacher's account), and the new details when a day gets
+another date, time or location, or the round another location or teacher. The box *Eltern per E-Mail
+informieren* is ticked by default. Parents without an address, or entries the teacher made without ever
+sending a mail, are named in the message afterwards so the teacher can tell them in person. See the
+[Teacher guide]({{ '/guide/teachers/' | relative_url }}).
+
 ## Can I use TalkSlot for something other than parent-teacher conferences?
 
 The wording is made for schools ("teacher", "parents"), but any setting where one person offers time

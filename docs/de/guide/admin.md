@@ -61,9 +61,11 @@ Ein bestehendes Konto können Sie:
   erneut senden* / *Link zum Zurücksetzen senden*). Das alte Passwort gilt dann nicht mehr, und alle
   Sitzungen des Kontos werden beendet;
 - in der **Rolle** ändern, also eine Lehrkraft zum Admin machen oder umgekehrt;
-- **löschen**, einschließlich aller Runden und Buchungen. Die Eltern dieser Buchungen werden **nicht**
-  automatisch benachrichtigt; der Bestätigungsdialog und die Meldung danach nennen ihre Zahl. Öffnen Sie
-  vorher die Druckansicht der Runden, danach ist nicht mehr zu sehen, wer gebucht hatte.
+- **löschen**, einschließlich aller Runden und Buchungen. Mit angehaktem *Eltern per E-Mail informieren*
+  (Standard) erhalten die Eltern künftiger Termine eine Absage per E-Mail, wie wenn eine Lehrkraft eine
+  Runde löscht (siehe [Anleitung für Lehrkräfte]({{ '/de/guide/teachers/' | relative_url }})); der Dialog
+  nennt ihre Zahl, und die Meldung danach nennt diejenigen, die keine E-Mail bekommen konnten, damit sie
+  persönlich informiert werden.
 
 Die eigene Rolle kann niemand ändern, das eigene Konto niemand deaktivieren oder löschen, und mindestens
 ein aktiver Admin bleibt immer bestehen, auch wenn zwei Admins sich im selben Moment gegenseitig
@@ -107,8 +109,9 @@ vergessen.
 Admins sehen und bearbeiten unter *Alle Runden* die Runden aller Lehrkräfte mit ihren Buchungen. Sie
 können eine Runde für eine Lehrkraft anlegen oder eine Runde einer anderen Lehrkraft zuordnen (Feld *Lehrkraft* im
 Rundenformular). Die Runde erscheint dann bei dieser Lehrkraft, die Eltern sehen ihren Namen, und die
-Zusammenfassungen gehen an sie. Eltern, die schon gebucht haben, werden nicht automatisch benachrichtigt;
-die Meldung nach dem Speichern sagt das und wie sie die neuen Daten bekommen. Lehrkräfte sehen immer nur
+Zusammenfassungen gehen an sie. Eltern, die schon gebucht haben, erhalten eine Änderungsmitteilung mit der
+neuen Lehrkraft, wenn *Eltern per E-Mail informieren* angehakt bleibt; die Meldung nach dem Speichern nennt
+diejenigen, die keine E-Mail bekommen konnten. Lehrkräfte sehen immer nur
 ihre eigenen Runden; das wird zentral durchgesetzt und ist durch Tests abgesichert.
 
 Wie Runden funktionieren, steht in der [Anleitung für Lehrkräfte]({{ '/de/guide/teachers/' | relative_url }}).

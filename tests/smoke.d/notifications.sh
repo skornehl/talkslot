@@ -57,7 +57,7 @@ PHP
 )
 NQ_ROWS=$(DBQ "SELECT GROUP_CONCAT(CONCAT(b.name, ':', o.kind, ':', o.attempts, ':', o.next_attempt_at > NOW()) ORDER BY b.name SEPARATOR ',') FROM tp_mail_outbox o JOIN tp_bookings b ON b.id = o.booking_id WHERE b.name LIKE 'Outbox %'")
 check "mail refused: queued for a retry in some minutes (a change notice waits behind the confirmation), the booking page goes on ($NQ)" '[ "$NQ" = "queued|queued|queued|NULL|303|booked:1" ] && [ "$NQ_ROWS" = "Outbox Eintrag:booked:1:1,Outbox Eltern:changed:1:1,Outbox Warteschlange:booked:1:1" ]'
-check "the outbox holds references only: no address, text or link" '[ "$(DBQ "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=\"tp_mail_outbox\"")" = "id,kind,booking_id,user_id,ref,priority,attempts,next_attempt_at,created_at" ]'
+check "the outbox holds references only: no address, text or link (a payload only for cancellations, see below)" '[ "$(DBQ "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=\"tp_mail_outbox\"")" = "id,kind,booking_id,user_id,ref,payload,priority,attempts,next_attempt_at,created_at" ] && [ "$(DBQ "SELECT COUNT(*) FROM tp_mail_outbox WHERE payload IS NOT NULL")" = 0 ]'
 NA=$(curl -s -b "$J" "$B/admin/round/$NR")
 check "booking list: \"E-Mail nicht zugestellt – neuer Versuch folgt\" at the three entries" '[ "$(echo "$NA" | grep -c "data-mail-failed")" = 3 ] && [ "$(echo "$NA" | grep -c "E-Mail nicht zugestellt – neuer Versuch folgt</span>")" = 3 ]'
 check "appointment page after booking with the mail queued: says it follows" 'curl -s "$N1L?done=booked&mail=queued" | has "<p data-mail-queued>Die Bestätigung konnte gerade nicht gesendet werden." && ! curl -s "$N1L?done=booked&mail=1" | has "data-mail-queued" && curl -s "$N1L?done=changed&mail=queued&lang=en" | has "It will be sent to your e-mail address automatically"'
@@ -232,3 +232,130 @@ DBQ "DROP TABLE tp_mail_outbox; ALTER TABLE tp_bookings DROP INDEX uq_bookings_m
 curl -s -o /dev/null "$B/"
 check "migration 20: outbox and booking columns created, bookings carried over" '[ "$(DBQ "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=\"tp_bookings\" AND COLUMN_NAME IN (\"remind_ok\",\"notified_at\",\"mail_failed_at\",\"mail_token_hash\")")" = 4 ] && [ "$(DBQ "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=\"tp_mail_outbox\"")" = 1 ] && [ "$(DBQ "SELECT value FROM tp_settings WHERE name=\"schema_version\"")" = "$LATEST" ] && [ "$(DBQ "SELECT GROUP_CONCAT(CONCAT(remind_ok, notified_at = updated_at) ORDER BY name) FROM tp_bookings WHERE name IN (\"Outbox Eltern\", \"Outbox Eintrag\")")" = "01,11" ] && [ "$(curl -s -o /dev/null -w "%{http_code}" "$N2L")" = 200 ]'
 curl -s -o /dev/null -b "$J" -d "csrf=$NT&confirm=1" "$B/admin/round/$NR/delete"
+
+# Changes by the teacher that concern booked parents (ScheduleService): cancellations and change notices in the
+# parents' language, only with the box "Eltern per E-Mail informieren" and only to parents who know the booking
+# (booked themselves, or got a mail about the teacher's entry); the others are named in the message
+echo "Parents told about changes by the teacher"
+NT=$(curl -s -b "$J" "$B/admin" | csrf)
+c_addr() { echo "aenderung-$1-$NRUN@example.org"; }
+# Newest mail to $1 (subject word $2): 1 if a part says method=CANCEL, then the content of its first attachment
+c_ics() { $DC exec -T app php -r '$r=json_decode(file_get_contents("http://mail:8025/api/v1/search?query='"$(n_query "$@")"'"),true); $id=$r["messages"][0]["ID"] ?? "x"; $a=json_decode((string) @file_get_contents("http://mail:8025/api/v1/message/$id"),true)["Attachments"][0] ?? null; echo (int) str_contains((string) @file_get_contents("http://mail:8025/api/v1/message/$id/raw"), "method=CANCEL"), "\n", $a ? file_get_contents("http://mail:8025/api/v1/message/$id/part/" . $a["PartID"]) : "";'; }
+# What waits in the outbox: change notices of the bookings of this test, cancellations ('' = nothing)
+c_outbox() { DBQ "SELECT COALESCE(GROUP_CONCAT(CONCAT_WS(':', b.name, o.kind, o.priority) ORDER BY o.id), '') FROM tp_mail_outbox o JOIN tp_bookings b ON b.id = o.booking_id WHERE b.name LIKE 'Aenderung %'"; }
+c_cancelled() { DBQ "SELECT COALESCE(GROUP_CONCAT(CONCAT_WS(':', JSON_VALUE(payload, '$.name'), JSON_VALUE(payload, '$.lang'), priority, attempts) ORDER BY id), '') FROM tp_mail_outbox WHERE kind = 'cancelled'"; }
+c_day() { curl -s -L -b "$J" -d "csrf=$NT&day_date=$2&start_time=09:00&end_time=10:00&slot_minutes=${4:-15}${5:-}" --data-urlencode "location=$3" "$B/admin/day/$1/edit"; }
+CD1=$(date -d '+20 day' +%F); CD2=$(date -d '+21 day' +%F); CD3=$(date -d '+22 day' +%F)
+CR=$(curl -s -o /dev/null -w '%{redirect_url}' -b "$J" --data-urlencode "csrf=$NT" -d "title=Aenderung+Test&location=Raum+1&booking_limit=none&is_active=1&booking_deadline_hours=0&cancel_deadline_hours=0&day_dates%5B%5D=$CD1&day_dates%5B%5D=$CD2&start_time=09:00&end_time=10:00&slot_minutes=15" "$B/admin/round/new" | grep -o '[0-9]*$')
+CRS=$(slugof "$CR")
+CSL=($(curl -s -b "$J" "$B/admin/round/$CR" | grep -o '/admin/slot/[0-9]*/book'))
+CDAYS=($(curl -s -b "$J" "$B/admin/round/$CR" | grep -o 'id="day-[0-9]*"' | grep -o '[0-9]\+'))
+# Day 1: parents with an address, an English entry with a confirmation, an entry without one, one without an
+# address; day 2: three parents
+book "$CRS" "Aenderung Eltern" "$(c_addr 1)" >/dev/null
+curl -s -o /dev/null -b "$J" --data-urlencode "csrf=$NT" -d "name=Aenderung+Eintrag&email=$(c_addr 2)&lang=en&send_mail=1" "$B${CSL[1]}"
+curl -s -o /dev/null -b "$J" --data-urlencode "csrf=$NT" -d "name=Aenderung+Unbestaetigt&email=$(c_addr 3)&lang=de" "$B${CSL[2]}"
+curl -s -o /dev/null -b "$J" --data-urlencode "csrf=$NT" -d "name=Aenderung+Ohne+Mail&lang=de" "$B${CSL[3]}"
+for n in "Tag Zwei:5" "Einzeln:6" "Abgelehnt:7"; do book "$CRS" "Aenderung ${n%:*}" "$(c_addr "${n#*:}")" >/dev/null; done
+check "set-up: four entries on the first day, three on the second" '[ -n "$CRS" ] && [ "${#CDAYS[@]}" = 2 ] && [ "$(DBQ "SELECT GROUP_CONCAT(d.day_date ORDER BY s.start_time, d.day_date) FROM tp_bookings b JOIN tp_slots s ON s.id = b.slot_id JOIN tp_round_days d ON d.id = s.day_id WHERE d.round_id = $CR")" = "$CD1,$CD2,$CD1,$CD2,$CD1,$CD2,$CD1" ]'
+
+# A single entry deleted with the box: the cancellation goes out at once
+C6=$(n_id "Aenderung Einzeln")
+R=$(curl -s -L -b "$J" -d "csrf=$NT&notify=1" "$B/admin/booking/$C6/delete")
+CT=$(n_text "$(c_addr 6)" abgesagt)
+CI=$(c_ics "$(c_addr 6)" abgesagt)
+check "entry deleted with the box: cancellation at once, in the parents' language, with the round page to book again (no link of the booking)" 'echo "$R" | has "Eintrag gelöscht – der Slot ist wieder frei. Absage per E-Mail an die Eltern gesendet." && echo "$CT" | has "leider wurde Ihr Termin von der Lehrkraft abgesagt" && echo "$CT" | has "Name: Aenderung Einzeln" && echo "$CT" | has "Ort: Raum 1" && echo "$CT" | has "$B/$CRS?lang=de" && ! echo "$CT" | has "/b/"' \
+  || echo "$CT" | head -12
+check "… with a calendar file that cancels the entry in the parents' calendar (same UID, METHOD:CANCEL, round and teacher)" '[ "$(echo "$CI" | head -1)" = 1 ] && echo "$CI" | has "METHOD:CANCEL" && echo "$CI" | has "STATUS:CANCELLED" && echo "$CI" | has "UID:appointment-$C6@" && echo "$CI" | has "SUMMARY:Aenderung Test – Frau Sabrina Test"'
+check "… logged without a name of the parents" '[ "$(DBQ "SELECT message LIKE \"%: Buchung % gelöscht, Eltern per E-Mail informiert\" AND message NOT LIKE \"%Einzeln%\" FROM tp_audit_log ORDER BY id DESC LIMIT 1")" = 1 ]'
+# The mail server refuses it (an address it cannot take): the cancellation waits in the outbox
+DBQ "UPDATE tp_bookings SET email = 'kaputt@@example.org' WHERE name = 'Aenderung Abgelehnt'"
+R=$(curl -s -L -b "$J" -d "csrf=$NT&notify=1" "$B/admin/booking/$(n_id "Aenderung Abgelehnt")/delete")
+check "mail refused: the cancellation waits in the outbox as a single mail, retried later, without a booking to refer to" 'echo "$R" | has "Die Absage per E-Mail konnte gerade nicht gesendet werden. Sie wird automatisch erneut versucht." && [ "$(c_cancelled)" = "Aenderung Abgelehnt:de:1:1" ] && [ "$(DBQ "SELECT CONCAT(booking_id IS NULL, user_id IS NULL, next_attempt_at > NOW()) FROM tp_mail_outbox WHERE kind = \"cancelled\"")" = 111 ]'
+DBQ "UPDATE tp_mail_outbox SET payload = JSON_REPLACE(payload, '$.email', '$(c_addr 7)'), next_attempt_at = NOW() WHERE kind = 'cancelled'"
+
+# New location of day 2, new date of day 1, with the box: change notices from the outbox (bulk mails)
+R=$(c_day "${CDAYS[1]}" "$CD2" "Raum 7" 15 "&notify=1")
+check "new location of a day with the box: the parents get the new details from the outbox as a bulk mail" 'echo "$R" | has "Die Eltern von 1 Buchung(en) erhalten die neuen Termindaten per E-Mail in ihrer Sprache." && [ "$(c_outbox)" = "Aenderung Tag Zwei:changed:2" ]'
+R=$(c_day "${CDAYS[0]}" "$CD3" "" 15 "&notify=1")
+CW=$(date -d "$CD3" +%d.%m.%Y)
+check "new date with the box: two parents by mail, the entry without a confirmation and the one without an address named for the teacher" 'echo "$R" | has "Die Eltern von 2 Buchung(en) erhalten die neuen Termindaten" && echo "$R" | has "Keine E-Mail an die Eltern von 2 Buchung(en) (keine Adresse hinterlegt oder Eintrag nie per E-Mail bestätigt) – bitte persönlich informieren: Aenderung Unbestaetigt, $(c_addr 3) ($CW 09:30); Aenderung Ohne Mail ($CW 09:45)." && [ "$(c_outbox)" = "Aenderung Tag Zwei:changed:2,Aenderung Eltern:changed:2,Aenderung Eintrag:changed:2" ]'
+check "… logged with the number, without names" '[ "$(DBQ "SELECT message LIKE \"%bearbeitet (jetzt %), Eltern von 2 Buchung(en) per E-Mail informiert\" FROM tp_audit_log ORDER BY id DESC LIMIT 1")" = 1 ]'
+$DC exec -T app php /srv/app/bin/cron.php >/dev/null
+check "cron job: the change notices go out with the new details (English for the English entry), and the refused cancellation" 'n_text "$(c_addr 5)" ge%C3%A4ndert | has "Ort: Raum 7" && n_text "$(c_addr 1)" ge%C3%A4ndert | has ", $CW, 09:00" && n_text "$(c_addr 2)" changed | has "New appointment: " && [ "$(n_mails "$(c_addr 3)")" = 0 ] && [ "$(n_mails "$(c_addr 7)" abgesagt)" = 1 ] && [ -z "$(c_outbox)" ] && [ -z "$(c_cancelled)" ]'
+
+# Longer slots: the booking that keeps its start gets the new end time; the others become conflicts, their
+# parents hear of it when the teacher moves or deletes them
+R=$(c_day "${CDAYS[0]}" "$CD3" "" 20 "&notify=1")
+check "longer slots: a change notice for the new end time, none for the three conflicts" 'echo "$R" | has "Achtung: 3 gebuchte(r) Termin(e) passen nicht mehr zum Zeitplan" && echo "$R" | has "Die Eltern von 1 Buchung(en) erhalten die neuen Termindaten" && [ "$(c_outbox)" = "Aenderung Eltern:changed:2" ]'
+R=$(curl -s -L -b "$J" -d "csrf=$NT&notify=1" "$B/admin/booking/$(n_id "Aenderung Unbestaetigt")/delete")
+check "conflict deleted with the box, an entry whose parents never got a mail: none now either, please inform in person" 'echo "$R" | has "Die Eltern („Aenderung Unbestaetigt“, $(c_addr 3)) haben zu diesem Eintrag nie eine E-Mail erhalten und wurden deshalb nicht benachrichtigt – bitte persönlich informieren." && [ "$(n_mails "$(c_addr 3)")" = 0 ]'
+
+# Day deleted with the box: cancellations with what the mails need; the change notice goes with its booking
+R=$(curl -s -L -b "$J" -d "csrf=$NT&confirm=1&notify=1" "$B/admin/day/${CDAYS[0]}/delete")
+check "day deleted with the box: cancellations queued as bulk mails in the parents' language, the one without an address named" 'echo "$R" | has "Die Eltern von 2 Buchung(en) erhalten eine Absage per E-Mail in ihrer Sprache." && echo "$R" | has "bitte persönlich informieren: Aenderung Ohne Mail ($CW 09:45)." && [ "$(c_cancelled)" = "Aenderung Eltern:de:2:0,Aenderung Eintrag:en:2:0" ]'
+check "… a cancellation keeps what its mail needs, no link, token or description" '[ "$(DBQ "SELECT GROUP_CONCAT(DISTINCT JSON_KEYS(payload)) FROM tp_mail_outbox WHERE kind = \"cancelled\"")" = "[\"booking_id\", \"round_id\", \"email\", \"lang\", \"name\", \"title\", \"auto_translated\", \"source_lang\", \"teacher_name\", \"teacher_email\", \"day_date\", \"start_time\", \"end_time\", \"location\", \"created_at\"]" ] && [ "$(DBQ "SELECT COUNT(*) FROM tp_mail_outbox WHERE kind = \"cancelled\" AND (payload LIKE \"%/b/%\" OR payload LIKE \"%hash%\")")" = 0 ]'
+$DC exec -T app php /srv/app/bin/cron.php >/dev/null
+check "cron job: the cancellations go out in the parents' language with the round page; the change notice of a deleted booking does not" 'n_text "$(c_addr 2)" cancelled | has "unfortunately the teacher has cancelled your appointment" && n_text "$(c_addr 2)" cancelled | has "$B/$CRS?lang=en" && n_text "$(c_addr 1)" abgesagt | has "Abgesagter Termin: " && [ "$(n_mails "$(c_addr 1)" ge%C3%A4ndert)" = 1 ] && [ -z "$(c_cancelled)" ]'
+
+# Another teacher takes the round over, then her account is deleted, both with the box
+curl -s -o /dev/null -b "$J" -d "csrf=$NT&display_name=Frau+Aenderung&email=lk-aenderung-$NRUN@example.org&role=teacher" "$B/admin/users/new"
+CU=$(DBQ "SELECT id FROM tp_users WHERE username = 'lk-aenderung-$NRUN@example.org'")
+R=$(curl -s -L -b "$J" --data-urlencode "csrf=$NT" -d "title=Aenderung+Test&user_id=$CU&booking_deadline_hours=0&cancel_deadline_hours=0&notify=1" "$B/admin/round/$CR/edit")
+$DC exec -T app php /srv/app/bin/cron.php >/dev/null
+check "round handed to another teacher with the box: the parents get the change notice with her name" 'echo "$R" | has "Die Runde gehört jetzt Frau Aenderung." && echo "$R" | has "Die Eltern von 1 Buchung(en) erhalten die neuen Termindaten" && [ "$(n_mails "$(c_addr 5)" ge%C3%A4ndert)" = 2 ] && n_text "$(c_addr 5)" ge%C3%A4ndert | has "Gespräch mit: Frau Aenderung"'
+UF=$(curl -s -b "$J" "$B/admin/users/$CU/edit" | tr '\n' '~')
+check "account with a booking: the delete dialog names the cancellation, the box is ticked" 'echo "$UF" | has "mit allen Runden und Buchungen endgültig löschen?~~Die Eltern von 1 Buchung(en) erhalten eine Absage per E-Mail.\" data-confirm-off=\"" && echo "$UF" | has "<input type=\"checkbox\" name=\"notify\" value=\"1\" checked> Eltern per E-Mail informieren"'
+R=$(curl -s -L -b "$J" -d "csrf=$NT&confirm=1&notify=1" "$B/admin/users/$CU/delete")
+$DC exec -T app php /srv/app/bin/cron.php >/dev/null
+check "account deleted with the box: the parents get the cancellation, without a page to book again (the round is gone)" 'echo "$R" | has "Die Eltern von 1 Buchung(en) erhalten eine Absage per E-Mail in ihrer Sprache." && n_text "$(c_addr 5)" abgesagt | has "Gespräch mit: Frau Aenderung" && ! n_text "$(c_addr 5)" abgesagt | has "/$CRS" && [ -z "$(DBQ "SELECT id FROM tp_rounds WHERE id = $CR")" ]'
+
+# A round: the box after an error, a new location, the parents' own cancellation, then the round deleted
+CR2=$(curl -s -o /dev/null -w '%{redirect_url}' -b "$J" --data-urlencode "csrf=$NT" -d "title=Aenderung+Runde&location=Raum+1&booking_limit=none&is_active=1&booking_deadline_hours=0&cancel_deadline_hours=0&day_dates%5B%5D=$CD1&start_time=09:00&end_time=10:00&slot_minutes=15" "$B/admin/round/new" | grep -o '[0-9]*$')
+CR2S=$(slugof "$CR2")
+book "$CR2S" "Aenderung Runde Eltern" "$(c_addr 8)" >/dev/null
+CSELF=$(book "$CR2S" "Aenderung Selbst" "$(c_addr 9)"); CSELF=${CSELF#* }; CSELF=${CSELF%%\?*}
+c_round() { curl -s -L -b "$J" --data-urlencode "csrf=$NT" -d "booking_deadline_hours=0&cancel_deadline_hours=0&is_active=1$1" "${@:2}" "$B/admin/round/$CR2/edit"; }
+check "round form after an error: the box stays as it was sent" 'c_round "&title=" | has "name=\"notify\" value=\"1\" aria-describedby=\"notify-hint\">" && c_round "&title=&notify=1" | has "name=\"notify\" value=\"1\" checked aria-describedby=\"notify-hint\">"'
+curl -s -o /dev/null --data-urlencode "csrf=$(curl -s "$CSELF" | csrf)" -d "action=cancel&confirm=1" "$CSELF"
+CI=$(c_ics "$(c_addr 9)" abgesagt)
+check "parents cancel themselves: the mail carries the calendar file that cancels the appointment" '[ -n "$CSELF" ] && n_text "$(c_addr 9)" abgesagt | has "Ihr Termin wurde abgesagt" && [ "$(echo "$CI" | head -1)" = 1 ] && echo "$CI" | has "METHOD:CANCEL" && echo "$CI" | has "SUMMARY:Aenderung Runde – Frau Sabrina Test"'
+R=$(c_round "&title=Aenderung+Runde&notify=1" --data-urlencode "location=Aula")
+check "new location of the round with the box: a change notice for its bookings" 'echo "$R" | has "Die Eltern von 1 Buchung(en) erhalten die neuen Termindaten" && [ "$(c_outbox)" = "Aenderung Runde Eltern:changed:2" ]'
+R=$(curl -s -L -b "$J" -d "csrf=$NT&confirm=1&notify=1" "$B/admin/round/$CR2/delete")
+check "round deleted with the box: a cancellation instead of the change notice, logged with the number" 'echo "$R" | has "Die Eltern von 1 Buchung(en) erhalten eine Absage per E-Mail in ihrer Sprache." && [ "$(c_cancelled)" = "Aenderung Runde Eltern:de:2:0" ] && [ "$(DBQ "SELECT message FROM tp_audit_log ORDER BY id DESC LIMIT 1")" = "Runde „Aenderung Runde“ (Frau Sabrina Test): gelöscht (mit 1 Buchung(en)), Eltern von 1 Buchung(en) per E-Mail informiert" ]'
+$DC exec -T app php /srv/app/bin/cron.php >/dev/null
+check "cron job: the cancellation names the new location, no change notice, no page to book again" 'n_text "$(c_addr 8)" abgesagt | has "Ort: Aula" && ! n_text "$(c_addr 8)" abgesagt | has "/$CR2S" && [ "$(n_mails "$(c_addr 8)" ge%C3%A4ndert)" = 0 ]'
+
+# Bulk mails and the hourly limit; cancellations no longer needed (in-process, script on stdin for the coverage run)
+CK=$($DC exec -T app php -- /srv/app "$(c_addr 10)" "$(c_addr 11)" 2>&1 <<'PHP'
+<?php
+[, $root, $bulk, $single] = $argv;
+require "$root/app/bootstrap.php";
+$cfg = require "$root/config/config.php";
+App\Outbox::process();
+$data = ['booking_id' => 0, 'round_id' => 0, 'lang' => 'de', 'name' => 'Aenderung Warteschlange', 'title' => 'Aenderung', 'auto_translated' => false,
+    'source_lang' => 'de', 'teacher_name' => 'Frau Test', 'teacher_email' => '', 'day_date' => App\Time::now()->modify('+2 days')->format('Y-m-d'),
+    'start_time' => '09:00:00', 'end_time' => '09:15:00', 'location' => '', 'created_at' => App\Time::nowSql()];
+$out = [];
+// Hourly limit used up: a bulk cancellation waits for the next hour (no run after a page request for it), a single one goes out
+App\Config::load(['mail_queue' => ['hourly_limit' => 1] + $cfg['mail_queue']] + $cfg);
+App\Settings::set('mail_hour', App\Time::now()->format('Y-m-d H') . '|1');
+App\Outbox::queueCancellation(['email' => $bulk] + $data, false, true);
+App\Outbox::queueCancellation(['email' => $single] + $data);
+$out[] = App\Outbox::process()['mails_sent'] . '/' . (App\Outbox::due() ? 'due' : '-') . '/' . App\Db::value("SELECT COUNT(*) FROM mail_outbox WHERE kind = 'cancelled'");
+App\Config::load($cfg);
+$out[] = App\Outbox::process()['mails_sent'];
+// Not sent: the appointment has begun meanwhile, or the row lacks what the mail needs
+App\Outbox::queueCancellation(['email' => $single, 'day_date' => App\Time::now()->modify('-1 day')->format('Y-m-d')] + $data);
+App\Db::run("INSERT INTO mail_outbox (kind, payload, priority, next_attempt_at, created_at) VALUES ('cancelled', '{}', 1, ?, ?)", [App\Time::nowSql(), App\Time::nowSql()]);
+$out[] = json_encode(App\Outbox::process());
+echo implode('|', $out);
+PHP
+)
+check "outbox: the hourly limit holds back bulk cancellations, not single ones; an appointment that has begun or a row without its data is dropped ($CK)" '[ "$CK" = "1/-/1|1|{\"mails_sent\":0,\"mails_failed\":0,\"mails_dropped\":2}" ] && [ "$(n_mails "$(c_addr 10)" abgesagt)" = 1 ] && [ "$(n_mails "$(c_addr 11)" abgesagt)" = 1 ] && [ -z "$(c_cancelled)" ]'
+
+# Migration 21 on a database of the version before: the outbox gets the column for cancellations
+DBQ "ALTER TABLE tp_mail_outbox DROP COLUMN payload; UPDATE tp_settings SET value = '20' WHERE name = 'schema_version'"
+curl -s -o /dev/null "$B/"
+check "migration 21: the outbox gets the column for cancellations" '[ "$(DBQ "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=\"tp_mail_outbox\" AND COLUMN_NAME=\"payload\"")" = 1 ] && [ "$(DBQ "SELECT value FROM tp_settings WHERE name=\"schema_version\"")" = "$LATEST" ]'

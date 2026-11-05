@@ -1,11 +1,26 @@
 <?php
-/** Overview of a round: days, breaks, slots, bookings. @var array $round @var array $days @var int $conflicts @var string $publicUrl @var ?DateTimeImmutable $deletion */
+/**
+ * Overview of a round: days, breaks, slots, bookings. @var array $round @var array $days @var int $conflicts @var string $publicUrl
+ * @var ?DateTimeImmutable $deletion when the clean-up deletes the round (null = not automatically)
+ * @var array $parents upcoming bookings of the round and how many of their parents can be mailed (also per day: $day['parents'])
+ */
 use App\Csrf;
 $rid = (int) $round['id'];
 $csrf = Csrf::adminField();
-// Delete dialogs: parents are not informed by the system, so they say so (and where to see who booked)
+// Delete dialogs say what happens to the parents of upcoming appointments: with the box "Eltern per E-Mail
+// informieren" ticked, those with an address get a cancellation and the others are named in the message
+// afterwards (data-confirm); unticked, nobody is told (data-confirm-off, also where nobody can be mailed)
 $notNotified = "\n\n" . __('Die Eltern werden NICHT automatisch benachrichtigt – bitte selbst informieren.');
 $whoBooked = ' ' . __('Vorher in der Druckansicht nachsehen, wer gebucht hat – nach dem Löschen ist das nicht mehr möglich.');
+$cancelNote = static fn (array $p): string => match (true) {
+    $p['mailable'] > 0 => "\n\n" . __('Die Eltern von {count} Buchung(en) erhalten eine Absage per E-Mail.', ['count' => $p['mailable']])
+        . ($p['upcoming'] > $p['mailable'] ? ' ' . __('{count} Buchung(en) ohne E-Mail an die Eltern – bitte persönlich informieren; die Namen stehen danach in der Meldung.', ['count' => $p['upcoming'] - $p['mailable']]) : ''),
+    $p['upcoming'] > 0 => $notNotified . $whoBooked,
+    default => '',
+};
+$offNote = static fn (array $p): string => $p['upcoming'] > 0 ? $notNotified . $whoBooked : '';
+$notifyBox = static fn (array $p): string => $p['mailable'] > 0
+    ? '<label class="small"><input type="checkbox" name="notify" value="1" checked> ' . e(__('Eltern per E-Mail informieren')) . '</label>' : '';
 $roundBookings = array_sum(array_map(static fn ($d) => count(array_filter($d['slots'], static fn ($s) => $s['booking_id'] !== null)), $days));
 // When the clean-up deletes the round (null = not automatically)
 $deletionText = $deletion ? __('{date}, {time} Uhr', ['date' => fmt_date($deletion->format('Y-m-d')), 'time' => $deletion->format('H:i')]) : '';
@@ -79,7 +94,7 @@ $deletionText = $deletion ? __('{date}, {time} Uhr', ['date' => fmt_date($deleti
 </div>
 
 <?php if ($conflicts > 0): ?>
-  <div class="alert alert-warning" role="alert"><p><strong><?= e(__('{count} Konflikt(e):', ['count' => $conflicts])) ?></strong> <?= e(__('Gebuchte Termine passen nicht mehr zum Zeitplan (markiert mit ⚠). Bitte umbuchen oder löschen.')) ?> <?= e(__('Die Eltern werden dabei NICHT automatisch benachrichtigt: Beim Umbuchen „Änderung per E-Mail mitteilen“ angehakt lassen, ohne E-Mail-Adresse bitte persönlich informieren.')) ?></p></div>
+  <div class="alert alert-warning" role="alert"><p><strong><?= e(__('{count} Konflikt(e):', ['count' => $conflicts])) ?></strong> <?= e(__('Gebuchte Termine passen nicht mehr zum Zeitplan (markiert mit ⚠). Bitte umbuchen oder löschen.')) ?> <?= e(__('Die Eltern erfahren davon, wenn Sie den Termin umbuchen (mit „Änderung per E-Mail mitteilen“) oder löschen (mit „Eltern per E-Mail informieren“); ohne E-Mail-Adresse bitte persönlich informieren.')) ?></p></div>
 <?php endif; ?>
 
 <details class="card" id="translations"<?= array_filter($translations, static fn ($t) => !in_array($t['status'], ['auto', 'manual', 'none'], true)) ? ' open' : '' ?>>
@@ -133,10 +148,12 @@ $deletionText = $deletion ? __('{date}, {time} Uhr', ['date' => fmt_date($deleti
     <a class="button button-small" href="<?= e(url('/admin/day/' . $did . '/edit')) ?>"><?= e(__('Tag bearbeiten')) ?></a>
     <a class="button button-small" href="<?= e(url('/admin/round/' . $rid . '/print', ['day' => $did])) ?>" target="_blank" rel="noopener"><?= e(__('Tag drucken')) ?></a>
     <?php $dayBookings = count(array_filter($day['slots'], static fn ($s) => $s['booking_id'] !== null)); ?>
-    <form method="post" action="<?= e(url('/admin/day/' . $did . '/delete')) ?>" class="inline-delete" data-confirm="<?= e($dayBookings ? __('Diesen Tag mit allen Slots und {count} Buchung(en) löschen?', ['count' => $dayBookings]) . $notNotified . $whoBooked : __('Diesen Tag mit allen Slots löschen?')) ?>"><?= $csrf ?>
+    <?php $question = $dayBookings ? __('Diesen Tag mit allen Slots und {count} Buchung(en) löschen?', ['count' => $dayBookings]) : __('Diesen Tag mit allen Slots löschen?'); ?>
+    <form method="post" action="<?= e(url('/admin/day/' . $did . '/delete')) ?>" class="inline-delete" data-confirm="<?= e($question . $cancelNote($day['parents'])) ?>" data-confirm-off="<?= e($question . $offNote($day['parents'])) ?>"><?= $csrf ?>
       <?php if ($dayBookings): ?>
         <label class="small"><input type="checkbox" name="confirm" value="1" required> <?= e(__('inkl. {count} Buchung(en)', ['count' => $dayBookings])) ?></label>
       <?php endif; ?>
+      <?= $notifyBox($day['parents']) ?>
       <button type="submit" class="button button-small button-danger"><?= e(__('Tag löschen')) ?></button></form>
   </div>
 
@@ -177,7 +194,17 @@ $deletionText = $deletion ? __('{date}, {time} Uhr', ['date' => fmt_date($deleti
         <td class="row-actions">
           <?php if ($s['booking_id']): ?>
             <a class="button button-small" href="<?= e(url('/admin/booking/' . (int) $s['booking_id'] . '/edit')) ?>"><?= e(__('Bearbeiten')) ?></a>
-            <form method="post" action="<?= e(url('/admin/booking/' . (int) $s['booking_id'] . '/delete')) ?>" class="inline" data-confirm="<?= e(__('Eintrag von „{name}“ löschen? Der Slot wird wieder frei.', ['name' => $s['name']]) . ((string) $s['email'] !== '' ? $notNotified : "\n\n" . __('Die Eltern werden NICHT automatisch benachrichtigt. Für diesen Eintrag ist keine E-Mail-Adresse hinterlegt – bitte persönlich informieren.'))) ?>"><?= $csrf ?>
+            <?php
+            $question = __('Eintrag von „{name}“ löschen? Der Slot wird wieder frei.', ['name' => $s['name']]);
+            $note = match (true) {
+                !$s['upcoming'] => '',
+                $s['mailable'] => "\n\n" . __('Die Eltern erhalten eine Absage per E-Mail.'),
+                (string) $s['email'] !== '' => "\n\n" . __('Die Eltern haben zu diesem Eintrag nie eine E-Mail erhalten und werden deshalb nicht benachrichtigt – bitte persönlich informieren.'),
+                default => "\n\n" . __('Die Eltern werden NICHT automatisch benachrichtigt. Für diesen Eintrag ist keine E-Mail-Adresse hinterlegt – bitte persönlich informieren.'),
+            };
+            ?>
+            <form method="post" action="<?= e(url('/admin/booking/' . (int) $s['booking_id'] . '/delete')) ?>" class="inline-delete" data-confirm="<?= e($question . $note) ?>"<?= $s['mailable'] ? ' data-confirm-off="' . e($question . $notNotified) . '"' : '' ?>><?= $csrf ?>
+              <?= $notifyBox(['mailable' => (int) $s['mailable']]) ?>
               <button type="submit" class="button button-small button-danger"><?= e(__('Löschen')) ?></button></form>
           <?php else: ?>
             <a class="button button-small" href="<?= e(url('/admin/slot/' . $sid . '/book')) ?>"><?= e(__('Eintragen')) ?></a>
@@ -205,9 +232,11 @@ $deletionText = $deletion ? __('{date}, {time} Uhr', ['date' => fmt_date($deleti
   <form method="post" action="<?= e(url('/admin/round/' . $rid . '/toggle')) ?>" class="actions"><?= $csrf ?>
     <button type="submit" class="button"><?= e(__('Stattdessen deaktivieren')) ?></button></form>
   <?php endif; ?>
-  <form method="post" action="<?= e(url('/admin/round/' . $rid . '/delete')) ?>" class="actions inline-delete" data-confirm="<?= e($roundBookings ? __('Runde „{title}“ mit allen Tagen und {count} Buchung(en) endgültig löschen?', ['title' => $round['title'], 'count' => $roundBookings]) . $notNotified . $whoBooked : __('Runde „{title}“ mit allen Tagen und Buchungen endgültig löschen?', ['title' => $round['title']])) ?>"><?= $csrf ?>
+  <?php $question = $roundBookings ? __('Runde „{title}“ mit allen Tagen und {count} Buchung(en) endgültig löschen?', ['title' => $round['title'], 'count' => $roundBookings]) : __('Runde „{title}“ mit allen Tagen und Buchungen endgültig löschen?', ['title' => $round['title']]); ?>
+  <form method="post" action="<?= e(url('/admin/round/' . $rid . '/delete')) ?>" class="actions inline-delete" data-confirm="<?= e($question . $cancelNote($parents)) ?>" data-confirm-off="<?= e($question . $offNote($parents)) ?>"><?= $csrf ?>
     <?php if ($roundBookings): ?>
       <label class="small"><input type="checkbox" name="confirm" value="1" required> <?= e(__('inkl. {count} Buchung(en)', ['count' => $roundBookings])) ?></label>
     <?php endif; ?>
+    <?= $notifyBox($parents) ?>
     <button type="submit" class="button button-danger"><?= e(__('Runde löschen')) ?></button></form>
 </section>
