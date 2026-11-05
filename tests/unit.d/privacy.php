@@ -118,3 +118,9 @@ check('page form, sections taken over or a template loaded: the form is marked a
     && str_contains($pvForms['merged'], '<input type="hidden" name="base" value="private">') && !str_contains($pvForms['merged'], 'data-legal-update')
     && str_contains($pvForms['loaded'], '<input type="hidden" name="base" value="school">') && !str_contains($pvForms['loaded'], 'type="checkbox"')
     && !str_contains($pvForms['none'], 'name="base"') && !str_contains($pvForms['none'], 'data-legal'));
+$pvTexts = static fn (array $texts): string => (string) (new ReflectionMethod(App\Controller\AdminController::class, 'outdatedTexts'))->invoke(null, $texts);
+check('note on the dashboard: per text its sections, more than three as their number, in the admin language',
+    $pvTexts([['key' => 'privacy', 'lang' => 'de', 'changes' => array_slice($pvKnown, 0, 2)], ['key' => 'imprint', 'lang' => 'en', 'changes' => [['heading' => null]]]])
+        === 'Datenschutzerklärung (DE): 1. Verantwortliche, 2. Zweck der Verarbeitung; Impressum (EN): Einleitung'
+    && $pvTexts([['key' => 'privacy', 'lang' => 'en', 'changes' => $pvUnknown]]) === 'Datenschutzerklärung (EN): 7 Abschnitte'
+    && App\AdminI18n::with('en', static fn () => $pvTexts([['key' => 'privacy', 'lang' => 'en', 'changes' => $pvUnknown]])) === 'Privacy policy (EN): 7 sections');
