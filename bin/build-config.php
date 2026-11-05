@@ -54,6 +54,16 @@ if (strlen($env('APP_SECRET')) < 32 || ($allowInstall && strlen($env('INSTALL_KE
     exit(1);
 }
 
+// Domains the addresses of accounts must use (ALLOWED_ACCOUNT_DOMAINS, comma-separated, e.g. schule.example.org)
+require dirname(__DIR__) . '/app/src/AccountDomains.php';
+$domains = array_values(array_unique(array_filter(array_map(static fn (string $d): string => ltrim(trim($d), '@'), explode(',', strtolower($env('ALLOWED_ACCOUNT_DOMAINS')))))));
+foreach ($domains as $domain) {
+    if (!App\AccountDomains::valid($domain)) {
+        fwrite(STDERR, "ALLOWED_ACCOUNT_DOMAINS: \"$domain\" is not a domain (comma-separated, e.g. schule.example.org)\n");
+        exit(1);
+    }
+}
+
 $config = require dirname(__DIR__) . '/config/config.sample.php';
 
 // Parent-facing languages (LANGUAGES, comma-separated, order = order of the flags) and the language
@@ -93,6 +103,9 @@ $config['db'] = [
     'prefix' => $prefix,
 ];
 $config['alert_email'] = $env('ALERT_EMAIL');
+// Names in the summaries for teachers only where the school allows them (SUMMARY_NAMES=1)
+$config['summary_names'] = in_array(strtolower($env('SUMMARY_NAMES')), ['1', 'true'], true);
+$config['allowed_account_domains'] = $domains;
 $config['languages'] = $languages;
 $config['default_language'] = $default;
 $config['app_name'] = $env('APP_NAME', (string) $config['app_name']);

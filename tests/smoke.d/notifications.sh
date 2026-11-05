@@ -365,7 +365,7 @@ check "migration 21: the outbox gets the column for cancellations" '[ "$(DBQ "SE
 echo "Summaries without names, reply address, return after signing in"
 ST=$(curl -s -b "$J" "$B/admin" | csrf)
 SRUN=$(date +%s)
-s_addr() { echo "summary-$1-$SRUN@example.org"; }
+s_addr() { echo "summary-${1:-}-$SRUN@example.org"; }
 s_files() { $DC exec -T app php -r 'echo count(glob("/srv/app/app/var/sessions/sess_*"));'; }
 # s_ics <address> [subject word] → the calendar file of the newest mail ('' without one)
 s_ics() { $DC exec -T app php -r '$r=json_decode(file_get_contents("http://mail:8025/api/v1/search?query='"$(n_query "$@")"'"),true); $id=$r["messages"][0]["ID"] ?? "x"; $a=json_decode(file_get_contents("http://mail:8025/api/v1/message/$id"),true)["Attachments"] ?? []; echo $a ? file_get_contents("http://mail:8025/api/v1/message/$id/part/".$a[0]["PartID"]) : "";'; }
@@ -423,8 +423,8 @@ DBQ "UPDATE tp_users SET email = '$(s_addr konto)' WHERE id = $SU"
 DBQ "UPDATE tp_users SET summary_names = NULL WHERE id = $SU"
 SD=$(curl -s -b "$J" "$B/admin")
 curl -s -o /dev/null -b "$J" -d "csrf=$ST" "$B/admin/profile/summaries"
-check "dashboard: accounts from before are told that names are gone (admins: how to allow them), until they confirm; the choice stays" \
-  'echo "$SD" | has "data-summary-notice>" && echo "$SD" | has "Neu: Ihre Zusammenfassungen per E-Mail enthalten keine Namen und keine Kalenderdatei mehr" && echo "$SD" | has "„summary_names“ in config/config.php" && [ "$(DBQ "SELECT summary_names FROM tp_users WHERE id = $SU")" = 1 ] && ! curl -s -b "$J" "$B/admin" | has "data-summary-notice"'
+check "dashboard: accounts from before are told that names are gone (admins: how to allow them), until they confirm; then without names like new accounts" \
+  'echo "$SD" | has "data-summary-notice>" && echo "$SD" | has "Neu: Ihre Zusammenfassungen per E-Mail enthalten keine Namen und keine Kalenderdatei mehr" && echo "$SD" | has "„summary_names“ in config/config.php" && [ "$(DBQ "SELECT summary_names FROM tp_users WHERE id = $SU")" = 0 ] && ! curl -s -b "$J" "$B/admin" | has "data-summary-notice"'
 SPF() { curl -s -L -b "$J" --data-urlencode "csrf=$ST" --data-urlencode "display_name=$SNAME" --data-urlencode "email=$(s_addr konto)" -d "summary_evening=1&summary_deadline=1" "$@" "$B/admin/profile"; }
 DBQ "UPDATE tp_users SET summary_names = NULL WHERE id = $SU"
 check "profile: without the school's permission no choice of names, saving keeps it as it was" \
@@ -443,6 +443,8 @@ ALERTS '$f = "/srv/app/config/config.php"; copy($f, "$f.p14"); $c = require $f; 
   file_put_contents($f, "<?php return " . var_export($c, true) . ";");'
 sleep 3
 SPN=$(curl -s -b "$J" "$B/admin/profile"); SDN=$(curl -s -b "$J" "$B/admin")
+curl -s -o /dev/null -b "$J" -d "csrf=$ST" "$B/admin/profile/summaries"
+S_SEEN=$(DBQ "SELECT summary_names FROM tp_users WHERE id = $SU")
 S_OFF=$(SPF --data-urlencode "reply_to=$(s_addr antwort)" | has "Profil gespeichert." && DBQ "SELECT summary_names FROM tp_users WHERE id = $SU")
 S_ON=$(SPF --data-urlencode "reply_to=$(s_addr antwort)" -d "summary_names=1" | has "Profil gespeichert." && DBQ "SELECT summary_names FROM tp_users WHERE id = $SU")
 S_MAIL=$(SPF --data-urlencode "reply_to=$(s_addr antwort)" --data-urlencode "email=privat-$SRUN@gmx.example" --data-urlencode "current_password=$PASS")
@@ -450,8 +452,8 @@ S_REPLY=$(SPF --data-urlencode "reply_to=privat-$SRUN@gmx.example" --data-urlenc
 S_USER=$(curl -s -b "$J" --data-urlencode "csrf=$ST" -d "display_name=Fremd&email=fremd-$SRUN@gmx.example&role=teacher" "$B/admin/users/new")
 ALERTS '$f = "/srv/app/config/config.php"; file_put_contents($f, file_get_contents("$f.p14")) && unlink("$f.p14");'
 sleep 3
-check "names allowed: the choice in the profile (as before for an account from before), saved both ways" \
-  'echo "$SPN" | has "<input type=\"checkbox\" id=\"summary_names\" name=\"summary_names\" value=\"1\" checked>" && [ "$S_OFF" = 0 ] && [ "$S_ON" = 1 ]'
+check "names allowed: an account from before keeps them (notice, choice in the profile), saved both ways" \
+  'echo "$SPN" | has "<input type=\"checkbox\" id=\"summary_names\" name=\"summary_names\" value=\"1\" checked>" && echo "$SDN" | has "Neu: Die Kalenderdatei Ihrer Zusammenfassungen enthält keine Namen mehr." && [ "$S_SEEN" = 1 ] && [ "$S_OFF" = 0 ] && [ "$S_ON" = 1 ]'
 check "allowed domains: a new address elsewhere is refused (account, reply address, new account); an address from before can stay, with hints" \
   'echo "$S_MAIL" | has "Bitte eine Adresse bei schule.example.org angeben" && echo "$S_REPLY" | has "Antwortadresse für Eltern: Bitte eine Adresse bei schule.example.org angeben" && echo "$S_USER" | has "Bitte eine Adresse bei schule.example.org angeben" && [ -z "$(DBQ "SELECT id FROM tp_users WHERE email = \"fremd-$SRUN@gmx.example\"")" ] && [ "$(DBQ "SELECT email FROM tp_users WHERE id = $SU")" = "$(s_addr konto)" ] && echo "$SPN" | has "Die Schule erlaubt nur Adressen bei schule.example.org." && echo "$SDN" | has "data-foreign-addresses>" && echo "$SDN" | has "Ihre E-Mail-Adresse ist keine dienstliche Adresse bei schule.example.org"'
 

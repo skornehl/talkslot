@@ -302,3 +302,16 @@ check('migration 22 and schema.sql: summary_names (existing accounts NULL, new o
     && str_contains($step22, 'ADD COLUMN IF NOT EXISTS reply_to VARCHAR(254) NULL AFTER email') && str_contains($step22, 'ALTER COLUMN summary_names SET DEFAULT 0')
     && str_contains($schema, "  summary_names TINYINT(1) NULL DEFAULT 0,\n") && str_contains($schema, "  email VARCHAR(254) NULL,\n  reply_to VARCHAR(254) NULL,\n")
     && App\Migrations::LATEST >= 22);
+// Deployment with GitHub Actions: both settings from repository variables
+$p14File = tempnam(sys_get_temp_dir(), 'cfg');
+$p14Env = ['BASE_URL' => 'https://t.example/', 'APP_SECRET' => str_repeat('s', 40), 'DB_USER' => 'u', 'DB_PASS' => 'p'];
+[$rc] = $run(['bin/build-config.php', $p14File], $p14Env);
+$p14Default = (static fn ($f) => require $f)($p14File);
+[$rc2] = $run(['bin/build-config.php', $p14File], ['SUMMARY_NAMES' => '1', 'ALLOWED_ACCOUNT_DOMAINS' => ' Schule.Example.org, @xn--mnchen-3ya.de,,schule.example.org'] + $p14Env);
+$p14Set = (static fn ($f) => require $f)($p14File);
+@unlink($p14File);
+[$rc3, , $err3] = $run(['bin/build-config.php', $p14File], ['ALLOWED_ACCOUNT_DOMAINS' => 'schule.example.org, gmx'] + $p14Env);
+check('build-config: SUMMARY_NAMES and ALLOWED_ACCOUNT_DOMAINS (off and none by default, a value that is no domain stops it)',
+    $rc === 0 && $p14Default['summary_names'] === false && $p14Default['allowed_account_domains'] === []
+    && $rc2 === 0 && $p14Set['summary_names'] === true && $p14Set['allowed_account_domains'] === ['schule.example.org', 'xn--mnchen-3ya.de']
+    && $rc3 === 1 && str_contains($err3, 'ALLOWED_ACCOUNT_DOMAINS: "gmx" is not a domain') && !is_file($p14File));

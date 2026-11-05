@@ -8,7 +8,7 @@
 -- lang: language of the admin area and of mails to the account (de, en; NULL = admin_language).
 -- reply_to: where the replies of parents go (Reply-To of their mails); NULL = email.
 -- summary_names: names in the summaries, if the school allows them (config summary_names); NULL = account from
--- before that setting, which keeps them until it confirms the notice on the dashboard (Summaries::withNames()).
+-- before that setting, which keeps them where allowed until it confirms the notice on the dashboard (Summaries).
 CREATE TABLE IF NOT EXISTS users (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   username VARCHAR(254) NOT NULL,

@@ -95,8 +95,8 @@ final class Summaries
 
     /**
      * The account's choice: 1 = with names, 0 = without (new accounts). NULL = an account from before this
-     * choice (migration 22): it keeps what it had, names, until it confirms the notice on the dashboard
-     * (notice()), so that its summaries do not change without a word.
+     * choice (migration 22): it keeps what it had, names where they are allowed, until it confirms the notice
+     * on the dashboard (notice()), so that its summaries do not change without a word.
      */
     public static function wantsNames(array $user): bool
     {

@@ -1320,7 +1320,7 @@ final class AdminController
         }
         if ((string) $u['email'] === '' && ($u['summary_evening'] || $u['summary_deadline'])) {
             $hints[] = __('Keine E-Mail-Adresse hinterlegt – Zusammenfassungen können nicht versendet werden.');
-        } elseif (!AccountDomains::permits((string) $u['email'])) {
+        } elseif ((string) $u['email'] !== '' && !AccountDomains::permits((string) $u['email'])) {
             $hints[] = __('Ihre E-Mail-Adresse ist keine dienstliche Adresse bei {domains}, wie die Schule es vorgibt – bitte ändern. Bis dahin erhalten Sie keine Zusammenfassungen.', ['domains' => implode(', ', AccountDomains::allowed())]);
         }
         return $hints;
@@ -1393,12 +1393,13 @@ final class AdminController
     }
 
     /**
-     * The notice on the dashboard about the summaries without names is confirmed (Summaries::notice()): the
-     * account keeps its choice so far, names where the school allows them.
+     * The notice on the dashboard about the summaries without names is confirmed (Summaries::notice()). Where
+     * the school allows names, the account keeps them as before; otherwise it is without names from now on,
+     * like a new account, also if the school allows them later (then it chooses in the profile).
      */
     private function summaryNoticeSeen(): void
     {
-        Db::run('UPDATE users SET summary_names = 1 WHERE id = ? AND summary_names IS NULL', [Auth::id()]);
+        Db::run('UPDATE users SET summary_names = ? WHERE id = ? AND summary_names IS NULL', [\App\Config::get('summary_names', false) ? 1 : 0, Auth::id()]);
         Http::redirect('/admin');
     }
 
