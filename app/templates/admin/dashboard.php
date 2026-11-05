@@ -1,25 +1,29 @@
 <?php /** @var array $rounds @var list<string> $profileHints @var list<string> $legalHints @var bool $showOwner @var bool $operatorMissing @var bool $typeMissing @var bool $textsOpen @var int $unusedAccounts @var ?array $mailsLate @var array{state: string, last: ?int}|null $cron @var list<string> $setupHints @var ?string $summaryNotice @var int $foreignAddresses
- * @var ?list<array> $readiness the setup checklist until the first round has been public (null: not shown) @var list<string> $whatsNew */ ?>
+ * @var ?list<array> $readiness the setup checklist until the first round has been public (null: not shown)
+ * @var list<array{key: string, admin: bool, text: string, link: ?string}> $whatsNew notes on changes after an update */ ?>
 <?php if ($whatsNew ?? []): ?>
   <div class="alert alert-info" role="status" data-whats-new>
-    <p><strong><?= e(__('Was ist neu')) ?></strong></p>
-    <ul><?php foreach ($whatsNew as $note): ?><li><?= e($note) ?></li><?php endforeach; ?></ul>
-    <form method="post" action="<?= e(url('/admin/news')) ?>"><?= App\Csrf::adminField() ?><button type="submit" class="button button-small"><?= e(__('Verstanden')) ?></button></form>
+    <p><strong id="news-title"><?= e(__('Neu seit dem letzten Update')) ?></strong></p>
+    <ul><?php foreach ($whatsNew as $note): ?><li><?= e($note['text']) ?><?php if ($note['link'] !== null): ?> <a href="<?= e(url($note['link'])) ?>"><?= e(__('Ansehen')) ?></a><?php endif; ?></li><?php endforeach; ?></ul>
+    <form method="post" action="<?= e(url('/admin/news')) ?>"><?= App\Csrf::adminField() ?><button type="submit" class="button button-small" aria-describedby="news-title"><?= e(__('Verstanden')) ?></button></form>
   </div>
 <?php endif; ?>
-<?php if (($readiness ?? null) !== null): $open = array_filter($readiness, static fn (array $i): bool => $i['state'] !== App\Readiness::DONE); ?>
-  <div class="alert alert-warning" role="status" data-readiness-summary>
+<?php if (($readiness ?? null) !== null): $open = array_filter($readiness, static fn (array $i): bool => $i['state'] !== App\Readiness::DONE);
+    $todo = array_filter($open, static fn (array $i): bool => $i['state'] === App\Readiness::TODO); ?>
+  <div class="alert <?= $todo ? 'alert-warning' : 'alert-info' ?>" role="status" data-readiness-summary>
     <p><strong><?= e(__('Bereit für den Start?')) ?></strong> <?= e(__('{done} von {total} Punkten erledigt.', ['done' => App\Readiness::done($readiness), 'total' => count($readiness)])) ?></p>
+    <?php if (!$open): ?><p><?= e(__('Alles bereit: Legen Sie Ihre erste Runde an und aktivieren Sie sie.')) ?></p><?php endif; ?>
     <ul>
       <?php foreach ($open as $item): ?>
       <li><strong><?= e(App\Readiness::stateLabel($item['state'])) ?>: <?= e($item['title']) ?></strong> – <?= e($item['text']) ?>
-        <?php if ($item['details']): ?><ul><?php foreach ($item['details'] as $detail): ?><li><?= e($detail) ?></li><?php endforeach; ?></ul><?php endif; ?></li>
+        <?php if ($item['details']): ?><ul><?php foreach ($item['details'] as $detail): ?><li><?= e($detail) ?></li><?php endforeach; ?></ul><?php endif; ?>
+        <?php if ($item['link'] !== null): ?><a href="<?= e($item['link']) ?>"><?= e($item['linkText']) ?></a><?php endif; ?></li>
       <?php endforeach; ?>
     </ul>
-    <p><a href="<?= e(url('/admin/start')) ?>"><?= e(__('Zur Übersicht „Bereit für den Start?“')) ?></a></p>
+    <p><a href="<?= e(url('/admin/start')) ?>"><?= e(__('Alle Punkte mit Anleitung ansehen')) ?></a></p>
   </div>
 <?php endif; ?>
-<?php if ($mailsLate): ?>
+<?php if ($mailsLate && ($readiness ?? null) === null): /* during the setup a point of the checklist */ ?>
   <div class="alert alert-warning" role="status" data-mails-late><p><?= e(__('{count} E-Mail(s) warten seit über {hours} Stunden auf den Versand (die älteste seit {since}). Erinnerungen, Zusammenfassungen und Bestätigungen, die nicht sofort zugestellt werden konnten, verschickt der Cron-Job: Bitte prüfen Sie, ob er regelmäßig läuft und ob der Mailversand funktioniert. Nach 48 Stunden werden sie verworfen.', ['count' => $mailsLate['count'], 'hours' => App\Outbox::lateHours(), 'since' => date('d.m.Y H:i', (int) strtotime($mailsLate['since']))])) ?></p></div>
 <?php endif; ?>
 <?php foreach (($readiness ?? null) === null ? $legalHints : [] as $h): ?>
@@ -68,6 +72,7 @@
   <h1><?= e($title) ?></h1>
   <a class="button button-primary" href="<?= e(url('/admin/round/new')) ?>"><?= e(__('+ Neue Runde')) ?></a>
 </div>
+<?php if (App\Auth::isAdmin()): ?><p class="small"><a href="<?= e(url('/admin/start')) ?>"><?= e(__('Einrichtung prüfen: Bereit für den Start?')) ?></a></p><?php endif; ?>
 
 <?php if (!$rounds): ?>
   <p class="alert alert-info"><?= e(__('Noch keine Runden angelegt. Starten Sie mit „Neue Runde“.')) ?></p>

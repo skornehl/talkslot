@@ -5,11 +5,11 @@
  * @var bool $started a round has been public already
  */
 use App\Readiness;
-$icons = [Readiness::DONE => '✓', Readiness::CHECK => '!', Readiness::TODO => '✗'];
+$icons = [Readiness::DONE => '✓', Readiness::CHECK => '!', Readiness::TODO => '○'];
 ?>
 <h1><?= e($title) ?></h1>
-<p><?= e(__('Diese Übersicht zeigt, ob alles für die Terminvergabe bereit ist: {done} von {total} Punkten erledigt.', ['done' => Readiness::done($items), 'total' => count($items)])) ?>
-  <?= e($started ? __('Ihre Terminvergabe ist bereits in Betrieb; Warnungen erscheinen weiterhin auch auf der Übersicht.') : __('Bis die erste Runde aktiv war, fasst die Übersicht der Runden diese Punkte zusammen.')) ?></p>
+<p><?= e(__('Hier sehen Sie, ob alles für die Terminvergabe bereit ist: {done} von {total} Punkten erledigt.', ['done' => Readiness::done($items), 'total' => count($items)])) ?>
+  <?= e($started ? __('Ihre Terminvergabe ist in Betrieb; Warnungen erscheinen außerdem oben unter „Alle Runden“.') : __('Bis Sie die erste Runde aktivieren, steht diese Liste auch oben unter „Alle Runden“.')) ?></p>
 <ul class="readiness" data-readiness>
   <?php foreach ($items as $item): ?>
   <li class="card readiness-item readiness-<?= e($item['state']) ?>" data-check="<?= e($item['key']) ?>" data-state="<?= e($item['state']) ?>">

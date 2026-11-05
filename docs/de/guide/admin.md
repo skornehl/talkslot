@@ -31,17 +31,18 @@ des deutschen Admin-Bereichs; jedes Konto kann ihn unter *Mein Profil* auf Engli
 5. ***Vorlagen*** (optional): die üblichen Formate einmal anlegen, z. B. Ihren Elternsprechtag.
 6. **Lehrkräfte einladen** und bei Bedarf weitere Admins (*Benutzer*).
 
-***Bereit für den Start?*** (verlinkt oben unter *Texte*) zeigt all das auf einer Seite, jeden Punkt als
-*Erledigt*, *Bitte prüfen* oder *Noch offen*, mit dem Weg zur Lösung: Impressum und Datenschutzerklärung,
-die bzw. der Datenschutzbeauftragte der Schule (nur bei Betrieb durch die Schule), E-Mail-Versand, Cronjob,
-Server und Konfiguration sowie die Rechte der Konfigurationsdatei. Bis die erste Runde aktiv war, zeigt die
-Übersicht der Runden diese Liste statt der einzelnen Warnungen zu diesen Punkten. Der E-Mail-Versand bleibt
-immer bei *Bitte prüfen*: Ob die E-Mails ankommen, zeigt nur eine Testbuchung mit Ihrer eigenen Adresse.
+***Bereit für den Start?*** (verlinkt unter der Überschrift von *Alle Runden* und oben unter *Texte*) zeigt
+all das auf einer Seite, jeden Punkt als *Erledigt*, *Bitte prüfen* oder *Noch offen*, mit dem Weg zur Lösung:
+Impressum und Datenschutzerklärung, die bzw. der Datenschutzbeauftragte der Schule (nur bei Betrieb durch die
+Schule), E-Mail-Versand, Cronjob, Server und Konfiguration sowie die Rechte der Konfigurationsdatei. Der
+E-Mail-Versand gilt als erledigt, sobald sich ein eingeladenes Konto angemeldet hat: Seine Einladung ist
+angekommen. Bis die erste Runde aktiv war, zeigt *Alle Runden* diese Liste statt der einzelnen Warnungen zu
+diesen Punkten; danach erscheinen die Warnungen wie bisher.
 
-***Was ist neu***: Nach einem Update nennt die Übersicht, was sich für Admins und Lehrkräfte geändert hat,
-z. B. eine neue Einstellung im Profil oder eine geänderte Voreinstellung, damit das nicht wie ein Fehler
-wirkt. *Verstanden* blendet die Hinweise für Ihr Konto aus. Später angelegte Konten bekommen die älteren
-Hinweise nicht.
+***Neu seit dem letzten Update***: Nach einem Update nennt *Alle Runden*, was sich für Admins und Lehrkräfte
+geändert hat, z. B. eine neue Einstellung im Profil, damit das nicht wie ein Fehler wirkt. *Verstanden*
+blendet die Hinweise für Ihr Konto aus. Nach dem Update angelegte Konten und eine neue Installation bekommen
+die älteren Hinweise nicht.
 
 Warnt die Übersicht, dass die Konfiguration für alle Benutzer des Servers lesbar ist, setzen Sie die
 Rechte der genannten Dateien auf `600` oder geben Sie die Warnung an die technische Betreuung weiter: Sie
