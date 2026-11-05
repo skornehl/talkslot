@@ -149,7 +149,8 @@ ruft `App::run()` auf:
    andere an `PublicController::dispatch()` (Sprache aus `?lang=`, dem Formular oder dem Browser).
 
 Die Controller geben Templates mit `View::render()` aus, das die Variablen an das Template übergibt. Jeder Wert
-im HTML wird maskiert: mit `e()` oder von `__h()` und dem Markdown-Renderer, die selbst maskieren.
+im HTML wird maskiert: mit `e()`, vom Markdown-Renderer oder von `__h()`, das den Text maskiert (die Werte, die
+es einsetzt, müssen schon maskiert sein).
 
 ### Sperrreihenfolge
 
@@ -165,9 +166,10 @@ Eine Buchung läuft in `Db::transaction()`: Mit Buchungslimit sperrt sie die Run
 die einzige Stelle, an der ein Termin vor seinem Tag gesperrt werden kann; eine Buchung kann sich deshalb mit
 einem `sync()` desselben Tages kreuzen, und InnoDB beendet dann eine der beiden als Deadlock. Buchungen sind
 darauf eingestellt: Sie wiederholen bei einem Deadlock oder Sperr-Timeout einmal (`retryOnDeadlock()`) und
-melden den Termin danach als vergeben, und `UNIQUE(slot_id)` ist die harte Garantie gegen Doppelbuchungen. Die
-Seite der Lehrkraft wiederholt nicht. Für neuen Code: den Tag vor seinen Terminen sperren und neue
-Schreibzugriffe auf Elternseite in `retryOnDeadlock()` einbetten. E-Mails gehen erst nach dem Commit hinaus
+melden den Termin danach als vergeben, und `UNIQUE(slot_id)` ist die harte Garantie gegen Doppelbuchungen;
+Einträge und Verschiebungen durch die Lehrkraft laufen über dieselben Methoden. Änderungen an Tagen, Runden und
+Konten (`ScheduleService`, `sync()`) werden nicht wiederholt. Für neuen Code: den Tag vor seinen Terminen
+sperren und neue Schreibzugriffe, die `lockSlot()` nutzen, in `retryOnDeadlock()` einbetten. E-Mails gehen erst nach dem Commit hinaus
 (direkt oder über die Warteschlange), nie innerhalb der Transaktion.
 
 Hintergrundarbeiten nutzen stattdessen benannte Sperren: Migrationen und die Warteschlange `GET_LOCK`;
@@ -184,8 +186,8 @@ Rückfallebene aus. Was wann gelöscht wird:
 | --- | --- |
 | Buchungen (Name, E-Mail-Adresse) | um Mitternacht nach dem Tag des Termins; bei einer Absage sofort, außerdem mit ihrem Tag, ihrer Runde oder ihrem Konto |
 | Runden | nach ihrem letzten Tag deaktiviert, wenn sie in Gebrauch waren, `delete_after_hours` später gelöscht (je Runde; nicht gesetzt = nie gelöscht) |
-| E-Mail-Warteschlange (Verweise, keine Texte) | nach dem Versand oder wenn nicht mehr nötig, mit ihrer Buchung oder ihrem Konto; spätestens nach 48 Stunden (`Outbox::MAX_AGE_HOURS`) |
-| Rate-Limits (HMACs gekürzter IP-Adressen und von Kontonamen) | nach 24 Stunden |
+| E-Mail-Warteschlange (Verweise; bei einer Absage durch die Lehrkraft Adresse, Name und Termin) | nach dem Versand oder wenn nicht mehr nötig, mit ihrer Buchung oder ihrem Konto; spätestens nach 48 Stunden (`Outbox::MAX_AGE_HOURS`) |
+| Rate-Limits (HMACs gekürzter IP-Adressen, von Kontonamen und IDs) | nach 24 Stunden |
 | Versandprotokoll der Zusammenfassungen | nach 60 Tagen |
 | Admin-Protokoll | nach `audit_log_days` (Standard 90) |
 | Deaktivierte Lehrkraft-Konten ohne Runden in Gebrauch | nach 15 Monaten ohne Anmeldung |
@@ -203,7 +205,8 @@ direkt. Eine bestehende führt beim nächsten Aufruf die fehlenden Schritte aus 
 - Schritte sind **additiv und wiederholbar**: `ADD COLUMN IF NOT EXISTS`, `CREATE TABLE IF NOT EXISTS`,
   `ADD KEY IF NOT EXISTS`, Datenänderungen, die bei erneutem Lauf dasselbe Ergebnis liefern. Eine neue
   `NOT NULL`-Spalte braucht einen Standardwert, weil die `INSERT`s der vorigen Version sie nicht nennen
-  (Schritt 22 zeigt, wie eine Spalte mit `NULL` dazukommt, deren Standardwert nur neue Zeilen bekommen). Ein
+  (Schritt 22 zeigt, wie eine Spalte dazukommt, die `NULL` erlaubt und deren Standardwert nur neue Zeilen
+  bekommen). Ein
   abgebrochener Schritt kann dann einfach erneut laufen, und die vorige Version arbeitet mit dem neuen Schema,
   weil sie ignoriert, was sie nicht kennt. Darauf verlässt sich das Rollback mit einem Klick: Es schaltet den
   Code um, nicht die Datenbank.
@@ -237,8 +240,8 @@ und [`SECURITY.md`](https://github.com/skornehl/talkslot/blob/main/SECURITY.md),
    oder Pull Request, und Unit- und Smoke-Tests lokal ausführen (dort läuft keine CI). Vor dem Merge wird
    nichts über die Lücke öffentlich.
 3. Die Korrektur aus dem Advisory mergen, gleich danach *Actions → Release* (`release.yml`) starten und das
-   Advisory mit der korrigierten Version veröffentlichen (bei Bedarf eine CVE beantragen). Danach die selbst
-   betriebenen Installationen aktualisieren.
+   Advisory mit der korrigierten Version veröffentlichen (bei Bedarf eine CVE beantragen); in den Release Notes
+   darauf verlinken. Danach die selbst betriebenen Installationen aktualisieren.
 
 Sicherheitskorrekturen gibt es nur für das jeweils neueste Release.
 

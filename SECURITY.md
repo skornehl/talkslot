@@ -4,7 +4,8 @@
 
 Security fixes are made for the latest release only. Operators should update to it; the
 [deployment](https://skornehl.github.io/talkslot/guide/deployment/) can pin a version and roll back. To hear
-about fixes, watch the repository on GitHub (*Watch → Custom → Releases* and *Security alerts*).
+about fixes, watch the repository's releases on GitHub (*Watch → Custom → Releases*): the release notes of a
+security fix link its advisory.
 
 ## Reporting a vulnerability
 

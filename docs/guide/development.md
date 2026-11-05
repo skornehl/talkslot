@@ -141,7 +141,8 @@ Every request that is not a file under `public/` reaches `public/index.php`, whi
    everything else to `PublicController::dispatch()` (language from `?lang=`, the form or the browser).
 
 Controllers render templates with `View::render()`, which hands the variables to the template. Every value
-in the HTML is escaped: with `e()`, or by `__h()` and the Markdown renderer, which escape on their own.
+in the HTML is escaped: with `e()`, by the Markdown renderer, or by `__h()`, which escapes the text (the
+values it inserts must already be escaped).
 
 ### Locking order
 
@@ -155,8 +156,9 @@ then the slot together with its day in one joined `SELECT … FOR UPDATE` (`lock
 booking of the slot. That join is the one place where a slot may be locked before its day, so a booking can
 cross a `sync()` of the same day; InnoDB then ends one of them as a deadlock. Bookings expect this: they
 retry once on a deadlock or lock wait timeout (`retryOnDeadlock()`) and then report the slot as taken, and
-`UNIQUE(slot_id)` is the hard guarantee against double bookings. The teacher's side does not retry. For new
-code: lock the day before its slots, and wrap new writes on the parents' side in `retryOnDeadlock()`. Mails
+`UNIQUE(slot_id)` is the hard guarantee against double bookings; the teacher's entries and moves go through the
+same methods. Changes to days, rounds and accounts (`ScheduleService`, `sync()`) do not retry. For new code: lock
+the day before its slots, and wrap new writes that use `lockSlot()` in `retryOnDeadlock()`. Mails
 go out after the commit (directly or through the outbox), never inside the transaction.
 
 Background work takes named locks instead: migrations and the outbox use `GET_LOCK`; reminders and summaries
@@ -172,8 +174,8 @@ sends the outbox; page requests run the same database steps as a fallback. What 
 | --- | --- |
 | Bookings (name, e-mail address) | at midnight after the day of the appointment; at once when cancelled, and with their day, round or account |
 | Rounds | deactivated after their last day if they were in use, deleted `delete_after_hours` later (per round; unset = never deleted) |
-| Mail queue (references, no texts) | once sent or no longer needed, with its booking or account; at the latest after 48 hours (`Outbox::MAX_AGE_HOURS`) |
-| Rate limits (HMACs of truncated IP addresses and of account names) | after 24 hours |
+| Mail queue (references; for a cancellation by the teacher address, name and appointment) | once sent or no longer needed, with its booking or account; at the latest after 48 hours (`Outbox::MAX_AGE_HOURS`) |
+| Rate limits (HMACs of truncated IP addresses, of account names and IDs) | after 24 hours |
 | Summary delivery log | after 60 days |
 | Admin log | after `audit_log_days` (default 90) |
 | Deactivated teacher accounts without rounds in use | after 15 months without login |
@@ -222,8 +224,8 @@ The maintainer handles a report as a GitHub Security Advisory:
    unit and smoke tests locally (CI does not run there). Nothing about the issue becomes public before the
    merge.
 3. Merge the fix from the advisory, start *Actions → Release* (`release.yml`) right after it and publish the
-   advisory with the fixed version (request a CVE if the issue is worth one). Then update the installations
-   you run.
+   advisory with the fixed version (request a CVE if the issue is worth one); link it in the release notes.
+   Then update the installations you run.
 
 Only the latest release gets security fixes.
 
