@@ -8,6 +8,25 @@ TalkSlot reads `config/config.php`, a PHP file returning an array. Start from
 When you deploy with GitHub Actions, the file is generated from repository variables and secrets
 (right column); see [Deployment]({{ '/guide/deployment/' | relative_url }}).
 
+## Checking the configuration {#checking}
+
+TalkSlot knows every option (`app/src/ConfigSchema.php`) and checks `config.php` on every request:
+
+- **Mistakes it cannot run with** stop the site with a page that names them, in German and English (on the
+  command line, in English): `secret` missing or shorter than 32 characters, a `timezone` PHP does not know
+  (for example `Europe/Berllin`; this used to fall back to UTC without a word, which moved every deadline,
+  the reminders and the clean-up by one or two hours), a language in `languages` without its file in
+  `app/lang/`, and a `db.prefix` with other characters than letters, digits and `_`.
+- **Options that do not work as written** are listed for admins on the dashboard, without their values:
+  unknown keys (for example a typo such as `sumary_evening_hour`, with the option probably meant), values of
+  the wrong type or out of range (`'false'` in quotes is not `false`, `summary_evening_hour` 24, a rate limit
+  `[0, 900]`), a `default_language` that is not offered, a missing `mail.from_address`, and the transport
+  `mail` on a host that has switched off PHP's `mail()`.
+
+The same check covers the [requirements]({{ '/guide/installation/' | relative_url }}#requirements) of the
+server: PHP version and extensions on every request, the database server in the installer, on the dashboard and
+before a migration.
+
 ## General
 
 | Option | Default | Meaning | Deployment |
@@ -117,12 +136,17 @@ Wi-Fi).
 | `attempt` | 150 per hour | all booking attempts, including input errors |
 | `booking` | 30 per hour | successful bookings |
 | `manage` | 300 per hour | requests to change links |
+| `move` | 10 per hour | rebookings by parents (each sends a mail), per booking, not per IP address |
 | `confirm` | 2 per 24 hours | confirmation mails parents send to themselves from the appointment page, per booking, not per IP address (the window cannot be longer than 24 hours) |
 | `login` | 5 per 15 min | failed admin logins |
 | `login_user` | 20 per hour | failed logins **per account**, from devices that have not signed in to it before |
 | `login_device` | 20 per hour | failed logins **per known device** (instead of `login_user`) |
 | `login_notice` | 1 per day | e-mails to an account whose `login_user` limit was reached |
 | `reauth` | 5 per 15 min | wrong passwords when confirming a change of admin rights, an e-mail address or ending all sessions, and when changing the own password (one counter per sign-in, not per IP address) |
+| `invite` | 20 per hour | invalid invitation and password links |
+| `forgot` | 5 per hour | requests under *Passwort vergessen* (forgotten password) |
+| `teacher_mail` | 30 per hour | mails to parents after entries or changes by a teacher, per account, not per IP address |
 
 `csrf_min_age_seconds` (default 2) is the minimum time between loading and submitting a public form, a
-simple brake for bots.
+simple brake for bots. `csrf_max_age_seconds` (default 14400, 4 hours) is how long a public form and the
+access granted by a round code stay valid.

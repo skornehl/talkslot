@@ -8,6 +8,27 @@ TalkSlot liest `config/config.php`, eine PHP-Datei, die ein Array zurückgibt. A
 Beim Deployment mit GitHub Actions wird die Datei aus Repository-Variablen und -Secrets erzeugt
 (rechte Spalte); siehe [Deployment]({{ '/de/guide/deployment/' | relative_url }}).
 
+## Prüfung der Konfiguration {#checking}
+
+TalkSlot kennt jede Option (`app/src/ConfigSchema.php`) und prüft `config.php` bei jedem Aufruf:
+
+- **Fehler, mit denen es nicht laufen kann,** halten die Seite an; sie zeigt dann, was nicht stimmt, auf
+  Deutsch und Englisch (auf der Kommandozeile auf Englisch): `secret` fehlt oder ist kürzer als 32 Zeichen,
+  eine `timezone`, die PHP nicht kennt (etwa `Europe/Berllin`; früher galt dann ohne Hinweis UTC, und alle
+  Fristen, die Erinnerungen und die Bereinigung verschoben sich um ein bis zwei Stunden), eine Sprache unter
+  `languages` ohne ihre Datei in `app/lang/` und ein `db.prefix` mit anderen Zeichen als Buchstaben,
+  Ziffern und `_`.
+- **Optionen, die so nicht wirken,** listet die Übersicht für Admins auf, ohne ihre Werte: unbekannte
+  Schlüssel (etwa ein Tippfehler wie `sumary_evening_hour`, mit der vermutlich gemeinten Option), Werte vom
+  falschen Typ oder außerhalb des Bereichs (`'false'` in Anführungszeichen ist nicht `false`,
+  `summary_evening_hour` 24, ein Rate-Limit `[0, 900]`), eine `default_language`, die nicht angeboten wird,
+  eine fehlende `mail.from_address` und den Versandweg `mail` bei einem Hoster, der PHPs `mail()`
+  abgeschaltet hat.
+
+Dazu gehören die [Voraussetzungen]({{ '/de/guide/installation/' | relative_url }}#requirements) des
+Servers: PHP-Version und Erweiterungen bei jedem Aufruf, der Datenbankserver im Installer, in der Übersicht und
+vor einer Migration.
+
 ## Allgemein
 
 | Option | Standard | Bedeutung | Deployment |
@@ -123,12 +144,17 @@ womöglich eine Adresse (Mobilfunknetze, Schul-WLAN).
 | `attempt` | 150 pro Stunde | alle Buchungsversuche, auch mit Eingabefehlern |
 | `booking` | 30 pro Stunde | erfolgreiche Buchungen |
 | `manage` | 300 pro Stunde | Aufrufe von Änderungslinks |
+| `move` | 10 pro Stunde | Umbuchungen durch Eltern (jede verschickt eine E-Mail), pro Buchung statt pro IP-Adresse |
 | `confirm` | 2 pro 24 Stunden | Bestätigungs-E-Mails, die Eltern sich auf der Seite ihres Termins schicken, pro Buchung statt pro IP-Adresse (das Zeitfenster kann nicht länger als 24 Stunden sein) |
 | `login` | 5 pro 15 Min. | fehlgeschlagene Admin-Anmeldungen |
 | `login_user` | 20 pro Stunde | fehlgeschlagene Anmeldungen **pro Konto** von Geräten, die sich dort noch nie angemeldet haben |
 | `login_device` | 20 pro Stunde | fehlgeschlagene Anmeldungen **pro bekanntem Gerät** (statt `login_user`) |
 | `login_notice` | 1 pro Tag | E-Mails an ein Konto, dessen Limit `login_user` erreicht wurde |
 | `reauth` | 5 pro 15 Min. | falsche Passwörter beim Bestätigen einer Änderung von Admin-Rechten oder E-Mail-Adressen, beim Beenden aller Sitzungen und beim Ändern des eigenen Passworts (ein Zähler pro Anmeldung, nicht pro IP-Adresse) |
+| `invite` | 20 pro Stunde | ungültige Einladungs- und Passwortlinks |
+| `forgot` | 5 pro Stunde | Anfragen unter *Passwort vergessen* |
+| `teacher_mail` | 30 pro Stunde | E-Mails an Eltern nach Einträgen oder Änderungen durch eine Lehrkraft, pro Konto statt pro IP-Adresse |
 
 `csrf_min_age_seconds` (Standard 2) ist die Mindestzeit zwischen dem Laden und dem Absenden eines
-öffentlichen Formulars, eine einfache Bremse für Bots.
+öffentlichen Formulars, eine einfache Bremse für Bots. `csrf_max_age_seconds` (Standard 14400, 4 Stunden)
+ist die Zeit, die ein öffentliches Formular und der per Rundencode freigeschaltete Zugang gültig bleiben.

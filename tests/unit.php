@@ -260,10 +260,10 @@ check('transition during upload: without code_required the old PIN column applie
 
 echo "Error page\n";
 App\Config::load(['debug' => false] + $cfg);
-ob_start(); App\ErrorPage::show(new RuntimeException('internes Detail')); $page = (string) ob_get_clean();
+$page = App\ErrorPage::page(new RuntimeException('internes Detail'));
 check('error page without details (debug off)', str_contains($page, 'Es ist ein Fehler aufgetreten') && !str_contains($page, 'internes Detail'));
 App\Config::load(['debug' => true] + $cfg);
-ob_start(); App\ErrorPage::show(new RuntimeException('internes <Detail>')); $page = (string) ob_get_clean();
+$page = App\ErrorPage::page(new RuntimeException('internes <Detail>'));
 check('error page with details only with debug, escaped', str_contains($page, 'internes &lt;Detail&gt;'));
 App\Config::load($cfg);
 
@@ -353,10 +353,10 @@ exec('rm -rf ' . escapeshellarg($tmpRoot));
 
 echo "Error handling (bootstrap)\n";
 [$rc, $out] = $run(['-r', 'require "app/bootstrap.php"; $c = require "config/config.php"; $c["db"]["host"] = "127.0.0.1"; $c["db"]["port"] = 1;
-    App\Config::load(["alert_email" => "", "debug" => false] + $c); ob_start();
+    App\Config::load(["alert_email" => "", "debug" => false] + $c);
     try { App\Db::one("SELECT 1"); } catch (PDOException $e) { App\ErrorPage::show($e); }
-    $page = ob_get_clean(); echo http_response_code(), "|", str_contains($page, "SQLSTATE") ? "detail" : "neutral";']);
-check('database unreachable: error page with 503, without details', trim($out) === '503|neutral');
+    echo "|", http_response_code();']);
+check('database unreachable: error page with 503, without details', str_ends_with($out, '</main>|503') && !str_contains($out, 'SQLSTATE'));
 $capture = 'require "app/bootstrap.php"; App\Alert::$stateFile = tempnam(sys_get_temp_dir(), "alert"); App\Config::load(["alert_email" => "b@example.org"] + (require "config/config.php")); App\Alert::$transport = static function ($to, $s, $b) { fwrite(STDERR, "ALERT:$s\n"); return true; };';
 [$rc, , $err] = $run(['-d', 'memory_limit=32M', '-r', $capture . ' $x = str_repeat("x", 64 * 1024 * 1024);']);
 check('fatal error (memory) is reported', $rc !== 0 && str_contains($err, 'ALERT:[TalkSlot] Fataler Fehler'));
@@ -371,8 +371,9 @@ $tmpRoot = sys_get_temp_dir() . '/tp-noconfig-' . getmypid();
 @mkdir($tmpRoot . '/app', 0700, true);
 copy(dirname(__DIR__) . '/app/bootstrap.php', $tmpRoot . '/app/bootstrap.php');
 copy(dirname(__DIR__) . '/app/helpers.php', $tmpRoot . '/app/helpers.php');
+symlink(dirname(__DIR__) . '/app/src', $tmpRoot . '/app/src'); // the platform check runs before
 [$rc, $out] = $run(['-r', 'require ' . var_export($tmpRoot . '/app/bootstrap.php', true) . ';']);
-array_map('unlink', glob($tmpRoot . '/app/*.php')); @rmdir($tmpRoot . '/app'); @rmdir($tmpRoot);
+array_map('unlink', glob($tmpRoot . '/app/*.php')); @unlink($tmpRoot . '/app/src'); @rmdir($tmpRoot . '/app'); @rmdir($tmpRoot);
 check('without config.php: notice and abort', $rc === 1 && str_contains($out, 'Configuration missing'));
 
 echo "Atomic deployment (release directories)\n";
@@ -407,6 +408,7 @@ $rel = "$base/releases/20261102-090000-v1.9.0";
 copy(dirname(__DIR__) . '/app/bootstrap.php', "$rel/app/bootstrap.php");
 copy(dirname(__DIR__) . '/app/helpers.php', "$rel/app/helpers.php");
 symlink(dirname(__DIR__) . '/app/src', "$rel/app/src");
+symlink(dirname(__DIR__) . '/app/lang', "$rel/app/lang"); // the configuration check looks for the language files
 file_put_contents("$rel/config/config.php", '<?php return ' . var_export(['base_url' => 'https://schule.example/termine'] + $cfg, true) . ';');
 [, $out] = $run(['-r', 'define("PUBLIC_ROOT", "/web"); require ' . var_export("$rel/app/bootstrap.php", true) . ';
     echo implode("|", [RELEASE, DATA_ROOT, APP_ROOT, asset("css/app.css"), asset_file("flags/de.svg"), ini_get("error_log")]);']);
@@ -477,7 +479,7 @@ check('placeholders in a single pass (values are not replaced again)', I18n::wit
 $_SERVER['REMOTE_ADDR'] = '::ffff:203.0.113.7'; $mapped = App\RateLimiter::clientKey();
 $_SERVER['REMOTE_ADDR'] = '203.0.113.9'; $plain4 = App\RateLimiter::clientKey(); unset($_SERVER['REMOTE_ADDR']);
 check('rate limit: IPv4 in IPv6 notation treated like IPv4 (same /24)', $mapped === $plain4);
-ob_start(); App\ErrorPage::show(); $page = (string) ob_get_clean();
+$page = App\ErrorPage::page();
 check('error page without inline styles (CSP)', !str_contains($page, 'style='));
 App\Config::load(['alert_email' => 'betrieb@example.org'] + $cfg);
 App\Alert::$stateFile = tempnam(sys_get_temp_dir(), 'alert');

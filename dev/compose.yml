@@ -2,7 +2,7 @@
 name: talkslot-dev
 services:
   db:
-    image: mariadb:11.8
+    image: mariadb:${MARIADB_VERSION:-11.8} # CI also runs the smoke tests on 10.6, the minimum
     environment:
       MARIADB_DATABASE: talkslot
       MARIADB_USER: app

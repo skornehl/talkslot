@@ -38,6 +38,11 @@ If the dashboard says that the cron job has not completed a run since a given ti
 has been recorded yet, check the cron job on the server or the GitHub workflow *Cron*, or pass the warning on to whoever runs
 the server; see [cron monitoring]({{ '/guide/operations/' | relative_url }}#cron-monitoring).
 
+If the dashboard says that the server setup needs attention, pass the list on to whoever runs the server: it
+names options in `config/config.php` that do not work as written (for example a typo) and a database server
+other than MariaDB 10.6 or newer; see
+[Checking the configuration]({{ '/guide/configuration/' | relative_url }}#checking).
+
 ## Accounts
 
 Under *Benutzer* (users) → *+ Neuer Benutzer* (new user) enter **name and e-mail address** and choose the

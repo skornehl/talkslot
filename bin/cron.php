@@ -7,7 +7,7 @@
  * Recommended: hourly, e.g. "5 * * * *"
  *   cd /path/to/talkslot-app && php releases/$(cat current)/bin/cron.php   (deployment with bin/deploy.sh)
  *   php /path/to/talkslot/bin/cron.php                                    (simple installation)
- * With -v the counts are printed (no personal data).
+ * With -v the counts are printed (no personal data), and whether the database server is supported (db_server).
  */
 declare(strict_types=1);
 
@@ -16,13 +16,16 @@ if (PHP_SAPI !== 'cli') {
     exit;
 }
 require dirname(__DIR__) . '/app/bootstrap.php';
+App\Platform::enforce(true); // needs the database: also pdo_mysql
 
 if (!App\Installer::isInstalled()) {
     fwrite(STDERR, "Not installed yet – nothing to do.\n");
     exit(0);
 }
 App\Migrations::run();
-$stats = App\Cleanup::run() + App\Summaries::run() + App\Reminders::run() + App\Outbox::process(wait: App\Outbox::CRON_WAIT);
+// No named arguments in this file: the "php" of a cron job is often an older version than the web server's,
+// which must get the message of App\Platform instead of a syntax error
+$stats = ['db_server' => App\Health::serverStatus()] + App\Cleanup::run() + App\Summaries::run() + App\Reminders::run() + App\Outbox::process(null, null, App\Outbox::CRON_WAIT);
 if (in_array('-v', $argv, true)) {
     foreach ($stats as $k => $v) {
         echo str_pad($k, 24) . $v . "\n";

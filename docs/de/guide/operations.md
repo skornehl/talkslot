@@ -26,6 +26,11 @@ Beim atomaren Deployment führt der [Health-Check]({{ '/de/guide/deployment/' | 
 nach dem Umschalten zuerst die Migrationen aus und schaltet auf die vorherige Version zurück, wenn eine
 fehlschlägt, die Datenbank nicht erreichbar ist oder sie nicht MariaDB 10.6 oder neuer ist.
 
+Unter MySQL oder einer MariaDB vor 10.6 beginnt eine ausstehende Migration gar nicht erst (ihre
+MariaDB-Syntax würde mittendrin scheitern): Die Fehler-E-Mail und die Übersicht der Admins nennen den
+Datenbankserver. Auch der Cronjob meldet ihn: `db_server` ist `ok` oder `unsupported` in der Ausgabe von
+`php bin/cron.php -v` und des Web-Crons.
+
 Migrationen fügen nur Spalten (mit Standardwerten) und Tabellen hinzu, sodass ein Rollback auf eine ältere
 Version weiter funktioniert. Texte für Impressum und Datenschutzerklärung, die nie bearbeitet wurden, werden
 automatisch durch neuere Vorlagen der Betriebsart (von der Schule oder privat betrieben) ersetzt; bearbeitete
@@ -44,7 +49,9 @@ Minute ein, siehe [Datenschutz und Recht]({{ '/de/guide/privacy/' | relative_url
 
 Nicht behandelte Exceptions, fatale PHP-Fehler, PHP-Warnungen, fehlgeschlagene Migrationen oder
 Aufräumläufe, eine nicht erreichbare Datenbank und fehlgeschlagener E-Mail-Versand werden abgefangen.
-Besucher sehen nur eine neutrale Fehlerseite (503 mit `Retry-After`, wenn die Datenbank ausgefallen ist).
+Besucher sehen nur eine neutrale Fehlerseite (503 mit `Retry-After`, wenn die Datenbank ausgefallen ist)
+in ihrer Sprache, mit einem Link zurück zur Startseite und, außer bei ausgefallener Datenbank, zum
+Impressum, das den Betreiber nennt; was die Seite bis dahin schon ausgegeben hatte, wird verworfen.
 Der Betreiber erhält eine E-Mail:
 
 - **Empfänger:** `alert_email`, sonst die Adresse des ältesten aktiven Admins. Setzen Sie `alert_email`:
@@ -227,6 +234,11 @@ laufenden Lauf.
   Zusammenfassungen hinaus, und wartende E-Mails werden nach 48 Stunden verworfen.
 
 ## Fehlersuche
+
+**„TalkSlot kann nicht starten“ auf jeder Seite.** Die Seite nennt, was nicht stimmt: eine PHP-Version vor
+8.3, eine fehlende PHP-Erweiterung, eine fehlende `config/config.php` oder ein Fehler darin (siehe
+[Prüfung der Konfiguration]({{ '/de/guide/configuration/' | relative_url }}#checking)). Der Cronjob gibt
+dasselbe auf Englisch aus. Auch Besucher sehen diese Meldung, denn ohne Korrektur funktioniert TalkSlot nicht.
 
 **503 auf jeder Seite.** Die Datenbank ist nicht erreichbar, oder (beim atomaren Deployment, Klartext
 „Temporarily unavailable.“) es liegt keine vollständige Version auf dem Server. Prüfen Sie die

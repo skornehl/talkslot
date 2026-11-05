@@ -1,4 +1,4 @@
-<?php /** @var array $rounds @var list<string> $profileHints @var list<string> $legalHints @var bool $showOwner @var bool $operatorMissing @var bool $typeMissing @var bool $textsOpen @var int $unusedAccounts @var ?array $mailsLate @var array{state: string, last: ?int}|null $cron */ ?>
+<?php /** @var array $rounds @var list<string> $profileHints @var list<string> $legalHints @var bool $showOwner @var bool $operatorMissing @var bool $typeMissing @var bool $textsOpen @var int $unusedAccounts @var ?array $mailsLate @var array{state: string, last: ?int}|null $cron @var list<string> $setupHints */ ?>
 <?php if ($mailsLate): ?>
   <div class="alert alert-warning" role="status" data-mails-late><p><?= e(__('{count} E-Mail(s) warten seit über {hours} Stunden auf den Versand (die älteste seit {since}). Erinnerungen, Zusammenfassungen und Bestätigungen, die nicht sofort zugestellt werden konnten, verschickt der Cron-Job: Bitte prüfen Sie, ob er stündlich läuft und ob der Mailversand funktioniert. Nach 48 Stunden werden sie verworfen.', ['count' => $mailsLate['count'], 'hours' => App\Outbox::LATE_HOURS, 'since' => date('d.m.Y H:i', (int) strtotime($mailsLate['since']))])) ?></p></div>
 <?php endif; ?>
@@ -22,6 +22,12 @@
 <?php endif; ?>
 <?php if ($configExposed): ?>
   <div class="alert alert-warning" role="status"><p><?= e(__('Die Konfiguration ist für alle Benutzer des Servers lesbar: {files}. Sie enthält die Passwörter für Datenbank und Mailversand sowie den geheimen Schlüssel. Bitte setzen Sie die Rechte auf 600 (oder 640), z. B. im FTP-Programm, oder geben Sie diesen Hinweis an die technische Betreuung weiter.', ['files' => implode(', ', array_map(static fn (string $file, string $mode): string => "$file ($mode)", array_keys($configExposed), $configExposed))])) ?></p></div>
+<?php endif; ?>
+<?php if ($setupHints ?? []): ?>
+  <div class="alert alert-warning" role="status" data-setup-hints>
+    <p><strong><?= e(__('Die Einrichtung des Servers braucht Aufmerksamkeit (Aufgabe der technischen Betreuung, die Einstellungen stehen in config/config.php):')) ?></strong></p>
+    <ul><?php foreach ($setupHints as $h): ?><li><?= e($h) ?></li><?php endforeach; ?></ul>
+  </div>
 <?php endif; ?>
 <?php if ($profileHints): ?>
   <div class="alert alert-warning" role="status">
