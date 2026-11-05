@@ -32,7 +32,7 @@ tests/            unit.php, smoke.sh, browser.mjs, deploy.sh
 php tests/unit.php      # unit tests, no database needed; CI runs them on PHP 8.3, 8.4 and 8.5
 tests/smoke.sh          # ~300 end-to-end checks against the Docker setup (dev/reset.sh first)
 node tests/browser.mjs  # the JavaScript in headless Chrome (dev/reset.sh && dev/demo.sh first)
-tests/deploy.sh         # the atomic deployment via lftp file:// under load (needs lftp and the database)
+tests/deploy.sh         # the atomic deployment via lftp file:// under load, switch-back on errors (needs lftp, openssl and the database)
 ```
 
 The smoke test covers login and lockout, account management, data separation between teachers, CSRF,

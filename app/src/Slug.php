@@ -6,8 +6,12 @@ namespace App;
 /** Readable URLs for rounds. */
 final class Slug
 {
-    /** Paths used by the application itself. */
-    public const RESERVED = ['admin', 'install', 'impressum', 'datenschutz', 'imprint', 'privacy', 'b', 'assets', 'index', 'robots'];
+    /**
+     * Paths used by the application itself: routes of App::run and PublicController::dispatch, files and
+     * directories of the web directory (public/, and v/ with the assets of a deployment, bin/build.sh).
+     * A round never gets one of them as its address.
+     */
+    public const RESERVED = ['admin', 'install', 'impressum', 'datenschutz', 'imprint', 'privacy', 'b', 'assets', 'index', 'robots', 'cron', 'health', 'v'];
 
     /** Length of the column rounds.slug */
     public const MAX_LENGTH = 100;

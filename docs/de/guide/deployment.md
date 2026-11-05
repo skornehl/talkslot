@@ -19,8 +19,12 @@ Variable `FTP_HOST` tun die Workflows für Deployment, Cronjob und Rollback nich
 3. **Umschalten in einem Schritt.** Die Zeigerdatei `<APP_DIR>/current` wird ersetzt (als `current.new`
    hochgeladen, dann umbenannt). Ab diesem Moment beantwortet die neue Version jede Anfrage. Alter und neuer
    Code laufen nie gleichzeitig und können daher keine inkonsistenten Daten schreiben.
-4. **Prüfen.** Login-Seite, Startseite und das CSS der neuen Version werden abgerufen. Schlägt das fehl,
-   schaltet der Workflow sofort auf die vorherige Version zurück, löscht die defekte und schlägt fehl.
+4. **Prüfen.** Login-Seite, Startseite und das CSS der neuen Version werden abgerufen, und der
+   [Health-Check](#health-check) der neuen Version muss bestätigen, dass sie mit der Datenbank arbeitet:
+   erreichbar, MariaDB 10.6 oder neuer, alle Migrationen ausgeführt. Die Seiten allein funktionieren auch
+   ohne Datenbank; ein falsches Datenbank-Passwort oder eine fehlgeschlagene Migration fällt daher nur dem
+   Health-Check auf. Schlägt etwas fehl, schaltet der Workflow sofort auf die vorherige Version zurück,
+   löscht die defekte und schlägt fehl.
 5. **Aufräumen.** Die fünf neuesten Versionen bleiben für Rollbacks auf dem Server; ihre `config.php`
    bekommt dieselben Rechte wie die neue.
 
@@ -61,7 +65,7 @@ Die Sessions liegen im gemeinsamen `app/var/`, daher wird durch ein Deployment n
 | `DB_USER`, `DB_PASS` | Secrets | ja | Datenbank |
 | `DB_NAME` | Secret | | Standard ist `DB_USER` |
 | `DB_HOST`, `DB_PORT`, `DB_PREFIX` | Variablen | | Standard `localhost`, `3306`, `tp_` |
-| `APP_SECRET` | Secret | ja | mindestens 32 Zeichen |
+| `APP_SECRET` | Secret | ja | mindestens 32 Zeichen; auch der Schlüssel für den [Health-Check](#health-check) |
 | `INSTALL_KEY` | Secret | zur Installation | zusammen mit der Variable `ALLOW_INSTALL=1` |
 | `APP_NAME` | Variable | | Name, der Eltern und in E-Mails angezeigt wird |
 | `LANGUAGES`, `DEFAULT_LANGUAGE`, `ADMIN_LANGUAGE` | Variablen | | siehe [Konfiguration]({{ '/de/guide/configuration/' | relative_url }}) |
@@ -98,6 +102,56 @@ Server die Standardrechte. Das erste Deployment nach dem Update schränkt sie in
 andere Benutzer des Servers die Datei bis dahin lesen (fragen Sie Ihren Hoster, wie die Kunden voneinander
 getrennt sind), [tauschen Sie die Secrets aus]({{ '/de/guide/operations/' | relative_url }}#changing-secrets).
 
+### Health-Check {#health-check}
+
+Nach dem Umschalten sendet das Deployment `POST /health` mit dem Header `X-Health-Token`. Das Token ist der
+hexadezimale HMAC-SHA256 des Worts `health` mit `APP_SECRET`, wie beim
+[Web-Cron]({{ '/de/guide/installation/' | relative_url }}); ein weiteres Secret ist also nicht nötig. Mit
+einem falschen Token oder per `GET` antwortet die Adresse wie jede unbekannte Seite mit 404; eine Anfrage
+ohne den Header gilt als gewöhnliche Seitenadresse. Die Anfrage führt ausstehende Migrationen aus; schlägt
+eine fehl, wird das per Fehlermeldung gemeldet und lässt die Prüfung scheitern, statt übergangen zu
+werden. Die Antwort enthält nur einen Status:
+
+| Status | HTTP | Bedeutung |
+|---|---|---|
+| `ok` | 200 | Datenbank erreichbar, alle Migrationen ausgeführt |
+| `not_installed` | 200 | leere Datenbank: Der Installer ist noch nicht gelaufen (erstes Deployment) |
+| `db_unreachable` | 503 | keine Verbindung: `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASS` prüfen |
+| `db_unsupported` | 503 | nicht MariaDB 10.6 oder neuer (MySQL wird nicht unterstützt) |
+| `migration_failed` | 503 | eine Migration ist fehlgeschlagen; Details in der Fehlermeldung per E-Mail und in `app/var/php-error.log` |
+| `schema_outdated` | 503 | die Migrationen sind noch nicht durch, z. B. weil eine andere Anfrage sie gerade ausführt (`Retry-After`) |
+
+Die Prüfung versucht es sechsmal im Abstand von fünf Sekunden, bevor sie zurückschaltet: etwa eine halbe
+Minute, bis zu anderthalb Minuten, wenn die Datenbank nicht antwortet oder eine Migration noch läuft. Die
+Datenbank wird nicht zurückgesetzt; weil Migrationen nur Spalten und Tabellen hinzufügen, funktioniert die
+vorherige Version weiter (siehe [Rollback](#rollback)). Das gilt auch für eine Migration, die länger
+dauert als die Prüfung: Sie läuft nach dem Zurückschalten zu Ende, und die vorherige Version arbeitet mit
+dem neueren Schema. Das Protokoll des Laufs nennt den Status und was zu prüfen ist. So fragen Sie den
+Health-Check selbst ab:
+
+```bash
+TOKEN=$(printf health | openssl dgst -sha256 -hmac "$APP_SECRET" | sed 's/.*= //')
+curl -sS -d '' -H "X-Health-Token: $TOKEN" https://your-site/health
+```
+
+**Update von einer Version ohne Health-Check:** Es ist nichts einzurichten. Die Workflows geben das
+vorhandene Secret `APP_SECRET` an die Prüfung weiter; ein
+[Repository nur mit Konfiguration](#deploying-from-your-own-repository) mit `secrets: inherit` reicht es
+von selbst durch. Kommt es nicht an (z. B. weil Ihr Workflow seine Secrets einzeln ohne `APP_SECRET`
+aufzählt), warnt der Lauf und prüft nur die Seiten. Versionen, die vor dem Update hochgeladen wurden,
+haben keinen Health-Check: Beim Zurückschalten auf eine davon werden nur ihre Seiten geprüft, mit einer
+Warnung. Außerdem:
+
+- **Datenbankversion:** MySQL und MariaDB 10.5 oder älter (z. B. das MariaDB von Debian 11) wurden nie
+  unterstützt. Das Deployment bricht jetzt mit `db_unsupported` ab, statt bei einer späteren Migration
+  kaputtzugehen, bis der Datenbankserver aktualisiert ist (MariaDB 10.5 bekommt seit Mitte 2025 keine
+  Updates mehr; fragen Sie Ihren Hoster). MariaDB Enterprise Server wird erkannt. Ein Datenbank-Proxy, der
+  `VERSION()` mit seiner eigenen Version beantwortet (ProxySQL in der Grundeinstellung), führt ebenfalls zu
+  `db_unsupported`; lassen Sie ihn die Version des Servers weitergeben.
+- **Eine Runde unter `/health` oder `/cron`:** Neue Runden bekommen diese Adressen nicht mehr. Eine Runde,
+  die eine davon schon hat, behält sie, weil nur Anfragen mit dem Schlüssel-Header den Health-Check oder
+  den Web-Cron erreichen.
+
 ## Rollback
 
 *Actions → Switch version → Run workflow* mit einer dieser Eingaben:
@@ -115,8 +169,9 @@ gh workflow run "Switch version" -f target=list       # verfügbare Versionen an
 gh workflow run "Switch version" -f target=prune      # nur die aktive Version behalten
 ```
 
-Auch nach dem Umschalten wird die Seite geprüft. Der nächste Push auf `main` spielt wieder den neuesten
-Code aus.
+Auch nach dem Umschalten wird die Seite geprüft, einschließlich des [Health-Checks](#health-check) der
+Zielversion (bei Versionen von davor nur die Seiten). Der nächste Push auf `main` spielt wieder den
+neuesten Code aus.
 
 Die Datenbank wird **nicht** zurückgesetzt. Deshalb fügen Migrationen immer nur Spalten (mit
 Standardwerten) und Tabellen hinzu: Eine ältere Version funktioniert auch mit einem neueren Schema.
@@ -193,3 +248,7 @@ steht in der Fußzeile jeder Seite.
 
 `bin/build.sh` und `bin/deploy.sh` sind einfache Shell-Skripte (bash, lftp, curl) und funktionieren aus jeder
 CI oder von Ihrem eigenen Rechner. Rufen Sie `bin/deploy.sh` ohne Argumente auf, um die Verwendung zu sehen.
+Setzen Sie `APP_SECRET` in der Umgebung von `bin/deploy.sh activate` und `switch`, damit die Prüfung den
+[Health-Check](#health-check) einschließt (braucht `openssl`); ohne wird nur die Seite geprüft. `openssl`
+bekommt `APP_SECRET` kurz als Argument, andere Benutzer desselben Rechners könnten es also in der
+Prozessliste sehen: Deployen Sie von einem Rechner, den nur Sie nutzen, oder von einem CI-Runner aus.

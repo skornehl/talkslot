@@ -31,6 +31,11 @@ Englisch umstellen.
 - **Fristen**: Buchungen sind bis *N* Stunden vor einem Termin möglich (*Buchungsschluss*), Eltern können
   bis *N* Stunden vorher ändern oder absagen (*Ändern/Absagen bis*).
 - ***Runde löschen nach Ablauf***: Stunden nach dem letzten Tag, standardmäßig 24, leer = nie. Buchungen werden in jedem Fall am Tag nach dem Termin gelöscht.
+  Ablaufen kann nur eine Runde, die in Gebrauch war: die irgendwann aktiv war oder in die Sie etwas
+  eingetragen haben. Eine Runde, die nie aktiv war, etwa eine Kopie mit den alten Daten, bleibt, bis Sie
+  sie nutzen oder löschen (*Noch nie aktiv: wird nicht automatisch gelöscht*). Die Seite der Runde nennt
+  das Datum der Löschung (*Runde wird am … gelöscht*); eine abgelaufene Runde sagt außerdem, wie Sie sie
+  behalten: einen Tag ab heute hinzufügen oder dieses Feld leeren.
 - **Erinnerung** (*Eltern am Vorabend an ihren Termin erinnern*, standardmäßig an): Eltern mit
   E-Mail-Adresse bekommen am Vorabend eine Erinnerung mit dem Link zum Absagen. Wer am selben Tag eine
   Bestätigung oder Änderungsmitteilung bekommen hat, bekommt keine (eine Namenskorrektur ohne E-Mail zählt
@@ -118,12 +123,19 @@ Deren Eltern erhalten noch keine E-Mail: Sie erfahren davon, wenn Sie die Buchun
 Eintrag, den Sie mit *Änderung per E-Mail mitteilen* speichern, schickt die aktuellen Daten auch ohne
 Änderung (höchstens 30 E-Mails pro Stunde aus Ihrem Konto).
 
-Weitere Aktionen für die Runde: bearbeiten, deaktivieren, ***Druckansicht / PDF***, löschen und
+Weitere Aktionen für die Runde: bearbeiten, deaktivieren, ***Druckansicht / PDF*** und
 ***Duplizieren …***: eine Kopie mit neuem Link und Code, mit Zeiten, Pausen, gesperrten Terminen,
 Einstellungen und Übersetzungen, aber ohne Buchungen; die Kopie ist inaktiv. Geben Sie den **ersten Tag
 der Kopie** an, verschieben sich alle Tage um denselben Abstand (Tage am Dienstag und Donnerstag bleiben
 Dienstag und Donnerstag), praktisch fürs nächste Halbjahr. Ohne Datum behält die Kopie die bisherigen
-Daten.
+Daten; weil sie nie aktiv war, wird sie nicht automatisch gelöscht, und Sie können sie in Ruhe vorbereiten.
+
+**Eine Runde löschen** Sie in einem eigenen Abschnitt am Ende ihrer Seite (*Runde löschen*; *Löschen …*
+bei den Aktionen springt dorthin). Das löscht die Runde mit allen Tagen, Pausen, Übersetzungen und
+Buchungen und lässt sich nicht rückgängig machen. Hat die Runde Buchungen, haken Sie vorher
+*inkl. N Buchung(en)* an: Ohne den Haken wird nichts gelöscht, auch wenn Ihr Browser den
+Bestätigungsdialog nicht anzeigt. Sollen nur keine neuen Buchungen mehr möglich sein, wählen Sie
+*Stattdessen deaktivieren*: Tage und Buchungen bleiben erhalten, Eltern können weiterhin absagen.
 
 ## Übersetzungen
 

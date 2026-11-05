@@ -1,6 +1,7 @@
 <?php
 /**
  * Overview of a round: days, breaks, slots, bookings. @var array $round @var array $days @var int $conflicts @var string $publicUrl
+ * @var ?DateTimeImmutable $deletion when the clean-up deletes the round (null = not automatically)
  * @var array $parents upcoming bookings of the round and how many of their parents can be mailed (also per day: $day['parents'])
  */
 use App\Csrf;
@@ -21,6 +22,8 @@ $offNote = static fn (array $p): string => $p['upcoming'] > 0 ? $notNotified . $
 $notifyBox = static fn (array $p): string => $p['mailable'] > 0
     ? '<label class="small"><input type="checkbox" name="notify" value="1" checked> ' . e(__('Eltern per E-Mail informieren')) . '</label>' : '';
 $roundBookings = array_sum(array_map(static fn ($d) => count(array_filter($d['slots'], static fn ($s) => $s['booking_id'] !== null)), $days));
+// When the clean-up deletes the round (null = not automatically)
+$deletionText = $deletion ? __('{date}, {time} Uhr', ['date' => fmt_date($deletion->format('Y-m-d')), 'time' => $deletion->format('H:i')]) : '';
 ?>
 <p class="breadcrumb"><a href="<?= e(url('/admin')) ?>"><?= e(__('Runden')) ?></a> › <?= e($round['title']) ?></p>
 <div class="page-head">
@@ -28,6 +31,9 @@ $roundBookings = array_sum(array_map(static fn ($d) => count(array_filter($d['sl
   <?php if ($showOwner): ?><span class="badge" title="<?= e(__('Lehrkraft der Runde')) ?>"><?= e(__('Lehrkraft: {name}', ['name' => $owner['display_name'] !== '' ? $owner['display_name'] : $owner['username']])) ?><?= !$owner['is_active'] ? ' ' . e(__('(deaktiviert – Runde öffentlich nicht erreichbar)')) : '' ?></span><?php endif; ?>
   <?php if ($round['is_active']): ?><span class="status status-on"><?= e(__('aktiv')) ?></span><?php else: ?><span class="status status-off"><?= e($round['expired_at'] ? __('abgelaufen') : __('inaktiv')) ?></span><?php endif; ?>
 </div>
+<?php if ($round['expired_at'] && $deletion): ?>
+  <div class="alert alert-warning" role="status"><p><?= e(__('Abgelaufen: Die Runde wird am {date} automatisch gelöscht, mit allen Tagen und Einstellungen. Zum Behalten einen Tag ab heute hinzufügen oder unter „Bearbeiten“ das Feld „Runde löschen nach Ablauf“ leeren.', ['date' => $deletionText])) ?></p></div>
+<?php endif; ?>
 
 <div class="card">
   <p class="small muted"><?= e(__('Link für die Eltern')) ?></p>
@@ -55,7 +61,12 @@ $roundBookings = array_sum(array_map(static fn ($d) => count(array_filter($d['sl
   </details>
   <?php if (trim((string) ($round['location'] ?? '')) !== ''): ?><p><?= __h('Ort: {location}', ['location' => '<strong>' . e(trim((string) $round['location'])) . '</strong>']) ?></p><?php endif; ?>
   <p class="small muted"><?= e(['round' => __('Ein Termin pro Person'), 'day' => __('Ein Termin pro Person und Tag')][$round['booking_limit'] ?? 'none'] ?? __('Mehrfachbuchungen erlaubt')) ?><?= !empty($round['remind_parents']) ? ' · ' . e(__('Erinnerung am Vorabend')) : '' ?> · <?= e(__('Buchungsschluss {hours} h vorher', ['hours' => (int) $round['booking_deadline_hours']])) ?> · <?= e(__('Ändern/Absagen bis {hours} h vorher', ['hours' => (int) $round['cancel_deadline_hours']])) ?> ·
-    <?= e($round['delete_after_hours'] === null ? __('Runde wird nicht automatisch gelöscht') : __('Runde wird {hours} h nach Ablauf gelöscht', ['hours' => (int) $round['delete_after_hours']])) ?></p>
+    <?= e(match (true) {
+        $round['delete_after_hours'] === null => __('Runde wird nicht automatisch gelöscht'),
+        $deletion !== null => __('Runde wird am {date} gelöscht ({hours} h nach Ablauf)', ['date' => $deletionText, 'hours' => (int) $round['delete_after_hours']]),
+        $days !== [] => __('Noch nie aktiv: wird nicht automatisch gelöscht'),
+        default => __('Runde wird {hours} h nach Ablauf gelöscht', ['hours' => (int) $round['delete_after_hours']]),
+    }) ?></p>
   <div class="actions">
     <a class="button" href="<?= e(url('/admin/round/' . $rid . '/edit')) ?>"><?= e(__('Bearbeiten')) ?></a>
     <a class="button" href="#add-day"><?= e(__('+ Tag hinzufügen')) ?></a>
@@ -67,10 +78,7 @@ $roundBookings = array_sum(array_map(static fn ($d) => count(array_filter($d['sl
     <form method="post" action="<?= e(url('/admin/templates/from-round/' . $rid)) ?>" class="inline" data-once><?= $csrf ?>
       <button type="submit" class="button"><?= e(__('Als Vorlage speichern')) ?></button></form>
     <?php endif; ?>
-    <?php $question = $roundBookings ? __('Runde „{title}“ mit allen Tagen und {count} Buchung(en) endgültig löschen?', ['title' => $round['title'], 'count' => $roundBookings]) : __('Runde „{title}“ mit allen Tagen und Buchungen endgültig löschen?', ['title' => $round['title']]); ?>
-    <form method="post" action="<?= e(url('/admin/round/' . $rid . '/delete')) ?>" class="inline-delete" data-confirm="<?= e($question . $cancelNote($parents)) ?>" data-confirm-off="<?= e($question . $offNote($parents)) ?>"><?= $csrf ?>
-      <?= $notifyBox($parents) ?>
-      <button type="submit" class="button button-danger"><?= e(__('Löschen')) ?></button></form>
+    <a class="button" href="#delete-round"><?= e(__('Löschen …')) ?></a>
   </div>
   <details id="duplicate">
     <summary><?= e(__('Runde duplizieren')) ?></summary>
@@ -214,3 +222,21 @@ $roundBookings = array_sum(array_map(static fn ($d) => count(array_filter($d['sl
 <?php endforeach; ?>
 
 <?php if ($days) { require __DIR__ . '/_add_day.php'; } ?>
+
+<?php /* Apart from the everyday actions above, so that a slip of the mouse deletes nothing; bookings need the box (checked on the server) */ ?>
+<section class="card danger-zone" id="delete-round" aria-labelledby="delete-round-title">
+  <h2 id="delete-round-title"><?= e(__('Runde löschen')) ?></h2>
+  <p><?= __h('Löscht die Runde {bold}. Das kann nicht rückgängig gemacht werden.', ['bold' => '<strong>' . e(__('mit allen Tagen, Pausen, Übersetzungen und Buchungen')) . '</strong>']) ?></p>
+  <?php if ($round['is_active']): ?>
+  <p class="small"><?= e(__('Sollen nur keine neuen Buchungen mehr möglich sein? Dann die Runde stattdessen deaktivieren: Tage und Buchungen bleiben erhalten, Eltern können über ihren Link weiterhin absagen.')) ?></p>
+  <form method="post" action="<?= e(url('/admin/round/' . $rid . '/toggle')) ?>" class="actions"><?= $csrf ?>
+    <button type="submit" class="button"><?= e(__('Stattdessen deaktivieren')) ?></button></form>
+  <?php endif; ?>
+  <?php $question = $roundBookings ? __('Runde „{title}“ mit allen Tagen und {count} Buchung(en) endgültig löschen?', ['title' => $round['title'], 'count' => $roundBookings]) : __('Runde „{title}“ mit allen Tagen und Buchungen endgültig löschen?', ['title' => $round['title']]); ?>
+  <form method="post" action="<?= e(url('/admin/round/' . $rid . '/delete')) ?>" class="actions inline-delete" data-confirm="<?= e($question . $cancelNote($parents)) ?>" data-confirm-off="<?= e($question . $offNote($parents)) ?>"><?= $csrf ?>
+    <?php if ($roundBookings): ?>
+      <label class="small"><input type="checkbox" name="confirm" value="1" required> <?= e(__('inkl. {count} Buchung(en)', ['count' => $roundBookings])) ?></label>
+    <?php endif; ?>
+    <?= $notifyBox($parents) ?>
+    <button type="submit" class="button button-danger"><?= e(__('Runde löschen')) ?></button></form>
+</section>

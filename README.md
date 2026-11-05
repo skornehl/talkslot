@@ -74,7 +74,8 @@ schools (GDPR/DSGVO, TDDDG) and multilingual families.
   cancellation (with a calendar file that removes the appointment), a new date, time or location for a
   day and a new location or teacher for the round send the new details, in the parents' language, with
   the box *Eltern per E-Mail informieren* ticked by default. Parents without an address, or whom the
-  system never mailed, are named once for the teacher to tell in person. Print view per round or day.
+  system never mailed, are named once for the teacher to tell in person. Deleting a day or a round with
+  bookings needs an extra tick, checked on the server. Print view per round or day.
 - Translation of title and description **in the teacher's browser** (Chrome/Edge Translator API with a
   local model, no text leaves the device), manually editable.
 - Summary mails: evening before a day and after the booking deadline (time and name only).
@@ -87,9 +88,11 @@ schools (GDPR/DSGVO, TDDDG) and multilingual families.
 
 **Automatic clean-up**
 - Bookings of a day are deleted from 0:00 the following day.
-- A round is deactivated after its last day and deleted 24 h later (configurable per round).
-- Rate-limit data after 24 h, inactive teacher accounts without rounds after 15 months, admin log entries
-  after 90 days.
+- A round is deactivated after its last day and deleted 24 h later (configurable per round). This applies
+  to rounds that were in use (active at some point or with an entry by the teacher); a draft that was never
+  active, e.g. a copy with the old dates, stays. The round page shows the date of the deletion.
+- Rate-limit data after 24 h, inactive teacher accounts without rounds in use (with their drafts) after
+  15 months, admin log entries after 90 days.
 - Runs hourly via cron (or the included GitHub workflow), plus as a fallback on page views (database steps
   only; no visitor waits for the mail server).
 
@@ -173,7 +176,9 @@ switches over **atomically**:
    code, its `config.php` gets the permissions `600` (variable `CONFIG_MODE`: `640` or `keep` if PHP runs
    as a different user than FTP; a server without `chmod` only causes a warning).
 2. A pointer file `<APP_DIR>/current` is replaced in one step. Old and new code never run side by side.
-3. The site is checked (login page, start page, CSS). On failure it switches straight back and the run
+3. The site is checked (login page, start page, CSS) and so is its database: the health check `POST /health`
+   (key derived from `APP_SECRET`) confirms that it is reachable, MariaDB 10.6+ and fully migrated. On
+   failure, e.g. a wrong database password or a failed migration, it switches straight back and the run
    fails.
 4. The last five versions are kept for rollbacks; once the check has passed, their `config.php` gets the
    same permissions.
@@ -328,7 +333,7 @@ otherwise the legal pages fall back to English.
 php tests/unit.php      # unit tests, no database needed (also run in CI on PHP 8.3–8.5)
 tests/smoke.sh          # ~300 end-to-end checks against the local Docker setup
 node tests/browser.mjs  # the JavaScript in headless Chrome (after dev/reset.sh && dev/demo.sh)
-tests/deploy.sh         # atomic deployment via lftp file:// under load (needs lftp and the local DB)
+tests/deploy.sh         # atomic deployment via lftp file:// under load, switch-back on errors (needs lftp, openssl and the local DB)
 ```
 
 CI runs all four on every push: the unit tests on PHP 8.3–8.5, the others against the Docker environment.

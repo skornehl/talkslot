@@ -226,11 +226,11 @@ check "reminder turned on afterwards: the parents who booked before get none, th
 check "… nor the teacher's entry confirmed while the round did not remind" '[ "$(n_mails "$(n_addr 7)" Erinnerung)" = 0 ] && [ "$(DBQ "SELECT CONCAT(remind_ok, reminded_at IS NULL) FROM tp_bookings WHERE name = \"Outbox Spaet Eintrag\"")" = "01" ]'
 curl -s -o /dev/null -b "$J" -d "csrf=$NT&confirm=1" "$B/admin/round/$NL/delete"
 
-# Migration 19 on a database of the version before: parents' bookings remind as their round does, entries by
+# Migration 20 on a database of the version before: parents' bookings remind as their round does, entries by
 # the teacher only after a new confirmation; the last confirmation counts as sent at the last change
-DBQ "DROP TABLE tp_mail_outbox; ALTER TABLE tp_bookings DROP INDEX uq_bookings_mail_token, DROP COLUMN mail_token_hash, DROP COLUMN remind_ok, DROP COLUMN notified_at, DROP COLUMN mail_failed_at; UPDATE tp_settings SET value = '18' WHERE name = 'schema_version'"
+DBQ "DROP TABLE tp_mail_outbox; ALTER TABLE tp_bookings DROP INDEX uq_bookings_mail_token, DROP COLUMN mail_token_hash, DROP COLUMN remind_ok, DROP COLUMN notified_at, DROP COLUMN mail_failed_at; UPDATE tp_settings SET value = '19' WHERE name = 'schema_version'"
 curl -s -o /dev/null "$B/"
-check "migration 19: outbox and booking columns created, bookings carried over" '[ "$(DBQ "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=\"tp_bookings\" AND COLUMN_NAME IN (\"remind_ok\",\"notified_at\",\"mail_failed_at\",\"mail_token_hash\")")" = 4 ] && [ "$(DBQ "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=\"tp_mail_outbox\"")" = 1 ] && [ "$(DBQ "SELECT value FROM tp_settings WHERE name=\"schema_version\"")" = "$LATEST" ] && [ "$(DBQ "SELECT GROUP_CONCAT(CONCAT(remind_ok, notified_at = updated_at) ORDER BY name) FROM tp_bookings WHERE name IN (\"Outbox Eltern\", \"Outbox Eintrag\")")" = "01,11" ] && [ "$(curl -s -o /dev/null -w "%{http_code}" "$N2L")" = 200 ]'
+check "migration 20: outbox and booking columns created, bookings carried over" '[ "$(DBQ "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=\"tp_bookings\" AND COLUMN_NAME IN (\"remind_ok\",\"notified_at\",\"mail_failed_at\",\"mail_token_hash\")")" = 4 ] && [ "$(DBQ "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=\"tp_mail_outbox\"")" = 1 ] && [ "$(DBQ "SELECT value FROM tp_settings WHERE name=\"schema_version\"")" = "$LATEST" ] && [ "$(DBQ "SELECT GROUP_CONCAT(CONCAT(remind_ok, notified_at = updated_at) ORDER BY name) FROM tp_bookings WHERE name IN (\"Outbox Eltern\", \"Outbox Eintrag\")")" = "01,11" ] && [ "$(curl -s -o /dev/null -w "%{http_code}" "$N2L")" = 200 ]'
 curl -s -o /dev/null -b "$J" -d "csrf=$NT&confirm=1" "$B/admin/round/$NR/delete"
 
 # Changes by the teacher that concern booked parents (ScheduleService): cancellations and change notices in the
@@ -355,7 +355,7 @@ PHP
 )
 check "outbox: the hourly limit holds back bulk cancellations, not single ones; an appointment that has begun or a row without its data is dropped ($CK)" '[ "$CK" = "1/-/1|1|{\"mails_sent\":0,\"mails_failed\":0,\"mails_dropped\":2}" ] && [ "$(n_mails "$(c_addr 10)" abgesagt)" = 1 ] && [ "$(n_mails "$(c_addr 11)" abgesagt)" = 1 ] && [ -z "$(c_cancelled)" ]'
 
-# Migration 20 on a database of the version before: the outbox gets the column for cancellations
-DBQ "ALTER TABLE tp_mail_outbox DROP COLUMN payload; UPDATE tp_settings SET value = '19' WHERE name = 'schema_version'"
+# Migration 21 on a database of the version before: the outbox gets the column for cancellations
+DBQ "ALTER TABLE tp_mail_outbox DROP COLUMN payload; UPDATE tp_settings SET value = '20' WHERE name = 'schema_version'"
 curl -s -o /dev/null "$B/"
-check "migration 20: the outbox gets the column for cancellations" '[ "$(DBQ "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=\"tp_mail_outbox\" AND COLUMN_NAME=\"payload\"")" = 1 ] && [ "$(DBQ "SELECT value FROM tp_settings WHERE name=\"schema_version\"")" = "$LATEST" ]'
+check "migration 21: the outbox gets the column for cancellations" '[ "$(DBQ "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=\"tp_mail_outbox\" AND COLUMN_NAME=\"payload\"")" = 1 ] && [ "$(DBQ "SELECT value FROM tp_settings WHERE name=\"schema_version\"")" = "$LATEST" ]'

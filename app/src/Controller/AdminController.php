@@ -10,6 +10,7 @@ use App\Audit;
 use App\Auth;
 use App\BookingException;
 use App\BookingService;
+use App\Cleanup;
 use App\Csrf;
 use App\Db;
 use App\Http;
@@ -219,6 +220,10 @@ final class AdminController
               ORDER BY r.is_active DESC, first_day IS NULL, first_day DESC, r.id DESC',
             $all ? [] : [Auth::id()]
         );
+        foreach ($rounds as &$r) {
+            $r['deletion_at'] = Cleanup::deletionAt($r, $r['last_day']);
+        }
+        unset($r);
         $this->render('admin/dashboard', [
             'title' => $all ? __('Alle Terminrunden') : __('Meine Terminrunden'),
             'rounds' => $rounds,
@@ -385,9 +390,9 @@ final class AdminController
             $parents = ScheduleService::changeRound($id, $data['notify'], static fn () => Db::run(
                 'UPDATE rounds SET title = ?, slug = ?, description = ?, location = ?, source_lang = ?, code_required = ?, booking_limit = ?, remind_parents = ?, is_active = ?, booking_deadline_hours = ?,
                         cancel_deadline_hours = ?, delete_after_hours = ?, updated_at = ?,
-                        expired_at = IF(? = 1, NULL, expired_at), user_id = ?
+                        expired_at = IF(? = 1, NULL, expired_at), was_used = GREATEST(was_used, ?), user_id = ?
                   WHERE id = ? AND user_id = ?',
-                [...$values, $data['is_active'], (int) $owner['id'], $id, (int) $round['user_id']]
+                [...$values, $data['is_active'], $data['is_active'], (int) $owner['id'], $id, (int) $round['user_id']]
             ));
             // New address = old invitations should no longer work, so a new round code as well
             $newCode = $data['new_code'] || $slug !== $round['slug'];
@@ -411,12 +416,13 @@ final class AdminController
         } else {
             // Round and days together: if creating the days fails, no empty round is left behind
             $ownerId = (int) $owner['id'];
-            [$id, $count] = Db::transaction(function () use ($values, $now, $dayData, $ownerId): array {
+            $used = $data['is_active'];
+            [$id, $count] = Db::transaction(function () use ($values, $now, $dayData, $ownerId, $used): array {
                 $id = Db::insert(
                     'INSERT INTO rounds (title, slug, description, location, source_lang, code_required, booking_limit, remind_parents, is_active,
-                                         booking_deadline_hours, cancel_deadline_hours, delete_after_hours, updated_at, created_at, user_id, code)
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                    [...$values, $now, $ownerId, RoundCode::unique()]
+                                         booking_deadline_hours, cancel_deadline_hours, delete_after_hours, updated_at, created_at, user_id, code, was_used)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                    [...$values, $now, $ownerId, RoundCode::unique(), $used]
                 );
                 return [$id, $this->createDays($id, $dayData)];
             });
@@ -467,6 +473,7 @@ final class AdminController
             'days' => $days,
             'parents' => ['upcoming' => array_sum(array_column(array_column($days, 'parents'), 'upcoming')), 'mailable' => array_sum(array_column(array_column($days, 'parents'), 'mailable'))],
             'conflicts' => $conflicts,
+            'deletion' => Cleanup::deletionAt($round, $days ? (string) max(array_column($days, 'day_date')) : null),
             'publicUrl' => abs_url('/' . $round['slug']),
             'homeUrl' => abs_url('/'),
             'invitation' => Invitation::text($round, $owner),
@@ -628,7 +635,7 @@ final class AdminController
             $this->flash('error', $hint);
             Http::redirect('/admin/round/' . $id);
         }
-        Db::run('UPDATE rounds SET is_active = ?, expired_at = IF(? = 1, NULL, expired_at), updated_at = ? WHERE id = ?', [$active, $active, Time::nowSql(), $id]);
+        Db::run('UPDATE rounds SET is_active = ?, expired_at = IF(? = 1, NULL, expired_at), was_used = GREATEST(was_used, ?), updated_at = ? WHERE id = ?', [$active, $active, $active, Time::nowSql(), $id]);
         $this->audit(fn () => $active ? __('aktiviert') : __('deaktiviert'), $id);
         $this->flash('success', $active ? __('Runde aktiviert – der Link ist jetzt erreichbar.') : __('Runde deaktiviert – keine neuen Buchungen mehr; Eltern können über ihren Link weiterhin absagen.'));
         Http::redirect('/admin/round/' . $id);
@@ -703,6 +710,11 @@ final class AdminController
     {
         $this->round($id);
         $booked = (int) Db::value('SELECT COUNT(*) FROM bookings b JOIN slots s ON s.id = b.slot_id JOIN round_days d ON d.id = s.day_id WHERE d.round_id = ?', [$id]);
+        // As with a day: bookings are only deleted with the box ticked (the dialog alone needs JavaScript)
+        if ($booked > 0 && Http::post('confirm') !== '1') {
+            $this->flash('error', __('In dieser Runde gibt es {count} Buchung(en). Bitte das Löschen ausdrücklich bestätigen.', ['count' => $booked]));
+            Http::redirect('/admin/round/' . $id, [], 'delete-round');
+        }
         $label = self::roundLabel($id); // for the log: the round is gone afterwards
         $parents = ScheduleService::cancelRound($id, Http::post('notify') === '1');
         $this->audit(fn () => ($booked ? __('gelöscht (mit {count} Buchung(en))', ['count' => $booked]) : __('gelöscht')) . self::parentsAudit($parents), $label);
@@ -1025,6 +1037,10 @@ final class AdminController
         } catch (BookingException) {
             $this->flash('error', __('Dieser Slot ist bereits belegt.'));
             Http::redirect('/admin/round/' . $round['id'], [], 'slot-' . $slotId);
+        }
+        if (!$round['was_used']) {
+            // An entry puts a draft to use: from now on it expires after its last day (Cleanup)
+            Db::run('UPDATE rounds SET was_used = 1 WHERE id = ?', [$round['id']]);
         }
         $this->audit(fn () => __('Buchung {slot} eingetragen', ['slot' => self::when($slot['day_date'], $slot['start_time'])]), (int) $round['id']);
         $msg = __('Eintrag angelegt. Änderungslink für die Eltern (wird nur jetzt angezeigt): {link}', ['link' => abs_url('/b/' . $token, ['lang' => $old['lang']])]);

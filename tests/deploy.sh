@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Test for the atomic deployment (bin/build.sh + bin/deploy.sh) without a real FTP server: lftp uploads via
 # file:// into a temp directory served by a PHP test server. Checks the first deployment, switching
-# under load, rollback (the "switch"), automatic switch-back, pointer emergencies, cleanup, the
-# permissions of config.php and deleting old versions after changing secrets (prune).
+# under load, rollback (the "switch"), automatic switch-back (broken code, wrong database password, failing
+# migration: the health check), pointer emergencies, cleanup, the permissions of config.php and deleting old
+# versions after changing secrets (prune).
 #
 # Usage: tests/deploy.sh   Requires: lftp, curl and the local database (like tests/smoke.sh);
 # the configuration is taken from config/config.php.
@@ -21,7 +22,11 @@ cleanup() { rm -f "$T/load.on"; [ -n "$SERVER_PID" ] && kill "$SERVER_PID" 2> /d
 trap cleanup EXIT
 
 php -r '$c = require $argv[1]; $c["base_url"] = $argv[2]; $c["debug"] = false; $c["force_https"] = false;
-  file_put_contents($argv[3], "<?php\nreturn " . var_export($c, true) . ";\n");' "$REPO/config/config.php" "$URL" "$T/config.php"
+  file_put_contents($argv[3], "<?php\nreturn " . var_export($c, true) . ";\n");
+  $c["db"]["pass"] .= "-falsch"; file_put_contents($argv[4], "<?php\nreturn " . var_export($c, true) . ";\n");' \
+  "$REPO/config/config.php" "$URL" "$T/config.php" "$T/config-wrong-db.php"
+# Key of the health check in deploy.sh (like the workflows: the secret the config was built with)
+APP_SECRET=$(php -r 'echo (require $argv[1])["secret"];' "$T/config.php"); export APP_SECRET
 # Router: existing files directly, internal files blocked (like .htaccess), otherwise index.php
 cat > "$T/router.php" <<'EOF'
 <?php
@@ -32,10 +37,10 @@ require $_SERVER['DOCUMENT_ROOT'] . '/index.php';
 EOF
 
 FAIL=0
-ok() { if eval "$2"; then echo "  ✓ $1"; else echo "  ✗ $1"; FAIL=$((FAIL + 1)); fi; }
+ok() { if eval "$2"; then echo "  ✓ $1"; else echo "  ✗ $1"; FAIL=$((FAIL + 1)); return 1; fi; }
 code() { curl -s -o /dev/null -w '%{http_code}' "$URL$1"; }
 html() { curl -s "$URL$1"; }
-build() { (cd "$REPO" && RELEASE=$1 VERSION=$2 COMMIT=abcdef1 CONFIG_SOURCE=$T/config.php bin/build.sh > /dev/null); }
+build() { (cd "$REPO" && RELEASE=$1 VERSION=$2 COMMIT=abcdef1 CONFIG_SOURCE=${3:-$T/config.php} bin/build.sh > /dev/null); }
 dep() { (cd "$REPO" && timeout 120 bin/deploy.sh "$@"); }
 # Load during upload/switch: every response ≠ 200 is a failure
 load_start() { : > "$T/codes"; touch "$T/load.on"; for p in /admin/login / /admin/login; do
@@ -57,7 +62,7 @@ ok 'not active yet after upload' '[ "$(html /admin/login)" = empty ] && [ ! -e "
 mode() { stat -c %a "$BASE/releases/$1/$2"; }
 ok 'config.php only readable for its owner right after the upload (600)' '[ "$(mode $A config/config.php)" = 600 ] && grep -q "config.php: permissions 600 in $A" "$T/out"'
 load_start; dep activate $A > "$T/out" 2>&1; rc=$?; load_stop
-ok 'switch ok, only 200s under load' '[ $rc = 0 ] && only200' || cat "$T/out"
+ok 'switch ok, only 200s under load, health check: database ok' '[ $rc = 0 ] && only200 && grep -q "Check ok: $URL serves $A (database: ok)" "$T/out"' || cat "$T/out"
 ok 'pointer to A, A is served' '[ "$(cat "$BASE/current")" = $A ] && html /admin/login | grep -q "/v/$A/css/app.css" && [ "$(code /v/$A/css/app.css)" = 200 ] && html / | grep -q v1.9.0'
 ok 'app_root.php finds the app directory (from APP_DIR/WEB_DIR)' 'grep -qF "/../talkslot-app'"'"')" "$WEB/app_root.php" && [ ! -e "$WEB/assets" ]'
 ok 'app/var shared (sessions, logs), version without its own app/var' '[ -f "$BASE/app/var/.htaccess" ] && [ ! -e "$BASE/releases/$A/app/var" ]'
@@ -81,6 +86,21 @@ load_start; dep switch previous > "$T/out" 2>&1; rc=$?; load_stop
 ok 'previous → A, only 200s under load' '[ $rc = 0 ] && [ "$(cat "$BASE/current")" = $A ] && html / | grep -q v1.9.0 && only200'
 ok 'no older version → error, nothing changed' '! dep switch previous > /dev/null 2>&1 && [ "$(cat "$BASE/current")" = $A ]'
 ok 'back to B by name' 'dep switch $B > /dev/null 2>&1 && [ "$(cat "$BASE/current")" = $B ]'
+APP_SECRET=anderes-secret-als-in-config-php dep switch previous > "$T/out" 2>&1; rc=$?
+ok 'switch to a version without health check (or with an older APP_SECRET): warning, pages checked only' \
+  '[ $rc = 0 ] && [ "$(cat "$BASE/current")" = $A ] && grep -q "::warning::$A has no health check" "$T/out"'
+APP_SECRET= dep switch $B > "$T/out" 2>&1; rc=$?
+ok 'without APP_SECRET (older workflow): warning, pages checked only' \
+  '[ $rc = 0 ] && [ "$(cat "$BASE/current")" = $B ] && grep -q "::warning::APP_SECRET missing" "$T/out"'
+mkdir "$T/nossl" # a PATH with every command of this one except openssl
+IFS=: read -ra PD <<< "$PATH"
+for d in "${PD[@]}"; do for f in "$d"/*; do n=${f##*/}; [ -e "$f" ] && [ "$n" != openssl ] && [ ! -e "$T/nossl/$n" ] && ln -s "$f" "$T/nossl/$n"; done; done
+PATH=$T/nossl dep switch previous > "$T/out" 2>&1; rc=$?
+ok 'without openssl: warning, pages checked only' \
+  '[ $rc = 0 ] && [ "$(cat "$BASE/current")" = $A ] && grep -q "::warning::openssl missing" "$T/out"'
+APP_SECRET=$'\t '"$APP_SECRET"$' \r\n' dep switch $B > "$T/out" 2>&1; rc=$?
+ok 'APP_SECRET with spaces and a line break around it (pasted): trimmed like in config.php, health check ok' \
+  '[ $rc = 0 ] && [ "$(cat "$BASE/current")" = $B ] && grep -q "Check ok: $URL serves $B (database: ok)" "$T/out"'
 ok 'active version again: nothing to do' 'dep switch $B 2>&1 | grep -q "already active"'
 ok 'unknown or invalid version rejected' '! dep switch nichtda > /dev/null 2>&1 && ! dep switch ../x > /dev/null 2>&1 && [ "$(cat "$BASE/current")" = $B ]'
 
@@ -98,6 +118,25 @@ E=20261102-124500-v1.9.2; build $E v1.9.2; rm "$T/build/app/releases/$E/config/c
 dep upload $E > "$T/out" 2>&1; rc=$?
 ok 'chmod fails (here: no config.php) → only a warning, the upload goes on' '[ $rc = 0 ] && grep -q "::warning::Could not set the permissions of config.php to 600 in $E" "$T/out" && grep -q "Uploaded and complete: $E" "$T/out"'
 dep discard $E > /dev/null 2>&1
+
+echo "Health check: database and migrations"
+schema() { (cd "$REPO" && php -r 'require "app/bootstrap.php"; echo App\Settings::get("schema_version");'); }
+S0=$(schema)
+G=20261102-121000-v1.9.2; build $G v1.9.2 "$T/config-wrong-db.php"
+dep upload $G > /dev/null 2>&1; dep activate $G > "$T/out" 2>&1; rc=$?
+ok 'wrong database password (pages still work): check fails → back to B, reason in the log' \
+  '[ $rc != 0 ] && grep -q "cannot connect to the database" "$T/out" && grep -q "switched back to $B" "$T/out" && ! grep -q "set CONFIG_MODE" "$T/out" && [ "$(cat "$BASE/current")" = $B ] && [ ! -e "$BASE/releases/$G" ]' || cat "$T/out"
+# Version F brings one more migration than the database has (a local database may be ahead of this code)
+F=20261102-122000-v1.9.2; build $F v1.9.2
+L=$(grep -o 'LATEST = [0-9]*' "$REPO/app/src/Migrations.php" | grep -o '[0-9]*$'); N=$(( (S0 > L ? S0 : L) + 1 ))
+perl -0pi -e "s/LATEST = $L;/LATEST = $N;/; s/(private const STEPS = \[)/\1\n        $N => ['ALTER TABLE deploy_test_missing ADD COLUMN x INT'],/" "$T/build/app/releases/$F/app/src/Migrations.php"
+dep upload $F > /dev/null 2>&1; dep activate $F > "$T/out" 2>&1; rc=$?
+ok 'failing migration (pages still work): check fails → back to B, schema unchanged' \
+  '[ $rc != 0 ] && grep -q "a database migration failed" "$T/out" && grep -q "switched back to $B" "$T/out" && [ "$(cat "$BASE/current")" = $B ] && [ "$(schema)" = "$S0" ]' || cat "$T/out"
+H=20261102-123500-v1.9.2; build $H v1.9.2
+dep upload $H > /dev/null 2>&1; APP_SECRET=anderes-secret-als-in-config-php dep activate $H > "$T/out" 2>&1; rc=$?
+ok 'new version without an answer to the health check (APP_SECRET differs from its config.php): back to B' \
+  '[ $rc != 0 ] && grep -q "is APP_SECRET the one its config.php was built with" "$T/out" && [ "$(cat "$BASE/current")" = $B ] && [ ! -e "$BASE/releases/$H" ]' || cat "$T/out"
 
 echo "Pointer emergencies (app_root.php)"
 rm "$BASE/current"

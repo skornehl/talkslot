@@ -16,13 +16,21 @@ final class App
         header('Content-Type: text/html; charset=utf-8');
 
         $path = Http::path();
+        // The web cron and the health check: requests that send their key header. Without it the address is
+        // an ordinary round address, so a round that got /cron or /health before Slug::RESERVED listed them
+        // keeps its link. Both migrate only after checking their key and report a failed migration instead
+        // of swallowing it; neither needs the clean-up fallback (the cron runs it in full).
+        $endpoint = match (true) {
+            $path === '/cron' && isset($_SERVER['HTTP_X_CRON_TOKEN']) => 'cron',
+            $path === '/health' && isset($_SERVER['HTTP_X_HEALTH_TOKEN']) => 'health',
+            default => '',
+        };
         try {
-            if (Installer::isInstalled()) {
+            if ($endpoint === '' && Installer::isInstalled()) {
                 Migrations::run();
-                if ($path !== '/cron') { // the web cron runs all steps itself
-                    Cleanup::maybeRun();
-                    register_shutdown_function(self::afterResponse(...));
-                }
+                Cleanup::maybeRun();
+                // Mail queue fallback after the response (not for the web cron and the health check)
+                register_shutdown_function(self::afterResponse(...));
             }
         } catch (\Throwable $e) {
             Alert::exception($e, 'Migration/Bereinigung'); // must not block the page
@@ -35,8 +43,12 @@ final class App
             self::refuseCrossSite($admin);
             return;
         }
-        if ($path === '/cron') {
+        if ($endpoint === 'cron') {
             self::webCron();
+            return;
+        }
+        if ($endpoint === 'health') {
+            self::health();
             return;
         }
         if ($admin) {
@@ -96,11 +108,7 @@ final class App
      */
     private static function webCron(): void
     {
-        $given = (string) ($_SERVER['HTTP_X_CRON_TOKEN'] ?? '');
-        if (Http::method() !== 'POST' || strlen((string) Config::get('secret', '')) < 32 || !hash_equals(self::cronToken(), $given)) {
-            http_response_code(404);
-            I18n::init(null);
-            View::render('public/notfound', ['title' => t('notfound.title'), 'text' => t('notfound.text')]);
+        if (!self::keyGiven((string) ($_SERVER['HTTP_X_CRON_TOKEN'] ?? ''), self::cronToken())) {
             return;
         }
         header('Content-Type: application/json; charset=utf-8');
@@ -111,5 +119,36 @@ final class App
         Migrations::run();
         set_time_limit((int) Config::get('mail_queue.seconds', 20) + 60);
         echo json_encode(['status' => 'ok'] + Cleanup::run() + Summaries::run() + Reminders::run() + Outbox::process(wait: Outbox::CRON_WAIT));
+    }
+
+    /**
+     * Health check for the deployment (bin/deploy.sh): POST /health with header "X-Health-Token" (App\Health).
+     * Response: only a status word, 200 if the version works with the database, otherwise 503.
+     */
+    private static function health(): void
+    {
+        if (!self::keyGiven((string) ($_SERVER['HTTP_X_HEALTH_TOKEN'] ?? ''), Health::token())) {
+            return;
+        }
+        [$code, $status] = Health::check();
+        http_response_code($code);
+        header('Content-Type: application/json; charset=utf-8');
+        header('Cache-Control: no-store');
+        if ($status === 'schema_outdated') {
+            header('Retry-After: 30'); // another request is still migrating
+        }
+        echo json_encode(['status' => $status]);
+    }
+
+    /** POST with the right key; otherwise a plain 404 page (the endpoint does not reveal itself). */
+    private static function keyGiven(#[\SensitiveParameter] string $given, #[\SensitiveParameter] string $expected): bool
+    {
+        if (Http::method() === 'POST' && strlen((string) Config::get('secret', '')) >= 32 && hash_equals($expected, $given)) {
+            return true;
+        }
+        http_response_code(404);
+        I18n::init(null);
+        View::render('public/notfound', ['title' => t('notfound.title'), 'text' => t('notfound.text')]);
+        return false;
     }
 }

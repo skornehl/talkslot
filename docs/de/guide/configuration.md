@@ -21,7 +21,9 @@ Beim Deployment mit GitHub Actions wird die Datei aus Repository-Variablen und -
 | `install_key` | – | mindestens 16 Zeichen, nur für `install.php` | `INSTALL_KEY` (mit `ALLOW_INSTALL=1`) |
 
 Eine Änderung von `secret` betrifft nur Kurzlebiges: Formulare, die in diesem Moment geöffnet sind,
-Zugänge, die in den letzten Stunden per Rundencode freigeschaltet wurden, und das Web-Cron-Token.
+Zugänge, die in den letzten Stunden per Rundencode freigeschaltet wurden, das Web-Cron-Token und den
+Schlüssel für den [Health-Check]({{ '/de/guide/deployment/' | relative_url }}#health-check) des Deployments
+(die mitgelieferten Workflows leiten beide neu ab).
 Buchungen, Änderungslinks, Einladungs- und Passwortlinks sind Zufallstokens und funktionieren weiter.
 Abgemeldet wird dadurch niemand; dafür gibt es *Benutzer → Alle Sitzungen beenden*.
 
