@@ -43,6 +43,23 @@ final class Installer
     }
 
     /**
+     * Why this database cannot take the installation, for both installers (empty = fine): tables or foreign keys
+     * with the names of this installation exist already. Nothing has been changed then.
+     * @return list<string>
+     */
+    public static function conflicts(): array
+    {
+        if ($tables = self::conflictingTables()) {
+            return [__('Die Datenbank enthält bereits Tabellen mit gleichem Namen ({tables}), vermutlich von einer anderen Anwendung. Bitte legen Sie für TalkSlot eine eigene, leere Datenbank an und tragen Sie deren Zugangsdaten ein. Es wurde nichts verändert.', ['tables' => implode(', ', $tables)])];
+        }
+        // Names of foreign keys are unique per database: an installation from before the prefixed names (fk_…)
+        if ($names = self::conflictingConstraints()) {
+            return [__('Die Datenbank enthält bereits Fremdschlüssel mit gleichem Namen ({names}), vermutlich von einer älteren TalkSlot-Installation in derselben Datenbank. Bitte tragen Sie in config.php ein anderes Tabellenpräfix (db.prefix) ein oder verwenden Sie eine eigene Datenbank. Es wurde nichts verändert.', ['names' => implode(', ', $names)])];
+        }
+        return [];
+    }
+
+    /**
      * Foreign keys of the schema whose names are already taken in this database (expert review P2-7). Their names
      * are unique per database, not per table: an installation from before the prefixed names (fk_…) blocks a
      * second one without a prefix. Installation is not allowed then either.
@@ -156,11 +173,8 @@ final class Installer
         if (($error = self::validateType($operatorType)) !== null) {
             throw new \InvalidArgumentException($error);
         }
-        if ($conflicts = self::conflictingTables()) {
-            throw new \RuntimeException('Die Datenbank enthält bereits Tabellen mit gleichem Namen (' . implode(', ', $conflicts) . '). Bitte eine eigene, leere Datenbank verwenden.');
-        }
-        if ($conflicts = self::conflictingConstraints()) {
-            throw new \RuntimeException('Die Datenbank enthält bereits Fremdschlüssel mit gleichem Namen (' . implode(', ', $conflicts) . '). Bitte ein anderes Tabellenpräfix (db.prefix) oder eine eigene Datenbank verwenden.');
+        if ($conflicts = self::conflicts()) {
+            throw new \RuntimeException($conflicts[0]);
         }
         // DDL cannot be rolled back: if anything fails, the tables of this run are dropped again (none of them
         // existed before, see above), so the installation can simply be repeated (expert review P2-7)
@@ -183,6 +197,21 @@ final class Installer
             throw $e;
         }
         @file_put_contents(self::lockFile(), 'installed ' . $now . "\n");
+    }
+
+    /**
+     * install() for the web installer: null once installed, otherwise the message to show. A failed installation
+     * has dropped its tables again (see install()), so the form can be sent once more; the cause is logged.
+     */
+    public static function tryInstall(string $username, #[\SensitiveParameter] string $password, string $email, string $displayName, string $operatorType): ?string
+    {
+        try {
+            self::install($username, $password, $email, $displayName, $operatorType);
+            return null;
+        } catch (\Throwable $e) {
+            ErrorPage::log($e);
+            return __('Die Installation ist fehlgeschlagen ({reason}). Die dabei angelegten Tabellen wurden wieder entfernt; Sie können es nach der Behebung erneut versuchen.', ['reason' => ErrorPage::sanitize($e->getMessage())]);
+        }
     }
 
     /** Drops the tables of this installation that exist (after a failed installation, see install()). */

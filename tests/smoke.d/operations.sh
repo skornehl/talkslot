@@ -338,6 +338,7 @@ switch ($argv[1]) {
         App\Db::pdo()->exec('CREATE TABLE op_legacy (user_id INT UNSIGNED NOT NULL, CONSTRAINT fk_rounds_user FOREIGN KEY (user_id) REFERENCES tp_users (id)) ENGINE=InnoDB');
         $as('');
         echo 'conflicts=', implode(',', App\Installer::conflictingConstraints()), "\n";
+        echo 'web=', implode(' ', App\Installer::conflicts()), "\n";
         echo 'result=', $try(static fn () => App\Installer::install('ohnepraefix', 'Sehr-Sicheres-Zweit-Pw1', '', '', 'school')), "\n";
         echo 'tables=', implode(',', App\Installer::conflictingTables()), "\n";
         App\Db::pdo()->exec('DROP TABLE op_legacy');
@@ -349,7 +350,7 @@ switch ($argv[1]) {
         array_splice($statements, 4, 0, ["\nCREATE TABLE rounds_broken (id INT REFERENCES nowhere"]);
         file_put_contents($schema, implode(';', $statements));
         App\Installer::$schemaFile = $schema;
-        echo 'result=', $try(static fn () => App\Installer::install('kaputt', 'Sehr-Sicheres-Zweit-Pw1', '', '', 'school')), "\n";
+        echo 'result=', App\Installer::tryInstall('kaputt', 'Sehr-Sicheres-Zweit-Pw1', '', '', 'school') ?? 'installed', "\n";
         echo 'tables=', implode(',', App\Installer::conflictingTables()), "\n";
         unlink($schema);
         break;
@@ -371,11 +372,11 @@ check "the same prefix once more: refused because of its tables, nothing changed
 OP_DROP tp2_
 OP_PX=$($DC exec -T app php /srv/app/tests/.op-prefix.php legacy)
 check "a foreign key name of an older installation (fk_rounds_user) stops an installation without a prefix before it creates anything" \
-  'echo "$OP_PX" | grep -qx "conflicts=fk_rounds_user" && echo "$OP_PX" | grep -qx "result=Die Datenbank enthält bereits Fremdschlüssel mit gleichem Namen (fk_rounds_user). Bitte ein anderes Tabellenpräfix (db.prefix) oder eine eigene Datenbank verwenden." && echo "$OP_PX" | grep -qx "tables="' \
+  'echo "$OP_PX" | grep -qx "conflicts=fk_rounds_user" && echo "$OP_PX" | grep -q "^web=Die Datenbank enthält bereits Fremdschlüssel mit gleichem Namen (fk_rounds_user), vermutlich von einer älteren TalkSlot-Installation" && echo "$OP_PX" | grep -q "^result=Die Datenbank enthält bereits Fremdschlüssel mit gleichem Namen (fk_rounds_user)" && echo "$OP_PX" | grep -qx "tables="' \
   || echo "$OP_PX" | sed 's/^/    /'
 OP_PX=$($DC exec -T app php /srv/app/tests/.op-prefix.php failed)
 check "installation failing half-way: the tables it created are dropped again, so it can be repeated" \
-  'echo "$OP_PX" | grep -q "^result=SQLSTATE" && echo "$OP_PX" | grep -qx "tables=" && [ -z "$(DBQ "SHOW TABLES LIKE '"'"'tp4\_%'"'"'")" ]' \
+  'echo "$OP_PX" | grep -q "^result=Die Installation ist fehlgeschlagen (SQLSTATE\[42000\]: Syntax error" && echo "$OP_PX" | grep -q "Die dabei angelegten Tabellen wurden wieder entfernt" && echo "$OP_PX" | grep -qx "tables=" && [ -z "$(DBQ "SHOW TABLES LIKE '"'"'tp4\_%'"'"'")" ]' \
   || echo "$OP_PX" | sed 's/^/    /'
 OP_PX=$($DC exec -T app php /srv/app/tests/.op-prefix.php lock)
 check "locks: the name contains the database and the prefix, not only tp_migrate" '[ "$OP_PX" = "lock=yes|0|1|1" ]' || echo "    $OP_PX"
