@@ -104,7 +104,7 @@ final class Translator
     {
         foreach (['title', 'description', 'source_lang'] as $key) {
             if (!array_key_exists($key, $row)) {
-                throw new \LogicException("Translator::localize(): Feld „{$key}“ der Runde fehlt.");
+                throw new \LogicException("Translator::localize(): field \"{$key}\" of the round is missing.");
             }
         }
         $row['auto_translated'] = false;

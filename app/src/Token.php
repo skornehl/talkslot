@@ -24,6 +24,6 @@ final class Token
 
     public static function isWellFormed(#[\SensitiveParameter] string $plain): bool
     {
-        return (bool) preg_match('/^[A-Za-z0-9_-]{43}$/', $plain);
+        return (bool) preg_match('/^[A-Za-z0-9_-]{43}\z/', $plain);
     }
 }

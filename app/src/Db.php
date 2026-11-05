@@ -27,8 +27,8 @@ final class Db
     public static function tablePrefix(): string
     {
         $prefix = (string) Config::get('db.prefix', '');
-        if ($prefix !== '' && !preg_match('/^[A-Za-z0-9_]{1,20}$/', $prefix)) {
-            throw new \RuntimeException('config: db.prefix darf nur Buchstaben, Ziffern und _ enthalten');
+        if ($prefix !== '' && !preg_match('/^[A-Za-z0-9_]{1,20}\z/', $prefix)) {
+            throw new \RuntimeException('config: db.prefix may only contain letters, digits and _');
         }
         return $prefix;
     }

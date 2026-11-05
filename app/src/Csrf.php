@@ -27,7 +27,7 @@ final class Csrf
 
     public static function checkPublic(string $context, #[\SensitiveParameter] mixed $token, ?int $minAge = null): string
     {
-        if (!is_string($token) || !preg_match('/^(\d{10})\.([a-f0-9]{64})$/', $token, $m)) {
+        if (!is_string($token) || !preg_match('/^(\d{10})\.([a-f0-9]{64})\z/', $token, $m)) {
             return self::INVALID;
         }
         $expected = hash_hmac('sha256', 'pub|' . $context . '|' . $m[1], self::secret());
@@ -66,7 +66,7 @@ final class Csrf
     {
         $s = (string) Config::get('secret', '');
         if (strlen($s) < 32) {
-            throw new \RuntimeException('config: "secret" fehlt oder ist zu kurz');
+            throw new \RuntimeException('config: "secret" is missing or too short');
         }
         return $s;
     }

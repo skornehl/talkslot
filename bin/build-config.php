@@ -45,7 +45,7 @@ foreach ($checks as $k => $allowed) {
     }
 }
 $prefix = getenv('DB_PREFIX') !== false ? trim((string) getenv('DB_PREFIX')) : 'tp_';
-if ($prefix !== '' && !preg_match('/^[A-Za-z0-9_]{1,20}$/', $prefix)) {
+if ($prefix !== '' && !preg_match('/^[A-Za-z0-9_]{1,20}\z/', $prefix)) {
     fwrite(STDERR, "DB_PREFIX: only letters, digits and _ (at most 20 characters)\n");
     exit(1);
 }
@@ -72,7 +72,7 @@ $languages = $env('LANGUAGES') !== ''
     ? array_values(array_unique(array_filter(array_map('trim', explode(',', strtolower($env('LANGUAGES')))))))
     : array_values((array) $config['languages']);
 foreach ($languages as $l) {
-    if (!preg_match('/^[a-z]{2,3}$/', $l) || !is_file(dirname(__DIR__) . "/app/lang/$l.php")) {
+    if (!preg_match('/^[a-z]{2,3}\z/', $l) || !is_file(dirname(__DIR__) . "/app/lang/$l.php")) {
         fwrite(STDERR, "LANGUAGES: unknown language \"$l\" (there is no app/lang/$l.php)\n");
         exit(1);
     }

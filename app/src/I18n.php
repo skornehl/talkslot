@@ -97,7 +97,7 @@ final class I18n
         $bestQ = 0.0;
         foreach (explode(',', (string) ($_SERVER['HTTP_ACCEPT_LANGUAGE'] ?? '')) as $range) {
             // e.g. "tr-TR", "uk;q=0.8"; "*" and malformed ranges are skipped, q=0 means "not wanted"
-            if (!preg_match('/^\s*([a-z]{2,3})(?:-[a-z0-9]{1,8})*\s*(?:;\s*q\s*=\s*(0(?:\.\d{0,3})?|1(?:\.0{0,3})?))?\s*$/i', $range, $m)) {
+            if (!preg_match('/^\s*([a-z]{2,3})(?:-[a-z0-9]{1,8})*\s*(?:;\s*q\s*=\s*(0(?:\.\d{0,3})?|1(?:\.0{0,3})?))?\s*\z/i', $range, $m)) {
                 continue;
             }
             $code = strtolower($m[1]);

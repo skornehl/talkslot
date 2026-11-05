@@ -91,7 +91,7 @@ final class Alert
         try {
             $to = self::recipient();
             if ($to === null) {
-                ErrorPage::writeLog('Alert: kein Empfänger (config alert_email bzw. E-Mail des Admin-Kontos) – keine Meldung versendet');
+                ErrorPage::writeLog('Alert: no recipient (config alert_email or the e-mail address of the admin account) – no alert sent');
                 return false;
             }
             $suppressed = self::claim($key, $important);
@@ -104,7 +104,7 @@ final class Alert
                 ? (bool) (self::$transport)($to, $subject, $body)
                 : Mailer::send($to, $subject, $body);
             if (!$ok) {
-                ErrorPage::writeLog('Alert: Meldung konnte nicht versendet werden');
+                ErrorPage::writeLog('Alert: the alert could not be sent');
             }
             return $ok;
         } catch (\Throwable $e) {
@@ -218,7 +218,7 @@ final class Alert
     {
         $path = (string) parse_url($uri, PHP_URL_PATH);
         $parts = array_map(
-            static fn (string $s) => preg_match('/^(?:\d{1,9}|[a-z]{1,15})$/', $s) ? $s : '…',
+            static fn (string $s) => preg_match('/^(?:\d{1,9}|[a-z]{1,15})\z/', $s) ? $s : '…',
             array_values(array_filter(explode('/', $path), static fn ($s) => $s !== ''))
         );
         return (string) preg_replace('/[^A-Z]/', '', strtoupper($method)) . ' /' . implode('/', $parts);

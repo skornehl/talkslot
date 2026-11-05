@@ -106,6 +106,16 @@ function fmt_range(string $start, string $end): string
     return fmt_time($start) . '–' . fmt_time($end);
 }
 
+/**
+ * A DATETIME value for the admin area, e.g. "17.08.2026 14:05" ($format 'd.m.Y': the date alone). '' for an
+ * empty or unreadable value, where date() and strtotime() would show 01.01.1970.
+ */
+function fmt_datetime(?string $value, string $format = 'd.m.Y H:i'): string
+{
+    $ts = $value !== null && $value !== '' ? strtotime($value) : false;
+    return $ts === false ? '' : date($format, $ts);
+}
+
 /** Full appointment label, e.g. for emails and the browser remember-me entry. */
 function fmt_slot(string $date, string $start, string $end): string
 {

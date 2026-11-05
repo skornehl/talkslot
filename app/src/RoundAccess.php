@@ -19,7 +19,8 @@ final class RoundAccess
         if (array_key_exists('code_required', $round)) {
             return !empty($round['code_required']);
         }
-        // Transition during upload: new code, migration 10 not yet run → old PIN column
+        // Transition during upload: new code, migration 10 not yet run → old PIN column. Goes with 2.0, which
+        // requires v1.3.0 or newer (upgrade path, docs/guide/operations.md)
         return (string) ($round['access_pin'] ?? '') !== '';
     }
 
@@ -38,7 +39,7 @@ final class RoundAccess
 
     public static function validToken(array $round, #[\SensitiveParameter] mixed $token): bool
     {
-        if (!is_string($token) || !preg_match('/^(\d{10})\.([a-f0-9]{64})$/', $token, $m)) {
+        if (!is_string($token) || !preg_match('/^(\d{10})\.([a-f0-9]{64})\z/', $token, $m)) {
             return false;
         }
         $age = time() - (int) $m[1];

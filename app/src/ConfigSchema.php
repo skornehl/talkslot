@@ -110,7 +110,7 @@ final class ConfigSchema
         }
         // Without its file a language shows the raw text keys
         $languages = (array) self::value($config, 'languages');
-        $missing = array_filter($languages, static fn ($code): bool => !is_string($code) || !preg_match('/^[a-z]{2,3}$/', $code)
+        $missing = array_filter($languages, static fn ($code): bool => !is_string($code) || !preg_match('/^[a-z]{2,3}\z/', $code)
             || !is_file(APP_ROOT . '/app/lang/' . $code . '.php'));
         if (!$languages || $missing) {
             $shown = $missing ? implode(', ', array_map(self::shown(...), $missing)) : '–';
@@ -120,7 +120,7 @@ final class ConfigSchema
             ];
         }
         $prefix = self::value($config, 'db.prefix');
-        if (!is_string($prefix) || ($prefix !== '' && !preg_match('/^[A-Za-z0-9_]{1,20}$/', $prefix))) {
+        if (!is_string($prefix) || ($prefix !== '' && !preg_match('/^[A-Za-z0-9_]{1,20}\z/', $prefix))) {
             $errors[] = [
                 'en' => 'Configuration error: "db.prefix" may only contain letters, digits and _ (at most 20 characters).',
                 'de' => 'Fehler in der Konfiguration: „db.prefix“ darf nur Buchstaben, Ziffern und _ enthalten (höchstens 20 Zeichen).',
@@ -216,10 +216,10 @@ final class ConfigSchema
 
     private static function valid(array $spec, mixed $value): bool
     {
-        $int = is_int($value) ? $value : (is_string($value) && preg_match('/^-?\d{1,9}$/', $value) ? (int) $value : null);
+        $int = is_int($value) ? $value : (is_string($value) && preg_match('/^-?\d{1,9}\z/', $value) ? (int) $value : null);
         return match ($spec[0]) {
             'string', 'language' => is_string($value),
-            'url' => is_string($value) && preg_match('~^https?://[^/\s?#]+(/\S*)?$~i', $value) === 1,
+            'url' => is_string($value) && preg_match('~^https?://[^/\s?#]+(/\S*)?\z~i', $value) === 1,
             'email' => is_string($value) && ($value === '' || is_valid_email($value)),
             'bool' => is_bool($value) || $value === 0 || $value === 1,
             'int' => $int !== null && $int >= $spec[2] && ($spec[3] === null || $int <= $spec[3]),

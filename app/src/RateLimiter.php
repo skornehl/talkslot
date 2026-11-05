@@ -82,9 +82,4 @@ final class RateLimiter
     {
         Db::run('UPDATE rate_limits SET hits = GREATEST(hits - 1, 0) WHERE bucket = ? AND key_hash = ?', [$bucket, self::key($subject)]);
     }
-
-    public static function clear(string $bucket, ?string $subject = null): void
-    {
-        Db::run('DELETE FROM rate_limits WHERE bucket = ? AND key_hash = ?', [$bucket, self::key($subject)]);
-    }
 }

@@ -43,7 +43,7 @@ final class PasswordRules
             return true;
         }
         // "Sommer2024!!!!" → "sommer"; "P@ssw0rd-2024" → "p@ssw0rd" → "password"
-        $core = (string) preg_replace('/^[^\p{L}]+|[^\p{L}]+$/u', '', $lower);
+        $core = (string) preg_replace('/^[^\p{L}]+|[^\p{L}]+\z/u', '', $lower);
         $plain = strtr($core, ['0' => 'o', '1' => 'i', '3' => 'e', '4' => 'a', '5' => 's', '7' => 't', '@' => 'a', '$' => 's', '!' => 'i']);
         return mb_strlen($core) >= 4 && (isset($list[$core]) || isset($list[$plain]));
     }
@@ -52,7 +52,7 @@ final class PasswordRules
     public static function isPattern(#[\SensitiveParameter] string $password): bool
     {
         $lower = mb_strtolower($password);
-        if (count(array_unique(mb_str_split($lower))) < 5 || preg_match('/^(.+?)\1+$/su', $lower)) {
+        if (count(array_unique(mb_str_split($lower))) < 5 || preg_match('/^(.+?)\1+\z/su', $lower)) {
             return true;
         }
         $stripped = (string) preg_replace('/[^\p{L}\p{N}]+/u', '', $lower);
