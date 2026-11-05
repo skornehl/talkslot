@@ -186,8 +186,8 @@ final class Migrations
         'imprint-private.en' => 'f15521ceaa18e97c98190e448cc95eb6130c4cf571164b09819bb40dd7af22c8',
         'privacy.de' => '6a3e56b92970cd83352b6d4fbff9ff64fbb6765bf8d622c9c66cd5bb8812f374',
         'privacy.en' => '5c1350ac669db8120b946879389dd3cfb6bb1720a86aa523d6df95520c2b7878',
-        'privacy-private.de' => 'a91e6d899e2ca6d66eae227adc0fcc634c5fd9f5f88aa3f8dc4161637cd64cd4',
-        'privacy-private.en' => 'c3bbc77e4142176554ae4ebec892c1341dd39b0572962a85aa69e187a25dc59c',
+        'privacy-private.de' => '41e56d82edcfea69af044fbef9639ab5f3e0667d831450fa1f593bce0b6623a1',
+        'privacy-private.en' => 'a2305054d982c4c4aba8a97698209e7146a247e86f7875fdc0c79b51acd6bdab',
     ];
 
     /**
@@ -217,6 +217,10 @@ final class Migrations
             // The same with the cancellation by the teacher (interim state on main, schema version 21)
             '47c6e2a09756b3fd45840c2eca28ccab265ce3f1913bca70e8a6972e60324bbe',
             '02f09a8774e42c1b7c17ac6818f92a79879865e114456f36d0974f86f55d3b4b',
+            // Operator type (talkslot PR #38): the platform as controller "for all appointments booked through
+            // it", summary mails kept for 15 months as a record of the meetings
+            'a91e6d899e2ca6d66eae227adc0fcc634c5fd9f5f88aa3f8dc4161637cd64cd4',
+            'c3bbc77e4142176554ae4ebec892c1341dd39b0572962a85aa69e187a25dc59c',
             // Operator-type rework before the cancellation by the teacher (test installations only)
             '4a7a2d0b0c1bfb9c518d6aa6b69b079763df0210c2448262e788e8d8aeaf4780',
             '9073bf4cc5bc431f2e98298c4a1c4c680c0fcc1116d96892e5e427b7607cc809',

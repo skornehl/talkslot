@@ -230,6 +230,8 @@ final class AdminController
             'showOwner' => $all,
             // config.php readable for every user of the server (only admins can have that fixed)
             'configExposed' => Auth::isAdmin() ? \App\Config::exposedFiles() : [],
+            // Cron job late or never run (only admins can have it fixed)
+            'cron' => Auth::isAdmin() ? \App\CronMonitor::status() : null,
             'profileHints' => $this->profileHints(),
             'operatorMissing' => !Operator::ready(),
             'typeMissing' => !Auth::isAdmin() && Operator::ready() && Operator::type() === null,
@@ -1760,6 +1762,11 @@ final class AdminController
         }
         if (isset($mismatch['school'])) {
             $hints[] = __('Impressum bzw. Datenschutzerklärung ({languages}) enthalten noch Angaben der Vorlage für Schulen (Art. 6 Abs. 1 lit. e DSGVO, Schulgesetz, Datenschutzbeauftragte der Schule). Für eine privat betriebene Terminvergabe passen sie nicht – bitte mit der Vorlage „Privat betrieben“ abgleichen („Vorlage laden“ beim jeweiligen Text) oder die Betriebsart prüfen.', ['languages' => $list($mismatch['school'])]);
+        }
+        if (isset($mismatch['scope'])) {
+            // Operated privately, but the private template up to talkslot PR #39: the operator as controller for
+            // all booked appointments and a promised deletion of the summary mails in the teacher's mailbox
+            $hints[] = __('Die Datenschutzerklärung ({languages}) nennt den Betreiber noch als Verantwortlichen für „alle darüber gebuchten Termine“ und sagt vermutlich auch die Löschung der Zusammenfassungen im Postfach der Lehrkraft zu. Bei privatem Betrieb ist er nur für die Terminvergabe verantwortlich; für das Gespräch und das Postfach der Lehrkraft gelten die Regeln der Schule – bitte die Abschnitte 1, 4, 5 und 9 mit der Vorlage „Privat betrieben“ abgleichen („Vorlage laden“).', ['languages' => $list($mismatch['scope'])]);
         }
         if (isset($mismatch['anytime'])) {
             $hints[] = __('Die Datenschutzerklärung ({languages}) sagt noch, Eltern könnten ihren Termin „jederzeit“ selbst absagen. Das geht nur bis zur Änderungsfrist der Terminrunde – bitte den Satz in Abschnitt 9 an die Vorlage anpassen.', ['languages' => $list($mismatch['anytime'])]);

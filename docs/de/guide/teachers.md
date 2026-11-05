@@ -175,3 +175,7 @@ Unter *Mein Profil* legen Sie fest, ob Sie abends eine Übersicht über den näc
 Buchungsschluss eines Tages eine Übersicht erhalten. Sie enthalten Uhrzeit und Name, ohne die
 E-Mail-Adressen der Eltern, sowie eine Kalenderdatei. Antworten der Eltern auf ihre Bestätigungs-E-Mails
 gehen an Ihre E-Mail-Adresse (Reply-To).
+
+Nach dem Versand liegen diese E-Mails in Ihrem Postfach: Löschen Sie sie nach den Vorgaben Ihrer Schule,
+spätestens 15 Monate nach dem Termin. Verwenden Sie für Ihr Konto Ihre dienstliche E-Mail-Adresse, damit
+sie nicht in einem privaten Postfach landen.

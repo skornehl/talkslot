@@ -57,7 +57,7 @@ return [
     'privacy.summary.items' => [
         'Only the name you enter, the time slot and – optionally – your e-mail address are stored.',
         'Purpose: solely organising and holding the meeting. No sharing, no tracking, no cookies.',
-        'Your details are deleted from the booking service automatically on the day after the appointment, or immediately if you cancel. The appointment and name (without e-mail address) may remain in the teacher’s summary e-mails for at most 15 months.',
+        'Your details are deleted from the booking service automatically on the day after the appointment, or immediately if you cancel. The teacher also receives the appointment and name (without e-mail address) by e-mail. The privacy notice says how long these e-mails are kept.',
         'You have the right of access, rectification and erasure, among others.',
     ],
     'form.privacy.before' => 'I have read and taken note of the ',
@@ -129,7 +129,7 @@ return [
     'manage.cancel.submit' => 'Cancel appointment',
     'manage.locked' => 'Changes and cancellations are only possible online up to {hours} hours before the appointment. Please contact the teacher directly.',
     'manage.notfound' => 'Appointment not found. It may have been cancelled or automatically deleted after the appointment date.',
-    'manage.deletion' => 'Your details will be deleted from the booking service automatically on the day after the appointment. The appointment and name (without e-mail address) may remain in the teacher’s summary e-mails for at most 15 months.',
+    'manage.deletion' => 'Your details will be deleted from the booking service automatically on the day after the appointment. The teacher also receives the appointment and name (without e-mail address) by e-mail. The privacy notice says how long these e-mails are kept.',
 
     'cancelled.title' => 'Appointment cancelled',
     'cancelled.text' => 'Your appointment has been cancelled and your details deleted from the booking service.',

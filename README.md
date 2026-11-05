@@ -110,6 +110,9 @@ schools (GDPR/DSGVO, TDDDG) and multilingual families.
 **Operations**
 - Errors are caught, logged without personal data and **mailed to the operator** (throttled), including
   "database unreachable" (the site answers 503 with `Retry-After`).
+- A cron job that stops is noticed: after 3 hours without a completed run, admins see a warning on the
+  dashboard and the operator gets an alert mail, daily while it lasts (GitHub disables scheduled workflows
+  in public repositories after 60 days without activity).
 - Database migrations run automatically and only ever add columns/tables.
 - Table prefix (default `tp_`), so a database can be shared with other applications.
 
@@ -169,6 +172,7 @@ App: <http://localhost:8080>, admin: <http://localhost:8080/admin>. Mails end up
 - [ ] `install.php` no longer reachable (404); `config/config.php` not readable by others (600/640; the
   dashboard warns admins otherwise)
 - [ ] `debug` is `false`; `alert_email` set
+- [ ] Cron job runs (`php bin/cron.php -v` prints the counts; the dashboard warns admins if it stops)
 - [ ] Test booking with e-mail: mail arrives (not in spam)
 - [ ] Admin contact details, imprint and privacy policy (all languages) complete, no `[PLACEHOLDERS]` left
 - [ ] Operator type (school or private) matches who really runs TalkSlot
@@ -282,6 +286,7 @@ All options are documented in [`config/config.sample.php`](config/config.sample.
 | `access_link_hours` | `48` | validity of invitation/reset links |
 | `summary_evening_hour` | `18` | time of the evening summary |
 | `mail_queue` | see file | mails per cron run (`batch`), seconds per run (`seconds`), reminders, summaries and mails to many parents after a change per hour (`hourly_limit`, `0` = no limit), sending after the response with PHP-FPM (`after_response`) |
+| `cron_alert_hours` | `3` | warn admins and mail the operator after this many hours without a completed cron run (`0` = off) |
 | `rate_limits` | see file | generous, since many parents share an IP (mobile CGNAT, school Wi-Fi); mails to parents per teacher account and hour (`teacher_mail` from entries, `teacher_bulk` after a change of a day or round) |
 
 **Adding a language:** copy `app/lang/en.php` to e.g. `app/lang/it.php`, translate it, add the code to

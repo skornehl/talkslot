@@ -30,6 +30,13 @@ apart from the confirmations sent right away, no mail is sent while a visitor wa
 workflow calls it hourly). As a fallback, clean-up also runs on page views at most every 15 minutes, and
 with PHP-FPM or LiteSpeed a page view sends up to 10 waiting mails after its response.
 
+## How do I notice that the cron job has stopped?
+
+Once no cron run has completed for 3 hours, admins see a warning on the dashboard and the operator gets an
+alert mail, repeated daily while it lasts. A common cause: GitHub disables scheduled workflows in public
+repositories after 60 days without activity. See
+[cron monitoring]({{ '/guide/operations/' | relative_url }}#cron-monitoring).
+
 ## Which languages does the admin area speak?
 
 German and English. Every account picks its language under *Mein Profil* (*Sprache / Language*); mails to

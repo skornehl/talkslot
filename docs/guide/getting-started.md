@@ -31,6 +31,10 @@ dev/demo.sh        # optional: three demo rounds with bookings
 `dev/reset.sh` drops all tables and installs again (as *operated by the school*); run it whenever you want
 a clean state.
 
+The Docker environment has no cron job. About 3 hours after the first page view the dashboard therefore
+says that no completed run of the cron job has been recorded ([cron monitoring]({{ '/guide/operations/' | relative_url }}#cron-monitoring));
+`docker compose -f dev/compose.yml exec app php /srv/app/bin/cron.php` runs it once by hand.
+
 ## A first tour
 
 1. **Log in** as `sabrina`. She is an admin. Open *Texte* and look at *Angaben für Impressum und
