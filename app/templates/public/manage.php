@@ -5,6 +5,7 @@
  * @var string $csrf @var string $done @var bool $mailed @var bool $mailQueued @var bool $remember @var array $errors
  * @var string $open section whose form was sent with an error (move, cancel, mail): shown opened
  * @var string $mailTo address entered for the confirmation mail (only after an error)
+ * @var string $contact who parents can ask, e.g. once changes are only possible in person (App\ParentContact)
  */
 $label = fmt_slot($booking['day_date'], $booking['start_time'], $booking['end_time']);
 $manageUrl = url('/b/' . $token);
@@ -35,6 +36,7 @@ $doneText = ['booked' => 'manage.booked', 'changed' => 'manage.changed', 'sent' 
     <?php if (trim((string) ($booking['location'] ?? '')) !== ''): ?><dt><?= e(t('manage.location')) ?></dt><dd><?= e(trim((string) $booking['location'])) ?></dd><?php endif; ?>
     <dt><?= e(t('manage.name')) ?></dt><dd><?= e($booking['name']) ?></dd>
   </dl>
+  <?php if ($canChange): /* once changes are locked, the contact is part of that notice */ require __DIR__ . '/_contact.php'; endif; ?>
 </div>
 
 <?php /* Keeping the link: copy and share need JavaScript (hidden without it), the calendar file is a POST button */ ?>
@@ -70,7 +72,10 @@ $doneText = ['booked' => 'manage.booked', 'changed' => 'manage.changed', 'sent' 
 <p class="hint"><?= e(t('manage.deletion')) ?></p>
 
 <?php if (!$canChange): ?>
-  <p class="alert"><?= e(t('manage.locked', ['hours' => (int) $booking['cancel_deadline_hours']])) ?></p>
+  <div class="alert" data-locked>
+    <p><?= e(t('manage.locked', ['hours' => (int) $booking['cancel_deadline_hours']])) ?></p>
+    <?php $contactFallback = true; require __DIR__ . '/_contact.php'; ?>
+  </div>
 <?php else: ?>
   <?php /* Moving and cancelling folded away: right after booking, the slot list would be the first thing to see */ ?>
   <?php if ($canMove): ?>

@@ -119,7 +119,8 @@ schools (GDPR/DSGVO, TDDDG) and multilingual families.
 - A cron job that stops is noticed: after 12 hours (configurable) without a completed run, admins see a warning on the
   dashboard and the operator gets an alert mail, daily while it lasts (GitHub disables scheduled workflows
   in public repositories after 60 days without activity).
-- Database migrations run automatically and only ever add columns/tables.
+- Database migrations run automatically and are additive (columns, tables, indexes), so a rollback to the
+  previous version of the same major version keeps working.
 - Table prefix (default `tp_`), so a database can be shared with other applications.
 
 ## Requirements
@@ -248,8 +249,10 @@ all of them. If other users of your server could read the file (ask your web hos
 separated), change the secrets as described in
 [Changing secrets](https://skornehl.github.io/talkslot/guide/operations/#changing-secrets).
 
-The database is not rolled back. That is why migrations (`app/src/Migrations.php`) must only **add**
-columns with defaults and tables, so an older version keeps working with a newer schema.
+The database is not rolled back. That is why migrations (`app/src/Migrations.php`) only **add** columns
+with defaults, tables and indexes, so the previous version of the same major version keeps working with the
+newer schema. Renaming, dropping or changing the type of a column waits for a major version (see
+[Migrations](https://skornehl.github.io/talkslot/guide/development/#migrations)).
 
 ### Deploying from your own repository
 
@@ -364,7 +367,7 @@ values are listed for admins on the dashboard.
 
 ```bash
 php tests/unit.php      # unit tests, no database needed (also run in CI on PHP 8.3–8.5)
-tests/smoke.sh          # ~300 end-to-end checks against the local Docker setup, with tests/integration.php
+tests/smoke.sh          # several hundred end-to-end checks against the local Docker setup, with tests/integration.php
 node tests/browser.mjs  # the JavaScript in headless Chrome (after dev/reset.sh && dev/demo.sh)
 tests/deploy.sh         # atomic deployment via lftp file:// under load, switch-back on errors (needs lftp, openssl and the local DB)
 dev/phpstan.sh          # static analysis (PHPStan level 6 with a baseline)
@@ -390,7 +393,7 @@ app/              application (outside the document root)
   src/            classes (Db, Auth, BookingService, SlotGenerator, Cleanup, Mailer, …)
   src/Controller  public area and admin
   templates/      HTML templates, legal page templates (pages/*.md)
-  lang/           parent-facing translations
+  lang/           parent-facing translations; lang/admin/en/: English texts of the admin area
   data/           list of common passwords (from SecLists, MIT)
   vendor/         PHPMailer (bundled, only for SMTP)
   var/            runtime data: sessions, lock file, error log (no personal data)
@@ -409,7 +412,11 @@ Issues and pull requests are welcome. Please:
 - keep it dependency-free (no framework, no build step) and runnable on shared hosting;
 - add tests (`tests/unit.php` or `tests/smoke.sh`) for behaviour changes;
 - use [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, …);
-- make migrations additive (see *Rollback* above).
+- make migrations additive (see *Rollback* above);
+- report security issues privately, not in an issue (see [SECURITY.md](SECURITY.md)).
+
+The [development guide](https://skornehl.github.io/talkslot/guide/development/) describes the architecture
+(request flow, locking order, data lifecycle), the conventions and the rules for migrations.
 
 ## License
 
