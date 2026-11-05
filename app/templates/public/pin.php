@@ -23,6 +23,6 @@
       </div>
       <button type="submit" class="button button-primary"><?= e(t('pin.submit')) ?></button>
     </form>
-    <?php require __DIR__ . '/_contact.php'; ?>
+    <?php $contactFallback = true; require __DIR__ . '/_contact.php'; ?>
   </div>
 </article>

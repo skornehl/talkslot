@@ -14,4 +14,4 @@
 <?php else: ?>
   <p><a class="button" href="<?= e(url('/')) ?>"><?= e(t('error.home')) ?></a></p>
 <?php endif; ?>
-<?php require __DIR__ . '/_contact.php'; ?>
+<?php $contactFallback = true; require __DIR__ . '/_contact.php'; ?>

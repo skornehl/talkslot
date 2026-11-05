@@ -34,9 +34,9 @@ final class ParentContact
         Settings::set(self::SETTING, self::clean($contact));
     }
 
-    /** One line: control characters and line breaks become spaces, runs of spaces one. */
+    /** One line: control characters and line breaks become spaces, runs of spaces one (other characters stay, e.g. emoji). */
     public static function clean(string $contact): string
     {
-        return trim((string) preg_replace('/[\p{C}\s]+/u', ' ', $contact));
+        return trim((string) preg_replace('/[\p{Cc}\p{Zl}\p{Zp}\s]+/u', ' ', $contact));
     }
 }

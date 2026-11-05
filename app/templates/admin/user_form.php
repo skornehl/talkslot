@@ -27,7 +27,7 @@
   <div class="field">
     <label for="username"><?= e(__('Benutzername (Login)')) ?><?php if (!$user): ?> <span class="muted small"><?= e(__('(optional)')) ?></span><?php endif; ?></label>
     <input type="text" id="username" name="username"<?= $user ? ' required' : '' ?> maxlength="254" autocapitalize="none" spellcheck="false" autocomplete="off" value="<?= e($data['username']) ?>"<?= $user ? '' : ' aria-describedby="un-hint"' ?>>
-    <?php if (!$user): ?><p class="hint" id="un-hint"><?= e(__('Leer = die E-Mail-Adresse. Ein eigener Benutzername (z. B. „mmuster“) ist schwerer zu erraten, denn die E-Mail-Adresse sehen Eltern, wenn sie auf eine E-Mail antworten. Er steht in der Einladung.')) ?></p><?php endif; ?>
+    <?php if (!$user): ?><p class="hint" id="un-hint"><?= e(__('Wenn leer, ist die E-Mail-Adresse der Benutzername. Sicherer ist ein eigener Name (z. B. „mmuster“), weil Eltern die E-Mail-Adresse sehen können. Der Benutzername steht in der Einladung.')) ?></p><?php endif; ?>
   </div>
   <?php if (!$isSelf): ?>
   <fieldset class="field">

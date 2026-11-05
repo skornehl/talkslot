@@ -26,15 +26,14 @@
       <p class="hint" id="rt-hint"><?= e(__('Antworten der Eltern auf E-Mails zu ihrem Termin gehen an diese Adresse statt an Ihre E-Mail-Adresse, z. B. an Ihre dienstliche Adresse. Eltern sehen sie, sobald sie antworten.')) ?></p>
     </div>
     <div class="field">
-      <label for="parent_contact"><?= e(__('Kontakt für Eltern bei Fragen')) ?> <span class="muted small"><?= e(__('(optional)')) ?></span></label>
-      <input type="text" id="parent_contact" name="parent_contact" maxlength="<?= App\ParentContact::MAX_LENGTH ?>" value="<?= e($data['parent_contact'] ?? '') ?>" placeholder="<?= e(__('z. B. Sekretariat, Tel. 01234 5678 (Mo–Fr 8–12 Uhr)')) ?>" aria-describedby="pc-hint">
-      <p class="hint" id="pc-hint"><?= e(($generalContact ?? '') !== ''
-          ? __('Steht auf der Buchungsseite Ihrer Runden und auf der Seite gebuchter Termine, damit Eltern wissen, an wen sie sich wenden können, z. B. wenn alle Termine vergeben sind oder die Frist für Änderungen abgelaufen ist. Leer = der Kontakt für alle: {contact}', ['contact' => $generalContact])
-          : __('Steht auf der Buchungsseite Ihrer Runden und auf der Seite gebuchter Termine, damit Eltern wissen, an wen sie sich wenden können, z. B. wenn alle Termine vergeben sind oder die Frist für Änderungen abgelaufen ist.')) ?></p>
-    </div>
-    <div class="field">
       <label for="current_password_email"><?= e(__('Aktuelles Passwort')) ?> <span class="muted small"><?= e(__('(nur nötig, wenn Sie eine der beiden Adressen ändern)')) ?></span></label>
       <input type="password" id="current_password_email" name="current_password" autocomplete="current-password">
+    </div>
+    <div class="field">
+      <label for="parent_contact"><?= e(__('Kontakt für Eltern bei Fragen')) ?> <span class="muted small"><?= e(__('(optional)')) ?></span></label>
+      <input type="text" id="parent_contact" name="parent_contact" maxlength="<?= App\ParentContact::MAX_LENGTH ?>" value="<?= e($data['parent_contact'] ?? '') ?>" placeholder="<?= e(__('z. B. Sekretariat, Telefon 01234 5678, montags bis freitags 8 bis 12 Uhr')) ?>" aria-describedby="pc-hint">
+      <p class="hint" id="pc-hint"><?= e(__('Eltern sehen diesen Text auf der Buchungsseite Ihrer Runden und bei ihrem Termin, z. B. wenn alle Termine vergeben sind. Jeder mit dem Link kann ihn lesen, bitte keine private Telefonnummer. Er wird nicht übersetzt.')) ?>
+        <?= e(($generalContact ?? '') !== '' ? __('Ohne Eintrag sehen Eltern den allgemeinen Kontakt: {contact}', ['contact' => $generalContact]) : __('Ohne Eintrag sehen Eltern keinen Kontakt.')) ?></p>
     </div>
     <div class="field">
       <label for="lang">Sprache / Language</label>

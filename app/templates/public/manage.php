@@ -36,7 +36,7 @@ $doneText = ['booked' => 'manage.booked', 'changed' => 'manage.changed', 'sent' 
     <?php if (trim((string) ($booking['location'] ?? '')) !== ''): ?><dt><?= e(t('manage.location')) ?></dt><dd><?= e(trim((string) $booking['location'])) ?></dd><?php endif; ?>
     <dt><?= e(t('manage.name')) ?></dt><dd><?= e($booking['name']) ?></dd>
   </dl>
-  <?php require __DIR__ . '/_contact.php'; ?>
+  <?php if ($canChange): /* once changes are locked, the contact is part of that notice */ require __DIR__ . '/_contact.php'; endif; ?>
 </div>
 
 <?php /* Keeping the link: copy and share need JavaScript (hidden without it), the calendar file is a POST button */ ?>
@@ -72,7 +72,10 @@ $doneText = ['booked' => 'manage.booked', 'changed' => 'manage.changed', 'sent' 
 <p class="hint"><?= e(t('manage.deletion')) ?></p>
 
 <?php if (!$canChange): ?>
-  <p class="alert"><?= e(t('manage.locked', ['hours' => (int) $booking['cancel_deadline_hours']])) ?></p>
+  <div class="alert" data-locked>
+    <p><?= e(t('manage.locked', ['hours' => (int) $booking['cancel_deadline_hours']])) ?></p>
+    <?php $contactFallback = true; require __DIR__ . '/_contact.php'; ?>
+  </div>
 <?php else: ?>
   <?php /* Moving and cancelling folded away: right after booking, the slot list would be the first thing to see */ ?>
   <?php if ($canMove): ?>

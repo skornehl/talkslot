@@ -1531,7 +1531,9 @@ final class AdminController
         ];
         // New accounts: the username the admin chose, otherwise the e-mail address (expert review P2-1: a username
         // other than the address that parents see as Reply-To is harder to guess). Freely changeable when editing.
-        $data['username'] = $user || Http::post('username') !== '' ? Http::post('username') : $data['email'];
+        $data['username'] = Http::post('username');
+        // As entered for the form after an error; the fallback to the address only for checking and saving
+        $username = $user || $data['username'] !== '' ? $data['username'] : $data['email'];
         if ($isSelf) {
             // own activation cannot be changed (otherwise locking oneself out would be possible)
             $data['is_active'] = 1;
@@ -1548,9 +1550,11 @@ final class AdminController
             // Only for a new or changed address: an account from before the rule can still be edited or deactivated
             $errors[] = $error;
         }
-        if (!Auth::validUsername($data['username'])) {
+        // A username left empty is the e-mail address, checked above. A chosen one must not be another account's
+        // username or e-mail address either: "forgot password" and the address checks look at both
+        if (($user || $data['username'] !== '') && !Auth::validUsername($username)) {
             $errors[] = __('Benutzername: 3–254 Zeichen, nur Buchstaben, Ziffern und . _ @ + -');
-        } elseif (Db::value('SELECT id FROM users WHERE username = ? AND id <> ?', [$data['username'], $id ?? 0]) !== null) {
+        } elseif ($username !== $data['email'] && $this->emailTaken($username, $id ?? 0)) {
             $errors[] = __('Für diese E-Mail-Adresse bzw. diesen Benutzernamen gibt es bereits ein Konto.');
         }
         // Admin rights and e-mail addresses: only with the password of the acting admin
@@ -1566,7 +1570,7 @@ final class AdminController
             // At least one active admin must remain (checked under a lock, see AccountSecurity)
             $saved = AccountSecurity::keepingAnAdmin((int) $id, $data['role'] === 'admin' && $data['is_active'] === 1, static fn () => Db::run(
                 'UPDATE users SET username = ?, display_name = ?, email = ?, role = ?, is_active = ?, lang = ? WHERE id = ?',
-                [$data['username'], $data['display_name'], $data['email'], $data['role'], $data['is_active'], $data['lang'], $id]
+                [$username, $data['display_name'], $data['email'], $data['role'], $data['is_active'], $data['lang'], $id]
             ));
             if (!$saved) {
                 $this->userForm($id, [__('Es muss mindestens ein aktives Admin-Konto geben.')], $data);
@@ -1577,7 +1581,7 @@ final class AdminController
                 $data['role'] !== $user['role'] ? __('Rolle jetzt {role}', ['role' => self::roleLabel($data['role'])]) : '',
                 $data['is_active'] !== (int) $user['is_active'] ? ($data['is_active'] ? __('aktiviert') : __('deaktiviert')) : '',
                 $data['display_name'] !== $user['display_name'] ? __('Name jetzt „{name}“', ['name' => $data['display_name']]) : '',
-                $data['email'] !== (string) $user['email'] || $data['username'] !== $user['username'] ? __('E-Mail/Benutzername geändert') : '',
+                $data['email'] !== (string) $user['email'] || $username !== $user['username'] ? __('E-Mail/Benutzername geändert') : '',
             ]);
             $this->audit(fn () => __('Konto {account} bearbeitet', ['account' => self::accountLabel($user)]) . ($changes() ? ': ' . implode(', ', $changes()) : ''));
             $after = $data + $user;
@@ -1593,7 +1597,7 @@ final class AdminController
             $id = Db::insert(
                 'INSERT INTO users (username, password_hash, role, display_name, email, lang, is_active, created_at)
                  VALUES (?, ?, ?, ?, ?, ?, 1, ?)',
-                [$data['username'], AccountLinks::unusablePasswordHash(), $data['role'], $data['display_name'], $data['email'], $data['lang'], Time::nowSql()]
+                [$username, AccountLinks::unusablePasswordHash(), $data['role'], $data['display_name'], $data['email'], $data['lang'], Time::nowSql()]
             );
             $this->audit(fn () => __('Konto {account} angelegt ({role}) und eingeladen', ['account' => self::accountLabel($data), 'role' => self::roleLabel($data['role'])]));
             $this->linkFlash($this->userById($id), AccountLinks::INVITE);
@@ -2019,8 +2023,10 @@ final class AdminController
             $this->flash('error', __('Kontakt für Eltern: höchstens {max} Zeichen.', ['max' => ParentContact::MAX_LENGTH]));
             Http::redirect('/admin/texts');
         }
-        ParentContact::saveGeneral($contact);
-        $this->audit(fn () => $contact !== '' ? __('Kontakt für Eltern geändert: {contact}', ['contact' => $contact]) : __('Kontakt für Eltern entfernt'));
+        if ($contact !== ParentContact::general()) {
+            ParentContact::saveGeneral($contact);
+            $this->audit(fn () => $contact !== '' ? __('Kontakt für Eltern geändert: {contact}', ['contact' => $contact]) : __('Kontakt für Eltern entfernt'));
+        }
         $this->flash('success', __('Kontakt für Eltern gespeichert.'));
         Http::redirect('/admin/texts');
     }

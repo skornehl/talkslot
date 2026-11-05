@@ -76,7 +76,9 @@ final class PublicController
                 $errors[] = t(preg_match('/^\d{4,12}$/', (string) preg_replace('/\s+/', '', $input)) ? 'err.code_pin' : 'err.code');
             }
         }
-        View::render('public/home', ['title' => t('home.title'), 'errors' => $errors, 'code' => mb_substr($input, 0, 20)]);
+        View::render('public/home', ['title' => t('home.title'), 'errors' => $errors, 'code' => mb_substr($input, 0, 20),
+            // A wrong code: who parents can ask (ParentContact)
+            'contact' => $errors ? ParentContact::general() : '']);
     }
 
     private function page(string $key): void

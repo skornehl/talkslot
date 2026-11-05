@@ -27,9 +27,9 @@ $behind = static fn (string $page): string => isset($outdated[$page])
   <form method="post" action="<?= e(url('/admin/texts/contact')) ?>" class="form-grid">
     <?= Csrf::adminField() ?>
     <div class="field">
-      <label for="parent_contact"><?= e(__('Kontakt für alle Runden')) ?> <span class="muted small"><?= e(__('(optional)')) ?></span></label>
-      <input type="text" id="parent_contact" name="parent_contact" maxlength="<?= App\ParentContact::MAX_LENGTH ?>" value="<?= e($parentContact ?? '') ?>" placeholder="<?= e(__('z. B. Sekretariat, Tel. 01234 5678 (Mo–Fr 8–12 Uhr)')) ?>" aria-describedby="gpc-hint">
-      <p class="hint" id="gpc-hint"><?= e(__('Eltern sehen ihn, wenn sie nicht weiterkommen: auf der Seite „Nicht gefunden“ (z. B. bei einem vertippten Link), bei Runden mit Rundencode vor der Eingabe des Codes und bei allen Runden von Lehrkräften, die unter „Mein Profil“ keinen eigenen Kontakt angegeben haben. Bitte keine privaten Telefonnummern.')) ?></p>
+      <label for="parent_contact"><?= e(__('Allgemeiner Kontakt (z. B. Sekretariat)')) ?> <span class="muted small"><?= e(__('(optional)')) ?></span></label>
+      <input type="text" id="parent_contact" name="parent_contact" maxlength="<?= App\ParentContact::MAX_LENGTH ?>" value="<?= e($parentContact ?? '') ?>" placeholder="<?= e(__('z. B. Sekretariat, Telefon 01234 5678, montags bis freitags 8 bis 12 Uhr')) ?>" aria-describedby="gpc-hint">
+      <p class="hint" id="gpc-hint"><?= e(__('Eltern sehen ihn, wenn sie nicht weiterkommen: auf der Seite „Nicht gefunden“ (z. B. bei einem vertippten Link), bei Runden mit Rundencode vor der Eingabe des Codes und bei allen Runden von Lehrkräften, die unter „Mein Profil“ keinen eigenen Kontakt angegeben haben. Er wird nicht übersetzt: bitte kurz und ohne Abkürzungen. Ohne Eintrag verweist die Seite auf das Impressum.')) ?></p>
     </div>
     <div class="actions"><button type="submit" class="button button-primary"><?= e(__('Speichern')) ?></button></div>
   </form>

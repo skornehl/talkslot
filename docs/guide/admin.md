@@ -28,8 +28,9 @@ itself, otherwise the private person, association or independent provider whose 
    own e-mail address and check that the confirmation arrives (and is not marked as spam).
 5. **Contact for parents** (*Texte → Kontakt für Eltern bei Fragen*, optional): for example the school
    office with its phone number and hours. Parents see it when they are stuck: on the "not found" page, on
-   rounds with a round code before the code is entered, and on the rounds of teachers who have not given a
-   contact of their own in their profile.
+   rounds with a round code before the code is entered, after a wrong code on the start page, and on the
+   rounds of teachers who have not given a contact of their own in their profile. It is not translated, so
+   keep it short and without abbreviations. Without any contact, these places refer parents to the imprint.
 6. **Templates** (*Vorlagen*, optional): set up the usual formats once, e.g. your parent-teacher day.
 7. **Invite teachers** and, if you like, further admins (*Benutzer*).
 
@@ -53,7 +54,7 @@ Under *Benutzer* (users) → *+ Neuer Benutzer* (new user) enter **name and e-ma
 **role** (*Rolle*): *Lehrkraft* (teacher, manages their own rounds) or *Admin*. The person
 receives an **invitation mail** with a link to set their own password (single use, valid for 48 hours by
 default). No password is ever sent by mail. The username is the e-mail address, unless you enter one of
-its own under *Benutzername (Login)* (*Username*): that is harder to guess, as parents see the e-mail
+its own under *Benutzername (Login)* (*Username (sign-in)*): that is harder to guess, as parents see the e-mail
 address when they reply to a mail; the invitation names it. If the mail cannot be
 sent, you only see a hint, not the link (with it you could set the password of somebody else's account):
 check the mail delivery (*Texte → E-Mail-Versand*) and send the invitation again.

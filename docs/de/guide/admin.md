@@ -30,8 +30,10 @@ des deutschen Admin-Bereichs; jedes Konto kann ihn unter *Mein Profil* auf Engli
    Spam markiert wird).
 5. **Kontakt für Eltern** (*Texte → Kontakt für Eltern bei Fragen*, optional): z. B. das Sekretariat mit
    Telefonnummer und Zeiten. Eltern sehen ihn, wenn sie nicht weiterkommen: auf der Seite „Nicht gefunden“,
-   bei Runden mit Rundencode vor der Eingabe des Codes und bei den Runden von Lehrkräften, die in ihrem
-   Profil keinen eigenen Kontakt angegeben haben.
+   bei Runden mit Rundencode vor der Eingabe des Codes, nach einem falschen Code auf der Startseite und bei
+   den Runden von Lehrkräften, die in ihrem Profil keinen eigenen Kontakt angegeben haben. Er wird nicht
+   übersetzt, also bitte kurz und ohne Abkürzungen. Ohne jeden Kontakt verweisen diese Stellen auf das
+   Impressum.
 6. ***Vorlagen*** (optional): die üblichen Formate einmal anlegen, z. B. Ihren Elternsprechtag.
 7. **Lehrkräfte einladen** und bei Bedarf weitere Admins (*Benutzer*).
 
