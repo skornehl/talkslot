@@ -43,8 +43,9 @@ the German ones, with the English label in brackets.
   **round code required** (*Nur mit Rundencode*).
 - **Active**: parents can book. Inactive rounds take no bookings, but parents can still cancel. While no
   round can be activated yet (for example because the admins still have to fill in the placeholders of the
-  legal texts), the form says why next to the checkbox and a new round starts inactive: save it like that,
-  prepare everything, and activate it later on the round's page.
+  legal texts), the form says why below the checkbox and a new round starts inactive. Save it like that,
+  prepare everything, and activate it on the round page (*Aktivieren*) once the notice on the overview is
+  gone.
 
 ![New round form]({{ '/assets/img/admin-round-form.webp' | relative_url }})
 

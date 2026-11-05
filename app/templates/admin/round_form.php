@@ -1,6 +1,6 @@
 <?php
 /** @var ?array $round @var array $data @var array $dayData @var array $errors @var array $parents upcoming bookings of the round, how many can be mailed
- * @var ?string $activationBlocked why rounds cannot be activated yet (null = they can) */
+ * @var ?string $activationBlocked why rounds cannot be activated yet and that the round can be saved inactive (null = they can) */
 use App\Csrf;
 $action = $round ? url('/admin/round/' . (int) $round['id'] . '/edit') : url('/admin/round/new');
 ?>
@@ -140,7 +140,7 @@ $action = $round ? url('/admin/round/' . (int) $round['id'] . '/edit') : url('/a
     <label for="is_active"><?= e(__('Aktiv (Eltern können über den Link buchen)')) ?></label>
   </div>
   <?php if (($activationBlocked ?? null) !== null): /* the reason, and that saving without "Aktiv" works meanwhile */ ?>
-    <p class="hint hint-indent" id="active-hint" data-activation-blocked><?= e($activationBlocked) ?> <?= e(__('Bis dahin können Sie die Runde ohne Häkchen bei „Aktiv“ speichern und alles vorbereiten; aktivieren Sie sie später auf der Seite der Runde.')) ?></p>
+    <p class="hint hint-indent" id="active-hint" data-activation-blocked><?= e($activationBlocked) ?></p>
   <?php endif; ?>
 
   <div class="actions">
