@@ -98,7 +98,7 @@ echo "Legal texts: notes depend on the operator type\n";
 $mis = [App\LegalTexts::class, 'mismatches'];
 check('operated by the school: the old template (private service, cancelling "at any time") – only there',
     $mis($v15, 'school') === ['old'] && $mis($legalFixture('privacy.en.v1.5'), 'school') === ['old'] && $mis($legalTpl('imprint-private.de'), 'school') === ['old']
-    && $mis($v15, 'private') === ['anytime'] && $mis($legalTpl('imprint-private.de'), 'private') === [] && $mis($v15, null) === ['anytime']);
+    && $mis($v15, 'private') === ['scope', 'anytime'] && $mis($legalTpl('imprint-private.de'), 'private') === [] && $mis($v15, null) === ['anytime']);
 check('operated by the school: legal bases of a private operator (Art. 6(1)(b), (f)), not the school templates',
     $mis($privateDe, 'school') === ['private'] && $mis($privateEn, 'school') === ['private'] && $mis($legalTpl('privacy.de'), 'school') === []
     && $mis($legalTpl('privacy.en'), 'school') === [] && $mis($legalTpl('imprint.de'), 'school') === []);
@@ -106,6 +106,12 @@ check('operated privately: wording of the school template (Art. 6(1)(e), school 
     $mis($legalTpl('privacy.de'), 'private') === ['school'] && $mis($legalTpl('privacy.en'), 'private') === ['school']
     && $mis('**Datenschutzbeauftragter der Schule:** Herr Muster', 'private') === ['school'] && $mis("The school's data protection officer", 'private') === ['school']
     && $mis($privateDe, 'private') === [] && $mis($privateEn, 'private') === [] && $mis($legalTpl('imprint.de'), 'private') === []);
+// Talkslot PR #39: operated privately, the operator is the controller for the booking service only, not for the
+// meeting and the teacher's mailbox; private texts from before still say "all appointments booked through it"
+check('operated privately: the private template up to PR #39 (controller for all booked appointments) – only there',
+    $mis($legalFixture('privacy-private.de.v1.7'), 'private') === ['scope'] && $mis('The controller … for this booking service and all appointments booked through it is:', 'private') === ['scope']
+    && $mis($privateDe, 'private') === [] && $mis($legalTpl('privacy.de'), 'private') === ['school'] && $mis($legalTpl('privacy.de'), 'school') === []
+    && $mis($legalFixture('privacy-private.de.v1.7'), null) === []);
 check('no type chosen yet: only cancelling "at any time", nothing about the school or private wording',
     $mis($legalTpl('privacy.de'), null) === [] && $mis($privateDe, null) === [] && $mis('You can cancel your appointment yourself at any time.', null) === ['anytime']);
 

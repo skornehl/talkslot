@@ -39,6 +39,7 @@ LGT=$(mktemp)
 cp "$ROOT/tests/fixtures/privacy.de.v1.5.md" "$LGT"; printf '\nGeändert.\n' >> "$LGT"; lg_put privacy de "$LGT"
 D=$(curl -s -b "$J" "$B/admin")
 check "privately operated, edited text up to v1.5: note on \"at any time\" only, not on the old template" 'echo "$D" | grep -qF "Die Datenschutzerklärung (DE) sagt noch, Eltern könnten ihren Termin „jederzeit“ selbst absagen." && ! echo "$D" | grep -qF "folgen noch der alten Vorlage"'
+check "privately operated, edited text up to v1.5: note that the operator is named as controller for all booked appointments" 'echo "$D" | grep -qF "Die Datenschutzerklärung (DE) nennt den Betreiber noch als Verantwortlichen für „alle darüber gebuchten Termine“" && ! echo "$D" | grep -qF "Die Datenschutzerklärung (EN) nennt den Betreiber"'
 
 # Back to "school": the unedited private legal notice follows again; a private privacy policy gets a note
 check "changed to school: unedited legal notice back to the school template, the old private text gets its note" 'lg_save school | grep -qF "2 unveränderte Vorlagentexte" && [ "$(lg_type)" = school/- ] && [ "$(lg_hash imprint de)" = "$(lg_file imprint.de)" ] && curl -s -b "$J" "$B/admin" | grep -qF "Impressum bzw. Datenschutzerklärung (DE) folgen noch der alten Vorlage"'

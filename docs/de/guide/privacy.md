@@ -17,7 +17,7 @@ TDDDG. Diese Seite erläutert die Designentscheidungen; sie ist keine Rechtsbera
 | Gekürzte, per HMAC gehashte IP-Adressen; HMAC-Hashes von Konto-IDs und Geräte-Cookies mit fehlgeschlagenen Anmeldungen | Datenbank (Rate Limiting) | spätestens nach 24 Stunden |
 | Geräte-Cookie eines Admin- oder Lehrkraft-Kontos (Zufallszahl, Zeitpunkt, Signatur) | Browser der Person | nach 365 Tagen, bei jeder Anmeldung erneuert |
 | Konten der Lehrkräfte | Datenbank | durch einen Admin; inaktive Konten ohne Runden in Gebrauch 15 Monate nach der letzten Anmeldung, zusammen mit ihren Entwürfen |
-| Zusammenfassungen per E-Mail an Lehrkräfte (Uhrzeit und Name, keine E-Mail-Adressen) | Postfach der Lehrkraft | die Datenschutzerklärung sagt höchstens 15 Monate zu |
+| Zusammenfassungen per E-Mail an Lehrkräfte (Uhrzeit und Name, keine E-Mail-Adressen) | Postfach der Lehrkraft | von der Schule betrieben: die Datenschutzerklärung sagt höchstens 15 Monate zu; privat betrieben: Vorgaben der Schule (die Vorlage empfiehlt 15 Monate) |
 | Protokoll der Änderungen durch Admins (wer, wann, was; keine Daten von Eltern) | Datenbank | nach 90 Tagen (`audit_log_days`) |
 
 TalkSlot führt **keine** eigenen Zugriffsprotokolle. Für die Logs des Webservers ist der Hoster
@@ -133,7 +133,7 @@ Datenschutz* ändern.
 | Betriebsart | Verantwortlich | Vorlage der Datenschutzerklärung | Vorlage des Impressums |
 |---|---|---|---|
 | *Wird von der Schule betrieben*: eine staatliche Schule als öffentliche Stelle | die Schule | Art. 6 Abs. 1 lit. e, Abs. 3 DSGVO in Verbindung mit dem Schulgesetz Ihres Landes (Buchung, E-Mails, Zusammenfassungen) und dem Landesdatenschutzgesetz (Missbrauchsschutz, Server-Protokolle); Datenschutzbeauftragte der Schule; Widerspruchsrecht nach Art. 21, kein Recht auf Datenübertragbarkeit (Art. 20 Abs. 3) | die Schule als Anbieter |
-| *Wird privat betrieben*: eine Privatperson, ein Verein oder ein freier Träger (z. B. eine Schule in freier Trägerschaft) | der Betreiber; Lehrkräfte nutzen das Angebot | Art. 6 Abs. 1 lit. b und f DSGVO; Widerspruchsrecht für lit. f, Recht auf Datenübertragbarkeit; bei Privatpersonen in der Regel keine Datenschutzbeauftragte, mit einem Platzhalter, um das zu prüfen | ein privates, nicht kommerzielles Angebot (wie bis v1.5) |
+| *Wird privat betrieben*: eine Privatperson, ein Verein oder ein freier Träger (z. B. eine Schule in freier Trägerschaft) | der Betreiber, für die Terminvergabe; das Gespräch selbst, die Zusammenfassungen im Postfach der Lehrkraft und Ausdrucke gehören zur Tätigkeit der Lehrkraft an ihrer Schule (verantwortlich ist in der Regel die Schule, es gelten deren Vorgaben) | Art. 6 Abs. 1 lit. b und f DSGVO; Widerspruchsrecht für lit. f, Recht auf Datenübertragbarkeit; bei Privatpersonen in der Regel keine Datenschutzbeauftragte, mit einem Platzhalter, um das zu prüfen | ein privates, nicht kommerzielles Angebot (wie bis v1.5) |
 
 Behörden können sich bei der Erfüllung ihrer Aufgaben nicht auf berechtigte Interessen stützen (Art. 6
 Abs. 1 Unterabs. 2 DSGVO), und Gespräche an einer staatlichen Schule gehören zu ihren gesetzlichen Aufgaben,
@@ -177,14 +177,26 @@ Vor dem Start:
      Hostingvertrag), braucht die Schule mit dieser Person eine Vereinbarung nach Art. 28 DSGVO (Weisungen,
      Vertraulichkeit, Hoster als Unterauftragsverarbeiter, Übergabe aller Zugänge, Löschung bei
      Betriebsende), oder die Schule bzw. der Schulträger schließt den Hostingvertrag selbst ab.
-   - **Privat betrieben:** Der Betreiber (Sie selbst, Ihr Verein oder Ihr Träger) ist Verantwortlicher;
-     Lehrkräfte nutzen das Angebot für ihre Elterngespräche. Schulen können eigene Vorgaben haben, welche
-     Dienste ihre Lehrkräfte nutzen dürfen; Lehrkräfte sollten das mit ihrer Schulleitung oder der oder dem
-     Datenschutzbeauftragten der Schule klären. Ist für den Betreiber eine Datenschutzbeauftragte bzw. ein
-     Datenschutzbeauftragter benannt, nennen Sie sie bzw. ihn in der Datenschutzerklärung statt des Satzes,
-     dass niemand benannt ist. Die Vorlage des Impressums ist auf eine Privatperson zugeschnitten: Ein Verein
-     oder freier Träger ergänzt die vertretungsberechtigte Person und, falls vorhanden, den Registereintrag
-     (§ 5 DDG).
+   - **Privat betrieben:** Der Betreiber (Sie selbst, Ihr Verein oder Ihr Träger) ist Verantwortlicher für die
+     Terminvergabe einschließlich der E-Mails, die sie verschickt; Lehrkräfte nutzen das Angebot für ihre
+     Elterngespräche. Das Gespräch selbst, Notizen, die Zusammenfassungen im Postfach der Lehrkraft und
+     Ausdrucke gehören zur Arbeit der Lehrkraft an ihrer Schule: Verantwortlich ist dafür in der Regel die
+     Schule, es gelten deren Regeln (die Vorlage empfiehlt, die Zusammenfassungen nach höchstens 15 Monaten zu
+     löschen). Lehrkräfte sollten für ihr Konto die dienstliche E-Mail-Adresse angeben; sonst landen die
+     Zusammenfassungen in einem privaten Postfach, eventuell bei einem Anbieter außerhalb der EU. Schulen
+     können eigene Vorgaben haben, welche Dienste ihre Lehrkräfte nutzen dürfen; Lehrkräfte sollten das mit
+     ihrer Schulleitung oder der oder dem Datenschutzbeauftragten der Schule klären. Bestimmt die Schule über
+     die Terminvergabe selbst mit – etwa weil sie sie als ihr Werkzeug für Elterngespräche einführt, ihren
+     Lehrkräften die Nutzung vorschreibt oder Einstellungen, Löschfristen oder Admin-Konten vorgibt –, passt
+     die private Vorlage nicht mehr: Nötig ist dann die Betriebsart *von der Schule betrieben* mit einer
+     Vereinbarung nach Art. 28 DSGVO oder eine Vereinbarung nach Art. 26 DSGVO (dann sind die Texte
+     anzupassen, Art. 26 Abs. 2 DSGVO). Regeln der Schule nur für ihre Lehrkräfte, etwa die Freigabe des
+     Dienstes, die dienstliche E-Mail-Adresse oder Löschfristen für das Postfach, ändern daran nichts. Nutzt
+     eine Lehrkraft das Angebot ohne Freigabe der Schule, kann sie selbst Verantwortliche werden. Ist für den
+     Betreiber eine Datenschutzbeauftragte bzw. ein Datenschutzbeauftragter benannt, nennen Sie sie bzw. ihn
+     in der Datenschutzerklärung statt des Satzes, dass niemand benannt ist. Die Vorlage des Impressums ist
+     auf eine Privatperson zugeschnitten: Ein Verein oder freier Träger ergänzt die vertretungsberechtigte
+     Person und, falls vorhanden, den Registereintrag (§ 5 DDG).
 2. **Verantwortlicher:** Füllen Sie *Texte → Angaben für Impressum und Datenschutz* aus. Diese
    Angaben ersetzen `[[VERANTWORTLICHE]]`; ohne sie ist keine Runde öffentlich.
 3. **Hoster:** Setzen Sie `hosting` in der Konfiguration (bzw. `HOSTING_DE`/`HOSTING_EN` beim Deployment).

@@ -17,7 +17,7 @@ This page explains the design decisions; it is not legal advice.
 | Shortened, HMAC-hashed IP addresses; HMAC hashes of account IDs and known-device cookies with failed logins | database (rate limiting) | after 24 hours at the latest |
 | Known-device cookie of an admin or teacher account (random number, time, signature) | that person's browser | after 365 days, renewed at every sign-in |
 | Teacher accounts | database | by an admin; inactive accounts without rounds in use 15 months after the last login, together with their drafts |
-| Summary mails to teachers (time and name, no e-mail addresses) | teacher's mailbox | the privacy policy promises at most 15 months |
+| Summary mails to teachers (time and name, no e-mail addresses) | teacher's mailbox | operated by the school: the privacy policy promises at most 15 months; operated privately: the school's rules (the template recommends 15 months) |
 | Log of admin changes (who, when, what; no data of parents) | database | after 90 days (`audit_log_days`) |
 
 TalkSlot keeps **no** access logs of its own. The web server's logs are the web host's responsibility;
@@ -120,7 +120,7 @@ which legal bases apply and what the imprint says. The installer therefore asks 
 | Operator type | Controller | Privacy policy template | Imprint template |
 |---|---|---|---|
 | *Wird von der Schule betrieben* (*Operated by the school*): a state school as a public body | the school | Art. 6(1)(e) and (3) GDPR in conjunction with the school act of your state (bookings, mails, summaries) and its data protection act (abuse protection, server logs); the school's data protection officer; right to object under Art. 21, no right to data portability (Art. 20(3)) | the school as provider |
-| *Wird privat betrieben* (*Operated privately*): a private person, an association or an independent provider (e.g. an independent school) | the operator; teachers use the service | Art. 6(1)(b) and (f) GDPR; right to object for (f), right to data portability; no data protection officer as the rule for private persons, with a placeholder to check that | a private, non-commercial service (as up to v1.5) |
+| *Wird privat betrieben* (*Operated privately*): a private person, an association or an independent provider (e.g. an independent school) | the operator, for the booking service; the meeting itself, the summary mails in the teacher's mailbox and printed lists are the teacher's work at their school (as a rule the school is responsible, its rules apply) | Art. 6(1)(b) and (f) GDPR; right to object for (f), right to data portability; no data protection officer as the rule for private persons, with a placeholder to check that | a private, non-commercial service (as up to v1.5) |
 
 A public authority cannot rely on legitimate interests (Art. 6(1), second subparagraph, GDPR), and meetings
 at a state school are part of its statutory tasks, not of a contract. That is why the school template cites
@@ -161,13 +161,24 @@ Before going live:
      agreement under Art. 28 GDPR with that person (instructions, confidentiality, the web host as
      sub-processor, handover of all access, deletion when operation ends), or the school (or its school
      authority) concludes the hosting contract itself.
-   - **Operated privately:** the operator (you, your association or your organisation) is the controller;
-     teachers use the service for their parent meetings. Schools may have their own rules on which services
-     their teachers may use, so teachers should check with their school management or the school's data
-     protection officer. If a data protection officer has been appointed for the operator, name them in the
-     privacy policy instead of the sentence that none is appointed. The imprint template is written for a
-     private person: an association or independent provider adds the person authorised to represent it and,
-     if it has one, its register entry (section 5 DDG).
+   - **Operated privately:** the operator (you, your association or your organisation) is the controller for
+     the booking service, including the mails it sends; teachers use the service for their parent meetings.
+     The meeting itself, notes, the summary mails in the teacher's mailbox and printed lists are the teacher's
+     work at their school: as a rule the school is responsible for them and its rules apply (the template
+     recommends deleting the summaries after at most 15 months). Teachers should give a work e-mail address
+     for their account; otherwise the summaries end up in a private mailbox, possibly with a provider outside
+     the EU. Schools may have their own rules on which services their teachers may use, so teachers should
+     check with their school management or the school's data protection officer. If the school has a say in
+     the booking service itself – e.g. it introduces it as its tool for parent meetings, requires its teachers
+     to use it, or sets its settings, retention or admin accounts – the private template no longer fits: you
+     then need the operator type *operated by the school* with an agreement under Art. 28 GDPR, or an
+     arrangement under Art. 26 GDPR (the texts then need adjusting, Art. 26(2) GDPR). Rules the school sets
+     only for its teachers, such as approving the service, the work e-mail address or how long to keep mails
+     in the mailbox, do not change this. A teacher who uses the service without the school's approval may
+     become a controller themselves. If a data protection officer has been appointed for the operator, name
+     them in the privacy policy instead of the sentence that none is appointed. The imprint template is
+     written for a private person: an association or independent provider adds the person authorised to
+     represent it and, if it has one, its register entry (section 5 DDG).
 2. **Controller:** fill in *Texte → Angaben für Impressum und Datenschutz*. These details replace
    `[[VERANTWORTLICHE]]`; without them no round is public.
 3. **Web host:** set `hosting` in the configuration (or `HOSTING_DE`/`HOSTING_EN` when deploying). It

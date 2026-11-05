@@ -41,7 +41,7 @@
         <input type="checkbox" id="summary_deadline" name="summary_deadline" value="1"<?= !empty($data['summary_deadline']) ? ' checked' : '' ?>>
         <label for="summary_deadline"><strong><?= e(__('Übersicht nach Buchungsschluss:')) ?></strong> <?= e(__('Sobald für einen Tag keine Buchungen mehr möglich sind, die endgültige Terminliste dieses Tages.')) ?></label>
       </div>
-      <p class="hint"><?= e(__('Die Mails enthalten nur Uhrzeiten und Namen, keine E-Mail-Adressen der Eltern. Bitte spätestens 15 Monate nach dem Termin löschen.')) ?></p>
+      <p class="hint"><?= e(__('Die Mails enthalten nur Uhrzeiten und Namen, keine E-Mail-Adressen der Eltern. Bitte nach den Vorgaben Ihrer Schule löschen, spätestens 15 Monate nach dem Termin.')) ?></p>
     </fieldset>
     <div class="actions"><button type="submit" class="button button-primary"><?= e(__('Speichern')) ?></button></div>
   </form>

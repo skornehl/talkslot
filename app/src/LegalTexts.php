@@ -32,7 +32,9 @@ final class LegalTexts
      * Wording that belongs to a template of a certain kind (mismatches()): "old" the templates up to v1.6 (a
      * "private service" without a data protection officer, its legal notice, cancelling "at any time"),
      * "anytime" only the last of these, "private" the legal bases of a private operator (Art. 6(1)(b), (f)),
-     * "school" the school template (Art. 6(1)(e), state school act, the school's data protection officer).
+     * "school" the school template (Art. 6(1)(e), state school act, the school's data protection officer),
+     * "scope" a private template up to talkslot PR #39: the operator named as controller "for all appointments
+     * booked through it", i.e. also for the meeting and the summary mails in the teacher's mailbox.
      */
     private const MARKERS = [
         'old' => '/für dieses private Angebot nicht bestellt|appointed for this private service|privates, nicht kommerzielles Angebot'
@@ -40,6 +42,7 @@ final class LegalTexts
         'anytime' => '/jederzeit selbst über Ihren persönlichen Link absagen|cancel your appointment yourself at any time/iu',
         'private' => '/Art\. 6 Abs\. 1 lit\. [bf] DSGVO|Art\. 6\(1\)\([bf]\) GDPR/iu',
         'school' => '/Art\. 6 Abs\. 1 lit\. e\b|Art\. 6\(1\)\(e\)|Schulgesetz|school act|Datenschutzbeauftragte[nr]? der Schule|school\'s data protection officer/iu',
+        'scope' => '/alle darüber gebuchten Termine ist:|all appointments booked through it is:/iu',
     ];
 
     /**
@@ -144,7 +147,8 @@ final class LegalTexts
     /**
      * Wording in a text that does not fit the operator type (null = not chosen yet), for the notes to admins:
      * for a school "old" (the template up to v1.6) or else "private" (legal bases of a private operator); for a
-     * private operator "school" (school template) and "anytime" (cancelling "at any time", also without a type).
+     * private operator "school" (school template), "scope" (controller also for the meeting and the teacher's
+     * mailbox) and "anytime" (cancelling "at any time", also without a type).
      * @return list<string>
      */
     public static function mismatches(string $content, ?string $type): array
@@ -153,7 +157,7 @@ final class LegalTexts
         if ($type === 'school') {
             return $has('old') ? ['old'] : ($has('private') ? ['private'] : []);
         }
-        return array_values(array_filter($type === 'private' ? ['school', 'anytime'] : ['anytime'], $has));
+        return array_values(array_filter($type === 'private' ? ['school', 'scope', 'anytime'] : ['anytime'], $has));
     }
 
     /** @return array<string, array<string, string>> stored texts of the offered languages: page key => language => text */
