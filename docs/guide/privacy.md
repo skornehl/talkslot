@@ -224,8 +224,47 @@ left:
   placeholders, and only the next activation waits for them.
 
 On an update, texts that were never edited are replaced by the new templates of the operator type (see
-[Operations]({{ '/guide/operations/' | relative_url }})), new placeholders included. Edited texts stay as
-they are; the hints above ask you to compare them with the template.
+[Operations]({{ '/guide/operations/' | relative_url }})), new placeholders included.
+
+### Template updates for edited texts
+
+Edited texts are never replaced automatically: what an admin has written stays. So that corrections to the
+templates – e.g. on retention periods, recipients, mails or the legal bases – still reach installations
+whose texts have been filled in, TalkSlot keeps a **version marker** for every text: the template it was
+stored from (installation, change of the operator type, *Vorlage laden*) or last reconciled with. When a newer
+template of the operator type arrives with an update, admins see on the dashboard and under *Texte* which
+sections it has changed since, and on the text form the old and new wording of each, with *Abschnitte aus der
+Vorlage übernehmen* (*Take over the sections from the template*) to take them over section by section,
+keeping the details filled in (see [Admins]({{ '/guide/admin/' | relative_url }}#legal-texts)). Sections an
+admin has deliberately reworded are not flagged unless the template changes them too.
+
+- The marker is the wording of the template itself, stored in the settings table (`legal_base.<page>.<lang>`,
+  no personal data). A text that is exactly the template of its marker counts as unedited and is replaced
+  by a newer template, even if that template's hash is missing from `OLD_PAGE_HASHES`.
+- Texts edited before TalkSlot kept version markers get one on the first request after the update if they
+  have the wording of the current template (only the placeholders filled in). Otherwise the hint lists the
+  sections in which they differ from the current template; once an admin has reconciled the text and
+  confirmed it, only later template changes are shown.
+- With a marker, a section only counts as taken over once the text no longer has any line the template has
+  dropped since – also next to a placeholder or in place of a new placeholder – and has every placeholder the
+  template has added since, also one without new wording around it (e.g. a note to check in square brackets
+  at the end of a line, or a paragraph that is only a placeholder): a placeholder may be filled in by
+  nothing, so otherwise the earlier line would look like the new one filled in. Without a marker it cannot be
+  told whether such a line fills in a placeholder or still has the wording of an earlier template, so confirm
+  the reconciliation once.
+- Taking over keeps the details filled in, also where they go on in the lines below a placeholder at the end
+  of a line (e.g. name, address and e-mail of the data protection officer). Whatever else the text had in
+  the sections taken over (own lines, details in a line the template changed) the form lists as not taken
+  over, so that nothing goes missing unnoticed, e.g. the contact details required by Art. 13(1)(b) GDPR.
+- Reconciling is logged with the admin's name (accountability, Art. 5(2) GDPR), so you can show when a
+  correction of the template was taken over. The log is deleted after `audit_log_days` (90 days by default);
+  if you need to show the reconciliation for longer, keep a copy of the entry before, e.g. together with the
+  saved version of the text.
+- Templates exist in German and English. Privacy policies in the other languages (Polish, Russian, Turkish,
+  Ukrainian) are not compared with any template: when the notice reports a change to the German or English
+  version, please update the translations yourself.
+
+The hints on the operator type above stay: they explain why a wording does not fit, whatever the marker says.
 
 Have the texts reviewed by someone who knows your situation, at a school ideally its data protection
 officer; the templates do not replace legal advice.

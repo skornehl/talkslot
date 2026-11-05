@@ -372,16 +372,21 @@ final class Migrations
         Db::execRaw("UPDATE rounds SET code_required = 1 WHERE COALESCE(access_pin, '') <> ''");
     }
 
-    /** Identifier of the current templates (changes with CURRENT_PAGE_HASHES). */
+    /**
+     * Identifier of the current templates (changes with CURRENT_PAGE_HASHES). ",base": since the version markers
+     * of the stored texts (LegalTexts::base()), so that an installation from before them runs refreshPages()
+     * once, which records them for the texts that have the wording of the current templates.
+     */
     public static function pagesVersion(): string
     {
-        return substr(hash('sha256', implode(',', self::CURRENT_PAGE_HASHES)), 0, 16);
+        return substr(hash('sha256', implode(',', self::CURRENT_PAGE_HASHES) . ',base'), 0, 16);
     }
 
     /**
      * Brings the stored legal notice and privacy policy up to date with the templates of the operator type:
      * texts that are missing or still exactly match a template (current or earlier, i.e. never edited) get the
-     * current template of that type; edited texts stay (LegalTexts::apply()). Installations from before the
+     * current template of that type; edited texts stay, their version markers tell the admins what the new
+     * template changed (LegalTexts::apply(), LegalTexts::outdated()). Installations from before the
      * operator type was asked for get "private" if all their texts are unedited templates of a private
      * service, as up to v1.6 (LegalTexts::detectType()); otherwise the texts stay as they are until an admin
      * chooses the type.
