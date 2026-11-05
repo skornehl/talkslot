@@ -153,7 +153,8 @@ womöglich eine Adresse (Mobilfunknetze, Schul-WLAN).
 | `reauth` | 5 pro 15 Min. | falsche Passwörter beim Bestätigen einer Änderung von Admin-Rechten oder E-Mail-Adressen, beim Beenden aller Sitzungen und beim Ändern des eigenen Passworts (ein Zähler pro Anmeldung, nicht pro IP-Adresse) |
 | `invite` | 20 pro Stunde | ungültige Einladungs- und Passwortlinks |
 | `forgot` | 5 pro Stunde | Anfragen unter *Passwort vergessen* |
-| `teacher_mail` | 30 pro Stunde | E-Mails an Eltern nach Einträgen oder Änderungen durch eine Lehrkraft, pro Konto statt pro IP-Adresse |
+| `teacher_mail` | 30 pro Stunde | E-Mails an Eltern, die eine Lehrkraft aus einem Eintrag schickt (Bestätigung, Änderungsmitteilung), pro Konto statt pro IP-Adresse |
+| `teacher_bulk` | 200 pro Stunde | Änderungsmitteilungen an Eltern, nachdem eine Lehrkraft einen Tag oder eine Runde geändert hat, pro Konto; Eltern über der Grenze nennt die Meldung stattdessen der Lehrkraft. Zusammen mit `teacher_mail` verhindert das, dass ein Konto E-Mails in großer Zahl an selbst gewählte Adressen schickt |
 
 `csrf_min_age_seconds` (Standard 2) ist die Mindestzeit zwischen dem Laden und dem Absenden eines
 öffentlichen Formulars, eine einfache Bremse für Bots. `csrf_max_age_seconds` (Standard 14400, 4 Stunden)

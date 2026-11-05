@@ -106,7 +106,8 @@ return [
         'reauth' => [5, 900],       // wrong passwords when confirming admin rights, e-mail changes, ending all sessions and changing the own password (per sign-in)
         'invite' => [20, 3600],     // invalid invitation and password links
         'forgot' => [5, 3600],      // "Passwort vergessen" requests
-        'teacher_mail' => [30, 3600], // mails to parents after entries or changes by a teacher, per account
+        'teacher_mail' => [30, 3600], // mails to parents from entries by a teacher (confirmation, change notice), per account
+        'teacher_bulk' => [200, 3600], // change notices to parents after a teacher changed a day or round, per account
     ],
     'csrf_min_age_seconds' => 2,    // form can be submitted after N seconds at the earliest (bot brake)
     'csrf_max_age_seconds' => 14400, // public forms and access by round code stay valid this long (4 hours)

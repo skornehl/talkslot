@@ -47,11 +47,11 @@ in der Erinnerung, und der Kalendereintrag aktualisiert sich von selbst, wenn Si
 Hat die Lehrkraft einen Ort angegeben, steht er auf der Buchungsseite, in der Bestätigung und in der
 Kalenderdatei.
 
-**Ändert oder sagt die Lehrkraft Ihren Termin ab**, erhalten Sie eine E-Mail in Ihrer Sprache, sofern Sie
-eine Adresse angegeben haben: mit dem neuen Datum, der neuen Uhrzeit oder dem neuen Ort bzw. mit der Absage.
-Einer Absage liegt eine Kalenderdatei bei, die den Termin aus Ihrem Kalender entfernt, und, solange die
-Runde noch Buchungen annimmt, der Link, um einen neuen Termin zu buchen. Ohne E-Mail-Adresse informiert Sie
-die Lehrkraft persönlich.
+**Ändert oder sagt die Lehrkraft Ihren Termin ab**, erhalten Sie in der Regel eine E-Mail in Ihrer Sprache,
+sofern Sie eine Adresse angegeben haben: mit dem neuen Datum, der neuen Uhrzeit oder dem neuen Ort bzw. mit
+der Absage. Einer Absage liegt eine Kalenderdatei bei, die den Termin aus Ihrem Kalender entfernt, und,
+solange die Runde noch Buchungen annimmt, der Link, um einen neuen Termin zu buchen. Ohne E-Mail-Adresse,
+oder wenn die Lehrkraft Sie lieber selbst informiert, meldet sie sich persönlich.
 
 ![Bestätigungsseite mit dem persönlichen Link]({{ '/assets/img/booking-confirmed.webp' | relative_url }})
 

@@ -224,14 +224,19 @@ laufenden Lauf.
 - **Ausnahme: Absagen durch die Lehrkraft.** Löscht eine Lehrkraft eine Buchung, einen Tag, eine Runde oder
   ein Admin ein Konto mit angehaktem *Eltern per E-Mail informieren*, ist die Buchung schon gelöscht, bevor
   die Absage hinausgeht. Ein solcher Eintrag enthält deshalb, was genau diese E-Mail braucht (Adresse,
-  Sprache, Name, Termin und Lehrkraft, als JSON in `mail_outbox.payload`, Schemaversion 20), nie einen Link
-  oder Token, und wird wie die anderen gelöscht: nach dem Versand, spätestens nach 48 Stunden. Eine Absage,
-  deren Termin inzwischen begonnen hat, wird verworfen. Ältere Versionen verwerfen solche Einträge
-  ungesendet; ein Rollback verliert also höchstens die Absagen, die gerade noch warten.
+  Sprache, Name, Termin und Lehrkraft, als JSON in `mail_outbox.payload`, eingeführt mit Schemaversion 21),
+  nie einen Link oder Token, und wird wie die anderen gelöscht: nach dem Versand, spätestens nach
+  48 Stunden. Nachdem ein Admin ein Konto gelöscht hat, enthält er keine Adresse der Lehrkraft (die E-Mail
+  geht ohne Reply-To hinaus). Eine Absage, deren Termin inzwischen begonnen hat, wird verworfen; eine für
+  einen Termin in den nächsten 24 Stunden geht wie eine einzelne E-Mail hinaus, ohne auf das Stundenlimit
+  zu warten. Versionen mit Schemaversion 20 oder älter verwerfen solche Einträge ungesendet; ein Rollback
+  auf eine davon verliert also die Absagen, die gerade noch warten.
 - **Nichts geht unbemerkt verloren.** Die Buchungsliste zeigt *E-Mail nicht zugestellt* bei einem Eintrag,
   dessen E-Mail nicht verschickt werden konnte (mit *neuer Versuch folgt*, solange sie wiederholt wird), und
   Admins sehen in der Übersicht einen Hinweis, wenn E-Mails länger als zwei Stunden warten, meist weil der
-  Cronjob nicht läuft oder der Mailserver sie weiter ablehnt.
+  Cronjob nicht läuft oder der Mailserver sie weiter ablehnt. Ausnahme sind Absagen: Ihre Buchung gibt es
+  nicht mehr, eine nach 48 Stunden verworfene Absage hinterlässt also keine Markierung bei einem Eintrag,
+  nur den Hinweis in der Übersicht, solange sie wartet.
 - **Ohne Cronjob** können E-Mails nur bei Seitenaufrufen hinausgehen, wenn PHP als PHP-FPM oder LiteSpeed
   läuft: Die Seite wird zuerst ausgeliefert, danach gehen bis zu 10 fällige E-Mails hinaus
   (`mail_queue.after_response`). Mit Apaches mod_php geht das nicht; richten Sie deshalb den Cronjob ein,

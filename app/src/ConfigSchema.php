@@ -76,6 +76,7 @@ final class ConfigSchema
         'rate_limits.invite' => ['limit', [20, 3600]],
         'rate_limits.forgot' => ['limit', [5, 3600]],
         'rate_limits.teacher_mail' => ['limit', [30, 3600]],
+        'rate_limits.teacher_bulk' => ['limit', [ScheduleService::BULK_LIMIT, 3600]],
         'csrf_min_age_seconds' => ['int', 2, 0, null],
         'csrf_max_age_seconds' => ['int', 4 * 3600, 60, null],
     ];

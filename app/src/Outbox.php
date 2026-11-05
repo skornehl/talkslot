@@ -63,6 +63,12 @@ final class Outbox
         );
     }
 
+    /** Does a confirmation or change notice about the booking wait? It is created when sending, with the details then. */
+    public static function waiting(int $bookingId): bool
+    {
+        return Db::value("SELECT 1 FROM mail_outbox WHERE booking_id = ? AND kind IN ('booked', 'changed') LIMIT 1", [$bookingId]) !== null;
+    }
+
     /**
      * Queues the cancellation of a booking the teacher deleted, with what the mail needs (Notifier::cancellationData()).
      * $failedOnce and $bulk as for queueBooking().
