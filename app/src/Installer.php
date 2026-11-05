@@ -6,6 +6,9 @@ namespace App;
 /** Creates tables, admin account and default texts. Locked afterwards. */
 final class Installer
 {
+    /** The schema the installation creates; tests point it to a file of their own */
+    public static string $schemaFile = APP_ROOT . '/app/schema.sql';
+
     public static function lockFile(): string
     {
         return DATA_ROOT . '/app/var/installed.lock';
@@ -37,6 +40,31 @@ final class Installer
         $existing = array_map('strtolower', Db::pdo()->query('SHOW TABLES')->fetchAll(\PDO::FETCH_COLUMN));
         $ours = array_map(static fn (string $t) => strtolower(Db::table($t)), Db::TABLES);
         return array_values(array_intersect($ours, $existing));
+    }
+
+    /**
+     * Foreign keys of the schema whose names are already taken in this database (expert review P2-7). Their names
+     * are unique per database, not per table: an installation from before the prefixed names (fk_…) blocks a
+     * second one without a prefix. Installation is not allowed then either.
+     * @return list<string>
+     */
+    public static function conflictingConstraints(): array
+    {
+        preg_match_all('/\bCONSTRAINT\s+(\w+)/i', implode("\n", array_map(Db::prefix(...), self::statements())), $m);
+        $taken = array_map(static fn (mixed $n): string => strtolower((string) $n), array_column(Db::all(
+            "SELECT CONSTRAINT_NAME FROM information_schema.TABLE_CONSTRAINTS WHERE CONSTRAINT_SCHEMA = DATABASE() AND CONSTRAINT_TYPE = 'FOREIGN KEY'"
+        ), 'CONSTRAINT_NAME'));
+        return array_values(array_filter($m[1], static fn (string $n): bool => in_array(strtolower($n), $taken, true)));
+    }
+
+    /**
+     * The statements of the schema (comment lines removed before splitting: they may contain ";").
+     * @return list<string>
+     */
+    private static function statements(): array
+    {
+        $sql = (string) preg_replace('/^\s*--.*$/m', '', (string) file_get_contents(self::$schemaFile));
+        return array_values(array_filter(array_map('trim', explode(';', $sql)), static fn (string $s): bool => $s !== ''));
     }
 
     /**
@@ -131,25 +159,44 @@ final class Installer
         if ($conflicts = self::conflictingTables()) {
             throw new \RuntimeException('Die Datenbank enthält bereits Tabellen mit gleichem Namen (' . implode(', ', $conflicts) . '). Bitte eine eigene, leere Datenbank verwenden.');
         }
-        // Remove comment lines before splitting (they may then also contain ";")
-        $sql = (string) preg_replace('/^\s*--.*$/m', '', (string) file_get_contents(APP_ROOT . '/app/schema.sql'));
-        foreach (explode(';', $sql) as $stmt) {
-            $stmt = trim($stmt);
-            if ($stmt !== '') {
+        if ($conflicts = self::conflictingConstraints()) {
+            throw new \RuntimeException('Die Datenbank enthält bereits Fremdschlüssel mit gleichem Namen (' . implode(', ', $conflicts) . '). Bitte ein anderes Tabellenpräfix (db.prefix) oder eine eigene Datenbank verwenden.');
+        }
+        // DDL cannot be rolled back: if anything fails, the tables of this run are dropped again (none of them
+        // existed before, see above), so the installation can simply be repeated (expert review P2-7)
+        $now = Time::nowSql();
+        try {
+            foreach (self::statements() as $stmt) {
                 Db::execRaw($stmt);
             }
+            Db::run(
+                "INSERT INTO users (username, password_hash, role, display_name, email, created_at) VALUES (?, ?, 'admin', ?, ?, ?)",
+                [$username, password_hash($password, PASSWORD_DEFAULT), $displayName !== '' ? $displayName : $username, $email !== '' ? $email : null, $now]
+            );
+            self::storePages($operatorType);
+            Operator::saveType($operatorType);
+            Settings::set('last_cleanup', '0');
+            Settings::set('schema_version', (string) Migrations::LATEST);
+            Settings::set('pages_version', Migrations::pagesVersion());
+        } catch (\Throwable $e) {
+            self::dropOurTables();
+            throw $e;
         }
-
-        $now = Time::nowSql();
-        Db::run(
-            "INSERT INTO users (username, password_hash, role, display_name, email, created_at) VALUES (?, ?, 'admin', ?, ?, ?)",
-            [$username, password_hash($password, PASSWORD_DEFAULT), $displayName !== '' ? $displayName : $username, $email !== '' ? $email : null, $now]
-        );
-        self::storePages($operatorType);
-        Operator::saveType($operatorType);
-        Settings::set('last_cleanup', '0');
-        Settings::set('schema_version', (string) Migrations::LATEST);
-        Settings::set('pages_version', Migrations::pagesVersion());
         @file_put_contents(self::lockFile(), 'installed ' . $now . "\n");
+    }
+
+    /** Drops the tables of this installation that exist (after a failed installation, see install()). */
+    private static function dropOurTables(): void
+    {
+        $ours = array_map(static fn (string $t): string => strtolower(Db::table($t)), Db::TABLES);
+        $existing = array_values(array_intersect(array_map('strtolower', Db::pdo()->query('SHOW TABLES')->fetchAll(\PDO::FETCH_COLUMN)), $ours));
+        if ($existing) {
+            Db::pdo()->exec('SET FOREIGN_KEY_CHECKS = 0');
+            try {
+                Db::pdo()->exec('DROP TABLE IF EXISTS `' . implode('`, `', $existing) . '`');
+            } finally {
+                Db::pdo()->exec('SET FOREIGN_KEY_CHECKS = 1');
+            }
+        }
     }
 }

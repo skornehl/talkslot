@@ -41,4 +41,8 @@ return [
     '„default_language“ ist {value}, diese Sprache steht aber nicht unter „languages“. Stattdessen gilt {fallback}.' => '"default_language" is {value}, but that language is not listed under "languages". {fallback} is used instead.',
     '„mail.from_address“ fehlt: Ohne Absenderadresse verschickt TalkSlot keine E-Mails.' => '"mail.from_address" is missing: without a sender address TalkSlot sends no e-mails.',
     '„mail.transport“ ist „mail“, aber die PHP-Funktion mail() ist auf diesem Server abgeschaltet: So gehen keine E-Mails hinaus. Bitte stellen Sie auf „smtp“ um.' => '"mail.transport" is "mail", but the PHP function mail() is disabled on this server, so no e-mails go out. Please switch to "smtp".',
+
+    // Installation: a second installation in the same database, a failed installation (expert review P2-7)
+    'Die Datenbank enthält bereits Fremdschlüssel mit gleichem Namen ({names}), vermutlich von einer älteren TalkSlot-Installation in derselben Datenbank. Bitte tragen Sie in config.php ein anderes Tabellenpräfix (db.prefix) ein oder verwenden Sie eine eigene Datenbank. Es wurde nichts verändert.' => 'The database already contains foreign keys with the same names ({names}), probably from an older TalkSlot installation in the same database. Please set a different table prefix (db.prefix) in config.php or use a database of its own. Nothing has been changed.',
+    'Die Installation ist fehlgeschlagen ({reason}). Die dabei angelegten Tabellen wurden wieder entfernt; Sie können es nach der Behebung erneut versuchen.' => 'The installation failed ({reason}). The tables it had created have been removed again; you can try again once the cause is fixed.',
 ];

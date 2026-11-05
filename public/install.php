@@ -47,6 +47,10 @@ if (Http::isPost()) {
     if (!$errors && ($conflicts = Installer::conflictingTables())) {
         $errors[] = __('Die Datenbank enthält bereits Tabellen mit gleichem Namen ({tables}), vermutlich von einer anderen Anwendung. Bitte legen Sie für TalkSlot eine eigene, leere Datenbank an und tragen Sie deren Zugangsdaten ein. Es wurde nichts verändert.', ['tables' => implode(', ', $conflicts)]);
     }
+    // Names of foreign keys are unique per database: an installation from before the prefixed names (fk_…)
+    if (!$errors && ($conflicts = Installer::conflictingConstraints())) {
+        $errors[] = __('Die Datenbank enthält bereits Fremdschlüssel mit gleichem Namen ({names}), vermutlich von einer älteren TalkSlot-Installation in derselben Datenbank. Bitte tragen Sie in config.php ein anderes Tabellenpräfix (db.prefix) ein oder verwenden Sie eine eigene Datenbank. Es wurde nichts verändert.', ['names' => implode(', ', $conflicts)]);
+    }
     if (!$errors) {
         $errors = Installer::environmentProblems(); // MariaDB from 10.6 on, app/var writable
     }
@@ -58,13 +62,19 @@ if (Http::isPost()) {
         }
     }
     // Two concurrent installations: only one creates, the other then sees "installed"
-    if (!$errors && ((int) App\Db::value('SELECT GET_LOCK(?, 10)', [App\Db::table('install')]) !== 1 || Installer::isInstalled())) {
+    if (!$errors && (!App\Db::lock('install', 10) || Installer::isInstalled())) {
         $errors[] = __('Die Installation läuft bereits oder ist abgeschlossen.');
     }
     if (!$errors) {
-        Installer::install($old['username'], Http::postRaw('password'), $old['notify_email'], mb_substr($old['display_name'], 0, 200), $old['operator_type']);
-        $done = true;
-        @unlink(__FILE__);
+        try {
+            Installer::install($old['username'], Http::postRaw('password'), $old['notify_email'], mb_substr($old['display_name'], 0, 200), $old['operator_type']);
+            $done = true;
+            @unlink(__FILE__);
+        } catch (\Throwable $e) {
+            // The installer has dropped the tables it created: logged, and the form can simply be sent again
+            App\ErrorPage::log($e);
+            $errors[] = __('Die Installation ist fehlgeschlagen ({reason}). Die dabei angelegten Tabellen wurden wieder entfernt; Sie können es nach der Behebung erneut versuchen.', ['reason' => App\ErrorPage::sanitize($e->getMessage())]);
+        }
     }
 }
 
