@@ -2,7 +2,7 @@
 /**
  * Asks for the round code of a protected round ("Nur mit Rundencode").
  * The round's title and description are only shown after correct input.
- * @var array $round @var string $csrf @var array $errors
+ * @var array $round @var string $csrf @var array $errors @var string $contact who parents without the code can ask
  */
 ?>
 <article class="round" data-round-id="<?= (int) $round['id'] ?>">
@@ -23,5 +23,6 @@
       </div>
       <button type="submit" class="button button-primary"><?= e(t('pin.submit')) ?></button>
     </form>
+    <?php require __DIR__ . '/_contact.php'; ?>
   </div>
 </article>

@@ -15,6 +15,7 @@ use App\LegalTexts;
 use App\Markdown;
 use App\Notifier;
 use App\Operator;
+use App\ParentContact;
 use App\RateLimiter;
 use App\RoundAccess;
 use App\RoundCode;
@@ -101,11 +102,21 @@ final class PublicController
         ]);
     }
 
-    /** $forgetUrl: link of a booking that no longer exists – the browser drops its remember-me entry */
+    /**
+     * Not found (or too many requests): with the way on – the code input of the start page (only for "not found",
+     * e.g. a mistyped link) and the contact for all (ParentContact), as the page belongs to no round.
+     * $forgetUrl: link of a booking that no longer exists – the browser drops its remember-me entry
+     */
     private function notFound(string $text = '', int $status = 404, string $forgetUrl = ''): void
     {
         http_response_code($status);
-        View::render('public/notfound', ['title' => t('notfound.title'), 'text' => $text !== '' ? $text : t('notfound.text'), 'forgetUrl' => $forgetUrl]);
+        View::render('public/notfound', [
+            'title' => t('notfound.title'),
+            'text' => $text !== '' ? $text : t('notfound.text'),
+            'forgetUrl' => $forgetUrl,
+            'codeForm' => $status === 404,
+            'contact' => ParentContact::general(),
+        ]);
     }
 
     /** Only active rounds of active accounts, and only if the admin has provided the details for legal notice/privacy policy */
@@ -117,7 +128,7 @@ final class PublicController
 
     private function findRound(string $slug): ?array
     {
-        return Db::one('SELECT r.*, u.display_name AS teacher_name' . self::activeRoundSql() . ' AND r.slug = ?', [$slug]);
+        return Db::one('SELECT r.*, u.display_name AS teacher_name, u.parent_contact AS teacher_contact' . self::activeRoundSql() . ' AND r.slug = ?', [$slug]);
     }
 
     /**
@@ -143,6 +154,8 @@ final class PublicController
                 'round' => $round,
                 'csrf' => Csrf::publicToken('pin:' . $round['id']),
                 'errors' => $errors,
+                // Without the code the round's details stay hidden, the teacher's contact as well
+                'contact' => ParentContact::general(),
             ]);
             return;
         }
@@ -164,6 +177,9 @@ final class PublicController
             'langSwitchForm' => $days ? 'booking-form' : null,
             'errors' => $errors,
             'old' => $old,
+            'contact' => ParentContact::forTeacher($round['teacher_contact'] ?? null),
+            // No free slot: why (all booked, deadline passed, none planned), so that parents know what is going on
+            'unavailable' => $days ? null : BookingService::unavailableReason($round),
         ]);
     }
 
@@ -321,6 +337,7 @@ final class PublicController
             'open' => $errors ? Http::post('action') : '',
             'mailTo' => $errors && Http::post('action') === 'mail' ? mb_substr(Http::post('email'), 0, 254) : '',
             'errors' => $errors,
+            'contact' => ParentContact::forTeacher($booking['teacher_contact'] ?? null),
         ]);
     }
 
