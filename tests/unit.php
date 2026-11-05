@@ -15,8 +15,9 @@ use App\Slug;
 use App\Token;
 
 // Warnings, notices and deprecations fail the run (expert review P1-14): the app only logs them, so they
-// would pass unnoticed. Places suppressed with @ stay quiet, as in the app.
-set_error_handler(static function (int $type, string $message, string $file, int $line): bool {
+// would pass unnoticed. Places suppressed with @ stay quiet, as in the app. The app's handler stays callable
+// as $appErrorHandler (tests/unit.d/quality.php).
+$appErrorHandler = set_error_handler(static function (int $type, string $message, string $file, int $line): bool {
     if (!(error_reporting() & $type)) {
         return false;
     }

@@ -31,12 +31,31 @@ try {
 }
 check('unit tests: a warning fails the run (ErrorException), one suppressed with @ does not', $strict !== null && $strict->getSeverity() === E_WARNING
     && str_contains($strict->getMessage(), 'Undefined array key') && !isset($quiet));
+// The app's handler (app/bootstrap.php), called directly: it logs, reports warnings by mail and lets PHP go on
 $qLog = tempnam(sys_get_temp_dir(), 'log');
-[$rc] = $run(['-r', 'require "app/bootstrap.php"; ini_set("error_log", ' . var_export($qLog, true) . ');
-    trigger_error("bald weg", E_USER_DEPRECATED); trigger_error("nur ein Hinweis", E_USER_NOTICE);']);
+$qOldLog = (string) ini_get('error_log');
+$qAlert = [App\Alert::$transport, App\Alert::$stateFile];
+ini_set('error_log', $qLog);
+App\Config::load(['alert_email' => 'betrieb@example.org'] + $cfg);
+App\Alert::$stateFile = tempnam(sys_get_temp_dir(), 'alert');
+$qSent = [];
+App\Alert::$transport = static function (string $to, string $subject, string $body) use (&$qSent): bool { $qSent[] = $subject; return true; };
+$qResults = [$appErrorHandler(E_USER_DEPRECATED, 'bald weg', APP_ROOT . '/app/src/Time.php', 12),
+    $appErrorHandler(E_USER_NOTICE, 'nur ein Hinweis', APP_ROOT . '/app/src/Time.php', 13)];
+$qDeprecations = $qSent;
+$qResults[] = $appErrorHandler(E_USER_WARNING, 'kaputt mit max@example.org', APP_ROOT . '/app/src/Time.php', 14);
+$qLevel = error_reporting(E_ALL & ~E_USER_NOTICE); // like a place suppressed with @
+$qResults[] = $appErrorHandler(E_USER_NOTICE, 'unterdrückt', APP_ROOT . '/app/src/Time.php', 15);
+error_reporting($qLevel);
 $qLines = (string) file_get_contents($qLog);
-check('error log: deprecations as "PHP Deprecated", notices as "PHP Notice", with the place', $rc === 0
-    && str_contains($qLines, 'PHP Deprecated: bald weg (Command line code:2)') && str_contains($qLines, 'PHP Notice: nur ein Hinweis (Command line code:2)'));
+ini_set('error_log', $qOldLog);
+@unlink((string) App\Alert::$stateFile);
+[App\Alert::$transport, App\Alert::$stateFile] = $qAlert;
+App\Config::load($cfg);
+check('error log: deprecations as "PHP Deprecated", notices as "PHP Notice", warnings also by mail; PHP goes on (false)',
+    $qResults === [false, false, false, false] && $qDeprecations === [] && $qSent === ['[TalkSlot] PHP-Warnung']
+    && str_contains($qLines, 'PHP Deprecated: bald weg (/app/src/Time.php:12)') && str_contains($qLines, 'PHP Notice: nur ein Hinweis (/app/src/Time.php:13)')
+    && str_contains($qLines, 'PHP Warning: kaputt mit [email] (/app/src/Time.php:14)') && !str_contains($qLines, 'unterdrückt'));
 
 // tests/php-errors.sh: warnings, notices, deprecations and fatal errors of the app since a given point of the log
 $phpErrors = static function (string $log, int $offset = 0): array {
