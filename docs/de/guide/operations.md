@@ -69,8 +69,10 @@ Seitenaufrufe setzen) und prüft ihn bei Seitenaufrufen:
   Fehlermeldungen oben). Sie kommt einmal pro Ausfall und alle 24 Stunden erneut, solange er anhält, mit der
   Zeit des letzten Laufs und den Punkten, die zu prüfen sind; ohne personenbezogene Daten. Der nächste
   vollständige Lauf beendet die Warnung.
-- **Noch gar kein Lauf verzeichnet** (neue Installation oder Update, während der Cronjob schon ausgefallen
-  war): 3 Stunden nach Beginn der Überwachung bittet die Übersicht die Admins, den Cronjob einzurichten.
+- **Noch gar kein vollständiger Lauf verzeichnet** (neue Installation, Update, während der Cronjob schon
+  ausgefallen war, oder ein Cronjob, der jedes Mal scheitert): 3 Stunden nach Beginn der Überwachung bittet
+  die Übersicht die Admins, den Cronjob einzurichten oder mit `php bin/cron.php -v` nachzusehen, woran er
+  scheitert.
   Eine E-Mail gibt es dafür nicht, damit Installationen, die bewusst auf Seitenaufrufe setzen (mit PHP-FPM
   oder LiteSpeed, siehe [Mail-Warteschlange](#mail-warteschlange)), nicht jeden Tag daran erinnert werden.
 - **`cron_alert_hours = 0`** schaltet beides ab.
@@ -78,6 +80,17 @@ Seitenaufrufe setzen) und prüft ihn bei Seitenaufrufen:
 Geprüft wird bei Seitenaufrufen: Eine Seite, die niemand aufruft, kann nichts melden, aber jeder Aufruf,
 auch durch Eltern, verschickt die Warnmeldung, wenn sie fällig ist. Lehrkräfte sehen die Warnung nicht;
 beheben lassen können sie nur Admins.
+
+Fällt ein reparierter Cronjob später erneut aus, ist das ein neuer Ausfall: Er wird gemeldet, sobald die
+3 Stunden um sind, auch wenn die letzte Meldung noch keinen Tag zurückliegt.
+
+**Fehlalarm nach einem Rollback oder einem eingespielten Backup:** Eine Version von vor der Überwachung
+speichert ihre Läufe nicht, und ein Datenbank-Backup enthält das `last_cron` seiner Zeit. Nach einem
+[Rollback]({{ '/de/guide/deployment/' | relative_url }}#rollback) auf eine solche Version und dem nächsten Deployment oder nach dem Einspielen
+eines Backups meldet der erste Seitenaufruf deshalb womöglich einen Ausfall, obwohl der Cronjob die ganze
+Zeit lief. Der nächste Lauf beendet ihn (spätestens nach einer Stunde); um die E-Mail zu vermeiden, starten
+Sie den Cronjob direkt nach einem solchen Schritt einmal von Hand (`php bin/cron.php`, *Run workflow* oder
+`gh workflow run cron.yml`).
 
 ### GitHub schaltet den Cron-Workflow nach 60 Tagen ab {#github-60-days}
 

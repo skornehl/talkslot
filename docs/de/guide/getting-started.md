@@ -31,6 +31,10 @@ dev/demo.sh        # optional: drei Demo-Runden mit Buchungen
 `dev/reset.sh` löscht alle Tabellen und installiert neu; führen Sie es aus, wann immer Sie einen sauberen
 Stand möchten.
 
+Die Docker-Umgebung hat keinen Cronjob. Etwa 3 Stunden nach dem ersten Seitenaufruf meldet die Übersicht
+deshalb, dass noch kein vollständiger Lauf des Cronjobs verzeichnet ist ([Überwachung des Cronjobs]({{ '/de/guide/operations/' | relative_url }}#cron-monitoring));
+`docker compose -f dev/compose.yml exec app php /srv/app/bin/cron.php` startet ihn einmal von Hand.
+
 ## Ein erster Rundgang
 
 1. **Melden Sie sich** als `sabrina` an. Sie ist Admin. Öffnen Sie *Texte* und sehen Sie sich

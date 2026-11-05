@@ -64,14 +64,25 @@ from `last_cleanup`, which page views set as well) and checks it on page views:
   nicht* (same recipient as the error alerts above). It is sent once per outage and again every 24 hours
   while the outage lasts, with the time of the last run and what to check; no personal data. The next
   completed run ends the warning.
-- **No run recorded at all** (a new installation, or an update while the cron job was already down):
-  3 hours after the monitoring began, the dashboard asks the admins to set up the cron job. There is no
+- **No completed run recorded at all** (a new installation, an update while the cron job was already down,
+  or a cron job that fails every time): 3 hours after the monitoring began, the dashboard asks the admins
+  to set up the cron job, or to look with `php bin/cron.php -v` where it fails. There is no
   mail for this, so that installations relying on page views on purpose (with PHP-FPM or LiteSpeed, see
   [mail queue](#mail-queue)) are not reminded every day.
 - **`cron_alert_hours = 0`** turns both off.
 
 The check runs on page views: a site nobody visits cannot report anything, but any visit, by parents as
 well, sends the alert mail when it is due. Teachers do not see the warning; only admins can have it fixed.
+
+A cron job that is repaired and stops again later counts as a new outage: it is mailed as soon as the
+3 hours have passed, even if the last mail is less than a day old.
+
+**False alarm after a rollback or a restored backup:** a version from before the cron monitoring does not
+record its runs, and a database backup holds the `last_cron` of its time. After a [rollback]({{ '/guide/deployment/' | relative_url }}#rollback)
+to such a version and the next deployment, or after restoring a backup, the first page view may therefore
+report an outage although the cron job kept running. The next run ends it (at the latest after an hour);
+to avoid the mail, start the cron job once by hand right after such a step (`php bin/cron.php`,
+*Run workflow* or `gh workflow run cron.yml`).
 
 ### GitHub disables the cron workflow after 60 days {#github-60-days}
 
