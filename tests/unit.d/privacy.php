@@ -63,6 +63,15 @@ check('marker: own changes in sections the template did not change are not liste
     $pvTitles($pvChanges($pvOwn, $pvV17, $pvPrivate)) === $pvTitles($pvKnown)
     && !in_array('1. Verantwortliche', $pvTitles($pvChanges(App\LegalTexts::merge($pvApplied, $pvPrivate, ['Verantwortliche']), $pvV17, $pvPrivate)), true)
     && $pvChanges($pvOwn, $pvPrivate, $pvPrivate) === []);
+// A placeholder a newer template inserts mid-line (blanks around it) or before a punctuation mark: the blank
+// left where it is removed must not make the line seem to say more than the earlier one (talkslot PR #41)
+$pvMail = '- **E-Mail-Versand:** über den Mailserver des Hosters (siehe oben).';
+$pvMid = str_replace($pvMail, '- **E-Mail-Versand:** über den Mailserver des Hosters [ODER NAME UND ANSCHRIFT DES MAILDIENSTES] (siehe oben).', $pvPrivate);
+$pvPunct = str_replace('Art. 77 DSGVO)', 'Art. 77 DSGVO) [FRIST] ,', $pvPrivate);
+check('marker: a placeholder the template inserts mid-line or before a punctuation mark is reported (the text does not follow then)',
+    str_contains($pvPrivate, $pvMail) && str_contains($pvPrivate, 'Art. 77 DSGVO)')
+    && $pvTitles($pvChanges($pvFill($pvPrivate), $pvPrivate, $pvMid)) === ['6. Empfänger']
+    && $pvTitles($pvChanges($pvFill($pvPrivate), $pvPrivate, $pvPunct)) === ['9. Ihre Rechte']);
 $pvAdded = $pvPrivate . "\n# 12. Neu in der Vorlage\n\nNeuer Satz.\n";
 $pvDropped = (string) preg_replace('/# 8\. Sicherheit.*?(?=# 9\.)/su', '', $pvPrivate);
 check('marker: a section new in the template (all lines added), one it dropped while the text still has it (all lines removed)',

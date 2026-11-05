@@ -178,10 +178,15 @@ final class LegalTexts
         return $line === $template || ($fill && self::literal($template) > 0 && self::fills($line, $template));
     }
 
-    /** Length of a template's line without its placeholders: how much a line that fills it in has to match. */
+    /**
+     * Fixed text of a template's line without its placeholders and without whitespace: how much a line that
+     * fills it in has to match. Whitespace does not count, so that a placeholder inserted mid-line (and the
+     * blank left around it when it is removed) does not make a line seem to say more than the same line
+     * without it.
+     */
     private static function literal(string $line): int
     {
-        return strlen(trim((string) preg_replace(self::PLACEHOLDER, '', $line)));
+        return strlen((string) preg_replace('/\s+/u', '', (string) preg_replace(self::PLACEHOLDER, '', $line)));
     }
 
     /**
