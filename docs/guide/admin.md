@@ -139,7 +139,8 @@ rounds created with it.
 slots or bookings, created, changed or deleted accounts and roles, sent links, and edited templates or
 legal texts. With several admins this makes it traceable who did what. Changes TalkSlot makes itself on an
 update are entered as *TalkSlot*: an operator type taken over from unedited templates and legal texts
-replaced by newer templates. The admin who then saves the operator type is logged as confirming it.
+replaced by newer templates. The admin who then saves the operator type is logged as confirming it, and a
+legal text saved after reconciling it with a newer template is logged as such.
 
 The log does **not** record what teachers do in their own rounds, and it never contains data of parents:
 a booking appears only as date and time (e.g. "Buchung 12.11.2026 14:00 gelöscht"). Entries are deleted
@@ -161,6 +162,44 @@ type** (*Von der Schule betrieben* / *Operated by the school*, *Privat betrieben
 type first; the stored text only changes when you save. If you change the operator type at the top of
 *Texte*, TalkSlot replaces every text that is still an unedited template by the templates of the new type
 and tells you how many; edited texts stay as they are. The change is recorded in the log.
+
+**Newer templates for edited texts.** TalkSlot never overwrites a text you have edited. Instead it remembers
+for every text the template it was stored from or last reconciled with (its *version marker*). When an update
+brings a newer template of your operator type, the dashboard and *Texte* name the texts and the sections the
+template has changed since, e.g. *Datenschutzerklärung (DE): 5. Speicherdauer und Löschung, 6. Empfänger*,
+and the list under *Texte* marks them (*Vorlage geändert*, *template changed*). The text form shows for each
+of these sections which lines the template removed (−) and added (+). You can then:
+
+- **take the sections over:** *Abschnitte aus der Vorlage übernehmen* (*Take over the sections from the
+  template*) puts your text into the form with these sections as worded in the template. Your details in
+  lines the template did not change (e.g. the supervisory authority) are kept, also where they go on in the
+  lines below (e.g. name, address and e-mail of the data protection officer), and so is what stands in place
+  of `[[VERANTWORTLICHE]]`; your own changes in these sections are not. Whatever of your text is left out
+  (own lines, your details in a line the template changed) the notice lists as *nicht übernommen* (*not taken
+  over*): copy back what still belongs in the text. A section the template has dropped is removed, and the
+  notice names it as removed. The differences stay visible below for comparison. Check the form, fill in new
+  `[PLACEHOLDERS]` and save;
+- **adjust the text yourself** and tick *Abgleich erledigt* (*Reconciled*) when saving; or
+- **load the whole template** with *Vorlage laden* and fill it in again.
+
+Saving after taking over, loading or ticking the box makes the current template the text's version marker, the
+note disappears, and the log records who reconciled the text. If the template changed while the form was open
+(e.g. by an update), TalkSlot saves the text but does not record the reconciliation, and tells you so. A text
+that already has everything the template changed since its version marker (or, without a marker, the wording
+of the current template with only its placeholders filled in) needs nothing: TalkSlot records the marker
+itself. A placeholder within a line stands for text up to the end of that line: if you have filled one in
+over several lines (e.g. the address of the data protection officer below the name), a text without a
+marker shows them as a difference until you confirm the reconciliation once. For a text
+edited before TalkSlot kept version markers, or one from the template of the other operator type, the template
+it started from is unknown: the note then lists the sections in which it differs from the current template
+(*weicht von der Vorlage ab*, *differs from the template*; filled-in placeholders do not count), with the lines
+only in your text (−) and only in the template (+). This includes sections only your text has: without a
+marker it is not known whether they are your own or from an earlier template, so taking over leaves them as
+they are (the notice names them as left unchanged); check yourself whether they still apply. Confirm the
+reconciliation once, and from then on you only see what later templates change.
+
+If a section in your text has another heading than in the template (e.g. "# 5. How long we keep data"), taking
+over adds the template's section as well; delete the old one before saving.
 
 If no operator type is chosen (installations from before it, with edited texts), the dashboard shows
 *Bitte Betriebsart wählen* (*Please choose the operator type*), and no round can be activated until an

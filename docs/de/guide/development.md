@@ -109,7 +109,20 @@ Syntaxfehlers.
   hinzu und aktualisieren Sie `schema.sql`.
 - **Rechtstext-Vorlagen:** Aktualisieren Sie nach einer Änderung an `app/templates/pages/*.md` die
   `CURRENT_PAGE_HASHES` und verschieben Sie die alten Hashes nach `OLD_PAGE_HASHES`, damit unbearbeitete
-  Texte automatisch aktualisiert werden. Der Unit-Test nennt Ihnen die neuen Hashes.
+  Texte automatisch aktualisiert werden. Der Unit-Test nennt Ihnen die neuen Hashes. Für bearbeitete Texte
+  braucht es keinen neuen Hinweis in `AdminController::legalHints()`: Ihr Vorlagenstand zeigt Admins die
+  geänderten Abschnitte von selbst (`LegalTexts::outdated()`). Halten Sie die Abschnitte unter Überschriften
+  der ersten Ebene (`# 5. …`) und jeden Absatz bzw. Listenpunkt in einer Zeile, damit der Vergleich je
+  Abschnitt und Zeile funktioniert; ein Unit-Test prüft, dass die vier Datenschutz-Vorlagen dieselben
+  nummerierten Abschnitte haben. Benennen Sie Überschriften möglichst nicht um: Ein Abschnitt ist an seiner
+  Überschrift ohne Nummer erkennbar, eine umbenannte gilt als neuer Abschnitt, und die ausgefüllten Angaben
+  des alten werden beim Übernehmen nicht mitgenommen. Ein Platzhalter steht innerhalb einer Zeile für Text bis
+  zum Zeilenende, nur allein in seiner Zeile (wie `[[VERANTWORTLICHE]]`) auch für mehrere Zeilen. Ein
+  Platzhalter darf auch durch nichts ausgefüllt werden; eine Zeile, die kaum mehr als ein Platzhalter ist
+  (`- [WEITERE EMPFÄNGER]`), wird deshalb von fast jeder Zeile ausgefüllt: Geben Sie ihr eigenen festen Wortlaut
+  (`- **Weitere Empfänger:** [NAME UND ANSCHRIFT]`). Ändert sich, was TalkSlot verarbeitet (Daten, Empfänger, Fristen,
+  Speicherung im Browser, Arten von E-Mails), passen Sie in derselben Änderung die Datenschutz-Vorlagen
+  beider Betriebsarten auf Deutsch und Englisch an.
 - **Deployment-Variablen:** Jede Variable, die `bin/build-config.php` liest, muss im Build-Schritt von
   `.github/workflows/deploy.yml` übergeben werden; auch das prüft ein Unit-Test.
 - **Konfigurationsoptionen:** Eine neue Option gehört in `App\ConfigSchema::KEYS` (Typ, Standardwert) und

@@ -233,6 +233,11 @@ form.inline { display: inline; }
 .pin-fieldset legend { font-weight: 600; padding: 0 .3rem; }
 .invitation { white-space: pre-wrap; font-family: var(--mono); font-size: .85rem; background: var(--field-soft); border: 1px solid var(--border); border-radius: 6px; padding: .75rem; }
 details summary { cursor: pointer; color: var(--primary); margin: .5rem 0; }
+/* Changes of a legal template (page form): lines removed and added, as Markdown */
+.legal-diff ul { list-style: none; padding: 0; margin: 0 0 .75rem; font-family: var(--mono); font-size: .85rem; }
+.legal-diff li { white-space: pre-wrap; overflow-wrap: anywhere; padding: .2rem .5rem; border-radius: 4px; margin: .15rem 0; }
+.legal-diff .diff-del { background: var(--danger-soft); color: var(--text); }
+.legal-diff .diff-add { background: var(--success-soft); color: var(--text); }
 .pin-input { font-size: 1.5rem; letter-spacing: .3em; font-variant-numeric: tabular-nums; text-align: center; }
 .code-input { text-transform: uppercase; }
 .privacy-summary { background: var(--primary-soft); border-radius: var(--radius); padding: .75rem 1rem; margin: .5rem 0 1rem; font-size: .95rem; }

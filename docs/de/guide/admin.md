@@ -154,7 +154,8 @@ Links verschickt und Vorlagen oder Rechtstexte bearbeitet hat. Bei mehreren Admi
 nachvollziehen, wer was getan hat. Was TalkSlot bei einem Update selbst ändert, steht als *TalkSlot* im
 Protokoll: eine aus unveränderten Vorlagen übernommene Betriebsart und Rechtstexte, die durch neuere
 Vorlagen ersetzt wurden. Der Admin, der die Betriebsart danach speichert, steht mit „Betriebsart bestätigt“
-im Protokoll.
+im Protokoll, ein Rechtstext, der nach dem Abgleich mit einer neueren Vorlage gespeichert wurde, mit „… mit
+dem aktuellen Stand der Vorlage … abgeglichen“.
 
 Was Lehrkräfte in ihren eigenen Runden tun, erfasst das Protokoll **nicht**, und es enthält nie Daten von
 Eltern: Eine Buchung erscheint nur mit Datum und Uhrzeit (z. B. „Buchung 12.11.2026 14:00 gelöscht“).
@@ -177,6 +178,47 @@ setzt eine davon ein, die zur Betriebsart passende steht zuerst; der gespeichert
 Speichern. Ändern Sie die Betriebsart oben unter *Texte*, ersetzt TalkSlot alle Texte, die noch unverändert
 einer Vorlage entsprechen, durch die Vorlagen der neuen Betriebsart und nennt die Anzahl; bearbeitete Texte
 bleiben, wie sie sind. Die Änderung steht im Protokoll.
+
+**Neuere Vorlagen für bearbeitete Texte.** Einen Text, den Sie bearbeitet haben, überschreibt TalkSlot nie.
+Stattdessen merkt es sich zu jedem Text die Vorlage, aus der er gespeichert oder mit der er zuletzt
+abgeglichen wurde (seinen *Vorlagenstand*). Bringt ein Update eine neuere Vorlage Ihrer Betriebsart, nennen
+das Dashboard und *Texte* die Texte und die Abschnitte, die die Vorlage seitdem geändert hat, z. B.
+*Datenschutzerklärung (DE): 5. Speicherdauer und Löschung, 6. Empfänger*; in der Liste unter *Texte* steht
+dann „Vorlage geändert“. Das Formular des Textes zeigt für jeden dieser Abschnitte, welche Zeilen die Vorlage
+entfernt (−) und hinzugefügt (+) hat. Danach können Sie:
+
+- **die Abschnitte übernehmen:** *Abschnitte aus der Vorlage übernehmen* lädt Ihren Text mit diesen
+  Abschnitten in der Fassung der Vorlage ins Formular. Ihre Angaben in Zeilen, die die Vorlage nicht geändert
+  hat (z. B. die Aufsichtsbehörde), bleiben, auch wo sie in den Zeilen darunter weitergehen (z. B. Name,
+  Anschrift und E-Mail-Adresse der oder des Datenschutzbeauftragten), ebenso was an Stelle von
+  `[[VERANTWORTLICHE]]` steht; eigene Änderungen in diesen Abschnitten nicht. Was aus Ihrem Text dabei
+  wegfällt (eigene Zeilen, Ihre Angaben in einer Zeile, die die Vorlage geändert hat), listet der Hinweis als
+  „nicht übernommen“ auf: Übernehmen Sie daraus, was noch in den Text gehört. Einen Abschnitt, den die Vorlage
+  gestrichen hat, entfernt das Übernehmen, und der Hinweis nennt ihn als „entfernt“. Zum Vergleich bleiben die
+  Unterschiede darunter sichtbar. Prüfen Sie das Formular, ersetzen Sie neue Platzhalter in eckigen Klammern
+  und speichern Sie;
+- **den Text selbst anpassen** und beim Speichern *Abgleich erledigt* ankreuzen; oder
+- **die ganze Vorlage laden** (*Vorlage laden*) und neu ausfüllen.
+
+Speichern Sie nach dem Übernehmen, dem Laden oder mit dem Häkchen, gilt die aktuelle Vorlage als Vorlagenstand
+des Textes, der Hinweis verschwindet, und das Protokoll hält fest, wer den Text abgeglichen hat. Wurde die
+Vorlage geändert, während das Formular offen war (z. B. durch ein Update), speichert TalkSlot den Text, vermerkt
+den Abgleich aber nicht und weist darauf hin. Ein Text, der schon alles enthält, was die Vorlage seit seinem
+Vorlagenstand geändert hat (oder ohne Vorlagenstand den Wortlaut der aktuellen Vorlage, nur die Platzhalter
+ausgefüllt), braucht nichts: TalkSlot vermerkt den Vorlagenstand selbst. Ein Platzhalter innerhalb einer
+Zeile steht für Text bis zum Zeilenende: Haben Sie einen über mehrere Zeilen ausgefüllt (z. B. die Anschrift
+der oder des Datenschutzbeauftragten unter dem Namen), zeigt der Hinweis diese Zeilen bei einem Text ohne
+Vorlagenstand als Abweichung, bis Sie den Abgleich einmal bestätigen. Bei einem Text, der bearbeitet wurde, bevor TalkSlot Vorlagenstände
+festhielt, oder der aus der Vorlage der anderen Betriebsart stammt, ist die Ausgangsvorlage unbekannt: Der
+Hinweis nennt dann die Abschnitte, in denen er von der aktuellen Vorlage abweicht („weicht von der Vorlage
+ab“; ausgefüllte Platzhalter zählen nicht), mit den Zeilen, die nur in Ihrem Text (−) und nur in der Vorlage
+(+) stehen. Dazu gehören auch Abschnitte, die es nur in Ihrem Text gibt: Ob sie Ihre eigenen sind oder aus
+einer früheren Vorlage stammen, ist ohne Vorlagenstand nicht bekannt, deshalb bleiben sie beim Übernehmen, wie
+sie sind (der Hinweis nennt sie als „unverändert“); prüfen Sie selbst, ob sie noch zutreffen. Bestätigen Sie den
+Abgleich einmal, danach sehen Sie nur noch, was spätere Vorlagen ändern.
+
+Heißt ein Abschnitt in Ihrem Text anders als in der Vorlage (z. B. „# 5. Wie lange wir Daten speichern“), fügt
+das Übernehmen den Abschnitt der Vorlage zusätzlich ein; löschen Sie dann den alten vor dem Speichern.
 
 Ist keine Betriebsart gewählt (Installationen aus der Zeit davor mit bearbeiteten Texten), zeigt das
 Dashboard „Bitte Betriebsart wählen“, und bis ein Admin sie wählt, lässt sich keine Runde aktivieren;
