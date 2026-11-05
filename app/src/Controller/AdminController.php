@@ -1822,11 +1822,16 @@ final class AdminController
         $message = __('Angaben für Impressum und Datenschutz gespeichert.');
         if ($type !== '') {
             $changed = $type !== Operator::type();
+            $confirmed = !$changed && Operator::typeAuto();
             Operator::saveType($type);
             if ($changed) {
-                $this->audit(fn () => __('Betriebsart geändert: {type}', ['type' => Operator::typeLabel($type)]));
                 $replaced = LegalTexts::apply($type);
+                $this->audit(fn () => __('Betriebsart geändert: {type}', ['type' => Operator::typeLabel($type)])
+                    . ($replaced > 0 ? ' ' . __('({count} unveränderte Vorlagentexte ersetzt)', ['count' => $replaced]) : ''));
                 $message .= $replaced > 0 ? ' ' . __('{count} unveränderte Vorlagentexte wurden durch die Vorlagen der neuen Betriebsart ersetzt.', ['count' => $replaced]) : '';
+            } elseif ($confirmed) {
+                // The type taken over on an update (Migrations::refreshPages) is now the admin's choice
+                $this->audit(fn () => __('Betriebsart bestätigt (beim Update übernommen): {type}', ['type' => Operator::typeLabel($type)]));
             }
         }
         $this->flash('success', $message);

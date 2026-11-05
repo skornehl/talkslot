@@ -73,6 +73,9 @@ Mit Shell-Zugang können Sie stattdessen über die Kommandozeile installieren:
 php bin/install.php <username> [email]   # fragt nach dem Passwort und der Betriebsart (school oder private)
 ```
 
+In einem Skript übergeben Sie die drei Antworten über die Standardeingabe, je eine Zeile: Passwort,
+Passwort-Wiederholung, `school` oder `private`.
+
 ## 4. Cronjob einrichten
 
 TalkSlot löscht vergangene Buchungen, deaktiviert und löscht abgeschlossene Terminrunden und verschickt

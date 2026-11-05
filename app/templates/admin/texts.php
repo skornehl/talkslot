@@ -10,7 +10,9 @@
     <?php require __DIR__ . '/_operator_type.php'; ?>
     <div class="field">
       <label for="controller_contact"><?= e(__('Verantwortliche Stelle')) ?></label>
-      <textarea id="controller_contact" name="controller_contact" rows="5" maxlength="2000" aria-describedby="cc-hint" placeholder="<?= str_replace("\n", '&#10;', e(__("Name der Schule\nVertreten durch: Vorname Nachname\nStraße Hausnummer\nPLZ Ort\nE-Mail: name@example.org"))) ?>"><?= e($operatorContact) ?></textarea>
+      <textarea id="controller_contact" name="controller_contact" rows="5" maxlength="2000" aria-describedby="cc-hint" placeholder="<?= str_replace("\n", '&#10;', e($operatorType === 'private'
+        ? __("Vorname Nachname bzw. Name des Vereins oder Trägers\nVertreten durch: Vorname Nachname (bei Verein oder Träger)\nStraße Hausnummer\nPLZ Ort\nE-Mail: name@example.org")
+        : __("Name der Schule\nVertreten durch: Vorname Nachname\nStraße Hausnummer\nPLZ Ort\nE-Mail: name@example.org"))) ?>"><?= e($operatorContact) ?></textarea>
       <p class="hint" id="cc-hint"><?= __h('Die Schule bzw. der Betreiber ist für alle Terminrunden datenschutzrechtlich verantwortlich. Bitte {bold} eintragen (wie im Beispiel) – genau dieser Text erscheint in Impressum und Datenschutzerklärung. Gilt für alle Admins gemeinsam. Ohne diese Angaben ist keine Runde öffentlich erreichbar.', ['bold' => '<strong>' . e(__('vollständigen Namen, Anschrift und E-Mail-Adresse')) . '</strong>']) ?></p>
     </div>
     <div class="actions"><button type="submit" class="button button-primary"><?= e(__('Speichern')) ?></button></div>

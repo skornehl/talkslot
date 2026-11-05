@@ -369,12 +369,14 @@ final class Migrations
                 return false; // e.g. code already new, templates still old (upload in progress)
             }
         }
+        // Both are logged (accountability, Art. 5(2) GDPR): who is the controller, and which texts changed
         $type = Operator::type();
         if ($type === null && ($type = LegalTexts::detectType(LegalTexts::stored())) !== null) {
             Operator::saveType($type, true);
+            Audit::system(static fn (): string => __('Betriebsart beim Update übernommen: {type} (alle Texte waren unveränderte Vorlagen dieser Betriebsart; gilt, bis ein Admin sie unter „Texte“ speichert)', ['type' => Operator::typeLabel($type)]));
         }
-        if ($type !== null) {
-            LegalTexts::apply($type);
+        if ($type !== null && ($replaced = LegalTexts::apply($type)) > 0) {
+            Audit::system(static fn (): string => __('{count} unveränderte Vorlagentexte beim Update durch die aktuellen Vorlagen ersetzt', ['count' => $replaced]));
         }
         return true;
     }

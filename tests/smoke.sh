@@ -31,7 +31,7 @@ INSTALL_BAK=$(mktemp); cp "$ROOT/public/install.php" "$INSTALL_BAK"
 dcx exec -T db mariadb -uapp -papp-dev-only talkslot -e "SET FOREIGN_KEY_CHECKS=0; DROP TABLE IF EXISTS tp_mail_outbox, tp_round_templates, tp_audit_log, tp_round_translations, tp_sent_summaries, tp_bookings, tp_slots, tp_day_breaks, tp_round_days, tp_rounds, tp_pages, tp_rate_limits, tp_settings, tp_users, tp_admin_users; CREATE TABLE tp_users (id INT)"
 dcx exec -T app php -r '@unlink("/srv/app/app/var/installed.lock");'
 check "installer reachable while not installed" 'curl -s "$B/install.php" | grep -q "name=\"install_key\""'
-check "CLI installer: different passwords → abort" 'printf "Sehr-Sicheres-Pw-1\nanderes-Passwort-2\n" | dcx exec -T app php /srv/app/bin/install.php sabrina 2>&1 | grep -q "Passwörter stimmen nicht überein"'
+check "CLI installer: different passwords, no operator type → abort, the usage names the three input lines" 'O=$(printf "Sehr-Sicheres-Pw-1\nanderes-Passwort-2\n" | dcx exec -T app php /srv/app/bin/install.php sabrina 2>&1); echo "$O" | grep -q "Passwörter stimmen nicht überein" && echo "$O" | grep -q "Bitte wählen Sie die Betriebsart" && echo "$O" | grep -qF "Input: password, password again, operator type (school or private), one per line"'
 IK=dev-install-key-123
 check "wrong install key rejected" 'curl -s -d "install_key=falsch&username=$USER" --data-urlencode "password=$PASS" --data-urlencode "password2=$PASS" "$B/install.php" | grep -q "Installationsschlüssel ist falsch"'
 check "foreign table with the same name → no installation" 'curl -s -d "install_key=$IK&username=$USER" --data-urlencode "password=$PASS" --data-urlencode "password2=$PASS" "$B/install.php" | grep -q "enthält bereits Tabellen mit gleichem Namen (tp_users)"'

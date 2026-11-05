@@ -68,6 +68,9 @@ With shell access you can install from the command line instead:
 php bin/install.php <username> [email]   # asks for the password and the operator type (school or private)
 ```
 
+In a script, pass the three answers on standard input, one per line: password, password again, `school` or
+`private`.
+
 ## 4. Set up the cron job
 
 TalkSlot deletes past bookings, deactivates and deletes finished rounds and sends teacher summaries,

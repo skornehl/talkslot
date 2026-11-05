@@ -132,7 +132,10 @@ Das *Protokoll* zeigt die Änderungen durch Admin-Konten, die neuesten zuerst: w
 bearbeitet, (de)aktiviert, dupliziert, einer anderen Lehrkraft gegeben oder gelöscht hat, wer Tage,
 Pausen, gesperrte Termine oder Buchungen geändert, Konten und Rollen angelegt, geändert oder gelöscht,
 Links verschickt und Vorlagen oder Rechtstexte bearbeitet hat. Bei mehreren Admins lässt sich so
-nachvollziehen, wer was getan hat.
+nachvollziehen, wer was getan hat. Was TalkSlot bei einem Update selbst ändert, steht als *TalkSlot* im
+Protokoll: eine aus unveränderten Vorlagen übernommene Betriebsart und Rechtstexte, die durch neuere
+Vorlagen ersetzt wurden. Der Admin, der die Betriebsart danach speichert, steht mit „Betriebsart bestätigt“
+im Protokoll.
 
 Was Lehrkräfte in ihren eigenen Runden tun, erfasst das Protokoll **nicht**, und es enthält nie Daten von
 Eltern: Eine Buchung erscheint nur mit Datum und Uhrzeit (z. B. „Buchung 12.11.2026 14:00 gelöscht“).

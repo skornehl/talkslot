@@ -143,7 +143,11 @@ ist von Land zu Land verschieden; die Vorlage lässt sie deshalb als Platzhalter
 **Die Vorlagen folgen der Betriebsart.** Der Installer speichert die Vorlagen der gewählten Betriebsart.
 Ändert ein Admin die Betriebsart, wird jeder Text, der noch unverändert einer Vorlage entspricht (beider
 Betriebsarten, aktuell oder früher), durch die Vorlage der neuen Betriebsart ersetzt, und die Meldung nennt
-die Anzahl; bearbeitete Texte werden nie ersetzt. Im Formular eines Textes bietet *Vorlage laden* die
+die Anzahl; bearbeitete Texte werden nie ersetzt. Das Protokoll hält fest, wer die Betriebsart wann
+festgelegt hat (Rechenschaftspflicht, Art. 5 Abs. 2 DSGVO): jede Änderung durch einen Admin mit der Zahl der
+ersetzten Texte, eine beim Update übernommene Betriebsart (eingetragen als *TalkSlot*) und den Admin, der sie
+danach bestätigt hat, sowie Texte, die bei einem Update durch neuere Vorlagen ersetzt wurden. Im Formular
+eines Textes bietet *Vorlage laden* die
 Vorlagen beider Betriebsarten an, die zur Betriebsart passende zuerst; den gespeicherten Text ersetzt sie
 erst beim Speichern. Hinweise gleichen die Texte mit der Betriebsart ab:
 
@@ -178,7 +182,9 @@ Vor dem Start:
      Dienste ihre Lehrkräfte nutzen dürfen; Lehrkräfte sollten das mit ihrer Schulleitung oder der oder dem
      Datenschutzbeauftragten der Schule klären. Ist für den Betreiber eine Datenschutzbeauftragte bzw. ein
      Datenschutzbeauftragter benannt, nennen Sie sie bzw. ihn in der Datenschutzerklärung statt des Satzes,
-     dass niemand benannt ist.
+     dass niemand benannt ist. Die Vorlage des Impressums ist auf eine Privatperson zugeschnitten: Ein Verein
+     oder freier Träger ergänzt die vertretungsberechtigte Person und, falls vorhanden, den Registereintrag
+     (§ 5 DDG).
 2. **Verantwortlicher:** Füllen Sie *Texte → Angaben für Impressum und Datenschutz* aus. Diese
    Angaben ersetzen `[[VERANTWORTLICHE]]`; ohne sie ist keine Runde öffentlich.
 3. **Hoster:** Setzen Sie `hosting` in der Konfiguration (bzw. `HOSTING_DE`/`HOSTING_EN` beim Deployment).

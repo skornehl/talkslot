@@ -130,6 +130,9 @@ placeholders.
 **Templates follow the operator type.** The installer stores the templates of the chosen type. When an admin
 changes the type, every text that is still an unedited template (of either type, current or earlier) is
 replaced by the template of the new type, and the message says how many; edited texts are never replaced.
+The admin log (*Protokoll*) records who set the operator type and when (accountability, Art. 5(2) GDPR):
+each change by an admin with the number of texts replaced, a type taken over on an update (entered as
+*TalkSlot*) and the admin who then confirmed it, and texts replaced by newer templates on an update.
 On the text form, *Vorlage laden* (*Load template*) offers the templates of both types, the one of the
 operator type first; it only replaces the stored text when you save. Hints compare the texts with the type:
 
@@ -162,7 +165,9 @@ Before going live:
      teachers use the service for their parent meetings. Schools may have their own rules on which services
      their teachers may use, so teachers should check with their school management or the school's data
      protection officer. If a data protection officer has been appointed for the operator, name them in the
-     privacy policy instead of the sentence that none is appointed.
+     privacy policy instead of the sentence that none is appointed. The imprint template is written for a
+     private person: an association or independent provider adds the person authorised to represent it and,
+     if it has one, its register entry (section 5 DDG).
 2. **Controller:** fill in *Texte → Angaben für Impressum und Datenschutz*. These details replace
    `[[VERANTWORTLICHE]]`; without them no round is public.
 3. **Web host:** set `hosting` in the configuration (or `HOSTING_DE`/`HOSTING_EN` when deploying). It

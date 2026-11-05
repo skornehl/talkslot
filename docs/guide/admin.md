@@ -119,7 +119,9 @@ rounds created with it.
 *Protokoll* (log) lists the changes made by admin accounts, newest first: who created, edited,
 (de)activated, duplicated, moved to another teacher or deleted which round, changed days, breaks, blocked
 slots or bookings, created, changed or deleted accounts and roles, sent links, and edited templates or
-legal texts. With several admins this makes it traceable who did what.
+legal texts. With several admins this makes it traceable who did what. Changes TalkSlot makes itself on an
+update are entered as *TalkSlot*: an operator type taken over from unedited templates and legal texts
+replaced by newer templates. The admin who then saves the operator type is logged as confirming it.
 
 The log does **not** record what teachers do in their own rounds, and it never contains data of parents:
 a booking appears only as date and time (e.g. "Buchung 12.11.2026 14:00 gelöscht"). Entries are deleted
