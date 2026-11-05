@@ -14,7 +14,11 @@ the German ones, with the English label in brackets.
 - **Template** (*Vorlage*, if your admins have set up any): *Übernehmen* fills in times, breaks and
   settings, e.g. "parent-teacher day: 08:00–16:00, 15 minutes, lunch break". Everything stays editable;
   only title and date are left to fill in.
-- **Title** and optional **description** (*Beschreibungstext*), shown to parents. Plain text.
+- **Title** and optional **description** (*Beschreibungstext*), shown to parents. Plain text. Keep them
+  neutral, e.g. "Elternsprechtag 7b": they appear in the mails to parents and in calendar files, the title
+  also in the admin log. A title such as "consultation on special needs" would tell everyone who sees a
+  booking more than the appointment. For classes with students of age, check with your school first whether
+  and on what you may talk with their parents (state law).
 - **Location** (*Ort*, optional), e.g. "Room 1.12". Shown on the booking page, the confirmation page, in
   the confirmation mail, the calendar file, the print view and the invitation text. If one day takes place
   somewhere else, set it under *Tag bearbeiten* (edit day).
@@ -126,7 +130,8 @@ When a later change (of the day or a break) makes a conflict fit again, its pare
 the current details, if these changed since their last mail. Saving an entry with *Änderung per E-Mail
 mitteilen* also sends the current details without a change (at most 30 mails per hour from your account).
 
-Further actions on the round: edit, deactivate, **print view / PDF** (*Druckansicht / PDF*), and
+Further actions on the round: edit, deactivate, **print view / PDF** (*Druckansicht / PDF*; its last column,
+*Organisatorisches*, is for organisational notes only, nothing about the conversation), and
 **duplicate** (*Duplizieren …*): a copy with new link and code, including times, breaks, blocked slots,
 settings and translations, but no bookings; the copy is inactive. Enter the **first day of the copy** and
 all days move by the same distance (days on Tuesday and Thursday stay on Tuesday and Thursday), handy for

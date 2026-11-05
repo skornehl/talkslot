@@ -50,8 +50,9 @@ return [
     'round.remembered.another' => 'Zarezerwuj kolejny termin (np. dla rodzeństwa)',
 
     'form.required' => 'pole obowiązkowe',
-    'form.name' => 'Imię i nazwisko',
-    'form.name.hint' => 'Na przykład imię i nazwisko dziecka.',
+    'form.name' => 'Imię i nazwisko dziecka',
+    'form.name.hint' => 'Imię i nazwisko, w razie potrzeby z klasą (np. „Mia Schmidt, 7b”). Więcej nie jest potrzebne.',
+    'form.name.siblings' => 'W przypadku rodzeństwa prosimy zarezerwować osobny termin dla każdego dziecka z jego imieniem i nazwiskiem.',
     'form.email' => 'Adres e-mail (opcjonalnie)',
     'form.email.hint' => 'Służy wyłącznie do wysłania potwierdzenia z osobistym linkiem. Bez adresu link zobaczą Państwo tylko na następnej stronie.',
     'form.email.hint_reminder' => 'Służy wyłącznie do wysłania potwierdzenia z osobistym linkiem oraz przypomnienia w przeddzień wieczorem. Bez adresu link zobaczą Państwo tylko na następnej stronie.',

@@ -177,8 +177,6 @@ return [
     'Zurück' => 'Back',
     'Name' => 'Name',
     'E-Mail' => 'Email',
-    'Notizen' => 'Notes',
-    'Stand: {time} Uhr · Vertraulich – nach dem Termin vernichten.' => 'As of {time} · Confidential – destroy after the appointment.',
     'Keine Tage vorhanden.' => 'No days available.',
 
     // Dashboard (dashboard.php)
@@ -214,7 +212,6 @@ return [
 
     // Log (audit.php)
     'Protokoll' => 'Log',
-    'Änderungen durch Admins: wer wann welche Runde, welches Konto oder welchen Text geändert hat. Änderungen von Lehrkräften an ihren eigenen Runden werden nicht erfasst, Daten von Eltern (Namen, E-Mail-Adressen) nie. Einträge werden nach {days} Tagen gelöscht.' => 'Changes made by admins: who changed which round, account or text, and when. Changes made by teachers to their own rounds are not recorded, data of parents (names, email addresses) never. Entries are deleted after {days} days.',
     'Keine weiteren Einträge.' => 'No further entries.',
     'Noch keine Einträge.' => 'No entries yet.',
     'Zeitpunkt' => 'Time',

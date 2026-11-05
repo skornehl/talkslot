@@ -1,6 +1,19 @@
 <?php
 /** English texts of the admin area: German original => English (see App\AdminI18n). Privacy and legal texts. */
 return [
+    // Data-minimal wording (expert review P2-4): neutral round titles, organisational notes only, the log
+    'Bitte neutral halten, z. B. „Elternsprechtag 7b“: Titel und Beschreibung stehen in den E-Mails an Eltern und in Kalenderdateien, der Titel auch im Protokoll. Keine Hinweise auf Förderbedarf, Gesundheit oder andere sensible Themen.'
+        => 'Please keep it neutral, e.g. “Parents’ evening 7b”: title and description appear in the e-mails to parents and in calendar files, the title also in the log. No hints at special educational needs, health or other sensitive topics.',
+    'Organisatorisches' => 'Organisational notes',
+    'Stand: {time} Uhr · Vertraulich – nur Organisatorisches notieren, keine Gesprächsinhalte; nach dem Termin vernichten.'
+        => 'As of {time} · Confidential – organisational notes only, nothing about the conversation; destroy after the appointment.',
+    'Änderungen durch Admins: wer wann welche Runde, welches Konto oder welchen Text geändert hat. Änderungen von Lehrkräften an ihren eigenen Runden werden nicht erfasst, Namen und E-Mail-Adressen von Eltern nie, Buchungen nur mit ihrem Datum. Einträge werden nach {days} Tagen gelöscht.'
+        => 'Changes made by admins: who changed which round, account or text, and when. Changes made by teachers to their own rounds are not recorded, names and email addresses of parents never, bookings with their date only. Entries are deleted after {days} days.',
+    'Buchung am {date} eingetragen' => 'booking on {date} entered',
+    'Buchung am {date} geändert' => 'booking on {date} changed',
+    'Buchung am {date} geändert, auf eine andere Uhrzeit am selben Tag umgebucht' => 'booking on {date} changed, rebooked to another time on the same day',
+    'Buchung am {date} geändert, umgebucht auf den {target}' => 'booking on {date} changed, rebooked to {target}',
+    'Buchung am {date} gelöscht' => 'booking on {date} deleted',
     // Version markers of the legal texts: newer templates for edited texts
     'Einleitung' => 'Introduction',
     '{count} Abschnitte' => '{count} sections',

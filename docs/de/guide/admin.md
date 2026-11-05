@@ -157,8 +157,10 @@ Vorlagen ersetzt wurden. Der Admin, der die Betriebsart danach speichert, steht 
 im Protokoll, ein Rechtstext, der nach dem Abgleich mit einer neueren Vorlage gespeichert wurde, mit „… mit
 dem aktuellen Stand der Vorlage … abgeglichen“.
 
-Was Lehrkräfte in ihren eigenen Runden tun, erfasst das Protokoll **nicht**, und es enthält nie Daten von
-Eltern: Eine Buchung erscheint nur mit Datum und Uhrzeit (z. B. „Buchung 12.11.2026 14:00 gelöscht“).
+Was Lehrkräfte in ihren eigenen Runden tun, erfasst das Protokoll **nicht**, und es enthält nie Namen oder
+E-Mail-Adressen von Eltern: Eine Buchung erscheint nur mit ihrem Datum (z. B. „Buchung am 12.11.2026
+gelöscht“), ohne Uhrzeit, mit der sie sich zusammen mit einer Zusammenfassung oder einem Ausdruck noch einer
+Person zuordnen ließe.
 Einträge werden nach 90 Tagen gelöscht (einstellbar, `audit_log_days`). Nur Admins sehen das Protokoll.
 
 ## Rechtstexte

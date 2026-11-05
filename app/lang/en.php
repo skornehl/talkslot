@@ -50,8 +50,9 @@ return [
     'round.remembered.another' => 'Book another appointment (e.g. for a sibling)',
 
     'form.required' => 'required',
-    'form.name' => 'Name',
-    'form.name.hint' => 'For example the child’s first and last name.',
+    'form.name' => 'Child’s name',
+    'form.name.hint' => 'First and last name, with the class if needed (e.g. “Mia Schmidt, 7b”). Nothing more is needed.',
+    'form.name.siblings' => 'For siblings, please book a separate appointment for each child with their name.',
     'form.email' => 'E-mail address (optional)',
     'form.email.hint' => 'Only used to send you a confirmation with your personal link. Without an address you will only see the link on the next page.',
     'form.email.hint_reminder' => 'Only used for a confirmation with your personal link and a reminder the evening before. Without an address you will only see the link on the next page.',

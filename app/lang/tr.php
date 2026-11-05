@@ -50,8 +50,9 @@ return [
     'round.remembered.another' => 'Başka bir randevu al (ör. kardeş için)',
 
     'form.required' => 'zorunlu alan',
-    'form.name' => 'Ad',
-    'form.name.hint' => 'Örneğin çocuğun adı ve soyadı.',
+    'form.name' => 'Çocuğun adı',
+    'form.name.hint' => 'Ad ve soyad, gerekirse sınıfıyla birlikte (örneğin “Mia Schmidt, 7b”). Daha fazlası gerekmez.',
+    'form.name.siblings' => 'Kardeşler için lütfen her çocuğa kendi adıyla ayrı bir randevu alın.',
     'form.email' => 'E-posta adresi (isteğe bağlı)',
     'form.email.hint' => 'Yalnızca kişisel bağlantınızı içeren onayı göndermek için kullanılır. Adres vermezseniz bağlantıyı yalnızca bir sonraki sayfada görürsünüz.',
     'form.email.hint_reminder' => 'Yalnızca kişisel bağlantınızı içeren onayı ve bir gün önce akşam bir hatırlatmayı göndermek için kullanılır. Adres vermezseniz bağlantıyı yalnızca bir sonraki sayfada görürsünüz.',

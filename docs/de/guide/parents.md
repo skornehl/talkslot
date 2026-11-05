@@ -16,7 +16,8 @@ Benutzerkonto brauchen Sie nicht.
    bietet ein Link über der Seite sie an; von selbst wechselt die Seite nicht. Einladungen der Lehrkraft
    enthalten meist für jede Sprache einen direkten Link.
 3. **Wählen Sie einen freien Termin.** Es werden nur freie Termine angezeigt, nach Tagen geordnet.
-4. **Geben Sie einen Namen ein**, meist den Vor- und Nachnamen Ihres Kindes. Die **E-Mail-Adresse ist
+4. **Geben Sie den Namen Ihres Kindes ein**, Vor- und Nachname, bei Bedarf mit Klasse; mehr ist nicht nötig.
+   Ist nur ein Termin pro Person möglich, buchen Sie Geschwister einzeln, jeweils mit ihrem Namen. Die **E-Mail-Adresse ist
    freiwillig**: Wenn Sie eine angeben, erhalten Sie eine Bestätigung mit Ihrem persönlichen Link und
    einer Kalenderdatei und meist am Vorabend eine Erinnerung. Kann die Bestätigung gerade nicht verschickt
    werden, sagt die Seite das, und sie kommt automatisch nach (mit einem eigenen persönlichen Link; der Link

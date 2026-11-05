@@ -1127,7 +1127,9 @@ final class AdminController
             // An entry puts a draft to use: from now on it expires after its last day (Cleanup)
             Db::run('UPDATE rounds SET was_used = 1 WHERE id = ?', [$round['id']]);
         }
-        $this->audit(fn () => __('Buchung {slot} eingetragen', ['slot' => self::when($slot['day_date'], $slot['start_time'])]), (int) $round['id']);
+        // Booking events with the date only (expert review P2-4): with the time, a summary mail or a printed list would
+        // tell whose booking it was for 90 days after the booking itself is gone
+        $this->audit(fn () => __('Buchung am {date} eingetragen', ['date' => self::when($slot['day_date'])]), (int) $round['id']);
         $msg = __('Eintrag angelegt. Änderungslink für die Eltern (wird nur jetzt angezeigt): {link}', ['link' => abs_url('/b/' . $token, ['lang' => $old['lang']])]);
         if ($old['send_mail'] && $old['email'] !== '' && $this->teacherMailAllowed($msg)) {
             $mail = $this->withoutSession(static fn () => Notifier::sendOrQueue((array) BookingService::findById($id), 'booked', $token));
@@ -1181,9 +1183,11 @@ final class AdminController
         }
         $newAddress = BookingService::update($id, PublicController::cleanName($old['name']), $old['email'] ?: null, $old['lang']);
         $target = $moved ? BookingService::findById($id) : null;
-        $this->audit(fn () => $target
-            ? __('Buchung {slot} geändert, umgebucht auf {target}', ['slot' => self::when($booking['day_date'], $booking['start_time']), 'target' => self::when($target['day_date'], $target['start_time'])])
-            : __('Buchung {slot} geändert', ['slot' => self::when($booking['day_date'], $booking['start_time'])]), (int) $booking['round_id']);
+        $this->audit(fn () => match (true) {
+            $target === null => __('Buchung am {date} geändert', ['date' => self::when($booking['day_date'])]),
+            $target['day_date'] === $booking['day_date'] => __('Buchung am {date} geändert, auf eine andere Uhrzeit am selben Tag umgebucht', ['date' => self::when($booking['day_date'])]),
+            default => __('Buchung am {date} geändert, umgebucht auf den {target}', ['date' => self::when($booking['day_date']), 'target' => self::when($target['day_date'])]),
+        }, (int) $booking['round_id']);
         $msg = $moved ? __('Eintrag gespeichert und umgebucht.') : __('Eintrag gespeichert.');
         // Also without a change here: this is how parents learn the new date, location or teacher of their
         // appointment after the day or the round was changed (the mail carries the current details)
@@ -1206,7 +1210,7 @@ final class AdminController
         $notify = Http::post('notify') === '1';
         // The cancellation goes out right away (session closed meanwhile), or from the outbox if the server refuses
         $mail = $this->withoutSession(static fn () => ScheduleService::deleteBooking($booking, $notify));
-        $this->audit(fn () => __('Buchung {slot} gelöscht', ['slot' => self::when($booking['day_date'], $booking['start_time'])])
+        $this->audit(fn () => __('Buchung am {date} gelöscht', ['date' => self::when($booking['day_date'])])
             . ($mail !== null ? ', ' . __('Eltern per E-Mail informiert') : ''), (int) $booking['round_id']);
         $this->flash('success', __('Eintrag gelöscht – der Slot ist wieder frei.') . match ($mail) {
             Notifier::SENT => ' ' . __('Absage per E-Mail an die Eltern gesendet.'),

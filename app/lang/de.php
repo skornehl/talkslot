@@ -53,8 +53,9 @@ return [
     'round.remembered.another' => 'Weiteren Termin buchen (z. B. für ein Geschwisterkind)',
 
     'form.required' => 'Pflichtfeld',
-    'form.name' => 'Name',
-    'form.name.hint' => 'Zum Beispiel Vor- und Nachname des Kindes.',
+    'form.name' => 'Name des Kindes',
+    'form.name.hint' => 'Vor- und Nachname, bei Bedarf mit Klasse (z. B. „Mia Schmidt, 7b“). Mehr ist nicht nötig.',
+    'form.name.siblings' => 'Für Geschwister buchen Sie bitte je Kind einen eigenen Termin mit dessen Namen.',
     'form.email' => 'E-Mail-Adresse (freiwillig)',
     'form.email.hint' => 'Nur für die Terminbestätigung mit Änderungslink. Ohne Adresse erhalten Sie den Link nur auf der nächsten Seite.',
     'form.email.hint_reminder' => 'Nur für die Terminbestätigung mit Änderungslink und eine Erinnerung am Vorabend. Ohne Adresse erhalten Sie den Link nur auf der nächsten Seite.',
