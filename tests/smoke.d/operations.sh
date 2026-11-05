@@ -180,7 +180,13 @@ op_set() { DBQ "INSERT INTO tp_settings (name, value) VALUES ('$1', '$2') ON DUP
 op_get() { DBQ "SELECT value FROM tp_settings WHERE name = '$1'"; }
 op_recent() { [[ "$1" =~ ^[0-9]+$ ]] && [ $(( $(date +%s) - $1 )) -lt 300 ]; }
 op_cron_mails() { ALERTS 'echo json_decode(file_get_contents("http://mail:8025/api/v1/search?query=to:betrieb@example.org%20subject:Cronjob"), true)["messages_count"] ?? "?";'; }
-op_throttle_reset() { ALERTS '@unlink("/srv/app/app/var/alerts.json");'; } # App\Alert: the same alert at most once per hour
+# App\Alert sends the same alert at most once per hour: forget only the throttle entry of this one (others may
+# hold back repetitions that later checks rely on); op_throttle_reset <daily count> also sets the day's count
+op_throttle_reset() {
+  $DC exec -T app php -r '$f = "/srv/app/app/var/alerts.json"; $s = json_decode((string) @file_get_contents($f), true);
+    if (is_array($s)) { unset($s["keys"][hash("sha256", "cron-late")]); if (($argv[1] ?? "") !== "") $s["_count"] = (int) $argv[1]; file_put_contents($f, json_encode($s)); }' "${1:-}"
+}
+OPC_COUNT=$(ALERTS 'echo (int) (json_decode((string) @file_get_contents("/srv/app/app/var/alerts.json"), true)["_count"] ?? 0);')
 DBQ "DELETE FROM tp_settings WHERE name IN ('last_cron', 'cron_alert_sent'); UPDATE tp_settings SET value = '0' WHERE name = 'last_cleanup'"
 curl -s -o /dev/null "$B/"
 OPC_PAGE="$(op_get last_cron)|$(op_get last_cleanup)"
@@ -224,16 +230,14 @@ OPC_SINCE=$(op_get cron_watch_since)
 op_set cron_watch_since $(( $(date +%s) - 4 * 3600 )); op_throttle_reset
 OPC_NEVER=$(curl -s -b "$J" "$B/admin"); curl -s -o /dev/null "$B/"
 check "no run recorded: the monitoring begins with a page view, 3 h later admins are asked to set up the cron job; no mail" 'op_recent "$OPC_SINCE" && ! echo "$OPC_FRESH" | has "Cronjob" && echo "$OPC_NEVER" | has "<div class=\"alert alert-info\" role=\"status\"><p>Es ist noch kein Lauf des Cronjobs verzeichnet." && echo "$OPC_NEVER" | has "cron_alert_hours = 0" && [ "$(op_cron_mails)" = 2 ]'
-OPC_OFF=$(ALERTS 'require "/srv/app/app/bootstrap.php";
-  App\Config::load(["cron_alert_hours" => 0] + (require "/srv/app/config/config.php"));
-  App\Db::run("DELETE FROM settings WHERE name = ?", ["cron_watch_since"]);
-  App\CronMonitor::check();
-  echo App\Settings::get("cron_watch_since") ?? "none", "|", json_encode(App\CronMonitor::status());')
-check "cron_alert_hours = 0: no monitoring, no notice ($OPC_OFF)" '[ "$OPC_OFF" = "none|null" ]'
 
 $DC exec -T app php /srv/app/bin/cron.php >/dev/null
 DBQ "DELETE FROM tp_users WHERE username = 'betrieb-cron@example.org'"
 rm -f "$JC"
 # The alert mails of this section are expected; the final check counts unexpected ones
-ALERTS 'file_get_contents("http://mail:8025/api/v1/search?query=to:betrieb@example.org%20subject:Cronjob", false, stream_context_create(["http" => ["method" => "DELETE"]]));'
-op_throttle_reset
+for _ in 1 2 3 4 5; do
+  ALERTS 'file_get_contents("http://mail:8025/api/v1/search?query=to:betrieb@example.org%20subject:Cronjob", false, stream_context_create(["http" => ["method" => "DELETE"]]));'
+  [ "$(op_cron_mails)" = 0 ] && break; sleep 1
+done
+op_throttle_reset "$OPC_COUNT"
+check "cron monitoring: the expected alert mails are removed again, the cron job ran last ($(op_cron_mails))" '[ "$(op_cron_mails)" = 0 ] && op_recent "$(op_get last_cron)"'

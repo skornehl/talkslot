@@ -90,6 +90,24 @@ foreach ([[], ['cron_alert_hours' => 0], ['cron_alert_hours' => -2], ['cron_aler
 }
 App\Config::load($cfg);
 check('cron_alert_hours: 3 by default, 0 (also below) switches it off (' . implode(',', $opHours) . ')', $opHours === [3, 0, 0, 6]);
+// Switched off, page views do not even read the settings: any database access throws here
+$opDbError = new ReflectionProperty(App\Db::class, 'connectError');
+$opSaved = $opDbError->getValue();
+$opDbError->setValue(null, new PDOException('no database in this test'));
+$opCheck = static function (int $hours) use ($cfg): bool {
+    App\Config::load(['cron_alert_hours' => $hours] + $cfg);
+    try {
+        App\CronMonitor::check();
+        return true;
+    } catch (PDOException) {
+        return false;
+    }
+};
+$opOff = $opCheck(0);
+$opOn = $opCheck(3);
+$opDbError->setValue(null, $opSaved);
+App\Config::load($cfg);
+check('cron_alert_hours = 0: page views skip the check without a database query (with 3 they read the settings)', $opOff && !$opOn);
 $opMail = implode("\n", App\CronMonitor::alertLines(mktime(10, 17, 0, 11, 5, 2026), 3));
 check('alert mail: since when, after how many hours, what to check (GitHub: 60 days, enable again), no address or token',
     str_contains($opMail, 'seit dem 05.11.2026 10:17 Uhr nicht mehr vollständig gelaufen (gemeldet wird nach 3 Stunden)')
