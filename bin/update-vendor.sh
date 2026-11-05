@@ -7,7 +7,8 @@
 #
 #   bin/update-vendor.sh && php tests/unit.php
 #
-# Needs curl, tar and php. Only the files TalkSlot uses are copied (PHPMailer, SMTP, Exception).
+# Needs curl, tar, sha256sum and php. Only the files TalkSlot uses are copied (PHPMailer, SMTP, Exception),
+# with their SHA-256 checksums in app/vendor/phpmailer/SHA256SUMS.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -30,8 +31,12 @@ echo "PHPMailer $version ($commit)"
 curl -fsSL "https://github.com/PHPMailer/PHPMailer/archive/$commit.tar.gz" | tar -xz -C "$tmp" --strip-components=1
 
 dest=app/vendor/phpmailer
+files=(src/PHPMailer.php src/SMTP.php src/Exception.php LICENSE VERSION)
 mkdir -p "$dest/src"
-for f in src/PHPMailer.php src/SMTP.php src/Exception.php LICENSE VERSION; do
+for f in "${files[@]}"; do
   cp "$tmp/$f" "$dest/$f"
 done
+# Checksums of exactly these files: the unit tests compare them without network access, the CI job "Static
+# analysis" runs this script again and expects no change (expert review P1-6)
+(cd "$dest" && sha256sum "${files[@]}" > SHA256SUMS)
 echo "Updated $dest to $(cat "$dest/VERSION")"

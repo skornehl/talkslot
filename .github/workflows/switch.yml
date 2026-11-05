@@ -33,6 +33,13 @@ on:
         description: Optional, normally empty. Defaults to the repository of this workflow
         type: string
         default: ''
+    # Declared so that a caller can pass them one by one instead of `secrets: inherit`; none is required
+    # (secrets of the environment "production" are read there directly)
+    secrets:
+      APP_SECRET: { required: false }
+      FTP_USERNAME: { required: false }
+      FTP_PASSWORD: { required: false }
+      TALKSLOT_TOKEN: { required: false, description: Only for a private TalkSlot repository }
 
 concurrency:
   group: deploy # shared with "Deploy": never two switches at the same time
