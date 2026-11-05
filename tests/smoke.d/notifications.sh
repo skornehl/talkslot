@@ -443,6 +443,17 @@ PHP
 )
 check "booking deleted meanwhile: the teacher's deletion sends no second cancellation ($RS)" '[ "$RS" = "true|NULL|0" ] && [ "$(n_mails "$(r_addr 7)" abgesagt)" = 0 ]'
 
+# Appointments that are over concern nobody: one the change moves into the past, and one over before the change
+RP=$(curl -s -o /dev/null -w '%{redirect_url}' -b "$J" --data-urlencode "csrf=$NT" -d "title=Review+Vorbei&location=Raum+1&booking_limit=none&is_active=1&booking_deadline_hours=0&cancel_deadline_hours=0&day_dates%5B%5D=$(date -d '+3 day' +%F)&start_time=00:00&end_time=00:15&slot_minutes=15" "$B/admin/round/new" | grep -o '[0-9]*$')
+book "$(slugof "$RP")" "Review Vorbei" "$(r_addr 9)" >/dev/null
+RPD=$(curl -s -b "$J" "$B/admin/round/$RP" | grep -o 'id="day-[0-9]*"' | grep -o '[0-9]\+' | head -1)
+r_waits() { DBQ "SELECT COUNT(*) FROM tp_mail_outbox WHERE booking_id = $(n_id "Review Vorbei")"; }
+R=$(curl -s -L -b "$J" -d "csrf=$NT&day_date=$(date +%F)&start_time=00:00&end_time=00:15&slot_minutes=15&notify=1&location=" "$B/admin/day/$RPD/edit")
+check "day moved to a time that is over (today 00:00): no change notice for it" 'echo "$R" | has "Tag gespeichert. Slots wurden aktualisiert." && ! echo "$R" | has "erhalten die neuen Termindaten" && ! echo "$R" | has "persönlich informieren" && [ "$(r_waits)" = 0 ] && [ "$(DBQ "SELECT COUNT(*) FROM tp_bookings b JOIN tp_slots s ON s.id = b.slot_id WHERE b.name = \"Review Vorbei\" AND s.day_id = $RPD")" = 1 ]'
+R=$(curl -s -L -b "$J" --data-urlencode "csrf=$NT" -d "title=Review+Vorbei&booking_deadline_hours=0&cancel_deadline_hours=0&is_active=1&notify=1" --data-urlencode "location=Aula" "$B/admin/round/$RP/edit")
+check "… nor after a new location of the round, which concerns only appointments still ahead" 'echo "$R" | has "Runde gespeichert." && ! echo "$R" | has "erhalten die neuen Termindaten" && ! echo "$R" | has "persönlich informieren" && [ "$(r_waits)" = 0 ] && [ "$(DBQ "SELECT location FROM tp_rounds WHERE id = $RP")" = Aula ]'
+curl -s -o /dev/null -b "$J" -d "csrf=$NT&confirm=1" "$B/admin/round/$RP/delete"
+
 # Cancellations of appointments within 24 hours go out as single mails, not after the bulk mails
 RT=$(curl -s -o /dev/null -w '%{redirect_url}' -b "$J" --data-urlencode "csrf=$NT" -d "title=Review+Morgen&booking_limit=none&is_active=1&booking_deadline_hours=0&cancel_deadline_hours=0&day_dates%5B%5D=$(date -d '+1 day' +%F)&start_time=00:00&end_time=01:00&slot_minutes=15" "$B/admin/round/new" | grep -o '[0-9]*$')
 book "$(slugof "$RT")" "Review Morgen" "$(r_addr 8)" >/dev/null
@@ -452,7 +463,7 @@ check "day deleted with an appointment in the next 24 hours: its cancellation is
 $DC exec -T app php /srv/app/bin/cron.php >/dev/null
 curl -s -o /dev/null -b "$J" -d "csrf=$NT&confirm=1" "$B/admin/round/$RT/delete"
 curl -s -o /dev/null -b "$J" -d "csrf=$NT&confirm=1" "$B/admin/round/$RR/delete"
-check "clean-up: the rounds of the review are gone" '[ "$(n_mails "$(r_addr 8)" abgesagt)" = 1 ] && [ -z "$(DBQ "SELECT id FROM tp_rounds WHERE id IN (${RT:-0}, ${RR:-0})")" ] && [ -z "$(c_cancelled)" ]'
+check "clean-up: the rounds of the review are gone" '[ "$(n_mails "$(r_addr 8)" abgesagt)" = 1 ] && [ -z "$(DBQ "SELECT id FROM tp_rounds WHERE id IN (${RT:-0}, ${RR:-0}, ${RP:-0})")" ] && [ -z "$(c_cancelled)" ]'
 
 # Migration 21 on a database of the version before: the outbox gets the column for cancellations
 DBQ "ALTER TABLE tp_mail_outbox DROP COLUMN payload; UPDATE tp_settings SET value = '20' WHERE name = 'schema_version'"

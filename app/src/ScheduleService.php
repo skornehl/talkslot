@@ -195,15 +195,14 @@ final class ScheduleService
         return Db::transaction(static function () use ($scope, $id, $notify, $change): ScheduleChange {
             $old = array_column(self::concerned($scope, $id, true), null, 'id');
             $conflicts = $change();
-            // The same bookings afterwards (a change keeps them in the day, round or account)
+            // The same bookings afterwards (a change keeps them in the day, round or account); the ones that
+            // were over before concern nobody
             $where = self::SCOPES[$scope];
+            $after = $old ? array_column(Db::all(BookingService::DETAIL_SQL . " WHERE $where ORDER BY d.day_date, s.start_time, b.id", [$id]), null, 'id') : [];
             $changed = $touched = [];
             $moved = 0;
-            foreach ($old ? Db::all(BookingService::DETAIL_SQL . " WHERE $where ORDER BY d.day_date, s.start_time, b.id", [$id]) : [] as $b) {
-                $before = $old[$b['id']] ?? null;
-                if ($before === null) {
-                    continue;
-                }
+            foreach (array_intersect_key($after, $old) as $b) {
+                $before = $old[$b['id']];
                 $differs = self::details($b) !== self::details($before);
                 if ($differs) {
                     $touched[] = (int) $b['id'];
