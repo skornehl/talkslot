@@ -71,21 +71,24 @@ check('round addresses: every fixed address of the app is reserved (routes incl.
 // Cron monitoring (expert review P1-2). Recording the runs, the dashboard notice and the alert mail need the
 // database: tests/smoke.d/operations.sh
 echo "Operations: cron monitoring\n";
-$h = 3600;
-$now = 1_800_000_000;
+$opH = 3600;
+$opNow = 1_800_000_000;
 check('late: no completed run for cron_alert_hours (also exactly then); a run within them is fine',
-    App\CronMonitor::state($now - 3 * $h, null, $now, 3) === 'late' && App\CronMonitor::state($now - 5 * $h, $now - $h, $now, 3) === 'late'
-    && App\CronMonitor::state($now - 3 * $h + 1, null, $now, 3) === null && App\CronMonitor::state($now - 2 * $h, $now - 9 * $h, $now, 3) === null);
+    App\CronMonitor::state($opNow - 3 * $opH, null, $opNow, 3) === 'late' && App\CronMonitor::state($opNow - 5 * $opH, $opNow - $opH, $opNow, 3) === 'late'
+    && App\CronMonitor::state($opNow - 3 * $opH + 1, null, $opNow, 3) === null && App\CronMonitor::state($opNow - 2 * $opH, $opNow - 9 * $opH, $opNow, 3) === null);
 check('never: no run at all, cron_alert_hours since the monitoring began; not before, and not without its start',
-    App\CronMonitor::state(null, $now - 3 * $h, $now, 3) === 'never' && App\CronMonitor::state(null, $now - 3 * $h + 1, $now, 3) === null
-    && App\CronMonitor::state(null, null, $now, 3) === null);
-check('cron_alert_hours = 0: monitoring off', App\CronMonitor::state($now - 99 * $h, $now - 99 * $h, $now, 0) === null);
-check('alert mail: due at a new outage (none since the last run), then once a day',
-    App\CronMonitor::alertDue($now - 3 * $h, 0, $now) && App\CronMonitor::alertDue($now - 3 * $h, $now - 30 * $h, $now)
-    && !App\CronMonitor::alertDue($now - 30 * $h, $now - 23 * $h, $now) && App\CronMonitor::alertDue($now - 30 * $h, $now - 24 * $h, $now));
+    App\CronMonitor::state(null, $opNow - 3 * $opH, $opNow, 3) === 'never' && App\CronMonitor::state(null, $opNow - 3 * $opH + 1, $opNow, 3) === null
+    && App\CronMonitor::state(null, null, $opNow, 3) === null);
+check('cron_alert_hours = 0: monitoring off', App\CronMonitor::state($opNow - 99 * $opH, $opNow - 99 * $opH, $opNow, 0) === null);
+check('alert mail: due at an outage with no mail since the last run, then once a day',
+    App\CronMonitor::alertDue($opNow - 3 * $opH, 0, $opNow) && App\CronMonitor::alertDue($opNow - 3 * $opH, $opNow - 30 * $opH, $opNow)
+    && !App\CronMonitor::alertDue($opNow - 30 * $opH, $opNow - 23 * $opH, $opNow) && App\CronMonitor::alertDue($opNow - 30 * $opH, $opNow - 24 * $opH, $opNow));
+check('alert mail: a new outage within a day of the last mail (repaired, then down again) is mailed at once',
+    App\CronMonitor::alertDue($opNow - 3 * $opH, $opNow - 5 * $opH, $opNow) && App\CronMonitor::alertDue($opNow - 3 * $opH, $opNow - 3 * $opH, $opNow)
+    && !App\CronMonitor::alertDue($opNow - 3 * $opH, $opNow - 3 * $opH + 1, $opNow) && !App\CronMonitor::alertDue($opNow - 5 * $opH, $opNow - 3 * $opH, $opNow));
 $opHours = [];
-foreach ([[], ['cron_alert_hours' => 0], ['cron_alert_hours' => -2], ['cron_alert_hours' => '6']] as $set) {
-    App\Config::load($set + array_diff_key($cfg, ['cron_alert_hours' => 1]));
+foreach ([[], ['cron_alert_hours' => 0], ['cron_alert_hours' => -2], ['cron_alert_hours' => '6']] as $opSet) {
+    App\Config::load($opSet + array_diff_key($cfg, ['cron_alert_hours' => 1]));
     $opHours[] = App\CronMonitor::alertHours();
 }
 App\Config::load($cfg);
