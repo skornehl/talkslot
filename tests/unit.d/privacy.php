@@ -357,7 +357,9 @@ check('no template mentions the required checkbox any more, they say that bookin
     && str_contains($pvTpl('privacy-private.en'), 'You do not need to give consent to book an appointment'));
 check('texts up to now with the checkbox get a note, whatever the operator type',
     App\LegalTexts::obsolete((string) file_get_contents(APP_ROOT . '/tests/fixtures/privacy.de.v1.5.md')) === ['checkbox']
-    && App\LegalTexts::obsolete('By ticking the required box in the booking form you only confirm …') === ['checkbox'] && App\LegalTexts::obsolete('Häkchen') === []);
+    && App\LegalTexts::obsolete('By ticking the required box in the booking form you only confirm …') === ['checkbox'] && App\LegalTexts::obsolete('Häkchen') === []
+    && App\LegalTexts::obsolete('Mit dem Pflichthäkchen bestätigen Sie …') === ['checkbox'] && App\LegalTexts::obsolete('Das Häkchen im Buchungsformular …') === ['checkbox']
+    && App\LegalTexts::obsolete('Tick the required checkbox …') === ['checkbox']);
 $pvInstalled = App\Installer::pages('school', ['de', 'en', 'pl', 'ru', 'uk', 'tr']);
 check('installer: the privacy policy in all six languages, the legal notice in German and English (the others fall back to English)',
     array_keys($pvInstalled['privacy']) === ['de', 'en', 'pl', 'ru', 'uk', 'tr'] && array_keys($pvInstalled['imprint']) === ['de', 'en']
@@ -371,7 +373,7 @@ check('installations from before the operator type: translations do not count fo
     App\LegalTexts::detectType(['privacy' => ['de' => (string) file_get_contents(APP_ROOT . '/tests/fixtures/privacy.de.v1.5.md'), 'pl' => $pvTpl('privacy.pl')]]) === 'private');
 
 echo "Privacy: which text parents get\n";
-$pvPick = [App\LegalTexts::class, 'pick'];
+$pvPick = static fn (array $texts, array $order, array $fallback = ['en', 'de']): ?string => App\LegalTexts::pick($texts, $order, $fallback);
 $pvOrder = ['pl', 'en', 'de'];
 check('own language if complete; with open placeholders, empty or missing: English, then the default language',
     $pvPick(['pl' => 'Polityka', 'en' => 'Policy', 'de' => 'Hinweise'], $pvOrder) === 'pl'
@@ -390,14 +392,16 @@ $pvOpen = [['key' => 'privacy', 'lang' => 'de', 'placeholders' => ['[LAND]']], [
 check('open placeholders: in German and English they keep rounds from going public, in a translation they do not',
     App\LegalTexts::splitOpen($pvOpen) === [[$pvOpen[0], $pvOpen[2]], [$pvOpen[1], $pvOpen[3]]] && App\LegalTexts::splitOpen([]) === [[], []]);
 App\Config::load(['default_language' => 'tr'] + $pvCfg);
-check('another default language falls back as well (and keeps rounds from going public)', App\LegalTexts::fallbackLanguages() === ['en', 'tr']
-    && App\LegalTexts::splitOpen($pvOpen)[0] === [$pvOpen[2], $pvOpen[3]]);
+check('German stays a fallback language (the authoritative version), another default language is one as well (and keeps rounds from going public)',
+    App\LegalTexts::fallbackLanguages() === ['en', 'de', 'tr'] && App\LegalTexts::splitOpen($pvOpen)[0] === [$pvOpen[0], $pvOpen[2], $pvOpen[3]]);
+App\Config::load(['languages' => ['en', 'pl'], 'default_language' => 'en'] + $pvCfg);
+check('German not offered: not a fallback language either', App\LegalTexts::fallbackLanguages() === ['en']);
 // English not offered: a stored English text (e.g. from before) is neither checked by open() nor editable for admins,
 // so parents never get it; its placeholders do not keep rounds from going public
 App\Config::load(['languages' => ['de', 'pl', 'tr'], 'default_language' => 'de'] + $pvCfg);
 check('English not offered: only the default language is a fallback, open placeholders in English do not block',
     App\LegalTexts::fallbackLanguages() === ['de'] && App\LegalTexts::splitOpen($pvOpen)[0] === [$pvOpen[0]]
-    && $pvPick(['pl' => 'x [LAND]', 'en' => 'Policy', 'de' => 'Hinweise'], ['pl', ...App\LegalTexts::fallbackLanguages()]) === 'de');
+    && $pvPick(['pl' => 'x [LAND]', 'en' => 'Policy', 'de' => 'Hinweise'], ['pl', ...App\LegalTexts::fallbackLanguages()], App\LegalTexts::fallbackLanguages()) === 'de');
 App\Config::load($pvCfg);
 
 App\Config::load(['hosting' => ['en' => 'Example Hosting GmbH', 'pl' => 'Hosting Przykład sp. z o.o.']] + $pvCfg);
@@ -415,8 +419,8 @@ App\Config::load($pvCfg);
 $pvPage = static fn (string $lang, string $contentLang, string $html = '<p>Text</p>'): string => App\I18n::with($lang, static fn (): string
     => App\View::capture('public/page', ['title' => t('footer.privacy'), 'html' => $html, 'contentLang' => $contentLang]));
 check('page in another language than the parents\': a notice in their language, the text marked with its language (screen readers)',
-    str_contains($pvPage('pl', 'en'), '<p class="alert alert-info" data-content-lang="en">Ten tekst nie jest jeszcze dostępny po polsku. Poniżej znajduje się wersja w tym języku: English.</p>')
-    && str_contains($pvPage('pl', 'en'), '<div lang="en"><p>Text</p></div>') && str_contains($pvPage('tr', 'de'), 'Aşağıda şu dilde yer alıyor: Deutsch.'));
+    str_contains($pvPage('pl', 'en'), '<p class="alert alert-info" data-content-lang="en">Ten tekst nie jest dostępny po polsku. Poniżej znajduje się wersja w tym języku: <span lang="en">English</span>.</p>')
+    && str_contains($pvPage('pl', 'en'), '<div lang="en"><p>Text</p></div>') && str_contains($pvPage('tr', 'de'), 'Aşağıda şu dilde yer alıyor: <span lang="de">Deutsch</span>.'));
 check('page in the parents\' language: no notice, no language of its own; no text: "not added yet"',
     !str_contains($pvPage('pl', 'pl'), 'data-content-lang') && !str_contains($pvPage('pl', 'pl'), 'lang=') && str_contains($pvPage('pl', 'pl'), '<p>Text</p>')
     && str_contains($pvPage('ru', 'en', ''), 'Этот текст ещё не добавлен.') && !str_contains($pvPage('ru', 'en', ''), 'data-content-lang'));
@@ -434,12 +438,12 @@ $pvBox = (string) (preg_match('#<section class="privacy-summary".*?</section>#s'
 check('no checkbox for the privacy notice; nothing in the form is required for it',
     $pvF !== '' && !str_contains($pvF, 'name="privacy"') && !str_contains($pvF, 'zur Kenntnis genommen') && substr_count($pvF, 'type="checkbox"') === 1);
 check('first level: who is responsible, the purpose and the deletion, then the link to the full notice',
-    (bool) preg_match('#<ul>\s*<li>Verantwortlich für diese Terminvergabe: Gesamtschule am See</li>\s*<li>Zweck: nur die Organisation und Durchführung Ihres Gesprächs\. Keine Weitergabe, kein Tracking, keine Cookies\.</li>\s*<li>Löschung: In der Terminvergabe werden Ihre Angaben am Tag nach dem Termin automatisch gelöscht, bei einer Absage sofort\.</li>\s*</ul>\s*<details>#', $pvBox)
-    && str_contains($pvBox, '<p class="privacy-link"><a href="/datenschutz?r=runde-7b" target="_blank" rel="noopener">Alle Datenschutzhinweise</a></p>'));
+    (bool) preg_match('#<ul>\s*<li>Verantwortlich für diese Terminvergabe: Gesamtschule am See</li>\s*<li>Zweck: nur die Organisation und Durchführung Ihres Gesprächs\. Keine Weitergabe an Dritte zu anderen Zwecken, kein Tracking, keine Cookies\.</li>\s*<li>Löschung: In der Terminvergabe werden Ihre Angaben am Tag nach dem Termin automatisch gelöscht, wenn Sie absagen, sofort\.</li>\s*</ul>\s*<details>#', $pvBox)
+    && str_contains($pvBox, '<p class="privacy-link"><a href="/datenschutz?r=runde-7b" target="_blank" rel="noopener">Alle Datenschutzhinweise, auch zu Ihren Rechten (u. a. Auskunft, Löschung, Widerspruch, Beschwerde)</a></p>'));
 $pvDetails = (string) (preg_match('#<details>.*?</details>#s', $pvBox, $pvM) ? $pvM[0] : '');
 check('second level folded away: data, the teacher\'s mail (names only if the school allows them), legal basis (operated by the school), rights and complaint',
     str_contains($pvDetails, '<summary>Mehr zum Datenschutz</summary>') && !str_contains($pvDetails, '<details open')
-    && str_contains($pvDetails, 'Gespeichert werden nur der eingetragene Name') && str_contains($pvDetails, 'Zusammenfassungen per E-Mail an die Lehrkraft enthalten keine E-Mail-Adressen, Uhrzeit und Namen nur, wenn die Schule das freigegeben hat.')
+    && str_contains($pvDetails, 'Gespeichert werden nur der eingetragene Name') && str_contains($pvDetails, 'Zusammenfassungen per E-Mail an die Lehrkraft enthalten keine E-Mail-Adressen, Uhrzeit und Namen nur, wenn das für die Schule freigegeben ist.')
     && str_contains($pvDetails, '(Art. 6 Abs. 1 lit. e DSGVO). Eine Einwilligung ist dafür nicht nötig.') && str_contains($pvDetails, 'bei einer Datenschutz-Aufsichtsbehörde beschweren'));
 check('legal basis by operator type: privately operated Art. 6(1)(b) and the school\'s rules for the meeting, without a type none',
     str_contains($pvForm(['operatorType' => 'private']), 'die Vereinbarung Ihres Termins (Art. 6 Abs. 1 lit. b DSGVO). Eine Einwilligung ist dafür nicht nötig. Für das Gespräch selbst gelten die Regeln der Schule.')
@@ -450,7 +454,7 @@ check('the privacy box comes after the details and the remember-me checkbox, rig
     && strpos($pvF, 'data-slot-summary') < strpos($pvF, '<button type="submit"'));
 check('the box in every parent language (Turkish: no Art. 6 of the German act, the GDPR)',
     str_contains($pvForm([], 'tr'), '<li>Bu randevu sisteminin veri sorumlusu: Gesamtschule am See</li>') && str_contains($pvForm([], 'tr'), '(GDPR madde 6(1)(e))')
-    && str_contains($pvForm([], 'uk'), '<summary>Докладніше про захист даних</summary>') && str_contains($pvForm([], 'ru'), 'Полная информация о защите данных</a>'));
+    && str_contains($pvForm([], 'uk'), '<summary>Докладніше про захист даних</summary>') && str_contains($pvForm([], 'ru'), 'Полная информация о защите данных, в том числе о ваших правах (доступ, удаление, возражение, жалоба и др.)</a>'));
 
 check('chosen appointment above the button: empty and announced politely while nothing is chosen, the text for each slot on its radio',
     str_contains($pvF, '<p class="booking-summary" aria-live="polite" data-slot-summary="Ihr Termin: {when}"></p>')
@@ -496,22 +500,32 @@ check('… in words with date and time while open, otherwise that it has passed'
     App\BookingService::changeNotice($pvBooking) === 'Ändern oder absagen können Sie den Termin online bis Dienstag, 12.11.2030, 15:45 Uhr.'
     && App\I18n::with('pl', static fn (): string => App\BookingService::changeNotice($pvBooking)) === 'Zmiana lub odwołanie terminu online są możliwe do: wtorek, 12 listopada 2030, 15:45.'
     && App\BookingService::changeNotice(['day_date' => '2020-01-01', 'cancel_deadline_hours' => 1] + $pvBooking) === 'Änderungen und Absagen sind online nur bis 1 Stunde vor dem Termin möglich. Bitte wenden Sie sich direkt an die Lehrkraft.');
+check('… only cancelling while moving is not possible (round or teacher inactive); with 0 hours, once it has started, no "0 hours"',
+    App\BookingService::changeNotice($pvBooking, false) === 'Absagen können Sie den Termin online bis Dienstag, 12.11.2030, 15:45 Uhr.'
+    && App\BookingService::changeNotice(['day_date' => '2020-01-01', 'cancel_deadline_hours' => 0] + $pvBooking) === 'Online lässt sich der Termin nicht mehr ändern oder absagen, weil er bereits begonnen hat. Bitte wenden Sie sich direkt an die Lehrkraft.');
+// Across a change of daylight saving time the deadline keeps the time of day (PHP counts the hours on the local clock),
+// shown and enforced alike (canChange() uses the same date): 48 hours before Monday 16:00 is Saturday 16:00
+check('deadline for changes across the change of daylight saving time: the same time of day, shown as enforced',
+    App\BookingService::changeDeadline(['day_date' => '2027-11-01', 'start_time' => '16:00:00', 'cancel_deadline_hours' => 48])->format('Y-m-d H:i') === '2027-10-30 16:00'
+    && App\BookingService::changeDeadline(['day_date' => '2027-03-29', 'start_time' => '16:00:00', 'cancel_deadline_hours' => 48])->format('Y-m-d H:i') === '2027-03-27 16:00');
 check('date and time', fmt_datetime(new DateTimeImmutable('2026-11-10 15:45')) === 'Dienstag, 10.11.2026, 15:45 Uhr'
     && App\I18n::with('en', static fn (): string => fmt_datetime(new DateTimeImmutable('2026-11-10 09:05'))) === 'Tuesday, 10 November 2026, 09:05');
-$pvManage = static fn (bool $canChange, array $booking = []): string => App\View::capture('public/manage', [
+$pvManage = static fn (bool $canChange, array $booking = [], ?bool $canMove = null): string => App\View::capture('public/manage', [
     'booking' => $booking + ['id' => 5, 'round_id' => 7, 'title' => 'Elternsprechtag 7b', 'teacher_name' => 'Frau Berger', 'name' => 'Max Muster', 'location' => ''] + $pvBooking,
-    'token' => str_repeat('Tk', 21) . 'x', 'canChange' => $canChange, 'canMove' => $canChange, 'days' => [], 'csrf' => '1.abc',
+    'token' => str_repeat('Tk', 21) . 'x', 'canChange' => $canChange, 'canMove' => $canMove ?? $canChange, 'days' => [], 'csrf' => '1.abc',
     'done' => 'booked', 'mailed' => false, 'remember' => false, 'errors' => [], 'open' => '', 'mailTo' => '',
 ]);
 check('appointment page: until when changing and cancelling work online, or that the time is up',
     str_contains($pvManage(true), '<p class="hint" data-change-deadline>Ändern oder absagen können Sie den Termin online bis Dienstag, 12.11.2030, 15:45 Uhr.</p>')
     && str_contains($pvManage(false, ['day_date' => '2020-01-01', 'cancel_deadline_hours' => 12]), '<p class="alert">Änderungen und Absagen sind online nur bis 12 Stunden vor dem Termin möglich.')
-    && !str_contains($pvManage(false, ['day_date' => '2020-01-01']), 'data-change-deadline'));
+    && !str_contains($pvManage(false, ['day_date' => '2020-01-01']), 'data-change-deadline')
+    && str_contains($pvManage(true, [], false), '<p class="hint" data-change-deadline>Absagen können Sie den Termin online bis Dienstag, 12.11.2030, 15:45 Uhr.</p>'));
 
 echo "Privacy: texts in all parent languages\n";
 $pvKeys = ['page.fallback', 'round.deadline.booking', 'round.deadline.change', 'round.selected', 'privacy.summary.controller', 'privacy.summary.purpose',
     'privacy.summary.deletion', 'privacy.summary.more', 'privacy.summary.data', 'privacy.summary.teacher', 'privacy.summary.basis.school',
-    'privacy.summary.basis.private', 'privacy.summary.rights', 'privacy.summary.link', 'manage.deadline', 'manage.locked', 'mail.footer', 'mail.footer.copy'];
+    'privacy.summary.basis.private', 'privacy.summary.rights', 'privacy.summary.link', 'manage.deadline', 'manage.deadline_cancel', 'manage.locked',
+    'manage.locked_started', 'mail.reminder.body_locked', 'mail.footer', 'mail.footer.copy'];
 $pvPh = static fn (string $s): array => preg_match_all('/\{\w+\}/', $s, $m) ? $m[0] : [];
 $pvUntranslated = array_filter($pvKeys, static fn (string $k): bool => count(array_unique(array_map(static fn ($l) => App\I18n::textIn($l, $k), App\I18n::languages()))) !== count(App\I18n::languages())
     || count(array_unique(array_map(static fn ($l) => implode(',', $pvPh(App\I18n::textIn($l, $k))), App\I18n::languages()))) !== 1);
@@ -522,3 +536,9 @@ check('the texts of the checkbox are gone in every language' . ($pvGone ? ' (' .
 check('mail footer: the link to the privacy notice in the parents\' language instead of "see privacy notice"',
     !array_filter(App\I18n::languages(), static fn (string $l): bool => !str_ends_with(App\I18n::textIn($l, 'mail.footer'), ': {privacy}') || !str_ends_with(App\I18n::textIn($l, 'mail.footer.copy'), ': {privacy}'))
     && !str_contains(App\I18n::textIn('de', 'mail.footer'), 'siehe Datenschutzhinweise'));
+check('reminder after the deadline for changes: the same details and link, but no invitation to cancel through it',
+    !array_filter(App\I18n::languages(), static fn (string $l): bool => $pvPh(App\I18n::textIn($l, 'mail.reminder.body_locked')) !== $pvPh(App\I18n::textIn($l, 'mail.reminder.body')))
+    && !str_contains(App\I18n::textIn('de', 'mail.reminder.body_locked'), 'absagen') && str_contains(App\I18n::textIn('de', 'mail.reminder.body'), 'sagen Sie den Termin bitte über diesen Link ab'));
+check('first level: the rights including the right to object (Art. 21(4) GDPR) named in the link, in every language',
+    !array_filter(['de' => 'Widerspruch', 'en' => 'objection', 'pl' => 'sprzeciw', 'ru' => 'возражение', 'uk' => 'заперечення', 'tr' => 'itiraz'],
+        static fn (string $word, string $l): bool => !str_contains(App\I18n::textIn($l, 'privacy.summary.link'), $word) || !str_contains(App\I18n::textIn($l, 'privacy.summary.rights'), mb_substr($word, 0, 6)), ARRAY_FILTER_USE_BOTH));

@@ -509,7 +509,7 @@ SL4=$(curl -s -b "$J" "$B/admin/round/$R4" | grep -o '/admin/slot/[0-9]*/book' |
 curl -s -o /dev/null -b "$J" --data-urlencode "csrf=$TA" -d "name=Vom+Admin+gebucht&email=admin-buchung@example.org&lang=de&send_mail=1" "$B$SL4"
 BK4=$($DC exec -T db mariadb -uapp -papp-dev-only talkslot -Ne "SELECT id FROM tp_bookings WHERE name='Vom Admin gebucht'")
 AMAIL=$($DC exec -T app php -r '$r=json_decode(file_get_contents("http://mail:8025/api/v1/search?query=to:admin-buchung@example.org"),true); echo json_encode($r["messages"][0]["ReplyTo"] ?? []), " ", json_decode(file_get_contents("http://mail:8025/api/v1/message/".($r["messages"][0]["ID"] ?? "x")),true)["Text"] ?? "";')
-check "admin books in a teacher's round: mail with the teacher's Reply-To, footer names the admin" '[ -n "$BK4" ] && echo "$AMAIL" | grep -q "zwei@example.org" && echo "$AMAIL" | grep -q "Verantwortlich: Sabrina Test" && ! echo "$AMAIL" | grep -q "Verantwortlich: Herr Zwei"'
+check "admin books in a teacher's round: mail with the teacher's Reply-To, footer names the admin" '[ -n "$BK4" ] && echo "$AMAIL" | grep -q "zwei@example.org" && echo "$AMAIL" | grep -q "Verantwortlich für die Terminvergabe: Sabrina Test" && ! echo "$AMAIL" | grep -q "Verantwortlich für die Terminvergabe: Herr Zwei"'
 curl -s -o /dev/null -b "$J" -d "csrf=$TA" "$B/admin/booking/$BK4/delete"
 # The message after deleting names the parents, so look at the booking list itself
 check "admin deletes a booking in a teacher's round" '[ -z "$(DBQ "SELECT id FROM tp_bookings WHERE id=$BK4")" ] && ! curl -s -b "$J" "$B/admin/round/$R4" | grep -q "<strong>Vom Admin gebucht</strong>"'
@@ -532,7 +532,7 @@ check "details back: round can be activated and reached again" '[ "$(curl -s -o 
 MAILP=$($DC exec -T app php -r 'echo file_get_contents("http://mail:8025/api/v1/search?query=to:eltern-zwei@example.org");')
 check "parent mail: teacher named, replies go to the teacher" 'echo "$MAILP" | grep -q "\"ReplyTo\":\[{\"Name\":\"\",\"Address\":\"zwei@example.org\"}\]"'
 PTXT=$($DC exec -T app php -r '$r=json_decode(file_get_contents("http://mail:8025/api/v1/search?query=to:eltern-zwei@example.org"),true); echo json_decode(file_get_contents("http://mail:8025/api/v1/message/".$r["messages"][0]["ID"]),true)["Text"];')
-check "parent mail: the admin is the controller (footer), not the teacher" 'echo "$PTXT" | grep -q "Verantwortlich: Sabrina Test" && ! echo "$PTXT" | grep -q "Verantwortlich: Herr Zwei"'
+check "parent mail: the admin is the controller (footer), not the teacher" 'echo "$PTXT" | grep -q "Verantwortlich für die Terminvergabe: Sabrina Test" && ! echo "$PTXT" | grep -q "Verantwortlich für die Terminvergabe: Herr Zwei"'
 
 # Summaries
 OUT=$($DC exec -T app php /srv/app/bin/cron.php -v)

@@ -39,13 +39,13 @@ Kullanıcı hesabı, reklam, izleme ve kullanım davranışı analizi yoktur. Hi
 
 # 4. Hukuki dayanaklar
 
-- **Randevu alma, değiştirme ve iptal etme:** GDPR madde 6(1)(b) – işleme, talep ettiğiniz randevunun gerçekleştirilmesi için gereklidir.
+- **Randevu alma, değiştirme ve iptal etme:** GDPR madde 6(1)(b) – işleme, talep ettiğiniz randevunun ayarlanması için gereklidir.
 - **E-posta ile onay:** GDPR madde 6(1)(b); adresi isteğe bağlı olarak girmeniz üzerine, sizin isteğinizle.
 - **Kötüye kullanıma karşı koruma ve sunucu kayıtları:** GDPR madde 6(1)(f). Meşru menfaat, randevu sisteminin güvenli ve kesintisiz çalışması ile spam, mükerrer randevu ve başkaları adına alınan randevulara karşı korunmadır.
 - **Öğretmene gönderilen özet e-postalar:** GDPR madde 6(1)(b) (kararlaştırılan randevunun gerçekleştirilmesi) ve GDPR madde 6(1)(f). Meşru menfaat, öğretmenin güvenilir randevu planlamasıdır. Bunların öğretmenin posta kutusunda saklanmasından işletmeci sorumlu değildir (bkz. bölüm 1).
-- **Tarayıcıda saklama (“Randevumu hatırla”):** TDDDG § 25(1) (Almanya'nın telekomünikasyon ve dijital hizmetlerde veri koruma kanunu) ve GDPR madde 6(1)(a) (kutuyu işaretleyerek verdiğiniz onay), bkz. bölüm 7.
+- **Tarayıcıda saklama (“Randevumu hatırla”):** TDDDG § 25(1) (Almanya'nın telekomünikasyon ve dijital hizmetlerde veri koruma kanunu) ve GDPR madde 6(1)(a) (kutuyu işaretleyerek verdiğiniz rıza), bkz. bölüm 7.
 
-Randevu almak için onay vermeniz gerekmez; randevu verilerinizin işlenmesi yukarıda belirtilen hukuki dayanaklara dayanır. Onay yalnızca isteğe bağlı tarayıcıda saklama (“Randevumu hatırla”) için geçerlidir.
+Randevu almak için rıza vermeniz gerekmez; randevu verilerinizin işlenmesi yukarıda belirtilen hukuki dayanaklara dayanır. Rıza yalnızca isteğe bağlı tarayıcıda saklama (“Randevumu hatırla”) için geçerlidir.
 
 # 5. Saklama süresi ve silme
 
@@ -75,7 +75,7 @@ AB veya AEA dışındaki ülkelere (üçüncü ülkelere) veri aktarımı yapıl
 
 Yalnızca randevu alırken “Randevumu bu cihazda hatırla” kutusunu işaretlerseniz (kutu önceden işaretli değildir), tarayıcınız yerel depolamada (localStorage) randevunuzun bağlantısını, randevunun adını ve tarihini saklar. Böylece sayfayı yeniden açtığınızda boş saatlerin listesi yerine randevularınızı görürsünüz; birden fazla randevu alırsanız (örneğin kardeşler için), her biri ayrı ayrı hatırlanır. Bu veriler cihazınızda kalır ve sunucuya aktarılmaz.
 
-Onayınızı istediğiniz zaman, randevu sayfasında “Kayıtlı randevuyu bu cihazdan sil” seçeneğini seçerek veya tarayıcınızdaki site verilerini silerek geri alabilirsiniz. Randevu iptal edildikten sonra ve randevu gününden sonra (bu sayfaları cihazınızda bir sonraki açışınızda) kayıt otomatik olarak silinir.
+Rızanızı istediğiniz zaman, randevu sayfasında “Kayıtlı randevuyu bu cihazdan sil” seçeneğini seçerek veya tarayıcınızdaki site verilerini silerek geri alabilirsiniz. Randevu iptal edildikten sonra ve randevu gününden sonra (bu sayfaları cihazınızda bir sonraki açışınızda) kayıt otomatik olarak silinir.
 
 ## Görünüm (açık/koyu)
 
@@ -94,7 +94,7 @@ Kişisel verilerinizle ilgili olarak veri sorumlusuna karşı şu haklara sahips
 - **silme** hakkı (GDPR madde 17)
 - **işlemenin kısıtlanmasını isteme** hakkı (GDPR madde 18)
 - **veri taşınabilirliği** hakkı (GDPR madde 20)
-- verdiğiniz bir onayı gelecekte geçerli olmak üzere **geri alma** hakkı (GDPR madde 7(3))
+- verdiğiniz bir rızayı gelecekte geçerli olmak üzere **geri alma** hakkı (GDPR madde 7(3))
 
 **İtiraz hakkı (GDPR madde 21):** İşleme GDPR madde 6(1)(f)'ye dayandığı ölçüde, özel durumunuzdan kaynaklanan nedenlerle her zaman itiraz edebilirsiniz.
 

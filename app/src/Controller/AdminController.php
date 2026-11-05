@@ -295,7 +295,7 @@ final class AdminController
             )) : 0,
             'operatorMissing' => !Operator::ready(),
             'typeMissing' => !Auth::isAdmin() && Operator::ready() && Operator::type() === null,
-            'textsOpen' => !Auth::isAdmin() && Operator::ready() && LegalTexts::splitOpen(LegalTexts::open())[0] !== [],
+            'textsOpen' => !Auth::isAdmin() && Operator::ready() && (LegalTexts::splitOpen(LegalTexts::open())[0] !== [] || LegalTexts::missing() !== []),
             'legalHints' => Auth::isAdmin() ? array_merge(self::operatorHints(), self::legalHints(LegalTexts::outdated())) : [],
             // Offboarding: active accounts nobody has signed in to for a long time (only the number)
             'unusedAccounts' => Auth::isAdmin() ? (int) Db::value(
@@ -1323,6 +1323,12 @@ final class AdminController
                 ? __('Bevor Runden aktiviert werden können, ersetzen Sie bitte unter „Texte“ die offenen Platzhalter in eckigen Klammern: {texts}.', ['texts' => self::openTexts($open, false)])
                 : __('Runden können erst aktiviert werden, wenn ein Admin die offenen Platzhalter in Impressum bzw. Datenschutzerklärung ausgefüllt hat.');
         }
+        // A page empty in every fallback language: parents would get no text at all (LegalTexts::missing())
+        if (($missing = LegalTexts::missing()) !== []) {
+            return Auth::isAdmin()
+                ? __('Bevor Runden aktiviert werden können, hinterlegen Sie bitte unter „Texte“ {texts} in mindestens einer dieser Sprachen: {languages}.', ['texts' => self::missingTexts($missing), 'languages' => strtoupper(implode(', ', LegalTexts::fallbackLanguages()))])
+                : __('Runden können erst aktiviert werden, wenn ein Admin Impressum und Datenschutzerklärung hinterlegt hat.');
+        }
         if (!$owner['is_active']) {
             return __('Das Konto dieser Lehrkraft ist deaktiviert – die Runde wäre öffentlich nicht erreichbar. Bitte die Runde einer aktiven Lehrkraft zuordnen oder das Konto wieder aktivieren.');
         }
@@ -1847,11 +1853,19 @@ final class AdminController
         // Wording that does not fit the operator type (LegalTexts::mismatches()) or no longer fits at all
         // (LegalTexts::obsolete()), per kind the languages
         $mismatch = [];
-        foreach (Db::all("SELECT lang, content FROM pages WHERE page_key IN ('imprint', 'privacy') ORDER BY lang") as $row) {
-            foreach ([...LegalTexts::mismatches((string) $row['content'], Operator::type()), ...LegalTexts::obsolete((string) $row['content'])] as $kind) {
-                $mismatch[$kind][(string) $row['lang']] = ['lang' => $row['lang']];
+        // Only texts of offered languages (admins cannot edit the others) that are not emptied (pick(): missing)
+        foreach (LegalTexts::stored() as $texts) {
+            foreach ($texts as $lang => $content) {
+                foreach (trim($content) !== '' ? [...LegalTexts::mismatches($content, Operator::type()), ...LegalTexts::obsolete($content)] : [] as $kind) {
+                    $mismatch[$kind][(string) $lang] = ['lang' => (string) $lang];
+                }
             }
         }
+        ksort($mismatch);
+        foreach ($mismatch as &$langs) {
+            ksort($langs);
+        }
+        unset($langs);
         if (isset($mismatch['old'])) {
             // Operated by the school, but the template up to v1.6: "private service" without a data protection
             // officer, legal bases for private operators only, "cancel at any time"
@@ -1875,7 +1889,7 @@ final class AdminController
         if (isset($mismatch['anytime'])) {
             $hints[] = __('Die Datenschutzerklärung ({languages}) sagt noch, Eltern könnten ihren Termin „jederzeit“ selbst absagen. Das geht nur bis zur Änderungsfrist der Terminrunde – bitte den Satz in Abschnitt 9 an die Vorlage anpassen.', ['languages' => $list($mismatch['anytime'])]);
         }
-        $noPlaceholder = Db::all("SELECT lang FROM pages WHERE page_key IN ('imprint', 'privacy') AND content NOT LIKE '%[[VERANTWORTLICHE]]%' GROUP BY lang ORDER BY lang");
+        $noPlaceholder = Db::all("SELECT lang FROM pages WHERE page_key IN ('imprint', 'privacy') AND TRIM(content) <> '' AND content NOT LIKE '%[[VERANTWORTLICHE]]%' GROUP BY lang ORDER BY lang");
         if ($noPlaceholder) {
             $hints[] = __('Impressum bzw. Datenschutzerklärung ({languages}) enthalten den Platzhalter [[VERANTWORTLICHE]] nicht – die Angaben für Impressum und Datenschutz erscheinen dort nicht automatisch.', ['languages' => $list($noPlaceholder)]);
         }
@@ -1924,7 +1938,20 @@ final class AdminController
             // Translations (expert review P1-9): parents get the English (or German) text until they are filled in
             $hints[] = __('Übersetzungen noch nicht vollständig: {texts}. Bitte ersetzen Sie dort die Platzhalter in eckigen Klammern durch dieselben Angaben wie in der deutschen Fassung. Bis dahin sehen Eltern in diesen Sprachen die englische bzw. deutsche Fassung mit einem Hinweis in ihrer Sprache; Runden lassen sich trotzdem aktivieren. Wenn Sie eine Übersetzung nicht anbieten möchten, leeren Sie den Text.', ['texts' => self::openTexts($translations, false)]);
         }
+        if (($missing = LegalTexts::missing()) !== []) {
+            $hints[] = __('Für {texts} gibt es in keiner dieser Sprachen einen Text: {languages}. Eltern bekommen dann keinen, und es lassen sich keine Runden aktivieren.', ['texts' => self::missingTexts($missing), 'languages' => strtoupper(implode(', ', LegalTexts::fallbackLanguages()))]);
+        }
+        if (($behind = LegalTexts::behindGerman()) !== []) {
+            // The German text is the authoritative version: a change there may be missing in the other languages
+            $hints[] = __('Die deutsche Datenschutzerklärung wurde geändert, nachdem diese Fassungen zuletzt gespeichert wurden: {languages}. Maßgeblich ist die deutsche Fassung – bitte prüfen Sie, ob sie dieselben Angaben enthalten, und speichern Sie sie danach (auch unverändert).', ['languages' => strtoupper(implode(', ', $behind))]);
+        }
         return $hints;
+    }
+
+    /** The pages missing in every fallback language (LegalTexts::missing()): "Impressum und Datenschutzerklärung". */
+    private static function missingTexts(array $missing): string
+    {
+        return implode(' ' . __('und') . ' ', array_map(self::pageLabel(...), $missing));
     }
 
     /**

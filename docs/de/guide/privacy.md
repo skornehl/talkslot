@@ -127,10 +127,13 @@ Datenschutzerklärung.
   muss sie akzeptieren oder bestätigen, und ein Pflicht-Häkchen würde nur für eine Einwilligung gehalten und
   Buchungen mit einer Fehlermeldung aufhalten. Das Buchungsformular hat deshalb keins. Direkt über dem Button
   steht die Information in zwei Ebenen (Art. 12): wer verantwortlich ist (die erste Zeile der Angaben des
-  Betreibers), der Zweck und die Löschung, dazu ein Link auf die vollständige Datenschutzerklärung; ein
-  eingeklapptes *Mehr zum Datenschutz* ergänzt die gespeicherten Daten, die Zusammenfassungen an die
-  Lehrkraft (Namen nur, wenn die Schule sie freigegeben hat), die Rechtsgrundlage der Betriebsart (Art. 6 Abs. 1 lit. e bzw. b DSGVO; ohne gewählte
-  Betriebsart keine) und die Rechte einschließlich der Beschwerde. Die Datenschutzerklärung sagt, dass die
+  Betreibers), der Zweck (keine Weitergabe an Dritte zu anderen Zwecken) und die Löschung, dazu ein Link auf
+  die vollständige Datenschutzerklärung, der die Rechte nennt (Auskunft, Löschung, Widerspruch, Beschwerde;
+  auf das Widerspruchsrecht ist nach Art. 21 Abs. 4 DSGVO spätestens bei der ersten Kommunikation
+  hinzuweisen); ein eingeklapptes *Mehr zum Datenschutz* ergänzt die gespeicherten Daten, die
+  Zusammenfassungen an die Lehrkraft (Namen nur, wenn das für die Schule freigegeben ist), die
+  Rechtsgrundlage der Betriebsart (Art. 6 Abs. 1 lit. e bzw. b DSGVO; ohne gewählte Betriebsart keine) und
+  die Rechte einschließlich der Beschwerde. Die Datenschutzerklärung sagt, dass die
   Buchung keine Einwilligung braucht; nur „auf diesem Gerät merken“ braucht eine.
 - **Fristen und gewählter Termin vor dem Buchen:** Die Rundenseite nennt den Buchungsschluss und die
   Änderungsfrist der Runde (in Stunden; eine Frist von 0 wird nicht erwähnt), und die Zeile über dem Button
@@ -152,8 +155,9 @@ der Daten erforderlich ist, sowie automatisierte Entscheidungsfindung.
 
 ### Die Datenschutzerklärung in den Sprachen der Eltern
 
-Art. 12 Abs. 1 DSGVO verlangt die Information in einer Sprache, die die Angesprochenen verstehen, und
-TalkSlot spricht Eltern in sechs Sprachen an. Die Übersetzungen folgen den deutschen Vorlagen beider
+Art. 12 Abs. 1 DSGVO verlangt die Information in klarer und einfacher Sprache, und die Leitlinien des EDSA
+zur Transparenz (WP260 rev.01, Rn. 13) ergänzen, dass Informationen für Menschen anderer Sprachen in deren
+Sprache übersetzt werden sollen. TalkSlot spricht Eltern in sechs Sprachen an. Die Übersetzungen folgen den deutschen Vorlagen beider
 Betriebsarten Abschnitt für Abschnitt und beginnen mit dem Hinweis, dass die deutsche Fassung maßgeblich ist
 (ebenso die englische). Sie haben **dieselben Platzhalter wie die deutsche Vorlage, auf Deutsch**: Admins
 tragen dort die Angaben ein, die sie auch in den deutschen Text eingesetzt haben. Kurze Angaben wie Namen,
@@ -163,16 +167,26 @@ die Konfiguration das enthält, sonst den englischen (danach den deutschen) Text
 Englisch brauchen einen eigenen.
 
 - **Welchen Text Eltern bekommen:** den in ihrer Sprache, wenn er vollständig ist, also nicht leer und ohne
-  offene Platzhalter; sonst den englischen, danach den der Standardsprache (diese beiden wie bisher so, wie sie
-  sind, auch mit offenen Platzhaltern: Diese verhindern ja die Aktivierung von Runden). Englisch nur, wenn es
-  angeboten wird (`languages`): Einen Text in einer nicht angebotenen Sprache bekommen Eltern nie, weil Admins
-  ihn weder sehen noch bearbeiten können. Die Seite sagt dann in
-  der Sprache der Eltern, dass es den Text in ihrer Sprache noch nicht gibt, und kennzeichnet seine Sprache
-  (`lang`, für Screenreader). Das Impressum hat keine Übersetzungen und nimmt immer diesen Weg.
-- **Offene Platzhalter in einer Übersetzung verhindern keine Aktivierung**, weil Eltern sie nicht sehen.
-  Admins sehen im Dashboard und unter *Texte* den Hinweis *Übersetzungen noch nicht vollständig* mit den
-  betroffenen Texten. Eine Übersetzung, die Sie nicht anbieten möchten, können Sie leeren; Eltern bekommen
-  dann den englischen Text, und der Hinweis verschwindet.
+  offene Platzhalter; sonst den englischen, danach den deutschen (die maßgebliche Fassung), danach den der
+  Standardsprache (diese wie bisher so, wie sie sind, auch mit offenen Platzhaltern: Diese verhindern ja die
+  Aktivierung von Runden). Englisch und Deutsch nur, wenn sie angeboten werden (`languages`): Einen Text in
+  einer nicht angebotenen Sprache bekommen Eltern nie, weil Admins ihn weder sehen noch bearbeiten können.
+  Gibt es in keiner dieser Sprachen einen Text für eine Seite, lässt sich keine Runde aktivieren. Die Seite
+  sagt dann in der Sprache der Eltern, dass es den Text in ihrer Sprache nicht gibt, und kennzeichnet den Text
+  und den Namen seiner Sprache mit `lang` (Screenreader). Das Impressum hat keine Übersetzungen und nimmt immer
+  diesen Weg.
+- **Offene Platzhalter in einer Übersetzung verhindern keine Aktivierung:** Bis sie ausgefüllt sind,
+  bekommen Eltern in dieser Sprache den englischen (bzw. deutschen) Text mit einem Hinweis, wie vor den
+  Übersetzungen. Das ist eine Lücke, keine Lösung: **Füllen Sie die Übersetzungen aus, bevor Sie Eltern in
+  diesen Sprachen einladen.** Admins sehen im Dashboard und unter *Texte* den Hinweis *Übersetzungen noch
+  nicht vollständig* mit den betroffenen Texten. Eine geleerte Übersetzung stellt den früheren Zustand wieder
+  her (der englische Text, kein Hinweis); wer Eltern in einer Sprache gar nicht mehr ansprechen will, nimmt sie
+  aus `languages`.
+- **Maßgeblich ist die deutsche Fassung**, eine Übersetzung muss also dasselbe sagen. Wird die deutsche
+  Datenschutzerklärung nach einer vollständigen Übersetzung (oder dem englischen Text) gespeichert, sehen
+  Admins, dass diese Fassung vor der deutschen gespeichert wurde und zu prüfen ist; erneutes Speichern (auch
+  unverändert) bestätigt sie. Der Hinweis „maßgeblich ist die deutsche Fassung“ macht eine falsche Übersetzung
+  nicht richtig: Der Betreiber bleibt für jede Sprache verantwortlich.
 - **Bestehende Installationen** erhalten die Übersetzungen ihrer Betriebsart beim ersten Aufruf nach dem
   Update, sofern es in der Sprache noch keinen Text gibt (oder nur eine unveränderte Vorlage); bearbeitete
   Texte bleiben. Bis die Admins die Platzhalter ausgefüllt haben, zeigen sie wie bisher den englischen Text.

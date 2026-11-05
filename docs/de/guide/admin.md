@@ -177,7 +177,11 @@ Die Datenschutzerklärung gibt es als Vorlage in allen sechs Elternsprachen; die
 die deutsche Fassung maßgeblich ist, und enthalten dieselben Platzhalter wie die deutsche, Sie tragen dort
 also dieselben Angaben ein. Das Impressum gibt es auf Deutsch und Englisch. Für eine Sprache ohne Text, mit
 leerem Text oder mit einer Übersetzung, deren Platzhalter noch offen sind, wird die englische Fassung
-verwendet (danach die der Standardsprache), mit einem Hinweis an die Eltern in ihrer Sprache. Für beide Texte
+verwendet, danach die deutsche, danach die der Standardsprache (Englisch und Deutsch nur, wenn sie angeboten
+werden), mit einem Hinweis an die Eltern in ihrer Sprache. Hat keine davon einen Text für eine Seite, lässt
+sich keine Runde aktivieren. Füllen Sie die Übersetzungen aus, bevor Sie Eltern in diesen Sprachen einladen.
+Speichern Sie die deutsche Datenschutzerklärung nach einer vollständigen Übersetzung, bittet das Dashboard,
+diese Übersetzung zu prüfen (maßgeblich ist die deutsche Fassung); erneutes Speichern bestätigt sie. Für beide Texte
 gibt es je eine Vorlage pro **Betriebsart** (*Von der Schule betrieben*, *Privat betrieben*). *Vorlage laden* im Formular eines Textes
 setzt eine davon ein, die zur Betriebsart passende steht zuerst; der gespeicherte Text ändert sich erst beim
 Speichern. Ändern Sie die Betriebsart oben unter *Texte*, ersetzt TalkSlot alle Texte, die noch unverändert

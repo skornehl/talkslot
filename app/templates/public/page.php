@@ -11,7 +11,8 @@ $other = $html !== '' && $contentLang !== $lang;
 <article class="prose">
   <h1><?= e($title) ?></h1>
   <?php if ($other): ?>
-    <p class="alert alert-info" data-content-lang="<?= e($contentLang) ?>"><?= e(t('page.fallback', ['language' => App\I18n::name($contentLang)])) ?></p>
+    <?php /* The name of the language marked as such (screen readers), inside a sentence in the parents' language */ ?>
+    <p class="alert alert-info" data-content-lang="<?= e($contentLang) ?>"><?= str_replace('{language}', '<span lang="' . e($contentLang) . '">' . e(App\I18n::name($contentLang)) . '</span>', e(t('page.fallback', ['language' => '{language}']))) ?></p>
     <div lang="<?= e($contentLang) ?>"><?= $html ?></div>
   <?php else: ?>
     <?= $html !== '' ? $html : '<p>' . e(t('page.missing')) . '</p>' ?>

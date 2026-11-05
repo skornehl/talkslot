@@ -39,7 +39,7 @@ There are no user accounts, no advertising, no tracking and no usage analytics. 
 
 # 4. Legal basis
 
-- **Booking, changing and cancelling:** Art. 6(1)(b) GDPR – processing is necessary to carry out the appointment you requested.
+- **Booking, changing and cancelling:** Art. 6(1)(b) GDPR – processing is necessary to arrange the appointment you requested.
 - **E-mail confirmation:** Art. 6(1)(b) GDPR, at your request by voluntarily providing the address.
 - **Abuse protection and server logs:** Art. 6(1)(f) GDPR. The legitimate interest is the secure and reliable operation of the booking service and protection against spam, multiple and unauthorised bookings.
 - **Summary e-mails to the teacher:** Art. 6(1)(b) GDPR (carrying out the agreed appointment) and Art. 6(1)(f) GDPR. The legitimate interest is the teacher's reliable appointment planning. The operator is not responsible for keeping them in the teacher's mailbox (see section 1).

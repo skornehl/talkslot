@@ -114,11 +114,13 @@ ask how long they are kept and state it in the privacy policy.
 - **Informing, not ticking:** under the GDPR the privacy notice informs (Art. 13); nobody has to accept or
   confirm it, and a required checkbox would only have been mistaken for consent and stopped bookings with an
   error. The booking form therefore has none. Right above the button it gives the information in two levels
-  (Art. 12): who is responsible (the first line of the operator's details), the purpose and the deletion,
-  plus a link to the full privacy policy; a folded *Mehr zum Datenschutz* (*More about privacy*) adds the
-  data stored, the summary mails to the teacher (names only if the school allows them), the legal basis of the operator type (Art. 6(1)(e) or (b)
-  GDPR; none while no type is chosen) and the rights including the complaint. The privacy policy says that
-  booking needs no consent; only "remember on this device" does.
+  (Art. 12): who is responsible (the first line of the operator's details), the purpose (no sharing with third
+  parties for other purposes) and the deletion, plus a link to the full privacy policy that names the rights
+  (access, erasure, objection, complaint; Art. 21(4) asks to point out the right to object at the first
+  contact); a folded *Mehr zum Datenschutz* (*More about privacy*) adds the data stored, the summary mails to
+  the teacher (names only if this has been allowed for the school), the legal basis of the operator type
+  (Art. 6(1)(e) or (b) GDPR; none while no type is chosen) and the rights including the complaint. The
+  privacy policy says that booking needs no consent; only "remember on this device" does.
 - **Deadlines and the chosen appointment before booking:** the round page names the booking deadline and the
   deadline for changes of the round (in hours, a deadline of 0 is not mentioned), and the line above the
   button shows the chosen slot with date, time and location (filled in by JavaScript, announced by screen
@@ -138,8 +140,9 @@ required, and automated decision-making.
 
 ### The privacy policy in the parents' languages
 
-Art. 12(1) GDPR asks for the information in a language the people addressed understand, and TalkSlot
-addresses parents in six languages. The translations follow the German templates of both operator types
+Art. 12(1) GDPR asks for the information in a clear and plain form, and the EDPB's transparency guidelines
+(WP260 rev.01, para. 13) add that information addressed to speakers of other languages should be translated
+for them. TalkSlot addresses parents in six languages. The translations follow the German templates of both operator types
 section by section and start with a note that the German version is authoritative (so does the English
 one). They have the **same placeholders as the German template, in German**, so admins fill them in with
 the details they put into the German text; short details such as names, addresses and legal provisions can
@@ -148,16 +151,25 @@ language of the text. `[[HOSTER]]` takes `hosting.<language>` if the configurati
 English text (then the German one) of the web host; German and English need their own.
 
 - **Which text parents get:** the one in their language if it is complete, i.e. not empty and without open
-  placeholders; otherwise the English one, then the one of the default language (these two as they are, open
-  placeholders included, as before: they keep rounds from being activated). English only if it is offered
-  (`languages`): a text in a language that is not offered is never shown, since admins can neither see nor
-  edit it. The page then says in the
-  parents' language that the text is not available in it yet, and marks the text with its language
-  (`lang`, for screen readers). The imprint has no translations and always takes this way.
-- **Open placeholders in a translation do not keep rounds from being activated**, because parents do not see
-  them. Admins see *Übersetzungen noch nicht vollständig* (*Translations not complete yet*) with the texts
-  concerned on the dashboard and under *Texte*. A translation you do not want to offer can be emptied;
-  parents then get the English text, and the note goes away.
+  placeholders; otherwise the English one, then the German one (the authoritative version), then the one of the
+  default language (these as they are, open placeholders included, as before: they keep rounds from being
+  activated). English and German only if they are offered (`languages`): a text in a language that is not
+  offered is never shown, since admins can neither see nor edit it. If none of these languages has a text
+  for a page, no round can be activated. The page then says in the parents' language that the text is not
+  available in it, and marks the text and the name of its language with `lang` (screen readers). The
+  imprint has no translations and always takes this way.
+- **Open placeholders in a translation do not keep rounds from being activated:** until they are filled in,
+  parents in that language get the English (or German) text with a notice, which was the state before the
+  translations existed. That is a gap, not a solution: **fill in the translations before you invite parents
+  in these languages**. Admins see *Übersetzungen noch nicht vollständig* (*Translations not complete yet*)
+  with the texts concerned on the dashboard and under *Texte*. Emptying a translation brings back the state
+  before (the English text, no note); to stop addressing parents in a language at all, remove it from
+  `languages`.
+- **The German version is authoritative**, so a translation has to say the same. When the German privacy
+  policy is saved after a complete translation (or English text), admins see that this version was saved
+  before the German one and should be checked; saving it again (also unchanged) confirms it. The note
+  "German version authoritative" does not make a wrong translation right: the operator remains responsible
+  for each language.
 - **Existing installations** get the translations of their operator type on the first request after the
   update, as long as there is no text in that language yet (or an unedited template); edited texts stay. They
   show the English text until the admins have filled in the placeholders, as before.

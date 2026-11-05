@@ -282,7 +282,9 @@ var L = (function () {
     function show() {
       var chosen = form.querySelector('input[name="slot_id"]:checked');
       var when = chosen ? chosen.getAttribute('data-when') : '';
-      out.textContent = when ? out.getAttribute('data-slot-summary').split('{when}').join(when) : '';
+      var text = when ? out.getAttribute('data-slot-summary').split('{when}').join(when) : '';
+      // Only a change is written (and announced): after an error the server already shows the same text
+      if (out.textContent !== text) { out.textContent = text; }
     }
     form.addEventListener('change', function (ev) {
       if (ev.target && ev.target.name === 'slot_id') { show(); }

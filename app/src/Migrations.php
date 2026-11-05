@@ -196,17 +196,17 @@ final class Migrations
         'privacy.de' => '0e9337c8a3a72445dea3dc97a7da4326510231924c918be4e921a625f40fa883',
         'privacy.en' => 'b9c46fa92a0065f9f78e2235b7802b45a1d00b7bdf4c7e8374669e632e6ffeec',
         'privacy-private.de' => '39cbde3d5fb6673783bb2acc57dd1c75ed187abd1f63f040d96fed09721f7114',
-        'privacy-private.en' => 'e774ecf62032ece13b5fcccad1efbba89359ba45ca224af0b0cc6833439fe4a9',
+        'privacy-private.en' => '86d19cfaeb9889bfe812a316a2a30e58f4fe4c3c3dbfd5b86b38642978a5f36a',
         // Translations of the privacy policy for the other parent languages (German placeholders, the German
         // version is authoritative); the legal notice has none, it falls back to English
         'privacy.pl' => '81a5d7f0ef6f93452b985a07e78eb0bc79237223d71f64688ca0c038f11a65b6',
-        'privacy.ru' => '2f9ece1e5c7d2f92c5bd9021709c222c456729194c0b2b2f7d91df2c782c4acf',
-        'privacy.tr' => 'ad5761f407b4a3b8d77a9ed522b7bbabc29cee2710b419aeb15fccd100b60023',
-        'privacy.uk' => '8447b767aa0f908cbbd17e8098277e5c27023392c9c7e1af346af2691ee36d4b',
+        'privacy.ru' => '2844f9a3da91a4501e848a122c546633d17cff6cbf7905dcd1e0e29d7f651779',
+        'privacy.tr' => '07ae0741aab3cfd1debd7f580c908df8e4585f8155f7982df2cca9ae6069e5ab',
+        'privacy.uk' => 'cc96bc4485e3580972615e763f2add0bb9836b6c6b0f95e0b161bae53ff4fcbd',
         'privacy-private.pl' => '4cb692916def585030204b4b9a770dd51d1897aadd117fd5e0933e42a1ae6efa',
-        'privacy-private.ru' => 'f100d9c4028924c917cb74aeaffd00a5c31fdc260a6c3acf7eabe9436550b059',
-        'privacy-private.tr' => 'c8fbd6540e8493d1a5466434f5c6f63efb29ad75df795a468bea4ca2e53e68bd',
-        'privacy-private.uk' => 'd7e092f7f4f92349ee1f2a3fa417f4e386d19b9500e91ca0b6432d03b0fb5854',
+        'privacy-private.ru' => '6616d23de1c55063ba3c7eeba6b86d2fbf2c8d31dfdea05fd36f838029859932',
+        'privacy-private.tr' => 'd58fdfa2193ebd9c9675179753572f10f258929818672944fb834bcf2a5d381f',
+        'privacy-private.uk' => '0f2a0a58ab1b1e7854e3130de0f310ff3a3243933feaa3c3f02fcc09740df4be',
     ];
 
     /**

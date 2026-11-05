@@ -51,7 +51,7 @@ final class LegalTexts
         'private' => '/Art\. 6 Abs\. 1 lit\. [bf] DSGVO|\b6\(1\)\([bf]\)|\bart\. 6 ust\. 1 lit\. [bf]\b/iu',
         'school' => '/Art\. 6 Abs\. 1 lit\. e\b|\b6\(1\)\(e\)|\bart\. 6 ust\. 1 lit\. e\b|Schulgesetz|school act|Datenschutzbeauftragte[nr]? der Schule|school\'s data protection officer/iu',
         'scope' => '/alle darüber gebuchten Termine ist:|all appointments booked through it is:/iu',
-        'checkbox' => '/Pflicht-Häkchen|required box in the booking form/iu',
+        'checkbox' => '/Pflicht-?Häkchen|Häkchen im Buchungsformular|required (?:check)?box/iu',
     ];
 
     /**
@@ -501,7 +501,8 @@ final class LegalTexts
 
     /**
      * The stored texts of the offered languages that are behind the current template of the operator type
-     * (updates()), legal notice first.
+     * (updates()), legal notice first. Emptied texts are left out: they count as missing (pick()), e.g. a
+     * translation the admins do not offer.
      * @return list<array{key: string, lang: string, type: string, known: bool, base: ?string, changes: list<array{key: string, heading: ?string, dropped: bool, diff: list<array{0: string, 1: string}>}>}>
      */
     public static function outdated(): array
@@ -509,7 +510,8 @@ final class LegalTexts
         $outdated = [];
         foreach (self::stored() as $key => $texts) {
             foreach ($texts as $lang => $content) {
-                if (($update = self::updates($key, (string) $lang, $content, Operator::type())) !== null) {
+                // An emptied text counts as missing (pick()): admins emptied a translation they do not offer
+                if (trim($content) !== '' && ($update = self::updates($key, (string) $lang, $content, Operator::type())) !== null) {
                     $outdated[] = ['key' => $key, 'lang' => (string) $lang] + $update;
                 }
             }
@@ -632,16 +634,30 @@ final class LegalTexts
 
     /**
      * Languages whose texts parents get when there is no complete one in their own language (the order of
-     * forParents() after their own language): English if it is offered, and the default language (always
-     * offered). Only offered languages: open() checks only those and admins can only edit those, so a text left
-     * from a language no longer offered never reaches parents unchecked. Open placeholders in these texts keep
-     * rounds from being activated; in any other language they only mean that parents get one of these instead
-     * until the admins have filled them in.
+     * forParents() after their own language): English and German if they are offered (German is the
+     * authoritative version the translations refer to), and the default language (always offered). Only offered
+     * languages: open() checks only those and admins can only edit those, so a text left from a language no
+     * longer offered never reaches parents unchecked. Open placeholders in these texts keep rounds from being
+     * activated; in any other language they only mean that parents get one of these instead until the admins
+     * have filled them in.
      * @return list<string>
      */
     public static function fallbackLanguages(): array
     {
-        return array_values(array_unique([...array_intersect(['en'], I18n::languages()), I18n::defaultLanguage()]));
+        return array_values(array_unique([...array_intersect(['en', 'de'], I18n::languages()), I18n::defaultLanguage()]));
+    }
+
+    /**
+     * Pages parents would get no text of at all: every fallback language's text is empty or missing (pick() then
+     * has nothing complete to show). Like open placeholders in these texts, this keeps rounds from being
+     * activated.
+     * @return list<string> page keys (LegalTexts::KEYS order)
+     */
+    public static function missing(): array
+    {
+        $stored = self::stored();
+        return array_values(array_filter(self::KEYS, static fn (string $key): bool => array_filter(self::fallbackLanguages(),
+            static fn (string $lang): bool => trim($stored[$key][$lang] ?? '') !== '') === []));
     }
 
     /**
@@ -667,12 +683,13 @@ final class LegalTexts
      * admins who do not want to keep a translation can empty it.
      * @param array<string, string> $texts
      * @param list<string> $order
+     * @param list<string> $fallback the fallback languages (fallbackLanguages())
      */
-    public static function pick(array $texts, array $order): ?string
+    public static function pick(array $texts, array $order, array $fallback): ?string
     {
         $present = array_values(array_filter(array_unique($order), static fn (string $l): bool => trim($texts[$l] ?? '') !== ''));
         foreach ($present as $lang) {
-            if (in_array($lang, self::fallbackLanguages(), true) || self::placeholders($texts[$lang]) === []) {
+            if (in_array($lang, $fallback, true) || self::placeholders($texts[$lang]) === []) {
                 return $lang;
             }
         }
@@ -686,15 +703,36 @@ final class LegalTexts
      */
     public static function forParents(string $key, string $lang, string $fallback): ?array
     {
-        $order = array_values(array_unique([$lang, ...self::fallbackLanguages()]));
+        $languages = self::fallbackLanguages();
+        $order = array_values(array_unique([$lang, ...$languages]));
         $texts = [];
         foreach (Db::all('SELECT lang, content FROM pages WHERE page_key = ?', [$key]) as $row) {
             if (in_array($row['lang'], $order, true)) {
                 $texts[(string) $row['lang']] = self::render((string) $row['content'], (string) $row['lang'], $fallback);
             }
         }
-        $chosen = self::pick($texts, $order);
+        $chosen = self::pick($texts, $order, $languages);
         return $chosen !== null ? [$texts[$chosen], $chosen] : null;
+    }
+
+    /**
+     * Languages whose privacy policy parents get (offered, not emptied, no open placeholders; see pick()) but
+     * that was last saved before the German one, the authoritative version: a change made there since may be
+     * missing. Saving the text again (also unchanged) confirms it. Empty without an offered German text.
+     * @return list<string>
+     */
+    public static function behindGerman(): array
+    {
+        $rows = array_column(Db::all("SELECT lang, content, updated_at FROM pages WHERE page_key = 'privacy'"), null, 'lang');
+        $de = $rows['de'] ?? null;
+        if ($de === null || trim((string) $de['content']) === '' || !in_array('de', I18n::languages(), true)) {
+            return [];
+        }
+        $behind = array_keys(array_filter($rows, static fn (array $r): bool => $r['lang'] !== 'de' && in_array($r['lang'], I18n::languages(), true)
+            && trim((string) $r['content']) !== '' && (string) $r['updated_at'] < (string) $de['updated_at']
+            && self::placeholders(self::render((string) $r['content'], (string) $r['lang'], '')) === []));
+        sort($behind);
+        return array_map('strval', $behind);
     }
 
     /** @return array<string, array<string, string>> stored texts of the offered languages: page key => language => text */

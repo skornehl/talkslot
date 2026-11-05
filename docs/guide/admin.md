@@ -160,8 +160,11 @@ simple Markdown (headings with `#`, lists, bold, links). Two placeholders are fi
 The privacy policy has templates in all six parent languages; the translations say that the German
 version is authoritative and contain the same placeholders as the German one, so you enter the same details
 there. The imprint exists in German and English. A language without a text, with an empty one or with a
-translation whose placeholders are still open falls back to English (then to the default language), with a
-notice to parents in their language. Both texts have one template per **operator
+translation whose placeholders are still open falls back to English, then German, then the default language
+(English and German only if they are offered), with a notice to parents in their language. If none of these has a
+text for a page, no round can be activated. Fill in the translations before you invite parents in these languages.
+When you save the German privacy policy after a complete translation, the dashboard asks you to check that
+translation (the German version is authoritative); saving it again confirms it. Both texts have one template per **operator
 type** (*Von der Schule betrieben* / *Operated by the school*, *Privat betrieben* / *Operated privately*).
 *Vorlage laden* (*Load template*) on the text form puts one of them into the form, the one of the operator
 type first; the stored text only changes when you save. If you change the operator type at the top of

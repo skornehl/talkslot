@@ -49,4 +49,14 @@ return [
     // An edited privacy policy that still mentions the required checkbox (AdminController::legalHints())
     'Die Datenschutzerklärung ({languages}) erwähnt noch das Pflicht-Häkchen im Buchungsformular. Das gibt es nicht mehr: Eltern werden informiert, bestätigen müssen sie nichts – bitte den letzten Absatz in Abschnitt 4 an die Vorlage anpassen.'
         => 'The privacy policy ({languages}) still mentions the required checkbox in the booking form. It no longer exists: parents are informed and do not have to confirm anything – please adjust the last paragraph of section 4 to the template.',
+    // A page without a text in any fallback language, translations saved before the German text (AdminController)
+    'Bevor Runden aktiviert werden können, hinterlegen Sie bitte unter „Texte“ {texts} in mindestens einer dieser Sprachen: {languages}.'
+        => 'Before rounds can be activated, please enter the {texts} under “Texts” in at least one of these languages: {languages}.',
+    'Runden können erst aktiviert werden, wenn ein Admin Impressum und Datenschutzerklärung hinterlegt hat.'
+        => 'Rounds can only be activated once an admin has entered the legal notice and the privacy policy.',
+    'Für {texts} gibt es in keiner dieser Sprachen einen Text: {languages}. Eltern bekommen dann keinen, und es lassen sich keine Runden aktivieren.'
+        => 'There is no {texts} in any of these languages: {languages}. Parents then get none, and no round can be activated.',
+    'Die deutsche Datenschutzerklärung wurde geändert, nachdem diese Fassungen zuletzt gespeichert wurden: {languages}. Maßgeblich ist die deutsche Fassung – bitte prüfen Sie, ob sie dieselben Angaben enthalten, und speichern Sie sie danach (auch unverändert).'
+        => 'The German privacy policy was changed after these versions were last saved: {languages}. The German version is authoritative – please check that they contain the same details and save them afterwards (also unchanged).',
+    'und' => 'and',
 ];
