@@ -30,7 +30,8 @@ if (Installer::isInstalled()) {
 }
 
 $errors = [];
-$old = ['username' => Http::post('username'), 'display_name' => Http::post('display_name'), 'notify_email' => Http::post('notify_email')];
+$old = ['username' => Http::post('username'), 'display_name' => Http::post('display_name'), 'notify_email' => Http::post('notify_email'),
+    'operator_type' => Http::post('operator_type')];
 $done = false;
 
 if (Http::isPost()) {
@@ -47,13 +48,17 @@ if (Http::isPost()) {
     }
     if (!$errors) {
         $errors = Installer::validate($old['username'], Http::postRaw('password'), Http::postRaw('password2'), $old['notify_email']);
+        // Who runs the platform decides the templates of legal notice and privacy policy
+        if (($typeError = Installer::validateType($old['operator_type'])) !== null) {
+            $errors[] = $typeError;
+        }
     }
     // Two concurrent installations: only one creates, the other then sees "installed"
     if (!$errors && ((int) App\Db::value('SELECT GET_LOCK(?, 10)', [App\Db::table('install')]) !== 1 || Installer::isInstalled())) {
         $errors[] = __('Die Installation läuft bereits oder ist abgeschlossen.');
     }
     if (!$errors) {
-        Installer::install($old['username'], Http::postRaw('password'), $old['notify_email'], mb_substr($old['display_name'], 0, 200));
+        Installer::install($old['username'], Http::postRaw('password'), $old['notify_email'], mb_substr($old['display_name'], 0, 200), $old['operator_type']);
         $done = true;
         @unlink(__FILE__);
     }

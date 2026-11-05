@@ -34,7 +34,9 @@ check "wrong install key rejected" 'curl -s -d "install_key=falsch&username=$USE
 check "foreign table with the same name → no installation" 'curl -s -d "install_key=$IK&username=$USER" --data-urlencode "password=$PASS" --data-urlencode "password2=$PASS" "$B/install.php" | grep -q "enthält bereits Tabellen mit gleichem Namen (tp_users)"'
 dcx exec -T db mariadb -uapp -papp-dev-only talkslot -e "DROP TABLE tp_users"
 check "password too short rejected, input kept" 'P=$(curl -s -d "install_key=$IK&username=$USER&password=kurz&password2=kurz&notify_email=lehrer@example.org" "$B/install.php"); echo "$P" | grep -q "mindestens 12 Zeichen" && echo "$P" | grep -q "value=\"lehrer@example.org\""'
-IR=$(curl -s -d "install_key=$IK&username=$USER&notify_email=lehrer@example.org" --data-urlencode "password=$PASS" --data-urlencode "password2=$PASS" "$B/install.php")
+# Expert review P0-2b: the installer asks who runs the platform (school or private); it decides the legal templates
+check "installer: operator type required, the chosen one is kept after an error" 'P=$(curl -s -d "install_key=$IK&username=$USER" --data-urlencode "password=$PASS" --data-urlencode "password2=$PASS" "$B/install.php"); echo "$P" | grep -q "Bitte wählen Sie die Betriebsart" && echo "$P" | grep -q "name=\"operator_type\" value=\"school\" required" && curl -s -d "install_key=$IK&username=$USER&password=kurz&password2=kurz&operator_type=private" "$B/install.php" | grep -q "value=\"private\" required[^>]* checked"'
+IR=$(curl -s -d "install_key=$IK&username=$USER&notify_email=lehrer@example.org&operator_type=school" --data-urlencode "password=$PASS" --data-urlencode "password2=$PASS" "$B/install.php")
 [ -f "$ROOT/public/install.php" ] || cp "$INSTALL_BAK" "$ROOT/public/install.php"
 rm -f "$INSTALL_BAK"
 check "installation via the web completed, locked afterwards" 'echo "$IR" | grep -q "Installation abgeschlossen" && [ "$(curl -s -o /dev/null -w "%{http_code}" "$B/install.php")" = 404 ]'

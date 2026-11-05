@@ -6,9 +6,9 @@ Verantwortlich im Sinne der DSGVO für diese Terminvergabe und alle darüber geb
 
 [[VERANTWORTLICHE]]
 
-Die Lehrkräfte, die über diese Plattform Gesprächstermine anbieten, nutzen sie im Auftrag und nach Weisung der verantwortlichen Stelle.
+Die Lehrkräfte, die über diese Plattform Gesprächstermine anbieten, nutzen dieses Angebot der verantwortlichen Stelle.
 
-**Datenschutzbeauftragte bzw. Datenschutzbeauftragter:** [KONTAKTDATEN DER/DES DATENSCHUTZBEAUFTRAGTEN – ODER DIESEN ABSATZ LÖSCHEN, WENN KEINE BENANNT IST UND KEINE PFLICHT DAZU BESTEHT (ART. 37 DSGVO, § 38 BDSG)]
+**Datenschutzbeauftragte bzw. Datenschutzbeauftragter:** nicht benannt, da hierzu keine gesetzliche Pflicht besteht (Art. 37 DSGVO, § 38 BDSG). [BITTE PRÜFEN UND DANN DIESE KLAMMER LÖSCHEN: IST EINE ODER EINER BENANNT (Z. B. BEI EINEM VEREIN ODER FREIEN TRÄGER), STATT DES SATZES DAVOR DEREN KONTAKTDATEN ANGEBEN.]
 
 # 2. Zweck der Verarbeitung
 

@@ -59,9 +59,21 @@ final class Installer
         return $errors;
     }
 
-    /** Creates the first account as admin (which can also manage its own rounds). */
-    public static function install(string $username, #[\SensitiveParameter] string $password, string $email, string $displayName = ''): void
+    /** Error message if the operator type is not one of Operator::TYPES (the installer asks for it), or null. */
+    public static function validateType(string $type): ?string
     {
+        return in_array($type, Operator::TYPES, true) ? null : __('Bitte wählen Sie die Betriebsart: Wird die Terminvergabe von der Schule oder privat betrieben?');
+    }
+
+    /**
+     * Creates the first account as admin (which can also manage its own rounds) and stores the legal notice
+     * and privacy policy templates of the operator type.
+     */
+    public static function install(string $username, #[\SensitiveParameter] string $password, string $email, string $displayName, string $operatorType): void
+    {
+        if (($error = self::validateType($operatorType)) !== null) {
+            throw new \InvalidArgumentException($error);
+        }
         if ($conflicts = self::conflictingTables()) {
             throw new \RuntimeException('Die Datenbank enthält bereits Tabellen mit gleichem Namen (' . implode(', ', $conflicts) . '). Bitte eine eigene, leere Datenbank verwenden.');
         }
@@ -79,17 +91,14 @@ final class Installer
             "INSERT INTO users (username, password_hash, role, display_name, email, created_at) VALUES (?, ?, 'admin', ?, ?, ?)",
             [$username, password_hash($password, PASSWORD_DEFAULT), $displayName !== '' ? $displayName : $username, $email !== '' ? $email : null, $now]
         );
-        foreach (['imprint', 'privacy'] as $key) {
+        foreach (LegalTexts::KEYS as $key) {
             foreach (I18n::languages() as $lang) {
-                $file = APP_ROOT . "/app/templates/pages/$key.$lang.md";
-                if (is_file($file)) {
-                    Db::run(
-                        'INSERT IGNORE INTO pages (page_key, lang, content, updated_at) VALUES (?, ?, ?, ?)',
-                        [$key, $lang, (string) file_get_contents($file), $now]
-                    );
+                if (($content = LegalTexts::template($key, $operatorType, $lang)) !== null) {
+                    Db::run('INSERT IGNORE INTO pages (page_key, lang, content, updated_at) VALUES (?, ?, ?, ?)', [$key, $lang, $content, $now]);
                 }
             }
         }
+        Operator::saveType($operatorType);
         Settings::set('last_cleanup', '0');
         Settings::set('schema_version', (string) Migrations::LATEST);
         Settings::set('pages_version', Migrations::pagesVersion());

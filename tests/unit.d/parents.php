@@ -40,25 +40,31 @@ check('private operator (de/en): contract and legitimate interests, objection fo
     && str_contains($tpl('privacy-private.de'), 'Recht auf **Datenübertragbarkeit**')
     && str_contains($tpl('privacy-private.en'), 'Art. 6(1)(b) GDPR') && str_contains($tpl('privacy-private.en'), 'where processing is based on Art. 6(1)(f) GDPR'));
 $privacy = ['privacy.de' => $publicDe, 'privacy.en' => $publicEn, 'privacy-private.de' => $tpl('privacy-private.de'), 'privacy-private.en' => $tpl('privacy-private.en')];
-$wrong = array_keys(array_filter($privacy, static fn (string $t): bool => !preg_match('/^\*\*[^*]*(Datenschutzbeauftragte|data protection officer)[^*]*\*\* \[(KONTAKTDATEN|CONTACT DETAILS)/mui', $t)
+// Data protection officer: the school's is a required placeholder; a private operator usually has none, but has to check
+// that before going live (placeholder to delete or replace, tests/unit.d/legal.php)
+$wrong = array_keys(array_filter($privacy, static fn (string $t, string $n): bool => !preg_match(str_contains($n, 'private')
+        ? '/^\*\*[^*]*(Datenschutzbeauftragte|data protection officer)[^*]*\*\* (nicht benannt|none appointed)[^\n]*\[(BITTE PRÜFEN|PLEASE CHECK)/mui'
+        : '/^\*\*[^*]*(Datenschutzbeauftragte|data protection officer)[^*]*\*\* \[(KONTAKTDATEN|CONTACT DETAILS)/mui', $t)
     || (bool) preg_match('/private[ns]? Angebot|private service|jederzeit selbst|yourself at any time/u', $t)
-    || !preg_match('/Änderungsfrist, die die Lehrkraft|deadline the teacher has set/u', $t) || !preg_match('/zur Vertraulichkeit verpflichtet|bound to confidentiality/u', $t)));
-check('all privacy templates: required placeholder for the data protection officer, no "private service", cancelling only until the deadline, administrators bound to confidentiality'
+    || !preg_match('/Änderungsfrist, die die Lehrkraft|deadline the teacher has set/u', $t) || !preg_match('/zur Vertraulichkeit verpflichtet|bound to confidentiality/u', $t), ARRAY_FILTER_USE_BOTH));
+check('all privacy templates: data protection officer to be filled in or checked, no "private service", cancelling only until the deadline, administrators bound to confidentiality'
     . ($wrong ? ' (' . implode(', ', $wrong) . ')' : ''), !$wrong);
 check('legal notices without "private service"', !preg_match('/privat/i', $tpl('imprint.de') . $tpl('imprint.en')));
 $parity = array_filter(['imprint', 'privacy', 'privacy-private'], static fn (string $n): bool => count($ph($tpl("$n.de"))) !== count($ph($tpl("$n.en"))));
 check('German and English templates have the same number of placeholders' . ($parity ? ' (' . implode(', ', $parity) . ')' : ''), !$parity);
-$oldHashes = (new ReflectionClassConstant(App\Migrations::class, 'OLD_PAGE_HASHES'))->getValue();
-check('templates up to v1.5.0 (unedited) are replaced on update',
-    !array_diff(['036e210b629357dfbf768868e3a5f249c888d3052f301170703b196336058f43', 'f15521ceaa18e97c98190e448cc95eb6130c4cf571164b09819bb40dd7af22c8',
-        '3885e997cd3bbf330158fdccc730f7fe1b93044379cc2df060ea5e0e7b6396ec', 'ffbcc88fbd8b760efc7c4f173bb4e8850517392f88f9ffc0100da3aad921253f'], $oldHashes));
-check('no current template counts as old (an unedited "private operator" text is not switched to "public school")',
-    !array_intersect(App\Migrations::CURRENT_PAGE_HASHES, $oldHashes));
-check('variants: the first one is the installed template, loading only existing files',
+// Templates up to v1.6 described a private service: their privacy policy is an old template of that type, their
+// legal notice is still the current one for a private operator (Expert review P0-2b)
+$oldHashes = array_merge(...array_values(App\Migrations::OLD_PAGE_HASHES));
+check('templates up to v1.5.0 (unedited) are recognised as templates of a private service',
+    !array_diff(['3885e997cd3bbf330158fdccc730f7fe1b93044379cc2df060ea5e0e7b6396ec', 'ffbcc88fbd8b760efc7c4f173bb4e8850517392f88f9ffc0100da3aad921253f'], App\Migrations::OLD_PAGE_HASHES['private'])
+    && App\Migrations::CURRENT_PAGE_HASHES['imprint-private.de'] === '036e210b629357dfbf768868e3a5f249c888d3052f301170703b196336058f43'
+    && App\Migrations::CURRENT_PAGE_HASHES['imprint-private.en'] === 'f15521ceaa18e97c98190e448cc95eb6130c4cf571164b09819bb40dd7af22c8');
+check('no current template counts as old', !array_intersect(App\Migrations::CURRENT_PAGE_HASHES, $oldHashes));
+check('variants: the school template comes first, loading only existing files',
     array_values(App\LegalTexts::VARIANTS['privacy'])[0] === 'privacy' && array_values(App\LegalTexts::VARIANTS['imprint'])[0] === 'imprint'
-    && App\LegalTexts::template('privacy', 'private', 'en') === $tpl('privacy-private.en') && App\LegalTexts::template('privacy', 'public', 'de') === $publicDe
-    && App\LegalTexts::template('privacy', 'public', 'pl') === null && App\LegalTexts::template('imprint', 'private', 'de') === null
-    && App\LegalTexts::template('privacy', 'public', '../de') === null);
+    && App\LegalTexts::template('privacy', 'private', 'en') === $tpl('privacy-private.en') && App\LegalTexts::template('privacy', 'school', 'de') === $publicDe
+    && App\LegalTexts::template('privacy', 'school', 'pl') === null && App\LegalTexts::template('imprint', 'public', 'de') === null
+    && App\LegalTexts::template('privacy', 'school', '../de') === null);
 // As parents see it: the details of the operator and the web host do not count as open placeholders, a missing web host does
 $contact = new ReflectionProperty(App\Operator::class, 'contact');
 $contact->setValue(null, "Gesamtschule am See\nE-Mail: info@example.org");

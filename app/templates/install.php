@@ -33,6 +33,8 @@
       <label for="notify_email"><?= e(__('E-Mail für Zusammenfassungen (optional)')) ?></label>
       <input type="email" id="notify_email" name="notify_email" value="<?= e($old['notify_email'] ?? '') ?>">
     </div>
+    <?php $operatorType = $old['operator_type'] ?? null; require __DIR__ . '/admin/_operator_type.php'; ?>
+    <p class="small"><?= e(__('Danach richten sich die Vorlagen für Impressum und Datenschutzerklärung. Sie können die Betriebsart später im Admin-Bereich unter „Texte“ ändern.')) ?></p>
     <button type="submit" class="button button-primary"><?= e(__('Installieren')) ?></button>
   </form>
 <?php endif; ?>

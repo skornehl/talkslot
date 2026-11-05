@@ -143,87 +143,99 @@ final class Migrations
     ];
 
     /**
-     * SHA-256 of the current templates app/templates/pages/*.md (checked by tests/unit.php). The variants
-     * (privacy-private.*) are not installed; admins load them into the text form (LegalTexts::VARIANTS).
+     * SHA-256 of the current templates app/templates/pages/*.md (checked by tests/unit.php). Each page has one
+     * template per operator type (LegalTexts::VARIANTS); the installer and LegalTexts::apply() store the one of
+     * the chosen type.
      */
     public const CURRENT_PAGE_HASHES = [
         'imprint.de' => '557dbb64b5ab373144a29e23a36056355fe02bdc7ff70a43d690d6acb8a74672',
         'imprint.en' => '0692f22c0bb7dd3c6f76c96c51f3dc78e25af54f97b4c556fb7268b8e372fa3f',
+        // Unchanged since v1.5.0: the legal notice of a "private, non-commercial service"
+        'imprint-private.de' => '036e210b629357dfbf768868e3a5f249c888d3052f301170703b196336058f43',
+        'imprint-private.en' => 'f15521ceaa18e97c98190e448cc95eb6130c4cf571164b09819bb40dd7af22c8',
         'privacy.de' => '12d249130ce60c94e7cd8f430e6cea2809d121351ab59090db0e0cc014eb4afe',
         'privacy.en' => '53be37d7c9c6697144d9400fe8a4536dee767f9ee22fe2636224d2484d04390a',
-        'privacy-private.de' => 'de4289fa6a99be078922c0d4f2a945805de5fe1398b6e682f256f99cf9a8dabd',
-        'privacy-private.en' => '05bcdc8ab770ab9e17046b5b89e2d9bc9bbbe7a39a66e4fa6c777950c345995b',
+        'privacy-private.de' => '47666fa31138011031ef382e7f5ce461e3eb68695283c070a153ce030b7a9ab9',
+        'privacy-private.en' => '1d889133a590ed13a4a8ae3b072f51fcc583798e899ededd4e184d183d0161c0',
     ];
 
     /**
-     * SHA-256 of all previously shipped default templates of legal notice/privacy policy: stored texts that
-     * still match one exactly (never edited) are replaced by the current default template. Never add
-     * hashes of a variant (privacy-private.*) here – an unedited variant would become the default.
+     * SHA-256 of earlier templates of legal notice/privacy policy, by the operator type they were written for.
+     * A stored text that still matches one exactly (never edited) counts as an unedited template: it is
+     * replaced by the current template of the chosen operator type (LegalTexts::apply()), and up to v1.6 the
+     * templates described a privately run service (LegalTexts::detectType()).
      */
-    private const OLD_PAGE_HASHES = [
-        // Up to v1.5.0: "private service" without a data protection officer, legal bases (b) and (f) only,
-        // "cancel at any time"; legal notice of a "private, non-commercial service"
-        '036e210b629357dfbf768868e3a5f249c888d3052f301170703b196336058f43',
-        'f15521ceaa18e97c98190e448cc95eb6130c4cf571164b09819bb40dd7af22c8',
-        '3885e997cd3bbf330158fdccc730f7fe1b93044379cc2df060ea5e0e7b6396ec',
-        'ffbcc88fbd8b760efc7c4f173bb4e8850517392f88f9ffc0100da3aad921253f',
-        // Privacy policy de/en without the reminder mail (up to version 14)
-        '0cda1f6b2ca1ad90d1135a27b0087542862a700e0fbcefce7d448895f07a702a',
-        '7ab09658494d5af363ab22f52a13140952a72e83656280c26ba54e029b2a0d51',
-        // Privacy policy with hosting placeholder in square brackets (before [[HOSTER]])
-        'ad6f6857bd256028a0bb977342079a12de3896553f38b6988bc90513dd38b3db',
-        '144970362b39b145e5d4253ce311bfa38fa4c85a23ed090d14cb9f40340d28df',
-        // Privacy policy with hard-coded hosting provider
-        'de6d0d5db54705cdfaebeb229b708e0bb408f52963664220cfcbda4e8e0d2022',
-        '709ca1125fecd1230d4dc8d4fdfd92b52a195d1bfdc0d5a705b7cdd536e29120',
-        // Privacy policy without the section on appearance (light/dark)
-        'bfc745eea89fdf42486366ec3ce736b038c858382f2cb4ff233670e465e06440',
-        '8fdf11cfe5fbe26ba706f449dd0471bb73bb06d5c07b584d7fd30f7bfab57fc1',
-        // Versions with template notes and notes on the school (up to version 10)
-        '905c83e66c81ce4a3179192145ed7801260dc23a9bc30f42e6c76c39b7d74f8a',
-        '64dae24f77aa5056ea551f8429a4a33b2a7916e2b2366d2fed9ab622452a6551',
-        'dd0843a163d086b559d734e4d6dc573960a05c7651b2db4866dd34035c443f5d',
-        'ee6655d8d71c55f0700c91600e0da896187bb8f61f3bbeda3064f65e0aeeb480',
-        // Privacy policy de/en with "built-in translation feature" (interim state, test installations only)
-        'e7e7f5e201d3cb8f646da9476aeeb18042b2afbb7e6a493ecdb17095c7b20082',
-        'afecb073e5a316485b4105b37b41f0626417fcea78c4f5add76460891afac1e2',
-        // Privacy policy de/en with teachers as controllers (Translator API, up to version 8), legal notice en with placeholders
-        '14875459955518adc09879c03f020f06c5eaa9a19494837f99237b0d4c9932ab',
-        '71d92e80a981bf20cd7a6409f6500015799e08cd801815cf303977b3004b09fd',
-        'c503bcd0596bc7bc45098fedc8f2b910f452909701ba9e28fc247dd9854fcc94',
-        // Privacy policy de/en with admin as controller and access code (up to version 9)
-        'f3ce5609499373779aa2de56e2275a6c55cd32ffffd1cd95cca15462ae390264',
-        '460240e538d932258d9aa50a2ec1d127e0b290a8d881f54ce8121e2c2caf7e17',
-        // Interim state of the single-admin rework (test installations only)
-        '8c8973faa47678a960e027205d31604c914cfe515a76d5801c4511d341df4cf2',
-        'a20f6373f8ed2438a452e4226e3a216820e09da2a8c29b46c090a90bdb6c7fc2',
-        'ee6625e4708a310c37db76031304d33ed26f685c92e27b9d4da9a95fc2590ce3',
-        'd9b8e0f952fd2b3d0837841005b466241c492f4f06bc648254d2938c83a0624c',
-        // Privacy policy de/en with DeepL (up to version 7)
-        '713b85160d48c940afd47de09bd18ad8b1e9b069284992f9b571fc030ed6f25f',
-        '4b3e0a3adc7ec55a14c2435835f375581a6c4b300482cc8fd9cd04f3c5a12b23',
-        '05b82314637b712949e3b7c8e588f71de71d0c852c4c4dd6e7a4b3a2939c185f',
-        '07ececfa877f336ee76f2ac33e9ee6660899b189ed02fdd29235ed6aa0ae8dc4',
-        '0b2e7d11e71ffa5772cc523b688740a1eb721c08a4226347c73bf39e2d723574',
-        '28a3268258ac7f9d1a6f8a4ea2655c1f0c2a981e65f78a38babef960fb9b15c7',
-        '31c90a01945dae9e433a57c019060c982884ac6d461ec6dac6790d48e82c6f0f',
-        '410c752a7363eb5692a96afc71c3fd4f7f607e8d55c6661b1035f7fcedfae9ce',
-        '6f9ca87a86200e7e47a5e48a22d29a7c0c509f9e03893b7c966c55c0d2d489b4',
-        '754f8e5c20a09572710cd9bcaaaf3580b2d8ffe84c7ff82f02d09f04efcb61e4',
-        '7d77bdda1a65f5251366acd41e984b3ec2a3faaca6839c5fe3e5a23cae2f6dc6',
-        '83fd8153dd3a29ca51e31d0ad19d7e9a2cfd83837517d8eca63d17d7a6f82177',
-        '88b1f6ea37cc81e3723fd150ca7c755331beabfc47af864d6887438fc7e5f80b',
-        '8e5b26520d3369d652fb2addb98c9a75708dee853c88847157892c443ea625eb',
-        '98f8990bdb164f0a01ab54ce25e61b8e930fac7d66a1834bb10526ce86106c1a',
-        'a6b368a3a7312f1f052f593e9076e5e26300de5d01839904e002ebe0b100041b',
-        'aa35ca887f189a6991e91d669f0d9ccd82be164a34663c722ffbad4de0c4f343',
-        'c503bcd0596bc7bc45098fedc8f2b910f452909701ba9e28fc247dd9854fcc94',
-        'd71943ef603c979ebf3bda10357c80b6395568f07d1690798db8b52dfd016a5c',
-        'f1ac0f64ece1e1ce11b4322831f8d121b6d5a3ea450183d6a277cf26d9c0f3b1',
-        // Privacy policy de/en for public schools without the calendar download, the later confirmation mail
-        // and the expiry of the remember-me entry (interim state on main after v1.5.0)
-        'ac8cf4d882a13a6e127476ab13de02524316d343a746b4b8ff055c3aa0d09347',
-        '320c437da7fbf0e1ab24328e555348c160b1ac8bc551dfcb7229ae0593de2683',
+    public const OLD_PAGE_HASHES = [
+        'private' => [
+            // Privacy policy de/en up to v1.6.0: "private service" without a data protection officer, legal
+            // bases (b) and (f), "cancel at any time" (the legal notice of that time is the current
+            // imprint-private template)
+            '3885e997cd3bbf330158fdccc730f7fe1b93044379cc2df060ea5e0e7b6396ec',
+            'ffbcc88fbd8b760efc7c4f173bb4e8850517392f88f9ffc0100da3aad921253f',
+            // v1.7.0: privacy policy de/en for private operators with a required placeholder for the data
+            // protection officer, teachers acting under the operator's instructions
+            'de4289fa6a99be078922c0d4f2a945805de5fe1398b6e682f256f99cf9a8dabd',
+            '05bcdc8ab770ab9e17046b5b89e2d9bc9bbbe7a39a66e4fa6c777950c345995b',
+            // Privacy policy de/en without the reminder mail (up to version 14)
+            '0cda1f6b2ca1ad90d1135a27b0087542862a700e0fbcefce7d448895f07a702a',
+            '7ab09658494d5af363ab22f52a13140952a72e83656280c26ba54e029b2a0d51',
+            // Privacy policy with hosting placeholder in square brackets (before [[HOSTER]])
+            'ad6f6857bd256028a0bb977342079a12de3896553f38b6988bc90513dd38b3db',
+            '144970362b39b145e5d4253ce311bfa38fa4c85a23ed090d14cb9f40340d28df',
+            // Privacy policy with hard-coded hosting provider
+            'de6d0d5db54705cdfaebeb229b708e0bb408f52963664220cfcbda4e8e0d2022',
+            '709ca1125fecd1230d4dc8d4fdfd92b52a195d1bfdc0d5a705b7cdd536e29120',
+            // Privacy policy without the section on appearance (light/dark)
+            'bfc745eea89fdf42486366ec3ce736b038c858382f2cb4ff233670e465e06440',
+            '8fdf11cfe5fbe26ba706f449dd0471bb73bb06d5c07b584d7fd30f7bfab57fc1',
+            // Versions with template notes and notes on the school (up to version 10)
+            '905c83e66c81ce4a3179192145ed7801260dc23a9bc30f42e6c76c39b7d74f8a',
+            '64dae24f77aa5056ea551f8429a4a33b2a7916e2b2366d2fed9ab622452a6551',
+            'dd0843a163d086b559d734e4d6dc573960a05c7651b2db4866dd34035c443f5d',
+            'ee6655d8d71c55f0700c91600e0da896187bb8f61f3bbeda3064f65e0aeeb480',
+            // Privacy policy de/en with "built-in translation feature" (interim state, test installations only)
+            'e7e7f5e201d3cb8f646da9476aeeb18042b2afbb7e6a493ecdb17095c7b20082',
+            'afecb073e5a316485b4105b37b41f0626417fcea78c4f5add76460891afac1e2',
+            // Privacy policy de/en with teachers as controllers (Translator API, up to version 8), legal notice en with placeholders
+            '14875459955518adc09879c03f020f06c5eaa9a19494837f99237b0d4c9932ab',
+            '71d92e80a981bf20cd7a6409f6500015799e08cd801815cf303977b3004b09fd',
+            'c503bcd0596bc7bc45098fedc8f2b910f452909701ba9e28fc247dd9854fcc94',
+            // Privacy policy de/en with admin as controller and access code (up to version 9)
+            'f3ce5609499373779aa2de56e2275a6c55cd32ffffd1cd95cca15462ae390264',
+            '460240e538d932258d9aa50a2ec1d127e0b290a8d881f54ce8121e2c2caf7e17',
+            // Interim state of the single-admin rework (test installations only)
+            '8c8973faa47678a960e027205d31604c914cfe515a76d5801c4511d341df4cf2',
+            'a20f6373f8ed2438a452e4226e3a216820e09da2a8c29b46c090a90bdb6c7fc2',
+            'ee6625e4708a310c37db76031304d33ed26f685c92e27b9d4da9a95fc2590ce3',
+            'd9b8e0f952fd2b3d0837841005b466241c492f4f06bc648254d2938c83a0624c',
+            // Privacy policy de/en with DeepL (up to version 7)
+            '713b85160d48c940afd47de09bd18ad8b1e9b069284992f9b571fc030ed6f25f',
+            '4b3e0a3adc7ec55a14c2435835f375581a6c4b300482cc8fd9cd04f3c5a12b23',
+            '05b82314637b712949e3b7c8e588f71de71d0c852c4c4dd6e7a4b3a2939c185f',
+            '07ececfa877f336ee76f2ac33e9ee6660899b189ed02fdd29235ed6aa0ae8dc4',
+            '0b2e7d11e71ffa5772cc523b688740a1eb721c08a4226347c73bf39e2d723574',
+            '28a3268258ac7f9d1a6f8a4ea2655c1f0c2a981e65f78a38babef960fb9b15c7',
+            '31c90a01945dae9e433a57c019060c982884ac6d461ec6dac6790d48e82c6f0f',
+            '410c752a7363eb5692a96afc71c3fd4f7f607e8d55c6661b1035f7fcedfae9ce',
+            '6f9ca87a86200e7e47a5e48a22d29a7c0c509f9e03893b7c966c55c0d2d489b4',
+            '754f8e5c20a09572710cd9bcaaaf3580b2d8ffe84c7ff82f02d09f04efcb61e4',
+            '7d77bdda1a65f5251366acd41e984b3ec2a3faaca6839c5fe3e5a23cae2f6dc6',
+            '83fd8153dd3a29ca51e31d0ad19d7e9a2cfd83837517d8eca63d17d7a6f82177',
+            '88b1f6ea37cc81e3723fd150ca7c755331beabfc47af864d6887438fc7e5f80b',
+            '8e5b26520d3369d652fb2addb98c9a75708dee853c88847157892c443ea625eb',
+            '98f8990bdb164f0a01ab54ce25e61b8e930fac7d66a1834bb10526ce86106c1a',
+            'a6b368a3a7312f1f052f593e9076e5e26300de5d01839904e002ebe0b100041b',
+            'aa35ca887f189a6991e91d669f0d9ccd82be164a34663c722ffbad4de0c4f343',
+            'c503bcd0596bc7bc45098fedc8f2b910f452909701ba9e28fc247dd9854fcc94',
+            'd71943ef603c979ebf3bda10357c80b6395568f07d1690798db8b52dfd016a5c',
+            'f1ac0f64ece1e1ce11b4322831f8d121b6d5a3ea450183d6a277cf26d9c0f3b1',
+        ],
+        'school' => [
+            // Privacy policy de/en for public schools without the calendar download, the later confirmation
+            // mail and the expiry of the remember-me entry (interim state on main after v1.5.0)
+            'ac8cf4d882a13a6e127476ab13de02524316d343a746b4b8ff055c3aa0d09347',
+            '320c437da7fbf0e1ab24328e555348c160b1ac8bc551dfcb7229ae0593de2683',
+        ],
     ];
 
     public static function run(): void
@@ -291,9 +303,12 @@ final class Migrations
     }
 
     /**
-     * Replaces stored pages with the current template – but only if they still
-     * exactly match an earlier template (i.e. have not been edited).
-     * Missing languages are filled in from existing templates.
+     * Brings the stored legal notice and privacy policy up to date with the templates of the operator type:
+     * texts that are missing or still exactly match a template (current or earlier, i.e. never edited) get the
+     * current template of that type; edited texts stay (LegalTexts::apply()). Installations from before the
+     * operator type was asked for get "private" if all their texts are unedited templates of a private
+     * service, as up to v1.6 (LegalTexts::detectType()); otherwise the texts stay as they are until an admin
+     * chooses the type.
      * @return bool false = templates on the server do not match the code (yet), nothing done
      */
     public static function refreshPages(): bool
@@ -304,22 +319,12 @@ final class Migrations
                 return false; // e.g. code already new, templates still old (upload in progress)
             }
         }
-        foreach (['imprint', 'privacy'] as $key) {
-            foreach (I18n::languages() as $lang) {
-                $file = APP_ROOT . "/app/templates/pages/$key.$lang.md";
-                if (!is_file($file)) {
-                    continue;
-                }
-                $new = (string) file_get_contents($file);
-                $current = Db::value('SELECT content FROM pages WHERE page_key = ? AND lang = ?', [$key, $lang]);
-                if ($current === null || in_array(hash('sha256', (string) $current), self::OLD_PAGE_HASHES, true)) {
-                    Db::run(
-                        'INSERT INTO pages (page_key, lang, content, updated_at) VALUES (?, ?, ?, ?)
-                         ON DUPLICATE KEY UPDATE content = VALUES(content), updated_at = VALUES(updated_at)',
-                        [$key, $lang, $new, Time::nowSql()]
-                    );
-                }
-            }
+        $type = Operator::type();
+        if ($type === null && ($type = LegalTexts::detectType(LegalTexts::stored())) !== null) {
+            Operator::saveType($type, true);
+        }
+        if ($type !== null) {
+            LegalTexts::apply($type);
         }
         return true;
     }

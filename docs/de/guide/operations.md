@@ -23,10 +23,17 @@ die anderen warten kurz. Neuinstallationen erhalten das neueste Schema direkt au
 
 Migrationen fügen nur Spalten (mit Standardwerten) und Tabellen hinzu, sodass ein Rollback auf eine ältere
 Version weiter funktioniert. Texte für Impressum und Datenschutzerklärung, die nie bearbeitet wurden, werden
-automatisch durch neuere Vorlagen ersetzt; bearbeitete Texte bleiben unverändert, und Admins sehen unter
-*Texte* einen Hinweis, wenn etwas zu tun ist. Bringt eine neue Vorlage neue Platzhalter in eckigen Klammern
-mit, bleiben bereits aktive Runden erreichbar; das Dashboard nennt die Platzhalter, und die nächste Runde
-lässt sich erst aktivieren, wenn sie ausgefüllt sind.
+automatisch durch neuere Vorlagen der Betriebsart (von der Schule oder privat betrieben) ersetzt; bearbeitete
+Texte bleiben unverändert, und Admins sehen unter *Texte* einen Hinweis, wenn etwas zu tun ist. Bringt eine
+neue Vorlage neue Platzhalter in eckigen Klammern mit, bleiben bereits aktive Runden erreichbar; das
+Dashboard nennt die Platzhalter, und die nächste Runde lässt sich erst aktivieren, wenn sie ausgefüllt sind.
+
+**Update auf die Version mit Betriebsart:** Eine Installation, deren Texte alle noch unverändert den
+Vorlagen bis v1.6 entsprechen, wird *privat betrieben* (das beschrieben diese Vorlagen), und das Dashboard
+weist die Admins darauf hin. Jede andere Installation hat danach keine Betriebsart: Admins sehen im
+Dashboard „Bitte Betriebsart wählen“, und **bis ein Admin sie unter *Texte* gewählt hat, lässt sich keine
+Runde aktivieren**. Bereits aktive Runden bleiben erreichbar. Planen Sie dafür direkt nach dem Update eine
+Minute ein, siehe [Datenschutz und Recht]({{ '/de/guide/privacy/' | relative_url }}#von-der-schule-oder-privat-betrieben).
 
 ## Fehlermeldungen
 
