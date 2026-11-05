@@ -52,8 +52,9 @@ site itself, see [cron monitoring](#cron-monitoring).
 
 ## Cron monitoring {#cron-monitoring}
 
-The cron job deletes past bookings and sends the summaries and reminders. If it stops, nothing fails
-visibly: the clean-up still runs on page views, but later, and only when someone visits. So TalkSlot
+The cron job deletes past bookings and sends the summaries, reminders and queued mails. If it stops,
+nothing fails visibly: the clean-up still runs on page views, but later and only when someone visits, and
+reminders and summaries may not go out at all (see [mail queue](#mail-queue)). So TalkSlot
 records every completed run of `bin/cron.php` or the web cron (`last_cron` in the `settings` table, apart
 from `last_cleanup`, which page views set as well) and checks it on page views:
 
@@ -65,8 +66,8 @@ from `last_cleanup`, which page views set as well) and checks it on page views:
   completed run ends the warning.
 - **No run recorded at all** (a new installation, or an update while the cron job was already down):
   3 hours after the monitoring began, the dashboard asks the admins to set up the cron job. There is no
-  mail for this, so that installations relying on the clean-up on page views on purpose are not reminded
-  every day.
+  mail for this, so that installations relying on page views on purpose (with PHP-FPM or LiteSpeed, see
+  [mail queue](#mail-queue)) are not reminded every day.
 - **`cron_alert_hours = 0`** turns both off.
 
 The check runs on page views: a site nobody visits cannot report anything, but any visit, by parents as
@@ -135,7 +136,7 @@ or an old backup is lost.
 A new `APP_SECRET` changes the web cron token and the key of the
 [health check]({{ '/guide/deployment/' | relative_url }}#health-check). The included workflows derive both
 from the same secret; an external cron service needs the new token (see [web cron]({{ '/guide/installation/' | relative_url }})),
-otherwise the clean-up only runs on page views. It also resets the rate limits, and parents have to
+otherwise the clean-up only runs on page views and queued mails wait. It also resets the rate limits, and parents have to
 reload an open booking form or enter a round code again. Admin sessions, change links and bookings stay
 valid.
 
@@ -148,9 +149,36 @@ valid.
 | Rate-limit data | after 24 hours at the latest |
 | Inactive teacher accounts without rounds in use | 15 months after the last login, together with their drafts |
 | Admin log (*Protokoll*) | after 90 days (`audit_log_days`) |
+| Mail queue entries (no address or content) | once the mail is sent; mails that could not be sent after 48 hours |
 
 The clean-up runs in the cron job and, as a fallback, on page views at most every 15 minutes. The same
-runs send the teachers' summary mails and the parents' reminders.
+runs queue the teachers' summary mails and the parents' reminders; the cron job sends them.
+
+## Mail queue
+
+Apart from the confirmations sent right away (below), no visitor waits for the mail server: page views
+only run the database steps of the clean-up, and reminders, summaries and mails that failed go to a
+**mail queue** (outbox) that the **cron job** sends (`bin/cron.php` or the web cron). Per run it sends at most 100 mails within about 20 seconds over one SMTP
+connection; confirmations and change notices to parents go first, then summaries, then reminders
+(see [configuration]({{ '/guide/configuration/' | relative_url }}#mail-queue), also for an hourly limit).
+Only one run sends at a time, per database, so installations sharing a database server do not hold each
+other up; the cron job waits up to 15 seconds for a run in progress.
+
+- **Confirmations stay immediate.** When parents book or move an appointment, or a teacher saves an entry
+  with a mail, the mail is sent right away. If the mail server refuses it, it goes to the queue, and the
+  page says the confirmation follows. The queue retries after 5, 15, 30, 60, 120 and then every 240 minutes.
+- **References only.** A queue entry says which mail is due for which booking or account, nothing else. The
+  address and text are taken from the booking when sending, and a confirmation sent later gets a new
+  personal link of its own (the first one stays valid), so the queue holds no address and no link. Entries
+  go with their booking and are deleted once sent, after 48 hours at the latest.
+- **Nothing gets lost unnoticed.** The booking list shows *E-Mail nicht zugestellt* at an entry whose mail
+  failed (with *neuer Versuch folgt* while it is retried), and admins see a notice on the overview when
+  mails have waited for more than two hours, usually because the cron job does not run or the mail server
+  keeps refusing.
+- **Without a cron job** mails can only go out on page views if PHP runs as PHP-FPM or LiteSpeed: the page
+  is delivered first, then up to 10 due mails are sent (`mail_queue.after_response`). With Apache's
+  mod_php that is not possible, so set up the cron job; the included `cron.yml` runs it hourly. Without it,
+  reminders and summaries are not sent there, and queued mails are given up after 48 hours.
 
 ## Troubleshooting
 
@@ -165,7 +193,8 @@ Wi-Fi). Raise the [rate limits]({{ '/guide/configuration/' | relative_url }}#rat
 during a busy booking phase.
 
 **Mails do not arrive.** Check the sender domain's SPF and DKIM records, try `smtp` instead of `mail`, and
-look for the alert "Mailversand fehlgeschlagen".
+look for the alert "Mailversand fehlgeschlagen". Reminders and summaries are sent by the cron job: if the
+overview says mails are waiting, check that it runs (`php bin/cron.php -v` prints `mails_sent`).
 
 **The privacy policy shows `[HOSTER MIT ANSCHRIFT]`.** Set `hosting` (or `HOSTING_DE`/`HOSTING_EN`); see
 [Privacy and legal]({{ '/guide/privacy/' | relative_url }}).

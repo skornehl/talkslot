@@ -32,7 +32,7 @@ final class BookingService
     private const DETAIL_SQL = 'SELECT b.*, s.start_time, s.end_time, s.is_conflict, d.day_date, d.id AS day_id,
                                        r.id AS round_id, r.title, r.description, r.source_lang,
                                        COALESCE(NULLIF(TRIM(d.location), \'\'), r.location) AS location, r.slug, r.is_active, r.cancel_deadline_hours,
-                                       r.booking_deadline_hours, r.user_id,
+                                       r.booking_deadline_hours, r.user_id, r.remind_parents,
                                        u.display_name AS teacher_name, u.email AS teacher_email, u.is_active AS teacher_active
                                   FROM bookings b
                                   JOIN slots s ON s.id = b.slot_id
@@ -102,8 +102,11 @@ final class BookingService
     private static function create(array $round, int $slotId, string $name, ?string $email, string $lang, string $source): array
     {
         [$plain, $hash] = Token::generate();
+        // Parents may get the reminder if the round said so when they booked (the form tells them); entries
+        // by the teacher only once the parents got a confirmation or change notice (see mailResult())
+        $remindOk = $source === 'parent' && !empty($round['remind_parents']) ? 1 : 0;
         try {
-            $id = self::retryOnDeadlock(static fn (): int => Db::transaction(static function () use ($round, $slotId, $name, $email, $lang, $source, $hash): int {
+            $id = self::retryOnDeadlock(static fn (): int => Db::transaction(static function () use ($round, $slotId, $name, $email, $lang, $source, $hash, $remindOk): int {
                 $limited = $source !== 'admin' && self::lockForLimit($round);
                 $slot = self::lockSlot($slotId, (int) $round['id']);
                 self::assertFree($slot, $round, $source === 'admin');
@@ -112,9 +115,9 @@ final class BookingService
                 }
                 $now = Time::nowSql();
                 return Db::insert(
-                    'INSERT INTO bookings (slot_id, name, email, token_hash, lang, source, created_at, updated_at)
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-                    [$slotId, $name, $email, $hash, $lang, $source, $now, $now]
+                    'INSERT INTO bookings (slot_id, name, email, token_hash, lang, source, remind_ok, created_at, updated_at)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                    [$slotId, $name, $email, $hash, $lang, $source, $remindOk, $now, $now]
                 );
             }));
         } catch (\PDOException $e) {
@@ -179,9 +182,44 @@ final class BookingService
             return null;
         }
         $hash = Token::hash($plain);
-        // The link in the reminder mail has its own token (the original one is only stored as a hash)
+        // The links in the reminder and in a confirmation sent later from the outbox have their own tokens
+        // (the original one is only stored as a hash)
         return Db::one(self::DETAIL_SQL . ' WHERE b.token_hash = ?', [$hash])
-            ?? Db::one(self::DETAIL_SQL . ' WHERE b.reminder_token_hash = ?', [$hash]);
+            ?? Db::one(self::DETAIL_SQL . ' WHERE b.reminder_token_hash = ?', [$hash])
+            ?? Db::one(self::DETAIL_SQL . ' WHERE b.mail_token_hash = ?', [$hash]);
+    }
+
+    /**
+     * New link for a confirmation sent later from the outbox (only its hash is stored, like the reminder's).
+     * The link of the page after booking stays valid; a later attempt replaces this one.
+     */
+    public static function newMailToken(int $bookingId): string
+    {
+        [$plain, $hash] = Token::generate();
+        Db::run('UPDATE bookings SET mail_token_hash = ? WHERE id = ?', [$hash, $bookingId]);
+        return $plain;
+    }
+
+    /**
+     * Records a mail to the booking's address ($type: booked, changed, reminder). Sent: a confirmation or
+     * change notice sets notified_at (no reminder on that day) and makes a waiting change notice obsolete;
+     * an entry by the teacher may be reminded from now on if the round reminds, as the parents now know
+     * about the booking and the privacy notice. Not sent: mail_failed_at, shown in the booking list until a
+     * mail gets through.
+     */
+    public static function mailResult(array $b, string $type, bool $sent): void
+    {
+        if (!$sent) {
+            Db::run('UPDATE bookings SET mail_failed_at = ? WHERE id = ?', [Time::nowSql(), $b['id']]);
+            return;
+        }
+        if ($type === 'reminder') {
+            Db::run('UPDATE bookings SET mail_failed_at = NULL WHERE id = ?', [$b['id']]);
+            return;
+        }
+        $remindOk = (int) $b['remind_ok'] === 1 || ($b['source'] === 'admin' && (int) $b['remind_parents'] === 1) ? 1 : 0;
+        Db::run('UPDATE bookings SET notified_at = ?, mail_failed_at = NULL, remind_ok = ? WHERE id = ?', [Time::nowSql(), $remindOk, $b['id']]);
+        Db::run("DELETE FROM mail_outbox WHERE booking_id = ? AND kind = 'changed'", [$b['id']]);
     }
 
     public static function findById(int $id): ?array

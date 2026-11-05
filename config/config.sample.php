@@ -58,9 +58,22 @@ return [
     'session_absolute_hours' => 8,  // admin: maximum session length
     'access_link_hours' => 48,      // validity of invitation and password links
 
-    // Data deletion: in addition to the cron job, on page requests (at most every N minutes)
+    // Data deletion: in addition to the cron job, on page requests (at most every N minutes). Database
+    // steps only: summaries and reminders are queued there, never sent while a visitor waits
     'cleanup_on_request' => true,
     'cleanup_interval_minutes' => 15,
+
+    // Mail queue (outbox): reminders, summaries and confirmations that could not be sent at once.
+    // The cron job sends them, at most 'batch' mails within about 'seconds' per run, retrying failed ones
+    // for up to 48 hours. With PHP-FPM or LiteSpeed a page request also sends up to 10 due mails after its
+    // response has gone out ('after_response'). 'hourly_limit': at most this many reminders and summaries
+    // per hour, e.g. the hosting quota (0 = no limit); single mails to parents always go out first.
+    'mail_queue' => [
+        'batch' => 100,
+        'seconds' => 20,
+        'hourly_limit' => 0,
+        'after_response' => true,
+    ],
 
     // Cron monitoring: without a completed cron run for this many hours (3 = two hourly runs missed), admins
     // see a warning on the dashboard and the operator gets an alert mail, repeated daily while it lasts. 0 = off

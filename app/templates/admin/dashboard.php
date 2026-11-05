@@ -1,4 +1,7 @@
-<?php /** @var array $rounds @var list<string> $profileHints @var list<string> $legalHints @var bool $showOwner @var bool $operatorMissing @var bool $textsOpen @var int $unusedAccounts @var array{state: string, last: ?int}|null $cron */ ?>
+<?php /** @var array $rounds @var list<string> $profileHints @var list<string> $legalHints @var bool $showOwner @var bool $operatorMissing @var bool $textsOpen @var int $unusedAccounts @var ?array $mailsLate @var array{state: string, last: ?int}|null $cron */ ?>
+<?php if ($mailsLate): ?>
+  <div class="alert alert-warning" role="status" data-mails-late><p><?= e(__('{count} E-Mail(s) warten seit über {hours} Stunden auf den Versand (die älteste seit {since}). Erinnerungen, Zusammenfassungen und Bestätigungen, die nicht sofort zugestellt werden konnten, verschickt der Cron-Job: Bitte prüfen Sie, ob er stündlich läuft und ob der Mailversand funktioniert. Nach 48 Stunden werden sie verworfen.', ['count' => $mailsLate['count'], 'hours' => App\Outbox::LATE_HOURS, 'since' => date('d.m.Y H:i', (int) strtotime($mailsLate['since']))])) ?></p></div>
+<?php endif; ?>
 <?php foreach ($legalHints as $h): ?>
   <div class="alert alert-warning" role="status"><p><?= e($h) ?> <a href="<?= e(url('/admin/texts')) ?>"><?= e(__('Zu den Texten')) ?></a></p></div>
 <?php endforeach; ?>
@@ -11,7 +14,7 @@
   <div class="alert alert-warning" role="status"><p><?= e(__('Impressum bzw. Datenschutzerklärung enthalten noch offene Platzhalter (Aufgabe der Admins). Bis sie ausgefüllt sind, lassen sich keine Runden aktivieren; bereits aktive Runden bleiben erreichbar.')) ?></p></div>
 <?php endif; ?>
 <?php if ($cron ?? null): $cronGuide = App\Version::PROJECT_URL . (App\AdminI18n::lang() === 'de' ? 'de/' : '') . 'guide/operations/#cron-monitoring'; ?>
-  <div class="alert alert-<?= $cron['state'] === 'late' ? 'warning' : 'info' ?>" role="status"><p><?= e($cron['state'] === 'late'
+  <div class="alert alert-warning" role="status"><p><?= e($cron['state'] === 'late'
       ? __('Der Cronjob ist seit dem {time} Uhr nicht mehr gelaufen. Ohne ihn werden Buchungen vergangener Tage verspätet gelöscht und Zusammenfassungen und Erinnerungen verspätet oder gar nicht verschickt. Bitte prüfen Sie den Cronjob auf dem Server bzw. den GitHub-Workflow „Cron“: GitHub schaltet geplante Workflows in öffentlichen Repositorys nach 60 Tagen ohne Aktivität ab, unter „Actions“ lässt er sich wieder einschalten.', ['time' => date('d.m.Y H:i', (int) $cron['last'])])
       : __('Es ist noch kein Lauf des Cronjobs verzeichnet. Bitte richten Sie ihn ein (stündlich bin/cron.php oder der Web-Cron, z. B. über den GitHub-Workflow „Cron“), damit Buchungen pünktlich gelöscht und Zusammenfassungen und Erinnerungen rechtzeitig verschickt werden. Wer bewusst ohne Cronjob arbeitet, schaltet diesen Hinweis mit cron_alert_hours = 0 in der Konfiguration ab.')) ?> <a href="<?= e($cronGuide) ?>"><?= e(__('Zur Anleitung')) ?></a></p></div>
 <?php endif; ?>

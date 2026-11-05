@@ -11,7 +11,8 @@ This page explains the design decisions; it is not legal advice.
 | Data | Where | Deleted |
 |---|---|---|
 | Name and optional e-mail address of a booking | database | from 0:00 the day after the appointment, or immediately on cancellation |
-| Hash of the personal change link (and of the second link in the reminder mail) | database | with the booking |
+| Hash of the personal change link (and of the links in the reminder and in a confirmation sent later) | database | with the booking |
+| Mail queue entry: which mail is due for which booking or account (no address, text or link) | database | once sent, after 48 hours at the latest, with the booking |
 | Shortened, HMAC-hashed IP addresses; HMAC hashes of account IDs and known-device cookies with failed logins | database (rate limiting) | after 24 hours at the latest |
 | Known-device cookie of an admin or teacher account (random number, time, signature) | that person's browser | after 365 days, renewed at every sign-in |
 | Teacher accounts | database | by an admin; inactive accounts without rounds in use 15 months after the last login, together with their drafts |
@@ -26,6 +27,15 @@ ask how long they are kept and state it in the privacy policy.
 - **Data minimisation:** a free-text name and an optional e-mail address, nothing else.
 - **E-mail address only for the appointment:** confirmation, changes, cancellation and, if the teacher
   turned it on for the round, a reminder the evening before. The privacy template names all of these.
+- **Mail queue with references only:** reminders, summaries and mails the mail server refused wait in a
+  queue that the cron job sends. An entry holds no address, text or link: they are created from the booking
+  when sending, a confirmation sent later with a new link of its own (only its hash is stored, like the
+  reminder's). Entries are deleted once sent, after 48 hours at the latest and with their booking; the
+  privacy template says so.
+- **Reminders only where the parents know about them:** parents who book get the reminder if the round
+  had it turned on when they booked (the form says so). Entries made by the teacher get it only once a
+  confirmation or change notice reached the parents, as that mail tells them about the entry and the
+  privacy notice. Turning the reminder on later does not affect earlier bookings.
 - **Confirmation by e-mail afterwards:** parents who gave no address when booking can have the
   confirmation sent from the appointment page to an address they enter there. That address is used for
   this one mail and not stored; its footer says so. At most twice per booking within 24 hours (rate limit

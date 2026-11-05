@@ -528,6 +528,17 @@ try {
   await book('Browser Ohne Merken', { remember: false });
   check('without consent nothing is stored', (await stored())[roundId] === undefined && await js(`localStorage.getItem('${KEY}')`) === null);
 
+  section('Parents: the booking form is sent only once');
+  await goto(`/${slug}`);
+  await js(`${firstFree}.checked = true; document.querySelector('#name').value = 'Browser Doppelklick'; document.querySelector('#privacy').checked = true;`);
+  const secondBooking = await (async () => {
+    const loaded = cdp.once('Page.loadEventFired');
+    const r = await js(`(f => { f.requestSubmit(); const e = new Event('submit', { cancelable: true }); f.dispatchEvent(e); return e.defaultPrevented; })(document.getElementById('booking-form'))`);
+    await loaded;
+    return r;
+  })();
+  check('a second click on "book" is not sent: the page with the personal link follows', secondBooking === true && /^\/b\/[A-Za-z0-9_-]{43}$/.test(await js('location.pathname')));
+
   section('Parents: stored entries are not trusted blindly, and expire');
   const fake = 'A'.repeat(43);
   for (const [what, u] of [['other site', `https://evil.example/b/${fake}`], ['javascript: link', 'javascript:alert(1)//b/' + fake]]) {

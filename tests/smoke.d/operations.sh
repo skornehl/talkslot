@@ -229,7 +229,7 @@ OPC_FRESH=$(curl -s -b "$J" "$B/admin")
 OPC_SINCE=$(op_get cron_watch_since)
 op_set cron_watch_since $(( $(date +%s) - 4 * 3600 )); op_throttle_reset
 OPC_NEVER=$(curl -s -b "$J" "$B/admin"); curl -s -o /dev/null "$B/"
-check "no run recorded: the monitoring begins with a page view, 3 h later admins are asked to set up the cron job; no mail" 'op_recent "$OPC_SINCE" && ! echo "$OPC_FRESH" | has "Cronjob" && echo "$OPC_NEVER" | has "<div class=\"alert alert-info\" role=\"status\"><p>Es ist noch kein Lauf des Cronjobs verzeichnet." && echo "$OPC_NEVER" | has "cron_alert_hours = 0" && [ "$(op_cron_mails)" = 2 ]'
+check "no run recorded: the monitoring begins with a page view, 3 h later admins are asked to set up the cron job; no mail" 'op_recent "$OPC_SINCE" && ! echo "$OPC_FRESH" | has "Cronjob" && echo "$OPC_NEVER" | has "<div class=\"alert alert-warning\" role=\"status\"><p>Es ist noch kein Lauf des Cronjobs verzeichnet." && echo "$OPC_NEVER" | has "cron_alert_hours = 0" && [ "$(op_cron_mails)" = 2 ]'
 
 $DC exec -T app php /srv/app/bin/cron.php >/dev/null
 DBQ "DELETE FROM tp_users WHERE username = 'betrieb-cron@example.org'"

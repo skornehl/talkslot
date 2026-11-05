@@ -99,6 +99,7 @@ return [
     'manage.save_link' => 'Önemli: Randevuyu daha sonra yalnızca bu bağlantı üzerinden değiştirebilir veya iptal edebilirsiniz. Bağlantıyı iyi saklayın, örneğin yer imi olarak, notlarınızda veya takviminizde.',
     'manage.link_label' => 'Kişisel bağlantınız',
     'manage.mail_sent' => 'Bu bağlantıyı içeren bir onay e-posta adresinize gönderildi.',
+    'manage.mail_queued' => 'Onay şu anda gönderilemedi. Mümkün olur olmaz e-posta adresinize otomatik olarak gönderilecektir. Lütfen yine de bağlantınızı saklayın.',
     'manage.copy' => 'Bağlantıyı kopyala',
     'manage.copied' => 'Kopyalandı ✓',
     'manage.copy.prompt' => 'Bağlantıyı kopyalayın:',

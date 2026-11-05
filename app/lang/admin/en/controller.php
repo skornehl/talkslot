@@ -81,7 +81,6 @@ return [
     'Dieser Slot ist bereits belegt.' => 'This slot is already taken.',
     'Eintrag angelegt. Änderungslink für die Eltern (wird nur jetzt angezeigt): {link}' => 'Entry created. Change link for the parents (shown only now): {link}',
     'Bestätigung per E-Mail gesendet.' => 'Confirmation sent by email.',
-    'E-Mail konnte nicht gesendet werden.' => 'The email could not be sent.',
     'Der gewählte Slot ist nicht mehr frei. Es wurde nichts geändert.' => 'The chosen slot is no longer free. Nothing was changed.',
     'Eintrag gespeichert und umgebucht.' => 'Entry saved and rebooked.',
     'Eintrag gespeichert.' => 'Entry saved.',
