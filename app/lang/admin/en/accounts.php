@@ -59,7 +59,7 @@ return [
     'Am Abend vor einem Termintag alle Termine des nächsten Tages (Uhrzeit und Name, mit Kalenderdatei).' => 'On the evening before a day with appointments, all appointments of the next day (time and name, with calendar file).',
     'Übersicht nach Buchungsschluss:' => 'Overview after the booking deadline:',
     'Sobald für einen Tag keine Buchungen mehr möglich sind, die endgültige Terminliste dieses Tages.' => 'As soon as no more bookings are possible for a day, the final list of appointments for that day.',
-    'Die Mails enthalten nur Uhrzeiten und Namen, keine E-Mail-Adressen der Eltern. Bitte spätestens 15 Monate nach dem Termin löschen.' => 'The emails contain only times and names, no parents\' email addresses. Please delete them no later than 15 months after the appointment.',
+    'Die Mails enthalten nur Uhrzeiten und Namen, keine E-Mail-Adressen der Eltern. Bitte nach den Vorgaben Ihrer Schule löschen, spätestens 15 Monate nach dem Termin.' => 'The emails contain only times and names, no parents\' email addresses. Please delete them according to your school\'s rules, no later than 15 months after the appointment.',
     'Speichern' => 'Save',
     'Passwort ändern' => 'Change password',
     'Angemeldet als {username} ({role}).' => 'Signed in as {username} ({role}).',
@@ -171,5 +171,5 @@ return [
     'Für diesen Tag sind keine Buchungen mehr möglich. Endgültige Terminliste ({count} Termine blieben frei):' => 'No more bookings are possible for this day. Final list of appointments ({count} slots remained free):',
     '(keine Buchungen)' => '(no bookings)',
     'Übersicht und Druckansicht: {url}' => 'Overview and print view: {url}',
-    'Diese Zusammenfassung können Sie im Profil abbestellen. Bitte löschen Sie sie spätestens 15 Monate nach dem Termin (siehe Datenschutzhinweise).' => 'You can unsubscribe from this summary in your profile. Please delete it no later than 15 months after the appointment (see privacy notice).',
+    'Diese Zusammenfassung können Sie im Profil abbestellen. Bitte löschen Sie sie nach den Vorgaben Ihrer Schule, spätestens 15 Monate nach dem Termin.' => 'You can unsubscribe from this summary in your profile. Please delete it according to your school\'s rules, no later than 15 months after the appointment.',
 ];

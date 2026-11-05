@@ -57,7 +57,7 @@ return [
     'privacy.summary.items' => [
         'Zapisywane są wyłącznie podane imię i nazwisko, termin oraz – dobrowolnie – adres e-mail.',
         'Cel: wyłącznie organizacja i przeprowadzenie rozmowy. Bez przekazywania danych, bez śledzenia, bez plików cookie.',
-        'Dane są automatycznie usuwane z systemu rezerwacji dzień po terminie, a w przypadku odwołania – natychmiast. Termin i nazwisko (bez adresu e-mail) mogą pozostać w podsumowaniach e-mail nauczyciela najdłużej 15 miesięcy.',
+        'Dane są automatycznie usuwane z systemu rezerwacji dzień po terminie, a w przypadku odwołania – natychmiast. Termin i nazwisko (bez adresu e-mail) nauczyciel otrzymuje również e-mailem. Jak długo te e-maile są przechowywane, podano w informacji o ochronie danych.',
         'Przysługuje Państwu m.in. prawo dostępu do danych, ich sprostowania i usunięcia.',
     ],
     'form.privacy.before' => 'Zapoznałem(-am) się z ',
@@ -129,7 +129,7 @@ return [
     'manage.cancel.submit' => 'Odwołaj termin',
     'manage.locked' => 'Zmiany i odwołania są możliwe online tylko do {hours} godzin przed terminem. Prosimy skontaktować się bezpośrednio z nauczycielem.',
     'manage.notfound' => 'Nie znaleziono terminu. Mógł zostać odwołany lub automatycznie usunięty po dacie terminu.',
-    'manage.deletion' => 'Dane zostaną automatycznie usunięte z systemu rezerwacji dzień po terminie. Termin i nazwisko (bez adresu e-mail) mogą pozostać w podsumowaniach e-mail nauczyciela najdłużej 15 miesięcy.',
+    'manage.deletion' => 'Dane zostaną automatycznie usunięte z systemu rezerwacji dzień po terminie. Termin i nazwisko (bez adresu e-mail) nauczyciel otrzymuje również e-mailem. Jak długo te e-maile są przechowywane, podano w informacji o ochronie danych.',
 
     'cancelled.title' => 'Termin odwołany',
     'cancelled.text' => 'Termin został odwołany, a Państwa dane usunięte z systemu rezerwacji.',

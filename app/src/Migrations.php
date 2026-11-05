@@ -186,8 +186,8 @@ final class Migrations
         'imprint-private.en' => 'f15521ceaa18e97c98190e448cc95eb6130c4cf571164b09819bb40dd7af22c8',
         'privacy.de' => '6a3e56b92970cd83352b6d4fbff9ff64fbb6765bf8d622c9c66cd5bb8812f374',
         'privacy.en' => '5c1350ac669db8120b946879389dd3cfb6bb1720a86aa523d6df95520c2b7878',
-        'privacy-private.de' => 'bcab1612693fd4ff687d7be20cebb47dcb7486afdfd63a60607475e66ccc7d9a',
-        'privacy-private.en' => 'feb3841d591b4b952c90093885905c8c9b049036b381f7456fcf359cf4b7b7ec',
+        'privacy-private.de' => '41e56d82edcfea69af044fbef9639ab5f3e0667d831450fa1f593bce0b6623a1',
+        'privacy-private.en' => 'a2305054d982c4c4aba8a97698209e7146a247e86f7875fdc0c79b51acd6bdab',
     ];
 
     /**

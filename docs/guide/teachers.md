@@ -149,3 +149,7 @@ In *Mein Profil* you choose whether you receive an overview of the next day in t
 overview after the booking deadline of each day. They list time and name, without the parents' e-mail
 addresses, and include a calendar file. Parents' replies to their confirmation mails reach your e-mail
 address (reply-to).
+
+Once sent, these mails are in your mailbox: delete them according to your school's rules, at the latest
+15 months after the appointment. Use your work e-mail address for your account, so that they do not end up
+in a private mailbox.
