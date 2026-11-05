@@ -52,6 +52,9 @@ Buchungsweg, Sicherheits-Header auf Fehlerseiten, abgelehnte seitenübergreifend
 `tests/unit.d/security.php` und `tests/smoke.d/security.sh`; siehe [Sicherheit]({{ '/de/guide/security/' | relative_url }}).
 
 Die CI führt bei jedem Push die Unit-Tests aus sowie Smoke-, Browser- und Deploy-Tests gegen die Docker-Umgebung.
+Außerdem laufen die Smoke-Tests gegen MariaDB 10.6, die Mindestversion (`MARIADB_VERSION=10.6` für
+`dev/compose.yml`), und sie prüft, dass PHP 7.4 und 8.2 die Meldung von `App\Platform` erhalten statt eines
+Syntaxfehlers.
 
 ## Konventionen
 
@@ -75,6 +78,14 @@ Die CI führt bei jedem Push die Unit-Tests aus sowie Smoke-, Browser- und Deplo
   Texte automatisch aktualisiert werden. Der Unit-Test nennt Ihnen die neuen Hashes.
 - **Deployment-Variablen:** Jede Variable, die `bin/build-config.php` liest, muss im Build-Schritt von
   `.github/workflows/deploy.yml` übergeben werden; auch das prüft ein Unit-Test.
+- **Konfigurationsoptionen:** Eine neue Option gehört in `App\ConfigSchema::KEYS` (Typ, Standardwert) und
+  in `config/config.sample.php`; der Unit-Test schlägt fehl, wenn der Code einen Schlüssel liest, den das
+  Schema nicht kennt, wenn ein Standardwert von dem des Codes abweicht oder der Schlüssel im Beispiel fehlt.
+  Sonst würde Admins die Option als unbekannt gemeldet.
+- **Plattformprüfung:** `app/bootstrap.php` bis `App\Platform::enforce()`, `app/src/Platform.php`,
+  `public/index.php`, `public/install.php` und die Skripte in `bin/`, die die Bootstrap-Datei laden, müssen für
+  ältere PHP-Versionen lesbar bleiben (dort keine benannten Argumente, kein `match`, kein
+  `str_starts_with`), damit sie erklären können, dass PHP zu alt ist; die CI prüft das mit PHP 7.4.
 - **Mitgelieferte Bibliotheken:** PHPMailer liegt fertig in `app/vendor/`. `composer.json` und
   `composer.lock` führen es nur auf, damit Dependabot neue Versionen und Sicherheitswarnungen meldet;
   Composer wird nie ausgeführt. Hebt Dependabot die Version an, führen Sie auf seinem Branch

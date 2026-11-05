@@ -52,7 +52,8 @@ See [Configuration]({{ '/guide/configuration/' | relative_url }}#languages).
 
 ## Does it work with MySQL, PostgreSQL or SQLite?
 
-No. TalkSlot needs MariaDB 10.6 or newer; migrations use MariaDB syntax.
+No. TalkSlot needs MariaDB 10.6 or newer; migrations use MariaDB syntax. The installer refuses other
+database servers, and on a site that runs on one anyway the dashboard tells admins and no migration starts.
 
 ## Does it work with nginx?
 

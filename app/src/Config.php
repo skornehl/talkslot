@@ -13,6 +13,12 @@ final class Config
         self::$values = $values;
     }
 
+    /** All values as loaded (for App\ConfigSchema). */
+    public static function all(): array
+    {
+        return self::$values;
+    }
+
     public static function get(string $key, mixed $default = null): mixed
     {
         $value = self::$values;

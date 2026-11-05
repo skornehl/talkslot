@@ -104,7 +104,8 @@ final class App
     /**
      * Web cron as a replacement for a cron job on the server: POST /cron with header
      * "X-Cron-Token". The key never appears in the URL (no entry in access logs).
-     * Response: counts only, no personal data. Sends the due mails of the outbox (limited in number and time).
+     * Response: counts only, no personal data, and whether the database server is supported (db_server).
+     * Sends the due mails of the outbox (limited in number and time).
      */
     private static function webCron(): void
     {
@@ -118,7 +119,7 @@ final class App
         }
         Migrations::run();
         set_time_limit((int) Config::get('mail_queue.seconds', 20) + 60);
-        echo json_encode(['status' => 'ok'] + Cleanup::run() + Summaries::run() + Reminders::run() + Outbox::process(wait: Outbox::CRON_WAIT));
+        echo json_encode(['status' => 'ok', 'db_server' => Health::serverStatus()] + Cleanup::run() + Summaries::run() + Reminders::run() + Outbox::process(wait: Outbox::CRON_WAIT));
     }
 
     /**

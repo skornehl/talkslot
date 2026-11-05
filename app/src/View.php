@@ -20,7 +20,12 @@ final class View
     {
         extract($__vars, EXTR_SKIP);
         ob_start();
-        require APP_ROOT . '/app/templates/' . $__template . '.php';
+        try {
+            require APP_ROOT . '/app/templates/' . $__template . '.php';
+        } catch (\Throwable $__error) {
+            ob_end_clean(); // half a template must not end up in front of the error page
+            throw $__error;
+        }
         return (string) ob_get_clean();
     }
 }

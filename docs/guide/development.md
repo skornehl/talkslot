@@ -52,6 +52,8 @@ security headers on error pages, refused cross-site form posts) are in `tests/un
 `tests/smoke.d/security.sh`; see [Security]({{ '/guide/security/' | relative_url }}).
 
 CI runs the unit tests on every push, and the smoke, browser and deployment tests against the Docker environment.
+It also runs the smoke tests against MariaDB 10.6, the minimum (`MARIADB_VERSION=10.6` for `dev/compose.yml`),
+and checks that PHP 7.4 and 8.2 get the message of `App\Platform` instead of a syntax error.
 
 ## Conventions
 
@@ -71,6 +73,14 @@ CI runs the unit tests on every push, and the smoke, browser and deployment test
   you the new hashes.
 - **Deployment variables:** every variable read by `bin/build-config.php` must be passed in the build step
   of `.github/workflows/deploy.yml`; a unit test checks this too.
+- **Configuration options:** a new option goes into `App\ConfigSchema::KEYS` (type, default) and
+  `config/config.sample.php`; the unit test fails for a key the code reads that the schema does not know, for
+  a default that differs from the code's, and for a sample without the key. Admins would otherwise be told
+  the option is unknown.
+- **Platform check:** `app/bootstrap.php` up to `App\Platform::enforce()`, `app/src/Platform.php`,
+  `public/index.php`, `public/install.php` and the scripts in `bin/` that load the bootstrap must stay
+  readable for older PHP versions (no named arguments, `match`, `str_starts_with` there), so that they can
+  explain that PHP is too old; CI checks this with PHP 7.4.
 - **Bundled libraries:** PHPMailer is committed in `app/vendor/`. `composer.json` and `composer.lock` only
   list it so that Dependabot reports new versions and security advisories; Composer is never run. When
   Dependabot raises the version, run `bin/update-vendor.sh` on its branch and commit `app/vendor/`; the unit

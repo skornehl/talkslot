@@ -16,6 +16,9 @@ final class Health
     /** Minimum MariaDB version (README, installation guide); the migrations use MariaDB syntax. */
     public const MIN_MARIADB = '10.6';
 
+    /** VERSION() of the database server, once per request; tests set it to stand for another server. */
+    public static ?string $serverVersion = null;
+
     /** Key for the health check, derived from the app secret like the web cron's (no separate secret). */
     public static function token(): string
     {
@@ -30,7 +33,7 @@ final class Health
     public static function check(): array
     {
         try {
-            $server = (string) Db::value('SELECT VERSION()');
+            $server = self::serverVersion();
         } catch (\PDOException $e) {
             Alert::exception($e, 'Health-Check');
             return [503, 'db_unreachable'];
@@ -54,6 +57,35 @@ final class Health
     {
         return preg_match('/(\d+\.\d+)(?:\.\d+)?(?:-\d+)?-MariaDB/i', $version, $m) === 1
             && version_compare($m[1], self::MIN_MARIADB, '>=');
+    }
+
+    public static function serverVersion(): string
+    {
+        return self::$serverVersion ??= (string) Db::value('SELECT VERSION()');
+    }
+
+    /**
+     * Why the database server cannot be used, for admins (installer, dashboard) and the alert mail of a
+     * migration; null if it is MariaDB from MIN_MARIADB on. MySQL installs cleanly from schema.sql, but the
+     * first update with a migration fails, months later.
+     */
+    public static function serverProblem(): ?string
+    {
+        $version = self::serverVersion();
+        if (self::supportedServer($version)) {
+            return null;
+        }
+        // "10.5.22-MariaDB-log" → MariaDB 10.5.22, "8.0.36" → MySQL 8.0.36; via a proxy "5.5.5-10.5.8-MariaDB"
+        $name = preg_match('/(\d+\.\d+(?:\.\d+)?)(?:-\d+)?-MariaDB/i', $version, $m) === 1 ? 'MariaDB ' . $m[1]
+            : (preg_match('/^\d+\.\d+(?:\.\d+)?/', $version, $m) === 1 ? 'MySQL ' . $m[0] : __('unbekannt'));
+        return __('Der Datenbankserver wird nicht unterstützt: {server}. TalkSlot braucht MariaDB {min} oder neuer; mit MySQL oder einer älteren MariaDB schlagen die Updates der Datenbank fehl. Bitte wählen Sie beim Webhoster eine aktuelle MariaDB-Datenbank.',
+            ['server' => $name, 'min' => self::MIN_MARIADB]);
+    }
+
+    /** For the output of the cron job: "ok", or "unsupported" (see serverProblem()). */
+    public static function serverStatus(): string
+    {
+        return self::serverProblem() === null ? 'ok' : 'unsupported';
     }
 
     /** Pending migrations; false (reported) if one fails. */

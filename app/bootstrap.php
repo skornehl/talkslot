@@ -12,8 +12,9 @@ define('APP_ROOT', dirname(__DIR__)); // Project root containing app/, bin/, con
 define('RELEASE', basename(dirname(APP_ROOT)) === 'releases' ? basename(APP_ROOT) : '');
 define('DATA_ROOT', RELEASE !== '' ? dirname(APP_ROOT, 2) : APP_ROOT);
 
+// Until App\Platform has checked the PHP version, only syntax and functions of PHP 7.1 (no str_starts_with)
 spl_autoload_register(static function (string $class): void {
-    if (str_starts_with($class, 'App\\')) {
+    if (strncmp($class, 'App\\', 4) === 0) {
         $file = __DIR__ . '/src/' . str_replace('\\', '/', substr($class, 4)) . '.php';
         if (is_file($file)) {
             require $file;
@@ -21,15 +22,27 @@ spl_autoload_register(static function (string $class): void {
     }
 });
 
+// An old PHP version or a missing extension: a plain explanation instead of a blank 500 page. Every web
+// request needs the database; bin/cron.php and bin/install.php check for its extension themselves, the unit
+// tests run without it.
+App\Platform::enforce(PHP_SAPI !== 'cli');
+
 require __DIR__ . '/helpers.php';
 
 $configFile = APP_ROOT . '/config/config.php';
 if (!is_file($configFile)) {
-    http_response_code(500);
-    echo "Configuration missing: create config/config.php (template: config/config.sample.php).\n";
-    exit(1);
+    App\Platform::stop([[
+        'en' => 'Configuration missing: create config/config.php (template: config/config.sample.php).',
+        'de' => 'Die Konfiguration fehlt: Bitte config/config.php anlegen (Vorlage: config/config.sample.php).',
+    ]]);
 }
 App\Config::load(require $configFile);
+// Mistakes the app cannot run with (App\ConfigSchema::errors()): without a sufficiently long secret, CSRF,
+// access and cron tokens as well as IP hashes would be insecure; a misspelt time zone would shift every
+// deadline. Other mistakes are listed for admins on the dashboard (ConfigSchema::warnings()).
+if ($configErrors = App\ConfigSchema::errors(App\Config::all())) {
+    App\Platform::stop($configErrors);
+}
 
 date_default_timezone_set((string) App\Config::get('timezone', 'Europe/Berlin'));
 mb_internal_encoding('UTF-8');
@@ -42,13 +55,6 @@ ini_set('log_errors', '0');
 if (is_dir(DATA_ROOT . '/app/var') && is_writable(DATA_ROOT . '/app/var')) {
     ini_set('error_log', DATA_ROOT . '/app/var/php-error.log');
 }
-// Without a sufficiently long secret, CSRF, access and cron tokens as well as IP hashes would be insecure
-if (strlen((string) App\Config::get('secret', '')) < 32) {
-    http_response_code(500);
-    echo "Configuration incomplete: \"secret\" is missing or shorter than 32 characters.\n";
-    exit(1);
-}
-
 // Unhandled errors: log internally (without personal data), report by mail to the
 // operator (App\Alert, throttled) and only show a neutral error page to the outside.
 set_exception_handler(static function (Throwable $e): void {

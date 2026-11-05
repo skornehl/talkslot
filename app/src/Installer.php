@@ -39,6 +39,24 @@ final class Installer
         return array_values(array_intersect($ours, $existing));
     }
 
+    /**
+     * What the server must offer before installing (both installers check this first): MariaDB from
+     * Health::MIN_MARIADB on and a writable app/var. PHP and its extensions are checked on every request
+     * (App\Platform).
+     * @return list<string> error messages (empty = fine)
+     */
+    public static function environmentProblems(?string $var = null): array
+    {
+        $var ??= DATA_ROOT . '/app/var';
+        return array_values(array_filter([
+            Health::serverProblem(),
+            // Sessions, the lock file, the error log and the alert counter live there; without it the admin
+            // sessions would end up in the server's shared temporary directory
+            is_dir($var) && is_writable($var) ? null
+                : __('Das Verzeichnis {dir} fehlt oder ist für PHP nicht beschreibbar. Dort liegen Sitzungen, Sperrdatei, Fehlerprotokoll und der Zähler für Fehlermeldungen. Bitte legen Sie es an bzw. erlauben Sie PHP das Schreiben (z. B. Rechte 750 für den PHP-Benutzer) und versuchen Sie es erneut.', ['dir' => 'app/var']),
+        ]));
+    }
+
     /** @return list<string> error messages (empty = valid) */
     public static function validate(string $username, #[\SensitiveParameter] string $password, #[\SensitiveParameter] string $password2, string $email): array
     {

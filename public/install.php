@@ -46,6 +46,9 @@ if (Http::isPost()) {
         $errors[] = __('Die Datenbank enthält bereits Tabellen mit gleichem Namen ({tables}), vermutlich von einer anderen Anwendung. Bitte legen Sie für TalkSlot eine eigene, leere Datenbank an und tragen Sie deren Zugangsdaten ein. Es wurde nichts verändert.', ['tables' => implode(', ', $conflicts)]);
     }
     if (!$errors) {
+        $errors = Installer::environmentProblems(); // MariaDB from 10.6 on, app/var writable
+    }
+    if (!$errors) {
         $errors = Installer::validate($old['username'], Http::postRaw('password'), Http::postRaw('password2'), $old['notify_email']);
     }
     // Two concurrent installations: only one creates, the other then sees "installed"

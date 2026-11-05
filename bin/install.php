@@ -11,6 +11,7 @@ if (PHP_SAPI !== 'cli') {
     exit;
 }
 require dirname(__DIR__) . '/app/bootstrap.php';
+App\Platform::enforce(true); // needs the database: also pdo_mysql
 
 use App\Installer;
 
@@ -21,23 +22,30 @@ if (Installer::isInstalled()) {
 $username = $argv[1] ?? '';
 $email = $argv[2] ?? '';
 
-$ask = static function (string $prompt): string {
+// Hide the password while typing; shell_exec is often disabled on shared hosting (calling it would be an error)
+$hide = stream_isatty(STDIN) && function_exists('shell_exec');
+$ask = static function (string $prompt) use ($hide): string {
     echo $prompt;
-    $tty = stream_isatty(STDIN);
-    if ($tty) {
+    if ($hide) {
         shell_exec('stty -echo');
     }
     $v = rtrim((string) fgets(STDIN), "\r\n");
-    if ($tty) {
+    if ($hide) {
         shell_exec('stty echo');
         echo "\n";
     }
     return $v;
 };
-$password = $ask('Password: ');
-$password2 = $ask('Repeat password: ');
-
-$errors = Installer::validate($username, $password, $password2, $email);
+// Before asking for the password: MariaDB from 10.6 on, app/var writable
+$errors = Installer::environmentProblems();
+if (!$errors) {
+    if (stream_isatty(STDIN) && !$hide) {
+        echo "(shell_exec is disabled on this server: the password will be visible while you type it)\n";
+    }
+    $password = $ask('Password: ');
+    $password2 = $ask('Repeat password: ');
+    $errors = Installer::validate($username, $password, $password2, $email);
+}
 if ($errors) {
     fwrite(STDERR, implode("\n", $errors) . "\nUsage: php bin/install.php <username> [email]\n");
     exit(1);

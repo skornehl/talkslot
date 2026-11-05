@@ -93,12 +93,20 @@ return [
         'attempt' => [150, 3600],   // all booking attempts (incl. input errors)
         'booking' => [30, 3600],    // successful bookings
         'manage' => [300, 3600],    // requests to change links
+        'move' => [10, 3600],       // rebookings by parents (each sends a mail), per booking
         'confirm' => [2, 86400],    // confirmation mails sent from the appointment page, per booking (at most 24 hours)
         'login' => [5, 900],        // failed admin logins
         'login_user' => [20, 3600], // failed logins per account from devices that never signed in to it
         'login_device' => [20, 3600], // failed logins per known device (instead of login_user)
         'login_notice' => [1, 86400], // e-mails to an account whose login_user limit was reached
         'reauth' => [5, 900],       // wrong passwords when confirming admin rights, e-mail changes, ending all sessions and changing the own password (per sign-in)
+        'invite' => [20, 3600],     // invalid invitation and password links
+        'forgot' => [5, 3600],      // "Passwort vergessen" requests
+        'teacher_mail' => [30, 3600], // mails to parents after entries or changes by a teacher, per account
     ],
     'csrf_min_age_seconds' => 2,    // form can be submitted after N seconds at the earliest (bot brake)
+    'csrf_max_age_seconds' => 14400, // public forms and access by round code stay valid this long (4 hours)
+
+    // Every key above is known to App\ConfigSchema: admins see a hint on the dashboard for unknown keys (e.g. a
+    // typo) and invalid values; a missing secret, an invalid time zone or language stop the app with a message.
 ];
