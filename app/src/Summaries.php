@@ -162,9 +162,9 @@ final class Summaries
         return (bool) AdminI18n::with(AdminI18n::of($user), static function () use ($user, $day, $rows, $free): bool {
             $subject = __('Buchungsschluss: {title} – {date}', ['date' => fmt_date($day['day_date']), 'title' => $day['title']]);
             $intro = match (true) {
-                $free === 0 => __('Für diesen Tag sind keine Buchungen mehr möglich. Endgültige Terminliste:'),
-                $free === 1 => __('Für diesen Tag sind keine Buchungen mehr möglich. Endgültige Terminliste ({count} Termin blieb frei):', ['count' => $free]),
-                default => __('Für diesen Tag sind keine Buchungen mehr möglich. Endgültige Terminliste ({count} Termine blieben frei):', ['count' => $free]),
+                $free === 0 => __('Für diesen Tag sind keine Buchungen mehr möglich. Endgültiger Stand:'),
+                $free === 1 => __('Für diesen Tag sind keine Buchungen mehr möglich. Endgültiger Stand ({count} Termin blieb frei):', ['count' => $free]),
+                default => __('Für diesen Tag sind keine Buchungen mehr möglich. Endgültiger Stand ({count} Termine blieben frei):', ['count' => $free]),
             };
             return self::send($user, $subject, $intro, $rows, 'termine-' . $day['day_date'] . '.ics');
         });
@@ -188,7 +188,8 @@ final class Summaries
         $attachments = $names && $rows ? [[
             'name' => $icsName,
             'type' => 'text/calendar; charset=utf-8; method=PUBLISH',
-            'content' => IcsExport::forRound(['title' => $rows[0]['title']], $rows),
+            // Each appointment with the title of its round; the calendar is named after all of them
+            'content' => IcsExport::forRound(['title' => implode(', ', array_unique(array_column($rows, 'title')))], $rows),
         ]] : [];
         return Mailer::send((string) $user['email'], $subject, self::text($user, $intro, $rows, $names), $attachments);
     }

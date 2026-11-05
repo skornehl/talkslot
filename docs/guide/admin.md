@@ -57,7 +57,9 @@ the school's own mailboxes, where its deletion rules apply, the technical side c
 the school's domains (`allowed_account_domains` in `config/config.php`, see
 [Configuration]({{ '/guide/configuration/' | relative_url }}#summaries-and-accounts)). A new or changed
 address elsewhere is then refused; accounts that already have one keep working, but get no summaries and
-no replies of parents until the address is changed, and the overview tells admins how many there are.
+no replies of parents at that address until it is changed (a reply address for parents of that kind gives
+way to the account's e-mail address, if that is allowed). The overview tells the account, and admins how
+many accounts have such an address.
 
 The column *Letzter Login* (last sign-in) only shows *nie* (never), *in den letzten 12 Monaten* (within
 the last 12 months) or *vor über 12 Monaten* (more than 12 months ago), no times: enough to tidy up

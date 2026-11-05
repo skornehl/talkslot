@@ -53,7 +53,8 @@ keine öffentlichen Issues.
   einer Zusammenfassung in einem Webmailer, hält der Browser das Strict-Cookie zurück; eine solche Anfrage
   (`Sec-Fetch-Site: cross-site`) erhält eine kleine Zwischenseite, die dieselbe Adresse noch einmal von
   TalkSlot aus öffnet (Meta-Refresh). So landet ein angemeldeter Browser angemeldet, und sein Cookie wird
-  nie ersetzt.
+  nie ersetzt. Das geschieht nur einmal: Die Adresse, die sie öffnet, trägt `reopened=1`, und ein Browser,
+  der das Cookie weiter zurückhält, erhält dann die Login-Seite statt einer Schleife.
 - Eine Passwortänderung oder -zurücksetzung beendet alle anderen Sessions des Kontos. *Alle Sitzungen
   beenden* (unter *Benutzer*) beendet die Sessions aller Konten (ein globaler Zähler in den Einstellungen).
 - Brute-Force-Schutz: höchstens 5 fehlgeschlagene Logins pro gekürzter IP-Adresse in 15 Minuten und 20 pro

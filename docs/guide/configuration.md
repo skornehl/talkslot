@@ -117,7 +117,7 @@ under Art. 28 GDPR. The servers are located in Germany.*
 | Option | Default | Meaning | Deployment |
 |---|---|---|---|
 | `summary_names` | `false` | the school allows names in the summaries for teachers, with a calendar file of the appointments (itself without names); each account then chooses *Mit Namen* in its profile, new ones start without. `false`: per day the number of appointments, anything worth a look and the link to the list only ([Teacher guide]({{ '/guide/teachers/' | relative_url }}#summary-mails)) | `SUMMARY_NAMES` (`1`) |
-| `allowed_account_domains` | `[]` | accounts may only use addresses at these domains, e.g. `['schule.example.org']`: the exact domain, umlauts as punycode (`xn--…`). A new or changed address elsewhere (account, reply address for parents, installer) is refused; accounts that already have one get no summaries and no replies of parents until it is changed. `[]` = any address | `ALLOWED_ACCOUNT_DOMAINS` (comma-separated) |
+| `allowed_account_domains` | `[]` | accounts may only use addresses at these domains, e.g. `['schule.example.org']`: the exact domain, umlauts as punycode (`xn--…`). A new or changed address elsewhere (account, reply address for parents, installer) is refused; an address from before at another domain gets no summaries and no replies of parents until it is changed (instead of such a reply address, the account's e-mail address is used if it is allowed). `[]` = any address | `ALLOWED_ACCOUNT_DOMAINS` (comma-separated) |
 
 Set `summary_names` only where all accounts use work addresses whose deletion rules the school controls,
 for instance together with `allowed_account_domains`: summary mails stay in mailboxes and synchronised

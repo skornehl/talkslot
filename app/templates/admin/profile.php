@@ -18,7 +18,7 @@
     <div class="field">
       <label for="email"><?= e(__('E-Mail-Adresse')) ?></label>
       <input type="email" id="email" name="email" maxlength="254" value="<?= e($data['email'] ?? '') ?>" aria-describedby="em-hint">
-      <p class="hint" id="em-hint"><?= e(__('Für Ihre Zusammenfassungen und Links zum Zurücksetzen des Passworts. Eltern sehen sie nicht; ihre Antworten auf E-Mails zu ihrem Termin gehen an diese Adresse, wenn Sie keine Antwortadresse angeben.')) ?><?= $domains ? ' ' . e(__('Die Schule erlaubt nur Adressen bei {domains}.', ['domains' => implode(', ', $domains)])) : '' ?></p>
+      <p class="hint" id="em-hint"><?= e(__('Für Ihre Zusammenfassungen und Links zum Zurücksetzen des Passworts. Solange Sie keine Antwortadresse für Eltern angeben, gehen auch die Antworten der Eltern auf E-Mails zu ihrem Termin an diese Adresse; Eltern sehen sie dann, sobald sie antworten.')) ?><?= $domains ? ' ' . e(__('Die Schule erlaubt nur Adressen bei {domains}.', ['domains' => implode(', ', $domains)])) : '' ?></p>
     </div>
     <div class="field">
       <label for="reply_to"><?= e(__('Antwortadresse für Eltern')) ?> <span class="muted small"><?= e(__('(optional)')) ?></span></label>

@@ -61,8 +61,9 @@ den Postfächern der Schule bleiben, wo ihre Löschregeln gelten, kann die techn
 auf die Domains der Schule beschränken (`allowed_account_domains` in `config/config.php`, siehe
 [Konfiguration]({{ '/de/guide/configuration/' | relative_url }}#zusammenfassungen-und-konten)). Eine neue
 oder geänderte Adresse anderswo wird dann abgelehnt; Konten, die schon eine haben, funktionieren weiter,
-erhalten aber keine Zusammenfassungen und keine Antworten der Eltern, bis die Adresse geändert ist, und die
-Übersicht nennt Admins ihre Zahl.
+erhalten an dieser Adresse aber keine Zusammenfassungen und keine Antworten der Eltern, bis sie geändert
+ist (statt einer solchen Antwortadresse für Eltern gilt dann die E-Mail-Adresse des Kontos, wenn diese
+erlaubt ist). Die Übersicht sagt es dem Konto und nennt Admins die Zahl der Konten mit solchen Adressen.
 
 Die Spalte *Letzter Login* zeigt nur *nie*, *in den letzten 12 Monaten* oder *vor über 12 Monaten*, keine
 Uhrzeiten: Das genügt, um Konten aufzuräumen, ohne allen Admins die Anmeldezeiten der Kolleginnen und

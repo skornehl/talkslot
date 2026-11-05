@@ -153,15 +153,17 @@ final class AdminController
      * - Without the session cookie no session is started, so no file for scanners and no new cookie in place
      *   of a valid one. A page opened from another site, such as the link in a summary in a webmailer, comes
      *   without the cookie even in a signed-in browser, as it is SameSite=Strict: an interim page opens it
-     *   again from this site (meta refresh), then the browser sends the cookie.
+     *   again from this site (meta refresh), then the browser sends the cookie. It does so once: the address it
+     *   opens carries REOPENED, so a browser that still holds the cookie back gets the login page, not a loop.
      * - With the cookie of a session that is no longer valid (expired, account deactivated, password changed)
      *   the session ends; a new one only to keep its notices (such as "session expired").
      */
     private function signInFirst(string $path, string $method): never
     {
         $target = $method === 'GET' ? Auth::returnPath('/admin' . ($path !== '/' ? $path : '') . self::queryString()) : null;
-        if (session_status() !== PHP_SESSION_ACTIVE && Http::isCrossSiteGet()) {
+        if (session_status() !== PHP_SESSION_ACTIVE && Http::isCrossSiteGet() && !isset($_GET[self::REOPENED])) {
             $url = Http::basePath() . ($target ?? '/admin');
+            $url .= (str_contains($url, '?') ? '&' : '?') . self::REOPENED . '=1';
             $this->render('admin/message', ['title' => __('Weiterleitung'), 'refresh' => $url,
                 'text' => __('Die Seite öffnet sich gleich. Falls nicht, wählen Sie „Weiter“.'), 'link' => [$url, __('Weiter')]]);
             exit;
@@ -177,10 +179,14 @@ final class AdminController
         Http::redirect('/admin/login', ['next' => $target]);
     }
 
-    /** "?a=1&b=2" of the request, or ''. */
+    /** Query parameter of the address the interim page opens (signInFirst()). */
+    private const REOPENED = 'reopened';
+
+    /** "?a=1&b=2" of the request (without REOPENED), or ''. */
     private static function queryString(): string
     {
-        $query = (string) ($_SERVER['QUERY_STRING'] ?? '');
+        $query = implode('&', array_filter(explode('&', (string) ($_SERVER['QUERY_STRING'] ?? '')),
+            static fn (string $pair): bool => $pair !== '' && explode('=', $pair, 2)[0] !== self::REOPENED));
         return $query !== '' ? '?' . $query : '';
     }
 
@@ -280,10 +286,12 @@ final class AdminController
             'profileHints' => $this->profileHints(),
             // Summaries without names: what changed for an account from before (until it confirms)
             'summaryNotice' => Summaries::notice(Auth::user(), Auth::isAdmin()),
-            // allowed_account_domains: active accounts whose address is not allowed (no summaries for them)
+            // allowed_account_domains: active accounts with an address (e-mail or reply address) that is not allowed;
+            // nothing goes there (no summaries, no replies of parents)
             'foreignAddresses' => Auth::isAdmin() && AccountDomains::allowed() ? count(array_filter(
-                Db::all("SELECT email FROM users WHERE is_active = 1 AND COALESCE(email, '') <> ''"),
-                static fn (array $u): bool => !AccountDomains::permits((string) $u['email'])
+                Db::all("SELECT email, reply_to FROM users WHERE is_active = 1 AND CONCAT(COALESCE(email, ''), COALESCE(reply_to, '')) <> ''"),
+                static fn (array $u): bool => array_filter([(string) $u['email'], (string) $u['reply_to']],
+                    static fn (string $a): bool => $a !== '' && !AccountDomains::permits($a)) !== []
             )) : 0,
             'operatorMissing' => !Operator::ready(),
             'typeMissing' => !Auth::isAdmin() && Operator::ready() && Operator::type() === null,
@@ -1350,6 +1358,10 @@ final class AdminController
             $hints[] = __('Keine E-Mail-Adresse hinterlegt – Zusammenfassungen können nicht versendet werden.');
         } elseif ((string) $u['email'] !== '' && !AccountDomains::permits((string) $u['email'])) {
             $hints[] = __('Ihre E-Mail-Adresse ist keine dienstliche Adresse bei {domains}, wie die Schule es vorgibt – bitte ändern. Bis dahin erhalten Sie keine Zusammenfassungen.', ['domains' => implode(', ', AccountDomains::allowed())]);
+        }
+        // A reply address from before allowed_account_domains: not used (Notifier::replyTo())
+        if ((string) $u['reply_to'] !== '' && !AccountDomains::permits((string) $u['reply_to'])) {
+            $hints[] = __('Ihre Antwortadresse für Eltern ist keine dienstliche Adresse bei {domains}, wie die Schule es vorgibt – bitte ändern. Bis dahin gehen Antworten der Eltern nicht an diese Adresse.', ['domains' => implode(', ', AccountDomains::allowed())]);
         }
         return $hints;
     }

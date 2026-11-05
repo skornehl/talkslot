@@ -205,6 +205,24 @@ check('summary with names: time and name of each appointment, deleting by the en
 check('summary in English, and without bookings',
     str_contains($sumText(false, $sumRows, 'en'), "  4 appointments between 14:00 and 15:15\n  Worth a look: 2× the same name,")
     && str_contains($sumText(false, [], 'en'), "\n\n(no bookings)\n\n--\n") && str_contains($sumText(false, []), "Ihre Termine für morgen:\n\n(keine Buchungen)\n"));
+// The calendar file of the evening summary has every round of the teacher that day: each appointment is
+// titled with its own round (a round's title often names the class or room), never with a name
+$sumIcs = str_replace("\r\n ", '', App\IcsExport::forRound(['title' => 'Elternsprechtag 3b, Sprechstunde'], [$sumRows[0], $sumRows[4]]));
+preg_match_all('/^SUMMARY:(.*)\r$/m', $sumIcs, $sumIcsTitles);
+check('calendar file of a summary: each appointment with the title of its own round, no name',
+    $sumIcsTitles[1] === ['Elternsprechtag 3b', 'Sprechstunde'] && !preg_match('/Anna|Cem|example\.org/', $sumIcs)
+    && $prop($sumIcs, 'X-WR-CALNAME') === ':Elternsprechtag 3b\, Sprechstunde');
+
+// Reply-To of the parents' mails: the reply address, else the account's address, each only where allowed
+$replyTo = static fn (?string $replyAddress, ?string $email): ?string => App\Notifier::replyTo(['teacher_reply_to' => $replyAddress, 'teacher_email' => $email]);
+$replyOpen = [$replyTo('antwort@gmx.example', 'konto@schule.example.org'), $replyTo(null, 'konto@schule.example.org'), $replyTo('', 'kein at'), $replyTo('kein at', 'konto@gmx.example')];
+App\Config::load(['allowed_account_domains' => ['schule.example.org']] + $cfg);
+$replyClosed = [$replyTo('antwort@gmx.example', 'konto@schule.example.org'), $replyTo('antwort@schule.example.org', 'konto@gmx.example'), $replyTo('antwort@gmx.example', 'konto@gmx.example'),
+    App\Notifier::replyTo(['teacher_email' => 'konto@schule.example.org']), App\Notifier::replyTo([])];
+App\Config::load($cfg);
+check('Reply-To: the reply address for parents, else the account\'s address; one outside allowed_account_domains falls back to an allowed one or none',
+    $replyOpen === ['antwort@gmx.example', 'konto@schule.example.org', null, 'konto@gmx.example']
+    && $replyClosed === ['konto@schule.example.org', 'antwort@schule.example.org', null, 'konto@schule.example.org', null]);
 
 App\Config::load(['summary_names' => false] + $cfg);
 $namesOff = !App\Summaries::withNames(['summary_names' => 1]) && !App\Summaries::withNames(['summary_names' => null]);

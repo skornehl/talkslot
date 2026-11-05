@@ -48,7 +48,8 @@ not public issues.
   another site). The browser keeps back the strict cookie on links from other sites, such as the link in
   a summary opened in a webmailer; such a request (`Sec-Fetch-Site: cross-site`) gets a small interim page
   that opens the same address again from TalkSlot (meta refresh), so a signed-in browser lands signed in
-  and its cookie is never replaced.
+  and its cookie is never replaced. It does so once: the address it opens carries `reopened=1`, and a
+  browser that still holds the cookie back then gets the login page instead of a loop.
 - Changing or resetting a password ends all other sessions of the account. *Alle Sitzungen beenden* (end
   all sessions, under *Benutzer*) ends the sessions of all accounts (a global counter in the settings).
 - Brute-force protection: at most 5 failed logins per shortened IP address in 15 minutes, and 20 per

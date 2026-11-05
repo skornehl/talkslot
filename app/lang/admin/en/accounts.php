@@ -162,9 +162,6 @@ return [
     'Morgen: {count} Termine ({date})' => 'Tomorrow: {count} appointments ({date})',
     'Ihre Termine für morgen:' => 'Your appointments for tomorrow:',
     'Buchungsschluss: {title} – {date}' => 'Booking deadline: {title} – {date}',
-    'Für diesen Tag sind keine Buchungen mehr möglich. Endgültige Terminliste:' => 'No more bookings are possible for this day. Final list of appointments:',
-    'Für diesen Tag sind keine Buchungen mehr möglich. Endgültige Terminliste ({count} Termin blieb frei):' => 'No more bookings are possible for this day. Final list of appointments ({count} slot remained free):',
-    'Für diesen Tag sind keine Buchungen mehr möglich. Endgültige Terminliste ({count} Termine blieben frei):' => 'No more bookings are possible for this day. Final list of appointments ({count} slots remained free):',
     '(keine Buchungen)' => '(no bookings)',
     'Übersicht und Druckansicht: {url}' => 'Overview and print view: {url}',
 ];

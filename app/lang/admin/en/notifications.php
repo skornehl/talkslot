@@ -45,6 +45,10 @@ return [
     // Summaries for teachers without names unless the school allows them (Summaries, expert review P1-4)
     '1 Termin um {from}' => '1 appointment at {from}',
     '{count} Termine zwischen {from} und {to}' => '{count} appointments between {from} and {to}',
+    // After the booking deadline (with or without names, so not "list")
+    'Für diesen Tag sind keine Buchungen mehr möglich. Endgültiger Stand:' => 'No more bookings are possible for this day. Final status:',
+    'Für diesen Tag sind keine Buchungen mehr möglich. Endgültiger Stand ({count} Termin blieb frei):' => 'No more bookings are possible for this day. Final status ({count} slot remained free):',
+    'Für diesen Tag sind keine Buchungen mehr möglich. Endgültiger Stand ({count} Termine blieben frei):' => 'No more bookings are possible for this day. Final status ({count} slots remained free):',
     'Auffällig: {notes}' => 'Worth a look: {notes}',
     '{count}× gleicher Name' => '{count}× the same name',
     '{count}× gleiche E-Mail-Adresse' => '{count}× the same email address',
@@ -65,7 +69,7 @@ return [
     'Die E-Mails nennen je Tag die Zahl der Termine, Auffälliges (z. B. denselben Namen mehrmals) und den Link zur Terminliste, aber nie E-Mail-Adressen der Eltern.' => 'For each day the emails give the number of appointments, anything worth a look (e.g. the same name more than once) and the link to the list of appointments, but never parents\' email addresses.',
     'Mit Namen:' => 'With names:',
     'zusätzlich Uhrzeit und Name jedes Termins und eine Kalenderdatei der Termine (ohne Namen). Ihre Schule hat das freigegeben. Bitte löschen Sie diese E-Mails, sobald Sie sie nicht mehr brauchen, spätestens zum Ende des Schuljahres.' => 'in addition the time and name of each appointment and a calendar file of the appointments (without names). Your school has allowed this. Please delete these emails as soon as you no longer need them, at the latest at the end of the school year.',
-    'Für Ihre Zusammenfassungen und Links zum Zurücksetzen des Passworts. Eltern sehen sie nicht; ihre Antworten auf E-Mails zu ihrem Termin gehen an diese Adresse, wenn Sie keine Antwortadresse angeben.' => 'For your summaries and links to reset your password. Parents do not see it; their replies to emails about their appointment go to this address unless you enter a reply address.',
+    'Für Ihre Zusammenfassungen und Links zum Zurücksetzen des Passworts. Solange Sie keine Antwortadresse für Eltern angeben, gehen auch die Antworten der Eltern auf E-Mails zu ihrem Termin an diese Adresse; Eltern sehen sie dann, sobald sie antworten.' => 'For your summaries and links to reset your password. As long as you do not enter a reply address for parents, parents\' replies to emails about their appointment go to this address as well; parents then see it as soon as they reply.',
     'Die Schule erlaubt nur Adressen bei {domains}.' => 'The school only allows addresses at {domains}.',
     'Antwortadresse für Eltern' => 'Reply address for parents',
     '(optional)' => '(optional)',
@@ -75,8 +79,9 @@ return [
     'Antwortadresse für Eltern:' => 'Reply address for parents:',
     'Zum Ändern der Antwortadresse für Eltern bitte Ihr aktuelles Passwort eingeben.' => 'To change the reply address for parents, please enter your current password.',
     'Ihre E-Mail-Adresse ist keine dienstliche Adresse bei {domains}, wie die Schule es vorgibt – bitte ändern. Bis dahin erhalten Sie keine Zusammenfassungen.' => 'Your email address is not a work address at {domains}, as the school requires – please change it. Until then you will not receive summaries.',
+    'Ihre Antwortadresse für Eltern ist keine dienstliche Adresse bei {domains}, wie die Schule es vorgibt – bitte ändern. Bis dahin gehen Antworten der Eltern nicht an diese Adresse.' => 'Your reply address for parents is not a work address at {domains}, as the school requires – please change it. Until then parents\' replies do not go to this address.',
     'Bitte eine Adresse bei {domains} angeben: Die Schule erlaubt für Konten nur ihre dienstlichen Adressen.' => 'Please enter an address at {domains}: the school only allows its work addresses for accounts.',
-    'Aktive Konten mit einer Adresse außerhalb von „allowed_account_domains“: {count}. Sie erhalten keine Zusammenfassungen, und Antworten der Eltern gehen nicht an sie. Bitte ändern Sie die Adressen.' => 'Active accounts with an address outside “allowed_account_domains”: {count}. They receive no summaries, and parents\' replies do not go to them. Please change the addresses.',
+    'Aktive Konten mit einer Adresse außerhalb von „allowed_account_domains“: {count}. An diese Adressen gehen keine Zusammenfassungen und keine Antworten der Eltern. Bitte ändern Sie die Adressen.' => 'Active accounts with an address outside “allowed_account_domains”: {count}. No summaries and no replies of parents go to these addresses. Please change the addresses.',
     'eine Liste von Domains, z. B. [\'schule.example.org\']' => 'a list of domains, e.g. [\'schule.example.org\']',
     // Link from another site (e.g. a webmailer) to a page of the admin area: interim page (AdminController::signInFirst())
     'Weiterleitung' => 'Redirecting',

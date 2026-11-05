@@ -191,7 +191,7 @@ und Kalendern, die die Löschregeln Ihrer Schule womöglich nicht erreichen. Die
 hinter dem Link (nach der Anmeldung). Nur wenn Ihre Schule es erlaubt (ein Admin setzt `summary_names`),
 können Sie im Profil *Mit Namen* ankreuzen: Dann nennen die E-Mails Uhrzeit und Name jedes Termins und
 bringen eine Kalenderdatei der Termine mit, die selbst keine Namen enthält (jeder Termin trägt den Titel
-der Runde). Löschen Sie solche E-Mails, sobald Sie sie nicht mehr brauchen, spätestens zum Ende des
+seiner Runde). Löschen Sie solche E-Mails, sobald Sie sie nicht mehr brauchen, spätestens zum Ende des
 Schuljahres, und verwenden Sie für Ihr Konto Ihre dienstliche E-Mail-Adresse. Bei Konten von vor dieser
 Änderung sagt ein Hinweis in der Übersicht, was sich geändert hat. Erlaubt die Schule Namen, behalten Ihre
 Zusammenfassungen sie, und Sie können sie im Profil abschalten. Erlaubt sie sie nicht, sind sie ab dem
@@ -202,13 +202,17 @@ die Schule Namen später, kreuzen Sie *Mit Namen* selbst an.
 
 Antworten der Eltern auf die E-Mails zu ihrem Termin gehen an Ihre E-Mail-Adresse (Reply-To), Eltern sehen
 sie also, sobald sie antworten. Unter *Mein Profil → Antwortadresse für Eltern* können Sie dafür eine
-andere Adresse angeben, z. B. Ihre dienstliche Adresse oder das Sekretariat; wie bei der E-Mail-Adresse
-fragt die Änderung nach Ihrem Passwort. Erlaubt die Schule nur ihre eigenen Adressen
-(`allowed_account_domains`), müssen beide bei ihrer Domain liegen.
+andere eigene Adresse angeben, z. B. Ihre dienstliche Adresse; wie bei der E-Mail-Adresse fragt die
+Änderung nach Ihrem Passwort. Nehmen Sie eine Adresse, die Sie selbst lesen: Die E-Mails sagen den Eltern,
+dass ihre Antworten an die Lehrkraft gehen. Erlaubt die Schule nur ihre eigenen Adressen
+(`allowed_account_domains`), müssen beide bei ihrer Domain liegen. Eine Antwortadresse von vor dieser
+Regel wird dann nicht verwendet (die Antworten gehen an Ihre E-Mail-Adresse, wenn diese bei der Domain der
+Schule liegt), und die Übersicht bittet Sie, sie zu ändern.
 
 ### Links aus den E-Mails
 
 Der Link in einer Zusammenfassung öffnet die Seite direkt. Sind Sie angemeldet, öffnet sie sich angemeldet
 (bei Links von anderen Websites, etwa aus einem Webmailer, hält der Browser das Sitzungs-Cookie zurück;
 eine kurze Zwischenseite *Weiterleitung* öffnet die Seite deshalb noch einmal von TalkSlot aus). Sind Sie
-nicht angemeldet, melden Sie sich an und landen auf dieser Seite, nicht in der Übersicht.
+nicht angemeldet oder hält der Browser das Cookie weiter zurück, melden Sie sich an und landen auf dieser
+Seite, nicht in der Übersicht.
