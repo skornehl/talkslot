@@ -264,7 +264,7 @@ C6=$(n_id "Aenderung Einzeln")
 R=$(curl -s -L -b "$J" -d "csrf=$NT&notify=1" "$B/admin/booking/$C6/delete")
 CT=$(n_text "$(c_addr 6)" abgesagt)
 CI=$(c_ics "$(c_addr 6)" abgesagt)
-check "entry deleted with the box: cancellation at once, in the parents' language, with the round page to book again (no link of the booking)" 'echo "$R" | has "Eintrag gelöscht – der Slot ist wieder frei. Absage per E-Mail an die Eltern gesendet." && echo "$CT" | has "leider wurde Ihr Termin von der Lehrkraft abgesagt" && echo "$CT" | has "Name: Aenderung Einzeln" && echo "$CT" | has "Ort: Raum 1" && echo "$CT" | has "$B/$CRS?lang=de" && ! echo "$CT" | has "/b/"' \
+check "entry deleted with the box: cancellation at once, in the parents' language, with the round page to book again (no link of the booking)" 'echo "$R" | has "Buchung gelöscht – der Termin ist wieder frei. Absage per E-Mail an die Eltern gesendet." && echo "$CT" | has "leider wurde Ihr Termin von der Lehrkraft abgesagt" && echo "$CT" | has "Name: Aenderung Einzeln" && echo "$CT" | has "Ort: Raum 1" && echo "$CT" | has "$B/$CRS?lang=de" && ! echo "$CT" | has "/b/"' \
   || echo "$CT" | head -12
 check "… with a calendar file that cancels the entry in the parents' calendar (same UID, METHOD:CANCEL, round and teacher)" '[ "$(echo "$CI" | head -1)" = 1 ] && echo "$CI" | has "METHOD:CANCEL" && echo "$CI" | has "STATUS:CANCELLED" && echo "$CI" | has "UID:appointment-$C6@" && echo "$CI" | has "SUMMARY:Aenderung Test – Frau Sabrina Test"'
 check "… logged without a name of the parents" '[ "$(DBQ "SELECT message LIKE \"%: Buchung % gelöscht, Eltern per E-Mail informiert\" AND message NOT LIKE \"%Einzeln%\" FROM tp_audit_log ORDER BY id DESC LIMIT 1")" = 1 ]'
@@ -402,13 +402,13 @@ check "… nothing to the replaced address" '[ "$(n_mails "$(r_addr 2)")" = 0 ]'
 
 # The end back at 10:00: the conflict fits again with the new date, its parents get it now
 R=$(r_day "$RD2" 10:00 "")
-check "conflict fits again after its date changed: a change notice with the current details" 'echo "$R" | has "Tag gespeichert. Slots wurden aktualisiert." && echo "$R" | has "Die Eltern von 1 Buchung(en) erhalten die neuen Termindaten" && [ "$(r_outbox)" = "Review Konflikt:changed" ]'
+check "conflict fits again after its date changed: a change notice with the current details" 'echo "$R" | has "Tag gespeichert. Die Termine wurden neu berechnet." && echo "$R" | has "Die Eltern von 1 Buchung(en) erhalten die neuen Termindaten" && [ "$(r_outbox)" = "Review Konflikt:changed" ]'
 $DC exec -T app php /srv/app/bin/cron.php >/dev/null
 check "… sent with the new date" 'n_text "$(r_addr 3)" ge%C3%A4ndert | has ", $RW, 09:45"'
 # A break makes it a conflict again and goes: nothing changed since that mail, so no mail
 curl -s -o /dev/null -b "$J" -d "csrf=$NT&start_time=09:45&end_time=10:00" "$B/admin/day/$RDAY/break"
 R=$(curl -s -L -b "$J" -d "csrf=$NT" "$B/admin/break/$(DBQ "SELECT id FROM tp_day_breaks WHERE day_id = $RDAY")/delete")
-check "break added and removed: the conflict fits again unchanged, no mail" 'echo "$R" | has "Pause entfernt. Slots wurden aktualisiert." && ! echo "$R" | has "erhalten die neuen Termindaten" && [ -z "$(r_outbox)" ] && [ "$(DBQ "SELECT is_conflict FROM tp_slots WHERE day_id = $RDAY AND start_time = \"09:45:00\"")" = 0 ]'
+check "break added and removed: the conflict fits again unchanged, no mail" 'echo "$R" | has "Pause entfernt. Die Termine wurden neu berechnet." && ! echo "$R" | has "erhalten die neuen Termindaten" && [ -z "$(r_outbox)" ] && [ "$(DBQ "SELECT is_conflict FROM tp_slots WHERE day_id = $RDAY AND start_time = \"09:45:00\"")" = 0 ]'
 
 # Limit per account: one change notice left this hour
 DBQ "INSERT INTO tp_rate_limits (bucket, key_hash, window_start, hits) VALUES ('teacher_bulk', '$(r_hm "user:$RAID")', UNIX_TIMESTAMP(), 199) ON DUPLICATE KEY UPDATE hits = 199, window_start = UNIX_TIMESTAMP()"
@@ -453,7 +453,7 @@ RPD=$(curl -s -b "$J" "$B/admin/round/$RP" | grep -o 'id="day-[0-9]*"' | grep -o
 r_waits() { DBQ "SELECT COUNT(*) FROM tp_mail_outbox WHERE booking_id = $(n_id "Review Vorbei")"; }
 check "set-up: one booking on each of the two days" '[ "$(DBQ "SELECT GROUP_CONCAT(b.name ORDER BY d.day_date) FROM tp_bookings b JOIN tp_slots s ON s.id = b.slot_id JOIN tp_round_days d ON d.id = s.day_id WHERE d.round_id = ${RP:-0}")" = "Review Vorbei,Review Danach" ] && [ "$(DBQ "SELECT s.day_id FROM tp_bookings b JOIN tp_slots s ON s.id = b.slot_id WHERE b.name = \"Review Vorbei\"")" = "$RPD" ]'
 R=$(curl -s -L -b "$J" -d "csrf=$NT&day_date=$(date +%F)&start_time=00:00&end_time=00:15&slot_minutes=15&notify=1&location=" "$B/admin/day/$RPD/edit")
-check "day moved to a time that is over (today 00:00): no change notice for it" 'echo "$R" | has "Tag gespeichert. Slots wurden aktualisiert." && ! echo "$R" | has "erhalten die neuen Termindaten" && ! echo "$R" | has "persönlich informieren" && [ "$(r_waits)" = 0 ] && [ "$(DBQ "SELECT COUNT(*) FROM tp_bookings b JOIN tp_slots s ON s.id = b.slot_id WHERE b.name = \"Review Vorbei\" AND s.day_id = $RPD")" = 1 ]'
+check "day moved to a time that is over (today 00:00): no change notice for it" 'echo "$R" | has "Tag gespeichert. Die Termine wurden neu berechnet." && ! echo "$R" | has "erhalten die neuen Termindaten" && ! echo "$R" | has "persönlich informieren" && [ "$(r_waits)" = 0 ] && [ "$(DBQ "SELECT COUNT(*) FROM tp_bookings b JOIN tp_slots s ON s.id = b.slot_id WHERE b.name = \"Review Vorbei\" AND s.day_id = $RPD")" = 1 ]'
 R=$(curl -s -L -b "$J" --data-urlencode "csrf=$NT" -d "title=Review+Vorbei&booking_deadline_hours=0&cancel_deadline_hours=0&is_active=1&notify=1" --data-urlencode "location=Aula" "$B/admin/round/$RP/edit")
 check "… nor after a new location of the round: only the appointment still ahead gets one" 'echo "$R" | has "Runde gespeichert." && echo "$R" | has "Die Eltern von 1 Buchung(en) erhalten die neuen Termindaten" && ! echo "$R" | has "persönlich informieren" && [ "$(r_waits)" = 0 ] && [ "$(DBQ "SELECT location FROM tp_rounds WHERE id = $RP")" = Aula ]'
 curl -s -o /dev/null -b "$J" -d "csrf=$NT&confirm=1" "$B/admin/round/$RP/delete"

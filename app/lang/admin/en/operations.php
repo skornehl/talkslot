@@ -12,7 +12,6 @@ return [
 
     // Automatic deletion of expired rounds (round.php, dashboard.php, App\Cleanup::deletionAt)
     'Abgelaufen: Die Runde wird am {date} automatisch gelöscht, mit allen Tagen und Einstellungen. Zum Behalten einen Tag ab heute hinzufügen oder unter „Bearbeiten“ das Feld „Runde löschen nach Ablauf“ leeren.' => 'Expired: the round will be deleted automatically on {date}, with all its days and settings. To keep it, add a day from today on, or clear “Delete round after it ends” under “Edit”.',
-    'Runde wird am {date} gelöscht ({hours} h nach Ablauf)' => 'Round will be deleted on {date} ({hours} h after it ends)',
     'Noch nie aktiv: wird nicht automatisch gelöscht' => 'Never active yet: not deleted automatically',
     'wird am {date} gelöscht' => 'to be deleted on {date}',
 

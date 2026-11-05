@@ -70,22 +70,22 @@ return [
     'Pause hinzugefügt.' => 'Break added.',
     'Pause entfernt.' => 'Break removed.',
     'Achtung: {count} gebuchte(r) Termin(e) passen nicht mehr zum Zeitplan und sind als Konflikt markiert. Bitte umbuchen oder löschen.' => 'Attention: {count} booked appointment(s) no longer fit the schedule and are marked as a conflict. Please rebook or delete them.',
-    'Slots wurden aktualisiert.' => 'Slots have been updated.',
-    'Slot freigegeben.' => 'Slot released.',
-    'Slot gesperrt.' => 'Slot blocked.',
+    'Die Termine wurden neu berechnet.' => 'Slots have been updated.',
+    'Termin freigegeben.' => 'Slot released.',
+    'Termin gesperrt.' => 'Slot blocked.',
     'Pause' => 'Break',
 
     // Bookings
     'Eintrag anlegen' => 'Add entry',
     'Eintrag bearbeiten' => 'Edit entry',
-    'Dieser Slot ist bereits belegt.' => 'This slot is already taken.',
+    'Dieser Termin ist bereits gebucht.' => 'This slot is already taken.',
     'Eintrag angelegt. Änderungslink für die Eltern (wird nur jetzt angezeigt): {link}' => 'Entry created. Change link for the parents (shown only now): {link}',
     'Bestätigung per E-Mail gesendet.' => 'Confirmation sent by email.',
-    'Der gewählte Slot ist nicht mehr frei. Es wurde nichts geändert.' => 'The chosen slot is no longer free. Nothing was changed.',
+    'Der gewählte Termin ist nicht mehr frei. Es wurde nichts geändert.' => 'The chosen slot is no longer free. Nothing was changed.',
     'Eintrag gespeichert und umgebucht.' => 'Entry saved and rebooked.',
     'Eintrag gespeichert.' => 'Entry saved.',
     'Änderung per E-Mail mitgeteilt.' => 'Change sent by email.',
-    'Eintrag gelöscht – der Slot ist wieder frei.' => 'Entry deleted – the slot is free again.',
+    'Buchung gelöscht – der Termin ist wieder frei.' => 'Booking deleted – the slot is free again.',
     'Keine E-Mail gesendet: Höchstzahl von Mails je Stunde erreicht, bitte später erneut speichern.' => 'No email sent: maximum number of emails per hour reached, please save again later.',
 
     // Publishing, profile, password

@@ -66,7 +66,7 @@ return [
     'form.privacy.link' => 'informacją o ochronie danych',
     'form.privacy.after' => '.',
     'form.remember' => 'Zapamiętaj mój termin na tym urządzeniu (opcjonalnie)',
-    'form.remember.hint' => 'Zapisuje tylko link do Państwa terminu w pamięci tej przeglądarki (localStorage), aby można go było tu ponownie znaleźć. Nic nie jest przesyłane na serwer. Wpis można w każdej chwili usunąć.',
+    'form.remember.hint' => 'Zapisuje tylko link do Państwa terminu w pamięci tej przeglądarki, aby można go było tu ponownie znaleźć. Nic nie jest przesyłane na serwer. Wpis można w każdej chwili usunąć.',
     'form.submit' => 'Zarezerwuj termin',
 
     'pin.title' => 'Wymagany kod',

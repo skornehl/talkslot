@@ -69,7 +69,7 @@ return [
     'form.privacy.link' => 'Datenschutzhinweise',
     'form.privacy.after' => ' gelesen und zur Kenntnis genommen.',
     'form.remember' => 'Meinen Termin auf diesem Gerät merken (freiwillig)',
-    'form.remember.hint' => 'Speichert nur den Link zu Ihrem Termin im Speicher dieses Browsers (localStorage), damit Sie ihn hier wiederfinden. Es wird dabei nichts an den Server übertragen. Sie können den Merker jederzeit löschen.',
+    'form.remember.hint' => 'Speichert nur den Link zu Ihrem Termin im Speicher dieses Browsers, damit Sie ihn hier wiederfinden. Es wird dabei nichts an den Server übertragen. Sie können den Merker jederzeit löschen.',
     'form.submit' => 'Termin verbindlich buchen',
 
     'pin.title' => 'Code erforderlich',

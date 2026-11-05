@@ -699,7 +699,7 @@ check "form 'create entry'" 'curl -s -b "$J" "$B/admin/slot/${SLOTS[0]}/book" | 
 check "entry without name rejected" 'curl -s -b "$J" -d "csrf=$T&name=&lang=de" "$B/admin/slot/${SLOTS[0]}/book" | has "Bitte geben Sie einen Namen an"'
 curl -s -o /dev/null -b "$J" -d "csrf=$T&name=Hand+Eins&email=hand@example.org&lang=de" "$B/admin/slot/${SLOTS[0]}/book"
 curl -s -o /dev/null -b "$J" -d "csrf=$T&name=Hand+Zwei&lang=de" "$B/admin/slot/${SLOTS[1]}/book"
-check "taken slot: second entry rejected" 'curl -s -L -b "$J" -d "csrf=$T&name=Doppelt&lang=de" "$B/admin/slot/${SLOTS[0]}/book" | has "Dieser Slot ist bereits belegt" && ! curl -s -b "$J" "$B/admin/round/$RA" | has "Doppelt"'
+check "taken slot: second entry rejected" 'curl -s -L -b "$J" -d "csrf=$T&name=Doppelt&lang=de" "$B/admin/slot/${SLOTS[0]}/book" | has "Dieser Termin ist bereits gebucht" && ! curl -s -b "$J" "$B/admin/round/$RA" | has "Doppelt"'
 BK1=$(DBQ "SELECT id FROM tp_bookings WHERE name='Hand Eins'")
 check "form 'edit entry' with move target" 'curl -s -b "$J" "$B/admin/booking/$BK1/edit" | has "Eintrag bearbeiten"'
 check "editing without name rejected" 'curl -s -b "$J" -d "csrf=$T&name=&lang=de" "$B/admin/booking/$BK1/edit" | has "Bitte geben Sie einen Namen an"'

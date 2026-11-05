@@ -66,7 +66,7 @@ return [
     'form.privacy.link' => 'privacy notice',
     'form.privacy.after' => '.',
     'form.remember' => 'Remember my appointment on this device (optional)',
-    'form.remember.hint' => 'Stores only the link to your appointment in this browser’s storage (localStorage) so you can find it again here. Nothing is sent to the server. You can remove it at any time.',
+    'form.remember.hint' => 'Stores only the link to your appointment in this browser’s storage so you can find it again here. Nothing is sent to the server. You can remove it at any time.',
     'form.submit' => 'Book appointment',
 
     'pin.title' => 'Code required',

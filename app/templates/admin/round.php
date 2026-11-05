@@ -115,7 +115,7 @@ $deletionText = $deletion ? __('{date}, {time} Uhr', ['date' => fmt_date($deleti
     <a class="button button-small" href="<?= e(url('/admin/day/' . $did . '/edit')) ?>"><?= e(__('Tag bearbeiten')) ?></a>
     <a class="button button-small" href="<?= e(url('/admin/round/' . $rid . '/print', ['day' => $did])) ?>" target="_blank" rel="noopener"><?= e(__('Tag drucken')) ?></a>
     <?php $dayBookings = count(array_filter($day['slots'], static fn ($s) => $s['booking_id'] !== null)); ?>
-    <?php $question = $dayBookings ? __('Diesen Tag mit allen Slots und {count} Buchung(en) löschen?', ['count' => $dayBookings]) : __('Diesen Tag mit allen Slots löschen?'); ?>
+    <?php $question = $dayBookings ? __('Diesen Tag mit allen Terminen und {count} Buchung(en) löschen?', ['count' => $dayBookings]) : __('Diesen Tag mit allen Terminen löschen?'); ?>
     <form method="post" action="<?= e(url('/admin/day/' . $did . '/delete')) ?>" class="inline-delete" data-confirm="<?= e($question . $cancelNote($day['parents'])) ?>" data-confirm-off="<?= e($question . $offNote($day['parents'])) ?>"><?= $csrf ?>
       <?php if ($dayBookings): ?>
         <label class="small"><input type="checkbox" name="confirm" value="1" required> <?= e(__('inkl. {count} Buchung(en)', ['count' => $dayBookings])) ?></label>
@@ -165,7 +165,7 @@ $deletionText = $deletion ? __('{date}, {time} Uhr', ['date' => fmt_date($deleti
           <?php if ($s['booking_id']): ?>
             <a class="button button-small" href="<?= e(url('/admin/booking/' . (int) $s['booking_id'] . '/edit')) ?>"><?= e(__('Bearbeiten')) ?></a>
             <?php
-            $question = __('Eintrag von „{name}“ löschen? Der Slot wird wieder frei.', ['name' => $s['name']]);
+            $question = __('Buchung von „{name}“ löschen? Der Termin wird wieder frei.', ['name' => $s['name']]);
             $note = match (true) {
                 !$s['upcoming'] => '',
                 $s['mailable'] => "\n\n" . __('Die Eltern erhalten eine Absage per E-Mail.'),
@@ -184,7 +184,7 @@ $deletionText = $deletion ? __('{date}, {time} Uhr', ['date' => fmt_date($deleti
         </td>
       </tr>
     <?php endforeach; ?>
-    <?php if (!$day['slots']): ?><tr><td colspan="4" class="muted"><?= e(__('Keine Slots – prüfen Sie Zeiten, Slot-Dauer und Pausen.')) ?></td></tr><?php endif; ?>
+    <?php if (!$day['slots']): ?><tr><td colspan="4" class="muted"><?= e(__('Keine Termine – prüfen Sie Zeiten, Dauer pro Termin und Pausen.')) ?></td></tr><?php endif; ?>
     </tbody>
   </table>
   </div>

@@ -66,7 +66,7 @@ return [
     'form.privacy.link' => 'Veri koruma bilgilendirmesini',
     'form.privacy.after' => ' okudum ve bilgi edindim.',
     'form.remember' => 'Randevumu bu cihazda hatırla (isteğe bağlı)',
-    'form.remember.hint' => 'Yalnızca randevunuzun bağlantısını bu tarayıcının belleğine (localStorage) kaydeder, böylece onu burada tekrar bulabilirsiniz. Sunucuya hiçbir şey gönderilmez. İstediğiniz zaman silebilirsiniz.',
+    'form.remember.hint' => 'Yalnızca randevunuzun bağlantısını bu tarayıcının belleğine kaydeder, böylece onu burada tekrar bulabilirsiniz. Sunucuya hiçbir şey gönderilmez. İstediğiniz zaman silebilirsiniz.',
     'form.submit' => 'Randevu al',
 
     'pin.title' => 'Kod gerekli',

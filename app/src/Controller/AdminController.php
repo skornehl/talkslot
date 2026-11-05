@@ -1088,7 +1088,7 @@ final class AdminController
             $this->flash('warning', $message . ' ' . __('Achtung: {count} gebuchte(r) Termin(e) passen nicht mehr zum Zeitplan und sind als Konflikt markiert. Bitte umbuchen oder löschen.', ['count' => $parents->conflicts])
                 . self::movedNote($parents) . ' ' . self::conflictHint());
         } else {
-            $this->flash('success', $message . ' ' . __('Slots wurden aktualisiert.'));
+            $this->flash('success', $message . ' ' . __('Die Termine wurden neu berechnet.'));
         }
         $this->parentsFlash($parents, true);
         Http::redirect('/admin/round/' . $roundId, [], 'day-' . $dayId);
@@ -1130,7 +1130,7 @@ final class AdminController
         $this->audit(fn () => $slot['is_blocked']
             ? __('Termin {slot} freigegeben', ['slot' => self::when($slot['day_date'], $slot['start_time'])])
             : __('Termin {slot} gesperrt', ['slot' => self::when($slot['day_date'], $slot['start_time'])]), (int) $slot['round_id']);
-        $this->flash('success', $slot['is_blocked'] ? __('Slot freigegeben.') : __('Slot gesperrt.'));
+        $this->flash('success', $slot['is_blocked'] ? __('Termin freigegeben.') : __('Termin gesperrt.'));
         Http::redirect('/admin/round/' . $slot['round_id'], [], 'slot-' . $id);
     }
 
@@ -1162,7 +1162,7 @@ final class AdminController
         try {
             [$id, $token] = BookingService::adminBook($round, $slotId, PublicController::cleanName($old['name']), $old['email'] ?: null, $old['lang']);
         } catch (BookingException) {
-            $this->flash('error', __('Dieser Slot ist bereits belegt.'));
+            $this->flash('error', __('Dieser Termin ist bereits gebucht.'));
             Http::redirect('/admin/round/' . $round['id'], [], 'slot-' . $slotId);
         }
         if (!$round['was_used']) {
@@ -1217,7 +1217,7 @@ final class AdminController
                 BookingService::move($booking, (int) $old['move_to'], true);
                 $moved = true;
             } catch (BookingException) {
-                $this->bookingEdit($id, [__('Der gewählte Slot ist nicht mehr frei. Es wurde nichts geändert.')], $old);
+                $this->bookingEdit($id, [__('Der gewählte Termin ist nicht mehr frei. Es wurde nichts geändert.')], $old);
                 return;
             }
         }
@@ -1250,7 +1250,7 @@ final class AdminController
         $mail = $this->withoutSession(static fn () => ScheduleService::deleteBooking($booking, $notify));
         $this->audit(fn () => __('Buchung {slot} gelöscht', ['slot' => self::when($booking['day_date'], $booking['start_time'])])
             . ($mail !== null ? ', ' . __('Eltern per E-Mail informiert') : ''), (int) $booking['round_id']);
-        $this->flash('success', __('Eintrag gelöscht – der Slot ist wieder frei.') . match ($mail) {
+        $this->flash('success', __('Buchung gelöscht – der Termin ist wieder frei.') . match ($mail) {
             Notifier::SENT => ' ' . __('Absage per E-Mail an die Eltern gesendet.'),
             Notifier::QUEUED => ' ' . __('Die Absage per E-Mail konnte gerade nicht gesendet werden. Sie wird automatisch erneut versucht.'),
             default => '',

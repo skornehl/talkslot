@@ -436,7 +436,7 @@ try {
     return cdp.dialogs.map((d) => d.message).join(' | ');
   };
   const withMail = await deleteDialog('Familie Yılmaz (Elif)');
-  check('deleting a booking with an address: box ticked, the dialog says a cancellation goes out by e-mail', withMail.startsWith('Eintrag von „Familie Yılmaz (Elif)“ löschen?')
+  check('deleting a booking with an address: box ticked, the dialog says a cancellation goes out by e-mail', withMail.startsWith('Buchung von „Familie Yılmaz (Elif)“ löschen?')
     && withMail.endsWith('\n\nDie Eltern erhalten eine Absage per E-Mail.') && await js(`${bookingForm('Familie Yılmaz (Elif)')}.querySelector('input[name="notify"]').checked`), withMail);
   await js(`${bookingForm('Familie Yılmaz (Elif)')}.querySelector('input[name="notify"]').click()`);
   const unticked = await deleteDialog('Familie Yılmaz (Elif)');
