@@ -25,6 +25,18 @@ try {
     $installError = $e->getMessage();
 }
 check('installer: no installation without a valid operator type (refused before the database is touched)', str_contains($installError, 'Betriebsart'));
+// What the installer stores (Installer::install() writes exactly these): the templates of the chosen type. Pages
+// installed as the other type would keep their wrong text, as pages_version is set at the same time.
+$installed = static fn (string $type): array => array_map(static fn (array $texts): array => array_map(static fn (string $text): string => hash('sha256', $text), $texts),
+    App\Installer::pages($type, ['de', 'en', 'it']));
+$legalHash = static fn (string $name): string => hash('sha256', $legalTpl($name));
+check('installer, operated privately: the private legal notice and privacy policy (de/en), nothing for a language without a template',
+    $installed('private') === ['imprint' => ['de' => $legalHash('imprint-private.de'), 'en' => $legalHash('imprint-private.en')],
+        'privacy' => ['de' => $legalHash('privacy-private.de'), 'en' => $legalHash('privacy-private.en')]]
+    && $installed('private')['imprint']['de'] === App\Migrations::CURRENT_PAGE_HASHES['imprint-private.de']);
+check('installer, operated by the school: the school templates (de/en)',
+    $installed('school') === ['imprint' => ['de' => $legalHash('imprint.de'), 'en' => $legalHash('imprint.en')],
+        'privacy' => ['de' => $legalHash('privacy.de'), 'en' => $legalHash('privacy.en')]]);
 
 // Privately operated: the legal notice of a private, non-commercial service as up to v1.5 (unchanged, so unedited
 // texts of those installations stay as they are), the privacy policy with a data protection officer paragraph for

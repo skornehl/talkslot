@@ -66,6 +66,25 @@ final class Installer
     }
 
     /**
+     * The legal notice and privacy policy the installer stores for an operator type: the templates of that type
+     * in the given languages (a language without a template is left out; its pages fall back to English).
+     * @param list<string> $languages
+     * @return array<string, array<string, string>> page key => language => text
+     */
+    public static function pages(string $operatorType, array $languages): array
+    {
+        $pages = [];
+        foreach (LegalTexts::KEYS as $key) {
+            foreach ($languages as $lang) {
+                if (($content = LegalTexts::template($key, $operatorType, $lang)) !== null) {
+                    $pages[$key][$lang] = $content;
+                }
+            }
+        }
+        return $pages;
+    }
+
+    /**
      * Creates the first account as admin (which can also manage its own rounds) and stores the legal notice
      * and privacy policy templates of the operator type.
      */
@@ -91,11 +110,9 @@ final class Installer
             "INSERT INTO users (username, password_hash, role, display_name, email, created_at) VALUES (?, ?, 'admin', ?, ?, ?)",
             [$username, password_hash($password, PASSWORD_DEFAULT), $displayName !== '' ? $displayName : $username, $email !== '' ? $email : null, $now]
         );
-        foreach (LegalTexts::KEYS as $key) {
-            foreach (I18n::languages() as $lang) {
-                if (($content = LegalTexts::template($key, $operatorType, $lang)) !== null) {
-                    Db::run('INSERT IGNORE INTO pages (page_key, lang, content, updated_at) VALUES (?, ?, ?, ?)', [$key, $lang, $content, $now]);
-                }
+        foreach (self::pages($operatorType, I18n::languages()) as $key => $texts) {
+            foreach ($texts as $lang => $content) {
+                Db::run('INSERT IGNORE INTO pages (page_key, lang, content, updated_at) VALUES (?, ?, ?, ?)', [$key, $lang, $content, $now]);
             }
         }
         Operator::saveType($operatorType);
