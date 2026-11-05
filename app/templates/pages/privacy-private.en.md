@@ -6,9 +6,9 @@ The controller within the meaning of the GDPR for this booking service and all a
 
 [[VERANTWORTLICHE]]
 
-The teachers who offer appointments on this platform use it on behalf of and under the instructions of the controller.
+The teachers who offer appointments on this platform use this service of the controller.
 
-**Data protection officer:** [CONTACT DETAILS OF THE DATA PROTECTION OFFICER – OR DELETE THIS PARAGRAPH IF NONE HAS BEEN APPOINTED AND THERE IS NO OBLIGATION TO DO SO (ART. 37 GDPR, SECTION 38 BDSG)]
+**Data protection officer:** none appointed, as there is no legal obligation to do so (Art. 37 GDPR, section 38 BDSG). [PLEASE CHECK, THEN DELETE THIS BRACKET: IF ONE HAS BEEN APPOINTED (E.G. BY AN ASSOCIATION OR INDEPENDENT PROVIDER), GIVE THEIR CONTACT DETAILS INSTEAD OF THE SENTENCE BEFORE.]
 
 # 2. Purpose
 

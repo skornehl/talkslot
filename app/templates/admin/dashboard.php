@@ -1,4 +1,4 @@
-<?php /** @var array $rounds @var list<string> $profileHints @var list<string> $legalHints @var bool $showOwner @var bool $operatorMissing @var bool $textsOpen @var int $unusedAccounts @var ?array $mailsLate */ ?>
+<?php /** @var array $rounds @var list<string> $profileHints @var list<string> $legalHints @var bool $showOwner @var bool $operatorMissing @var bool $typeMissing @var bool $textsOpen @var int $unusedAccounts @var ?array $mailsLate */ ?>
 <?php if ($mailsLate): ?>
   <div class="alert alert-warning" role="status" data-mails-late><p><?= e(__('{count} E-Mail(s) warten seit über {hours} Stunden auf den Versand (die älteste seit {since}). Erinnerungen, Zusammenfassungen und Bestätigungen, die nicht sofort zugestellt werden konnten, verschickt der Cron-Job: Bitte prüfen Sie, ob er stündlich läuft und ob der Mailversand funktioniert. Nach 48 Stunden werden sie verworfen.', ['count' => $mailsLate['count'], 'hours' => App\Outbox::LATE_HOURS, 'since' => date('d.m.Y H:i', (int) strtotime($mailsLate['since']))])) ?></p></div>
 <?php endif; ?>
@@ -10,6 +10,8 @@
 <?php endif; ?>
 <?php if ($operatorMissing && !App\Auth::isAdmin()): ?>
   <div class="alert alert-warning" role="status"><p><?= e(__('Es sind noch keine Angaben für Impressum und Datenschutz hinterlegt (Aufgabe der Admins). Bis dahin sind keine Terminrunden öffentlich erreichbar.')) ?></p></div>
+<?php elseif ($typeMissing ?? false): ?>
+  <div class="alert alert-warning" role="status"><p><?= e(__('Die Admins müssen noch wählen, ob die Terminvergabe von der Schule oder privat betrieben wird. Bis dahin lassen sich keine Runden aktivieren; bereits aktive Runden bleiben erreichbar.')) ?></p></div>
 <?php elseif ($textsOpen ?? false): ?>
   <div class="alert alert-warning" role="status"><p><?= e(__('Impressum bzw. Datenschutzerklärung enthalten noch offene Platzhalter (Aufgabe der Admins). Bis sie ausgefüllt sind, lassen sich keine Runden aktivieren; bereits aktive Runden bleiben erreichbar.')) ?></p></div>
 <?php endif; ?>

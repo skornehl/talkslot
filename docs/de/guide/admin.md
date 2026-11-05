@@ -5,8 +5,9 @@ description: Admin-Konten richten die Plattform ein, laden Lehrkräfte ein, sehe
 
 Das erste **Admin-Konto** wird bei der Installation angelegt; es kann weitere Konten zu Admins machen.
 Admins sehen und bearbeiten alle Runden, legen Runden für Lehrkräfte an, verwalten die Konten und pflegen
-die Rechtstexte. Verantwortlicher im Sinne der DSGVO ist für alle Terminrunden der Betreiber der Plattform
-(meist die Schule); die Lehrkräfte nutzen die Plattform in seinem Auftrag. Die Bezeichnungen unten sind die
+die Rechtstexte. Verantwortlicher im Sinne der DSGVO ist für alle Terminrunden der Betreiber der Plattform:
+die Schule, wenn sie TalkSlot selbst betreibt, sonst die Privatperson, der Verein oder der freie Träger, dessen
+Angebot die Lehrkräfte nutzen (die *Betriebsart* unter *Texte*). Die Bezeichnungen unten sind die
 des deutschen Admin-Bereichs; jedes Konto kann ihn unter *Mein Profil* auf Englisch umstellen.
 
 ![Admin-Übersicht über alle Runden]({{ '/assets/img/admin-dashboard.webp' | relative_url }})
@@ -15,13 +16,15 @@ des deutschen Admin-Bereichs; jedes Konto kann ihn unter *Mein Profil* auf Engli
 
 1. **Profil** (*Mein Profil*): Tragen Sie Ihren Anzeigenamen (wird den Eltern bei Ihren eigenen Runden
    angezeigt) und Ihre E-Mail-Adresse ein.
-2. **Angaben für Impressum und Datenschutz** (*Texte*): Name der Schule, Vertretung, vollständige Anschrift
-   und E-Mail-Adresse. Dieser Text ersetzt `[[VERANTWORTLICHE]]` in beiden Rechtstexten und gilt für alle
-   Admins gemeinsam. Ohne diese Angaben ist **keine Runde öffentlich erreichbar**.
-3. **Rechtstexte** (*Texte*): Laden Sie für die Datenschutzerklärung die passende Vorlage (*Öffentliche
-   Schule* oder *Privater Träger*), prüfen Sie Impressum und Datenschutzerklärung für jede Sprache und
-   ersetzen Sie die verbleibenden Platzhalter in eckigen Klammern. Vorher lässt sich keine Runde
-   aktivieren. Details unter [Datenschutz und Recht]({{ '/de/guide/privacy/' | relative_url }}).
+2. **Angaben für Impressum und Datenschutz** (*Texte*): Prüfen Sie die **Betriebsart** (*Wird von der
+   Schule betrieben* oder *Wird privat betrieben*, beim Installieren gewählt) und tragen Sie Name der Schule
+   bzw. des Betreibers, Vertretung, vollständige Anschrift und E-Mail-Adresse ein. Dieser Text ersetzt
+   `[[VERANTWORTLICHE]]` in beiden Rechtstexten und gilt für alle Admins gemeinsam. Ohne diese Angaben ist
+   **keine Runde öffentlich erreichbar**.
+3. **Rechtstexte** (*Texte*): Impressum und Datenschutzerklärung stammen aus den Vorlagen der Betriebsart.
+   Prüfen Sie sie für jede Sprache und ersetzen Sie die verbleibenden Platzhalter in eckigen Klammern.
+   Vorher lässt sich keine Runde aktivieren. Details unter
+   [Datenschutz und Recht]({{ '/de/guide/privacy/' | relative_url }}).
 4. **E-Mail-Versand prüfen:** *Texte → E-Mail-Versand* zeigt Versandweg und Absender. Machen Sie eine
    Testbuchung mit Ihrer eigenen E-Mail-Adresse und prüfen Sie, ob die Bestätigung ankommt (und nicht als
    Spam markiert wird).
@@ -129,7 +132,10 @@ Das *Protokoll* zeigt die Änderungen durch Admin-Konten, die neuesten zuerst: w
 bearbeitet, (de)aktiviert, dupliziert, einer anderen Lehrkraft gegeben oder gelöscht hat, wer Tage,
 Pausen, gesperrte Termine oder Buchungen geändert, Konten und Rollen angelegt, geändert oder gelöscht,
 Links verschickt und Vorlagen oder Rechtstexte bearbeitet hat. Bei mehreren Admins lässt sich so
-nachvollziehen, wer was getan hat.
+nachvollziehen, wer was getan hat. Was TalkSlot bei einem Update selbst ändert, steht als *TalkSlot* im
+Protokoll: eine aus unveränderten Vorlagen übernommene Betriebsart und Rechtstexte, die durch neuere
+Vorlagen ersetzt wurden. Der Admin, der die Betriebsart danach speichert, steht mit „Betriebsart bestätigt“
+im Protokoll.
 
 Was Lehrkräfte in ihren eigenen Runden tun, erfasst das Protokoll **nicht**, und es enthält nie Daten von
 Eltern: Eine Buchung erscheint nur mit Datum und Uhrzeit (z. B. „Buchung 12.11.2026 14:00 gelöscht“).
@@ -146,14 +152,22 @@ Platzhalter werden automatisch gefüllt:
 | `[[VERANTWORTLICHE]]` | die *Angaben für Impressum und Datenschutz* (oben unter *Texte*) |
 | `[[HOSTER]]` | den Hoster aus der Konfiguration (`hosting`) |
 
-Für Sprachen ohne eigene Fassung wird die englische verwendet. *Vorlage laden* im Formular eines Textes
-setzt eine Vorlage ein, bei der Datenschutzerklärung wahlweise *Öffentliche Schule* (installiert) oder
-*Privater Träger*; der gespeicherte Text ändert sich erst beim Speichern.
+Für Sprachen ohne eigene Fassung wird die englische verwendet. Für beide Texte gibt es je eine Vorlage pro
+**Betriebsart** (*Von der Schule betrieben*, *Privat betrieben*). *Vorlage laden* im Formular eines Textes
+setzt eine davon ein, die zur Betriebsart passende steht zuerst; der gespeicherte Text ändert sich erst beim
+Speichern. Ändern Sie die Betriebsart oben unter *Texte*, ersetzt TalkSlot alle Texte, die noch unverändert
+einer Vorlage entsprechen, durch die Vorlagen der neuen Betriebsart und nennt die Anzahl; bearbeitete Texte
+bleiben, wie sie sind. Die Änderung steht im Protokoll.
+
+Ist keine Betriebsart gewählt (Installationen aus der Zeit davor mit bearbeiteten Texten), zeigt das
+Dashboard „Bitte Betriebsart wählen“, und bis ein Admin sie wählt, lässt sich keine Runde aktivieren;
+bereits aktive Runden bleiben erreichbar.
 
 Angaben, die nur Sie kennen, stehen als Platzhalter in eckigen Klammern im Text. Solange ein Text einer
 angebotenen Sprache noch einen enthält, lässt sich keine Runde aktivieren; bereits aktive Runden bleiben
 erreichbar. Hinweise im Dashboard und unter *Texte* nennen die offenen Platzhalter je Text und zeigen an,
-wenn einem Text ein Platzhalter fehlt oder er veraltet ist.
+wenn einem Text ein Platzhalter fehlt, er veraltet ist oder nicht zur Betriebsart passt (z. B. die
+Rechtsgrundlagen der Vorlage für Schulen bei privatem Betrieb).
 
 ## Benachrichtigungen
 

@@ -111,45 +111,85 @@ by Art. 13 GDPR: controller, data protection officer, purposes, legal bases, rec
 retention, rights of data subjects including the right to object, right to lodge a complaint, whether
 providing data is required, and automated decision-making.
 
-The privacy policy comes in two variants. On the text form, *Vorlage laden* (*Load template*) puts the
-matching one into the form; it only replaces the stored text when you save.
+### Operated by the school or privately
 
-| Variant | For | Legal bases |
-|---|---|---|
-| *Öffentliche Schule* (*Public school*), installed | a state school as controller | Art. 6(1)(e) and (3) GDPR in conjunction with the school act of your state (bookings, mails, summaries) and its data protection act (abuse protection, server logs); right to object under Art. 21, no right to data portability (Art. 20(3)) |
-| *Privater Träger* (*Private operator*) | e.g. an independent school or a parents' association | Art. 6(1)(b) and (f) GDPR; right to object for (f), right to data portability |
+TalkSlot can be used at a school without being run by the school. Who runs it decides who the controller is,
+which legal bases apply and what the imprint says. The installer therefore asks for the **operator type**
+(*Betriebsart*); admins can change it later under *Texte → Angaben für Impressum und Datenschutz*.
+
+| Operator type | Controller | Privacy policy template | Imprint template |
+|---|---|---|---|
+| *Wird von der Schule betrieben* (*Operated by the school*): a state school as a public body | the school | Art. 6(1)(e) and (3) GDPR in conjunction with the school act of your state (bookings, mails, summaries) and its data protection act (abuse protection, server logs); the school's data protection officer; right to object under Art. 21, no right to data portability (Art. 20(3)) | the school as provider |
+| *Wird privat betrieben* (*Operated privately*): a private person, an association or an independent provider (e.g. an independent school) | the operator; teachers use the service | Art. 6(1)(b) and (f) GDPR; right to object for (f), right to data portability; no data protection officer as the rule for private persons, with a placeholder to check that | a private, non-commercial service (as up to v1.5) |
 
 A public authority cannot rely on legitimate interests (Art. 6(1), second subparagraph, GDPR), and meetings
-at a state school are part of its statutory tasks, not of a contract. That is why the public school variant
-cites the law of your state. Which provisions apply differs from state to state, so the template leaves them
-as placeholders.
+at a state school are part of its statutory tasks, not of a contract. That is why the school template cites
+the law of your state. Which provisions apply differs from state to state, so the template leaves them as
+placeholders.
+
+**Templates follow the operator type.** The installer stores the templates of the chosen type. When an admin
+changes the type, every text that is still an unedited template (of either type, current or earlier) is
+replaced by the template of the new type, and the message says how many; edited texts are never replaced.
+The admin log (*Protokoll*) records who set the operator type and when (accountability, Art. 5(2) GDPR):
+each change by an admin with the number of texts replaced, a type taken over on an update (entered as
+*TalkSlot*) and the admin who then confirmed it, and texts replaced by newer templates on an update.
+On the text form, *Vorlage laden* (*Load template*) offers the templates of both types, the one of the
+operator type first; it only replaces the stored text when you save. Hints compare the texts with the type:
+
+- **Operated by the school:** a hint if a text still follows the old template ("private service" without a
+  data protection officer, cancelling "at any time") or relies on Art. 6(1)(b) or (f) GDPR.
+- **Operated privately:** a hint if a text contains the school template (Art. 6(1)(e) GDPR, school act, the
+  school's data protection officer) or still says that parents can cancel "at any time".
+
+**Installations from before the operator type** get one on the first request after the update:
+
+- If all their texts are still unedited templates up to v1.6, which described a private service, the type
+  becomes *operated privately* (the meaning so far) and the privacy policy the current private template. The
+  dashboard says so until an admin has saved the details once.
+- Otherwise (edited texts, or the unedited school templates that v1.7.0 put in) no type is set: admins see
+  *Bitte Betriebsart wählen* (*Please choose the operator type*) on the dashboard and under *Texte*. **Until
+  one of them chooses, no round can be activated**; rounds that are already active stay online, and teachers
+  see that the admins still have to choose. Choosing *operated privately* turns the school templates of
+  v1.7.0 back into the private ones, as long as nobody has edited them.
 
 Before going live:
 
-1. **Who is responsible:** at a state school the school is the controller, and the school management
-   decides to use TalkSlot. If someone else runs the server for the school (e.g. a volunteer with their own
-   hosting contract), the school needs an agreement under Art. 28 GDPR with that person (instructions,
-   confidentiality, the web host as sub-processor, handover of all access, deletion when operation ends),
-   or the school (or its school authority) concludes the hosting contract itself.
+1. **Who is responsible**, depending on the operator type:
+   - **Operated by the school:** the school is the controller, and the school management decides to use
+     TalkSlot. The template has a required placeholder for the school's data protection officer. If someone
+     else runs the server for the school (e.g. a volunteer with their own hosting contract), the school needs an
+     agreement under Art. 28 GDPR with that person (instructions, confidentiality, the web host as
+     sub-processor, handover of all access, deletion when operation ends), or the school (or its school
+     authority) concludes the hosting contract itself.
+   - **Operated privately:** the operator (you, your association or your organisation) is the controller;
+     teachers use the service for their parent meetings. Schools may have their own rules on which services
+     their teachers may use, so teachers should check with their school management or the school's data
+     protection officer. If a data protection officer has been appointed for the operator, name them in the
+     privacy policy instead of the sentence that none is appointed. The imprint template is written for a
+     private person: an association or independent provider adds the person authorised to represent it and,
+     if it has one, its register entry (section 5 DDG).
 2. **Controller:** fill in *Texte → Angaben für Impressum und Datenschutz*. These details replace
    `[[VERANTWORTLICHE]]`; without them no round is public.
 3. **Web host:** set `hosting` in the configuration (or `HOSTING_DE`/`HOSTING_EN` when deploying). It
    replaces `[[HOSTER]]`. Unset, the page shows the placeholders `[HOSTER MIT ANSCHRIFT]` and `[LAND]`
    (English: `[WEB HOST WITH ADDRESS]`, `[COUNTRY]`), and admins see a hint.
-4. **Remaining placeholders** in square brackets, in every language you keep a text for: contact details of
-   the data protection officer, the provisions of your state (school act, data protection act), the
-   retention of the web server logs (ask your web host) and the competent supervisory authority. The
-   school's data protection officer can tell you the provisions.
+4. **Remaining placeholders** in square brackets, in every language you keep a text for: the data
+   protection officer (contact details; for a private operator the check whether one is appointed), for a
+   school the provisions of your state (school act, data protection act), the retention of the web server
+   logs (ask your web host) and the competent supervisory authority. At a school, its data protection
+   officer can tell you the provisions.
 5. **Data processing agreement** (DPA, *AVV*) with your web host.
-6. **Admin accounts** only for school staff or for persons bound to confidentiality in writing: the privacy
-   policy tells parents that, apart from the teacher, only such persons can see their bookings.
+6. **Admin accounts** only for staff of the operator (at a school: school staff) or for persons bound to
+   confidentiality in writing: the privacy policy tells parents that, apart from the teacher, only such
+   persons can see their bookings.
 
 ### No activation while placeholders are open
 
 TalkSlot checks the stored imprint and privacy policy of every offered language as parents see them, i.e.
-with the controller details and the web host filled in. An open placeholder is text in square brackets
-without lower-case letters, at least four characters long, such as `[LAND]`. A Markdown link like
-`[PDF](https://…)` or mixed-case text like `[Hinweis]` does not count. As long as one is left:
+with the controller details and the web host filled in, whatever the operator type. An open placeholder is
+text in square brackets without lower-case letters, at least four characters long, such as `[LAND]`. A
+Markdown link like `[PDF](https://…)` or mixed-case text like `[Hinweis]` does not count. As long as one is
+left:
 
 - **No round can be activated:** neither a new active round, nor *Aktivieren* (*Activate*), nor assigning an
   active round to another teacher. The message names the affected texts.
@@ -159,10 +199,9 @@ without lower-case letters, at least four characters long, such as `[LAND]`. A M
   existing installation therefore does not go offline after an update: the dashboard announces the open
   placeholders, and only the next activation waits for them.
 
-On an update, texts that were never edited are replaced by the new templates (see
+On an update, texts that were never edited are replaced by the new templates of the operator type (see
 [Operations]({{ '/guide/operations/' | relative_url }})), new placeholders included. Edited texts stay as
-they are. If they still contain the old sentences about a "private service" without a data protection
-officer or about cancelling "at any time", a hint asks you to compare them with the new template.
+they are; the hints above ask you to compare them with the template.
 
-Have the texts reviewed by someone who knows your situation, ideally the school's data protection officer;
-the templates do not replace legal advice.
+Have the texts reviewed by someone who knows your situation, at a school ideally its data protection
+officer; the templates do not replace legal advice.

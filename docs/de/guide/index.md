@@ -15,7 +15,7 @@ einer MariaDB-Datenbank geschrieben und läuft auf gewöhnlichem Shared Hosting 
 |---|---|---|
 | **Eltern** | öffentliche Seiten | Terminrunde öffnen, Termin buchen, ihn über den persönlichen Link verschieben oder stornieren |
 | **Lehrkräfte** | `/admin` | Terminrunden anlegen, Buchungen ihrer eigenen Runden verwalten |
-| **Admins** | `/admin` | ein oder mehrere Konten: laden Lehrkräfte ein, sehen und bearbeiten alle Runden, legen Runden für Lehrkräfte an, pflegen Vorlagen, Impressum und Datenschutzerklärung für die Schule, die Verantwortliche im Sinne der DSGVO ist |
+| **Admins** | `/admin` | ein oder mehrere Konten: laden Lehrkräfte ein, sehen und bearbeiten alle Runden, legen Runden für Lehrkräfte an, pflegen Vorlagen, Impressum und Datenschutzerklärung für den Betreiber (die Schule oder die Privatperson, den Verein bzw. Träger, der TalkSlot betreibt), der Verantwortlicher im Sinne der DSGVO ist |
 | **Betreiber** | Server, GitHub | installiert, konfiguriert und aktualisiert TalkSlot (oft eine der Personen mit Admin-Konto) |
 
 Den Adminbereich gibt es auf Deutsch und Englisch (pro Konto). Elternseiten und E-Mails gibt es auf Deutsch, Englisch, Polnisch,

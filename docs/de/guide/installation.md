@@ -58,16 +58,23 @@ warnt die Übersicht die Admins.
 Öffnen Sie `https://your-site/install.php`, geben Sie den Installationsschlüssel ein und legen Sie das
 Admin-Konto an (Benutzername, Passwort mit 12 Zeichen bis 72 Byte, das nicht leicht zu erraten ist,
 E-Mail-Adresse; es gelten dieselben [Passwortregeln]({{ '/de/guide/security/' | relative_url }}) wie für
-alle Konten). Der Installer legt
-die Tabellen an, kopiert die Vorlagen für Impressum und Datenschutzerklärung in die Datenbank, sperrt
-sich selbst und versucht, sich zu löschen. Löschen Sie `public/install.php` selbst, falls die Datei noch
+alle Konten). Wählen Sie die **Betriebsart**: *von der Schule betrieben* (öffentliche Stelle) oder *privat
+betrieben* (Privatperson, Verein oder freier Träger, dessen Angebot Lehrkräfte nutzen). Danach richten sich
+die Vorlagen für Impressum und Datenschutzerklärung, siehe
+[Datenschutz und Recht]({{ '/de/guide/privacy/' | relative_url }}#von-der-schule-oder-privat-betrieben); ändern
+können Sie sie später unter *Texte*. Der Installer legt die Tabellen an, kopiert die Vorlagen dieser
+Betriebsart für Impressum und Datenschutzerklärung in die Datenbank, sperrt sich selbst und versucht, sich
+zu löschen. Löschen Sie `public/install.php` selbst, falls die Datei noch
 vorhanden ist.
 
 Mit Shell-Zugang können Sie stattdessen über die Kommandozeile installieren:
 
 ```bash
-php bin/install.php <username> [email]   # fragt nach dem Passwort
+php bin/install.php <username> [email]   # fragt nach dem Passwort und der Betriebsart (school oder private)
 ```
+
+In einem Skript übergeben Sie die drei Antworten über die Standardeingabe, je eine Zeile: Passwort,
+Passwort-Wiederholung, `school` oder `private`.
 
 ## 4. Cronjob einrichten
 
@@ -96,12 +103,13 @@ deshalb womöglich gar nicht verschickt (siehe
 ## 5. Rechtliche Angaben ausfüllen
 
 Melden Sie sich als Admin an und öffnen Sie *Texte*. Füllen Sie *Angaben für Impressum und
-Datenschutz* aus (Name der Schule oder Person, Anschrift, E-Mail). Bis dahin ist **keine Terminrunde
-öffentlich**. Prüfen Sie danach *Texte*: Die Datenschutzerklärung ist als Vorlage für eine öffentliche
-Schule installiert (die Vorlage für private Träger lässt sich im Formular des Textes laden). Impressum und
-Datenschutzerklärung enthalten Platzhalter in eckigen Klammern wie
-`[ZUSTÄNDIGE LANDESDATENSCHUTZBEHÖRDE MIT ADRESSE]` (Datenschutzbeauftragte, Vorschriften Ihres Landes,
-Speicherdauer der Server-Logs bei Ihrem Hoster, Aufsichtsbehörde), die Sie ersetzen müssen; bis dahin
+Datenschutz* aus (Name der Schule oder Person, Anschrift, E-Mail) und prüfen Sie dort die Betriebsart. Bis
+dahin ist **keine Terminrunde öffentlich**. Prüfen Sie danach *Texte*: Impressum und Datenschutzerklärung
+sind aus den Vorlagen der Betriebsart installiert (die Vorlagen der anderen Betriebsart lassen sich im
+Formular des Textes laden). Sie enthalten Platzhalter in eckigen Klammern wie
+`[ZUSTÄNDIGE LANDESDATENSCHUTZBEHÖRDE MIT ADRESSE]` (Datenschutzbeauftragte, bei einer Schule die
+Vorschriften Ihres Landes, Speicherdauer der Server-Logs bei Ihrem Hoster, Aufsichtsbehörde), die Sie
+ersetzen müssen; bis dahin
 **lässt sich keine Runde aktivieren**. Siehe [Datenschutz und Recht]({{ '/de/guide/privacy/' | relative_url }}).
 
 ## Checkliste für den Livegang
@@ -113,7 +121,8 @@ Speicherdauer der Server-Logs bei Ihrem Hoster, Aufsichtsbehörde), die Sie erse
 - [ ] Testbuchung mit E-Mail-Adresse: Die E-Mail kommt an und wird nicht als Spam markiert
 - [ ] Admin-Angaben, Impressum und Datenschutzerklärung vollständig in allen angebotenen Sprachen (keine
       Platzhalter in eckigen Klammern mehr; das Dashboard zeigt keinen Hinweis)
-- [ ] Auftragsverarbeitungsvertrag (AVV) mit Ihrem Hoster; betreibt nicht die Schule selbst den Server,
-      eine Vereinbarung nach Art. 28 DSGVO zwischen der Schule und der betreibenden Person
+- [ ] Betriebsart unter *Texte* stimmt damit überein, wer TalkSlot tatsächlich betreibt (Schule oder privat)
+- [ ] Auftragsverarbeitungsvertrag (AVV) mit Ihrem Hoster; ist die Schule Betreiberin, betreibt aber
+      jemand anderes den Server, eine Vereinbarung nach Art. 28 DSGVO zwischen der Schule und dieser Person
 - [ ] Einladung einer Lehrkraft getestet; eine Testrunde auf dem Handy gebucht, verschoben und
       storniert, danach gelöscht

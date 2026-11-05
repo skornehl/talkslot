@@ -28,7 +28,8 @@ dev/demo.sh        # optional: three demo rounds with bookings
 | Admin area | <http://localhost:8080/admin> | user `sabrina`, password `Sehr-Sicheres-Dev-Pw1` |
 | Mails | <http://localhost:8025> | Mailpit |
 
-`dev/reset.sh` drops all tables and installs again; run it whenever you want a clean state.
+`dev/reset.sh` drops all tables and installs again (as *operated by the school*); run it whenever you want
+a clean state.
 
 ## A first tour
 

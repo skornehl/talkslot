@@ -123,49 +123,91 @@ Datenschutzbeauftragte, Zwecke, Rechtsgrundlagen, Empfänger, Drittländer, Spei
 einschließlich des Widerspruchsrechts, Beschwerderecht bei einer Aufsichtsbehörde, ob die Bereitstellung
 der Daten erforderlich ist, sowie automatisierte Entscheidungsfindung.
 
-Die Datenschutzerklärung gibt es in zwei Varianten. Im Formular des Textes setzt *Vorlage laden* die
-passende ein; den gespeicherten Text ersetzt sie erst beim Speichern.
+### Von der Schule oder privat betrieben
 
-| Variante | Für | Rechtsgrundlagen |
-|---|---|---|
-| *Öffentliche Schule* (installiert) | eine staatliche Schule als Verantwortliche | Art. 6 Abs. 1 lit. e, Abs. 3 DSGVO in Verbindung mit dem Schulgesetz Ihres Landes (Buchung, E-Mails, Zusammenfassungen) und dem Landesdatenschutzgesetz (Missbrauchsschutz, Server-Protokolle); Widerspruchsrecht nach Art. 21, kein Recht auf Datenübertragbarkeit (Art. 20 Abs. 3) |
-| *Privater Träger* | z. B. Schule in freier Trägerschaft, Förderverein | Art. 6 Abs. 1 lit. b und f DSGVO; Widerspruchsrecht für lit. f, Recht auf Datenübertragbarkeit |
+TalkSlot lässt sich an einer Schule nutzen, ohne dass die Schule es betreibt. Wer es betreibt, entscheidet,
+wer Verantwortlicher ist, welche Rechtsgrundlagen gelten und was im Impressum steht. Der Installer fragt
+deshalb die **Betriebsart** ab; Admins können sie später unter *Texte → Angaben für Impressum und
+Datenschutz* ändern.
+
+| Betriebsart | Verantwortlich | Vorlage der Datenschutzerklärung | Vorlage des Impressums |
+|---|---|---|---|
+| *Wird von der Schule betrieben*: eine staatliche Schule als öffentliche Stelle | die Schule | Art. 6 Abs. 1 lit. e, Abs. 3 DSGVO in Verbindung mit dem Schulgesetz Ihres Landes (Buchung, E-Mails, Zusammenfassungen) und dem Landesdatenschutzgesetz (Missbrauchsschutz, Server-Protokolle); Datenschutzbeauftragte der Schule; Widerspruchsrecht nach Art. 21, kein Recht auf Datenübertragbarkeit (Art. 20 Abs. 3) | die Schule als Anbieter |
+| *Wird privat betrieben*: eine Privatperson, ein Verein oder ein freier Träger (z. B. eine Schule in freier Trägerschaft) | der Betreiber; Lehrkräfte nutzen das Angebot | Art. 6 Abs. 1 lit. b und f DSGVO; Widerspruchsrecht für lit. f, Recht auf Datenübertragbarkeit; bei Privatpersonen in der Regel keine Datenschutzbeauftragte, mit einem Platzhalter, um das zu prüfen | ein privates, nicht kommerzielles Angebot (wie bis v1.5) |
 
 Behörden können sich bei der Erfüllung ihrer Aufgaben nicht auf berechtigte Interessen stützen (Art. 6
 Abs. 1 Unterabs. 2 DSGVO), und Gespräche an einer staatlichen Schule gehören zu ihren gesetzlichen Aufgaben,
-nicht zu einem Vertrag. Deshalb nennt die Variante für öffentliche Schulen das Landesrecht. Welche
-Vorschriften gelten, ist von Land zu Land verschieden; die Vorlage lässt sie deshalb als Platzhalter offen.
+nicht zu einem Vertrag. Deshalb nennt die Vorlage für Schulen das Landesrecht. Welche Vorschriften gelten,
+ist von Land zu Land verschieden; die Vorlage lässt sie deshalb als Platzhalter offen.
+
+**Die Vorlagen folgen der Betriebsart.** Der Installer speichert die Vorlagen der gewählten Betriebsart.
+Ändert ein Admin die Betriebsart, wird jeder Text, der noch unverändert einer Vorlage entspricht (beider
+Betriebsarten, aktuell oder früher), durch die Vorlage der neuen Betriebsart ersetzt, und die Meldung nennt
+die Anzahl; bearbeitete Texte werden nie ersetzt. Das Protokoll hält fest, wer die Betriebsart wann
+festgelegt hat (Rechenschaftspflicht, Art. 5 Abs. 2 DSGVO): jede Änderung durch einen Admin mit der Zahl der
+ersetzten Texte, eine beim Update übernommene Betriebsart (eingetragen als *TalkSlot*) und den Admin, der sie
+danach bestätigt hat, sowie Texte, die bei einem Update durch neuere Vorlagen ersetzt wurden. Im Formular
+eines Textes bietet *Vorlage laden* die
+Vorlagen beider Betriebsarten an, die zur Betriebsart passende zuerst; den gespeicherten Text ersetzt sie
+erst beim Speichern. Hinweise gleichen die Texte mit der Betriebsart ab:
+
+- **Von der Schule betrieben:** ein Hinweis, wenn ein Text noch der alten Vorlage folgt („privates Angebot“
+  ohne Datenschutzbeauftragte, Absagen „jederzeit“) oder sich auf Art. 6 Abs. 1 lit. b oder f DSGVO stützt.
+- **Privat betrieben:** ein Hinweis, wenn ein Text die Vorlage für Schulen enthält (Art. 6 Abs. 1 lit. e
+  DSGVO, Schulgesetz, Datenschutzbeauftragte der Schule) oder noch sagt, Eltern könnten „jederzeit“ absagen.
+
+**Installationen aus der Zeit vor der Betriebsart** erhalten sie beim ersten Aufruf nach dem Update:
+
+- Entsprechen alle Texte noch unverändert den Vorlagen bis v1.6, die ein privates Angebot beschrieben,
+  wird die Betriebsart *privat betrieben* (die bisherige Bedeutung) und die Datenschutzerklärung die
+  aktuelle Vorlage dafür. Das Dashboard weist darauf hin, bis ein Admin die Angaben einmal gespeichert hat.
+- Sonst (bearbeitete Texte oder die unveränderten Vorlagen für Schulen, die v1.7.0 eingesetzt hat) wird
+  keine Betriebsart gesetzt: Admins sehen im Dashboard und unter *Texte* „Bitte Betriebsart wählen“.
+  **Bis einer von ihnen wählt, lässt sich keine Runde aktivieren**; bereits aktive Runden bleiben
+  erreichbar, und Lehrkräfte sehen, dass die Admins noch wählen müssen. Wer *privat betrieben* wählt,
+  bekommt die von v1.7.0 eingesetzten Vorlagen für Schulen wieder als private Vorlagen zurück, solange
+  niemand sie bearbeitet hat.
 
 Vor dem Start:
 
-1. **Wer verantwortlich ist:** An einer staatlichen Schule ist die Schule Verantwortliche, und die
-   Schulleitung beschließt den Einsatz. Betreibt jemand anderes den Server für die Schule (z. B. eine
-   ehrenamtliche Person mit eigenem Hostingvertrag), braucht die Schule mit dieser Person eine Vereinbarung
-   nach Art. 28 DSGVO (Weisungen, Vertraulichkeit, Hoster als Unterauftragsverarbeiter, Übergabe aller
-   Zugänge, Löschung bei Betriebsende), oder die Schule bzw. der Schulträger schließt den Hostingvertrag
-   selbst ab.
+1. **Wer verantwortlich ist**, je nach Betriebsart:
+   - **Von der Schule betrieben:** Die Schule ist Verantwortliche, und die Schulleitung beschließt den
+     Einsatz. Die Vorlage hat einen Pflicht-Platzhalter für die oder den Datenschutzbeauftragten der Schule.
+     Betreibt jemand anderes den Server für die Schule (z. B. eine ehrenamtliche Person mit eigenem
+     Hostingvertrag), braucht die Schule mit dieser Person eine Vereinbarung nach Art. 28 DSGVO (Weisungen,
+     Vertraulichkeit, Hoster als Unterauftragsverarbeiter, Übergabe aller Zugänge, Löschung bei
+     Betriebsende), oder die Schule bzw. der Schulträger schließt den Hostingvertrag selbst ab.
+   - **Privat betrieben:** Der Betreiber (Sie selbst, Ihr Verein oder Ihr Träger) ist Verantwortlicher;
+     Lehrkräfte nutzen das Angebot für ihre Elterngespräche. Schulen können eigene Vorgaben haben, welche
+     Dienste ihre Lehrkräfte nutzen dürfen; Lehrkräfte sollten das mit ihrer Schulleitung oder der oder dem
+     Datenschutzbeauftragten der Schule klären. Ist für den Betreiber eine Datenschutzbeauftragte bzw. ein
+     Datenschutzbeauftragter benannt, nennen Sie sie bzw. ihn in der Datenschutzerklärung statt des Satzes,
+     dass niemand benannt ist. Die Vorlage des Impressums ist auf eine Privatperson zugeschnitten: Ein Verein
+     oder freier Träger ergänzt die vertretungsberechtigte Person und, falls vorhanden, den Registereintrag
+     (§ 5 DDG).
 2. **Verantwortlicher:** Füllen Sie *Texte → Angaben für Impressum und Datenschutz* aus. Diese
    Angaben ersetzen `[[VERANTWORTLICHE]]`; ohne sie ist keine Runde öffentlich.
 3. **Hoster:** Setzen Sie `hosting` in der Konfiguration (bzw. `HOSTING_DE`/`HOSTING_EN` beim Deployment).
    Der Wert ersetzt `[[HOSTER]]`. Ist er nicht gesetzt, zeigt die Seite die Platzhalter
    `[HOSTER MIT ANSCHRIFT]` und `[LAND]` (englisch `[WEB HOST WITH ADDRESS]`, `[COUNTRY]`), und Admins
    erhalten einen Hinweis.
-4. **Verbleibende Platzhalter** in eckigen Klammern, in jeder Sprache, für die es einen Text gibt:
-   Kontaktdaten der oder des Datenschutzbeauftragten, die Vorschriften Ihres Landes (Schulgesetz,
-   Landesdatenschutzgesetz), die Speicherdauer der Webserver-Logs (fragen Sie Ihren Hoster) und die
-   zuständige Aufsichtsbehörde. Die Vorschriften nennt Ihnen die oder der Datenschutzbeauftragte der Schule.
+4. **Verbleibende Platzhalter** in eckigen Klammern, in jeder Sprache, für die es einen Text gibt: die oder
+   der Datenschutzbeauftragte (Kontaktdaten; bei privatem Betrieb die Prüfung, ob jemand benannt ist), bei
+   einer Schule die Vorschriften Ihres Landes (Schulgesetz, Landesdatenschutzgesetz), die Speicherdauer der
+   Webserver-Logs (fragen Sie Ihren Hoster) und die zuständige Aufsichtsbehörde. An einer Schule nennt
+   Ihnen die oder der Datenschutzbeauftragte die Vorschriften.
 5. **Auftragsverarbeitungsvertrag** (AVV) mit Ihrem Hoster.
-6. **Admin-Konten** nur für Personal der Schule oder für schriftlich zur Vertraulichkeit verpflichtete
-   Personen: Die Datenschutzerklärung sagt Eltern zu, dass außer der Lehrkraft nur solche Personen ihre
-   Buchungen sehen.
+6. **Admin-Konten** nur für Personal des Betreibers (an einer Schule: Personal der Schule) oder für
+   schriftlich zur Vertraulichkeit verpflichtete Personen: Die Datenschutzerklärung sagt Eltern zu, dass
+   außer der Lehrkraft nur solche Personen ihre Buchungen sehen.
 
 ### Keine Aktivierung bei offenen Platzhaltern
 
 TalkSlot prüft Impressum und Datenschutzerklärung aller angebotenen Sprachen so, wie Eltern sie sehen,
-also mit eingesetzten Angaben zur verantwortlichen Stelle und zum Hoster. Ein offener Platzhalter ist Text
-in eckigen Klammern ohne Kleinbuchstaben und mit mindestens vier Zeichen, etwa `[LAND]`. Ein
-Markdown-Link wie `[PDF](https://…)` oder Text in gemischter Schreibung wie `[Hinweis]` zählt nicht.
-Solange einer übrig ist:
+also mit eingesetzten Angaben zur verantwortlichen Stelle und zum Hoster, in beiden Betriebsarten. Ein
+offener Platzhalter ist Text in eckigen Klammern ohne Kleinbuchstaben und mit mindestens vier Zeichen, etwa
+`[LAND]`. Ein Markdown-Link wie `[PDF](https://…)` oder Text in gemischter Schreibung wie `[Hinweis]` zählt
+nicht. Solange einer übrig ist:
 
 - **Keine Runde lässt sich aktivieren:** weder eine neue aktive Runde noch über *Aktivieren* noch durch
   Zuordnen einer aktiven Runde zu einer anderen Lehrkraft. Die Meldung nennt die betroffenen Texte.
@@ -175,11 +217,9 @@ Solange einer übrig ist:
   bestehende Installation geht nach einem Update also nicht offline: Das Dashboard kündigt die offenen
   Platzhalter an, und erst die nächste Aktivierung wartet darauf.
 
-Bei einem Update werden nie bearbeitete Texte durch die neuen Vorlagen ersetzt (siehe
+Bei einem Update werden nie bearbeitete Texte durch die neuen Vorlagen der Betriebsart ersetzt (siehe
 [Betrieb]({{ '/de/guide/operations/' | relative_url }})), einschließlich neuer Platzhalter. Bearbeitete
-Texte bleiben, wie sie sind. Enthalten sie noch die alten Sätze zum „privaten Angebot“ ohne
-Datenschutzbeauftragte oder zum Absagen „jederzeit“, bittet ein Hinweis, sie mit der neuen Vorlage
-abzugleichen.
+Texte bleiben, wie sie sind; die Hinweise oben bitten darum, sie mit der Vorlage abzugleichen.
 
-Lassen Sie die Texte von jemandem prüfen, der Ihre Situation kennt, am besten von der oder dem
-Datenschutzbeauftragten der Schule; die Vorlagen ersetzen keine Rechtsberatung.
+Lassen Sie die Texte von jemandem prüfen, der Ihre Situation kennt, an einer Schule am besten von der oder
+dem Datenschutzbeauftragten der Schule; die Vorlagen ersetzen keine Rechtsberatung.

@@ -1,14 +1,16 @@
-<?php /** @var string $key @var string $lang @var string $content @var list<string> $variants @var ?string $loaded */ use App\Csrf;
-$labels = ['default' => __('Vorlage'), 'public' => __('Öffentliche Schule'), 'private' => __('Privater Träger')]; ?>
+<?php /** @var string $key @var string $lang @var string $content @var list<string> $variants @var ?string $loaded @var ?string $type */ use App\Csrf;
+$labels = ['school' => __('Von der Schule betrieben'), 'private' => __('Privat betrieben')]; ?>
 <p class="breadcrumb"><a href="<?= e(url('/admin/texts')) ?>"><?= e(__('Texte')) ?></a> › <?= e($title) ?></p>
 <h1><?= e($title) ?></h1>
 <?php if ($loaded !== null): ?>
-  <div class="alert alert-info" role="status"><p><?= e(__('Vorlage „{name}“ geladen. Sie ersetzt den gespeicherten Text erst, wenn Sie speichern. Ersetzen Sie danach alle Platzhalter in eckigen Klammern.', ['name' => $labels[$loaded]])) ?></p></div>
+  <div class="alert alert-info" role="status"><p><?= e(__('Vorlage „{name}“ geladen. Sie ersetzt den gespeicherten Text erst, wenn Sie speichern. Ersetzen Sie danach alle Platzhalter in eckigen Klammern.', ['name' => $labels[$loaded]])) ?><?= $type !== null && $loaded !== $type ? ' <strong>' . e(__('Sie passt nicht zur gewählten Betriebsart „{type}“.', ['type' => $labels[$type]])) . '</strong>' : '' ?></p></div>
 <?php endif; ?>
 <?php if ($variants): ?>
   <p class="small"><?= e(__('Vorlage laden:')) ?>
-    <?php foreach ($variants as $i => $v): ?><?= $i > 0 ? ' · ' : '' ?><a href="<?= e(url('/admin/page/' . $key . '/' . $lang, ['template' => $v])) ?>"><?= e($labels[$v]) ?></a><?php endforeach; ?>
-    <?php if ($key === 'privacy'): ?><br><?= e(__('Öffentliche Schule: Rechtsgrundlage Art. 6 Abs. 1 lit. e DSGVO in Verbindung mit dem Schulgesetz des Landes. Privater Träger (z. B. Schule in freier Trägerschaft, Förderverein): Art. 6 Abs. 1 lit. b und f DSGVO.')) ?><?php endif; ?>
+    <?php foreach ($variants as $i => $v): ?><?= $i > 0 ? ' · ' : '' ?><a href="<?= e(url('/admin/page/' . $key . '/' . $lang, ['template' => $v])) ?>"><?= e($labels[$v]) ?></a><?= $v === $type ? ' ' . e(__('(passend zur Betriebsart)')) : '' ?><?php endforeach; ?>
+    <br><?= e($key === 'privacy'
+        ? __('Von der Schule betrieben: Rechtsgrundlage Art. 6 Abs. 1 lit. e DSGVO in Verbindung mit dem Schulgesetz des Landes. Privat betrieben (Privatperson, Verein, freier Träger): Art. 6 Abs. 1 lit. b und f DSGVO.')
+        : __('Von der Schule betrieben: Impressum der Schule als öffentliche Stelle. Privat betrieben: Impressum eines privaten, nicht kommerziellen Angebots.')) ?>
   </p>
 <?php endif; ?>
 <form method="post" action="<?= e(url('/admin/page/' . $key . '/' . $lang)) ?>" class="card form-grid">

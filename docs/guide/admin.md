@@ -5,8 +5,9 @@ description: Admin accounts set up the platform, invite teachers, see all rounds
 
 The first **admin account** is created during installation; it can make further accounts admins. Admins
 see and edit all rounds, create rounds for teachers, manage the accounts and maintain the legal texts. The
-operator of the platform (usually the school) is the controller under the GDPR for all rounds; teachers use
-the platform on its behalf. The admin area is available in German and English (*Mein Profil* →
+operator of the platform is the controller under the GDPR for all rounds: the school if it runs TalkSlot
+itself, otherwise the private person, association or independent provider whose service the teachers use
+(the *Betriebsart*, operator type, under *Texte*). The admin area is available in German and English (*Mein Profil* →
 *Sprache / Language*); labels below are the German ones, with the English label in brackets.
 
 ![Admin overview of all rounds]({{ '/assets/img/admin-dashboard.webp' | relative_url }})
@@ -15,14 +16,14 @@ the platform on its behalf. The admin area is available in German and English (*
 
 1. **Profile** (*Mein Profil*): enter your display name (shown to parents for your own rounds) and your
    e-mail address.
-2. **Details for imprint and privacy policy** (*Texte → Angaben für Impressum und Datenschutz*): name of
-   the school, who represents it, full address and e-mail address. This text replaces
-   `[[VERANTWORTLICHE]]` in both legal pages and is shared by all admins. Without it **no round is
-   publicly reachable**.
-3. **Legal texts** (*Texte*): for the privacy policy, load the template that fits (*Öffentliche Schule* /
-   *Public school* or *Privater Träger* / *Private operator*), review imprint and privacy policy for every
-   language and replace the remaining `[PLACEHOLDERS]`. Until then no round can be activated. Details in
-   [Privacy and legal]({{ '/guide/privacy/' | relative_url }}).
+2. **Details for imprint and privacy policy** (*Texte → Angaben für Impressum und Datenschutz*): check the
+   **operator type** (*Betriebsart*: *Wird von der Schule betrieben* / *Operated by the school* or *Wird
+   privat betrieben* / *Operated privately*, chosen during installation) and enter the name of the school or
+   operator, who represents it, full address and e-mail address. This text replaces `[[VERANTWORTLICHE]]` in
+   both legal pages and is shared by all admins. Without it **no round is publicly reachable**.
+3. **Legal texts** (*Texte*): imprint and privacy policy come from the templates of the operator type.
+   Review them for every language and replace the remaining `[PLACEHOLDERS]`. Until then no round can be
+   activated. Details in [Privacy and legal]({{ '/guide/privacy/' | relative_url }}).
 4. **Mail check:** *Texte → E-Mail-Versand* shows the transport and sender. Make a test booking with your
    own e-mail address and check that the confirmation arrives (and is not marked as spam).
 5. **Templates** (*Vorlagen*, optional): set up the usual formats once, e.g. your parent-teacher day.
@@ -118,7 +119,9 @@ rounds created with it.
 *Protokoll* (log) lists the changes made by admin accounts, newest first: who created, edited,
 (de)activated, duplicated, moved to another teacher or deleted which round, changed days, breaks, blocked
 slots or bookings, created, changed or deleted accounts and roles, sent links, and edited templates or
-legal texts. With several admins this makes it traceable who did what.
+legal texts. With several admins this makes it traceable who did what. Changes TalkSlot makes itself on an
+update are entered as *TalkSlot*: an operator type taken over from unedited templates and legal texts
+replaced by newer templates. The admin who then saves the operator type is logged as confirming it.
 
 The log does **not** record what teachers do in their own rounds, and it never contains data of parents:
 a booking appears only as date and time (e.g. "Buchung 12.11.2026 14:00 gelöscht"). Entries are deleted
@@ -134,14 +137,22 @@ simple Markdown (headings with `#`, lists, bold, links). Two placeholders are fi
 | `[[VERANTWORTLICHE]]` | the details for imprint and privacy policy (*Angaben für Impressum und Datenschutz*, at the top of *Texte*) |
 | `[[HOSTER]]` | the web host from the configuration (`hosting`) |
 
-Languages without their own version fall back to English. *Vorlage laden* (*Load template*) on the text
-form puts a template into the form, for the privacy policy either *Öffentliche Schule* (*Public school*,
-installed) or *Privater Träger* (*Private operator*); the stored text only changes when you save.
+Languages without their own version fall back to English. Both texts have one template per **operator
+type** (*Von der Schule betrieben* / *Operated by the school*, *Privat betrieben* / *Operated privately*).
+*Vorlage laden* (*Load template*) on the text form puts one of them into the form, the one of the operator
+type first; the stored text only changes when you save. If you change the operator type at the top of
+*Texte*, TalkSlot replaces every text that is still an unedited template by the templates of the new type
+and tells you how many; edited texts stay as they are. The change is recorded in the log.
+
+If no operator type is chosen (installations from before it, with edited texts), the dashboard shows
+*Bitte Betriebsart wählen* (*Please choose the operator type*), and no round can be activated until an
+admin chooses one; rounds that are already active stay online.
 
 Details only you can provide are `[PLACEHOLDERS]` in square brackets. As long as a text of an offered
 language still contains one, no round can be activated; rounds that are already active stay online. Hints
 on the dashboard and under *Texte* list the open placeholders per text and tell you when a text is missing
-a placeholder or is outdated.
+a placeholder, is outdated or does not fit the operator type (e.g. the legal bases of the school template
+when TalkSlot is operated privately).
 
 ## Notifications
 

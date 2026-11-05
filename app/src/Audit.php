@@ -8,8 +8,9 @@ namespace App;
  * makes it traceable who e.g. moved a round to another teacher or changed a role.
  *
  * Only actions of admins are recorded, not those of teachers in their own rounds (no monitoring
- * of the teaching staff). Entries contain no data of parents (e.g. "Buchung 12.11.2026 14:00
- * gelöscht", without the name) and are deleted after audit_log_days (default 90, see Cleanup).
+ * of the teaching staff), plus changes the application makes itself on an update (system()).
+ * Entries contain no data of parents (e.g. "Buchung 12.11.2026 14:00 gelöscht", without the
+ * name) and are deleted after audit_log_days (default 90, see Cleanup).
  */
 final class Audit
 {
@@ -22,6 +23,21 @@ final class Audit
         Db::run(
             'INSERT INTO audit_log (created_at, user_id, actor, message) VALUES (?, ?, ?, ?)',
             [Time::nowSql(), (int) $user['id'], $user['display_name'] !== '' ? $user['display_name'] : $user['username'], mb_substr($message, 0, 1000)]
+        );
+    }
+
+    /** Name in the log for changes the application made itself, e.g. on an update (no account). */
+    public const SYSTEM = 'TalkSlot';
+
+    /**
+     * Logs a change the application made itself, not an admin, e.g. the operator type taken over on an update
+     * (accountability, Art. 5(2) GDPR). $message is written in the default language of the admin area.
+     */
+    public static function system(\Closure $message): void
+    {
+        Db::run(
+            'INSERT INTO audit_log (created_at, user_id, actor, message) VALUES (?, NULL, ?, ?)',
+            [Time::nowSql(), self::SYSTEM, mb_substr(AdminI18n::with(AdminI18n::default(), $message), 0, 1000)]
         );
     }
 

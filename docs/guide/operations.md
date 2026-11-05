@@ -26,10 +26,18 @@ first and switches back to the previous version if one fails, if the database ca
 is not MariaDB 10.6 or newer.
 
 Migrations only add columns (with defaults) and tables, so a rollback to an older version keeps working.
-Imprint and privacy texts that were never edited are replaced by newer templates automatically; edited
-texts stay untouched and admins see a hint under *Texte* when something needs attention. If a new template
-brings new `[PLACEHOLDERS]`, rounds that are already active stay online; the dashboard lists the
-placeholders, and the next round can only be activated once they are filled in.
+Imprint and privacy texts that were never edited are replaced by newer templates of the operator type
+(operated by the school or privately) automatically; edited texts stay untouched and admins see a hint under
+*Texte* when something needs attention. If a new template brings new `[PLACEHOLDERS]`, rounds that are
+already active stay online; the dashboard lists the placeholders, and the next round can only be activated
+once they are filled in.
+
+**Update to the version with the operator type:** an installation whose texts are all still unedited
+templates up to v1.6 becomes *operated privately* (what those templates described), and the dashboard tells
+the admins. Every other installation has no operator type afterwards: admins see *Bitte Betriebsart wählen*
+on the dashboard, and **no round can be activated until an admin has chosen it** under *Texte*. Rounds that
+are already active stay online. Plan a minute for this right after the update, see
+[Privacy and legal]({{ '/guide/privacy/' | relative_url }}#operated-by-the-school-or-privately).
 
 ## Error alerts
 
