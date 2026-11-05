@@ -15,6 +15,7 @@ app/              Anwendung (außerhalb des Document Roots)
   src/Controller  PublicController (Eltern), AdminController (/admin)
   templates/      HTML-Templates; pages/*.md sind die Rechtstext-Vorlagen
   lang/           Übersetzungen für die Elternseiten, eine Datei pro Sprache
+  lang/admin/en/  englische Texte des Admin-Bereichs, ein Wörterbuch pro Thema (der deutsche Text ist der Schlüssel)
   vendor/         PHPMailer (mitgeliefert, nur für SMTP genutzt)
   var/            Laufzeitdaten: Sessions, Lock-Datei, Fehler-Log
   schema.sql      Datenbankschema für Neuinstallationen
@@ -30,10 +31,14 @@ tests/            unit.php, smoke.sh, browser.mjs, deploy.sh
 
 ```bash
 php tests/unit.php      # Unit-Tests, keine Datenbank nötig; die CI führt sie unter PHP 8.3, 8.4 und 8.5 aus
-tests/smoke.sh          # ~300 End-to-End-Prüfungen gegen das Docker-Setup (vorher dev/reset.sh)
+tests/smoke.sh          # mehrere hundert End-to-End-Prüfungen gegen das Docker-Setup (vorher dev/reset.sh)
 node tests/browser.mjs  # das JavaScript in Headless-Chrome (vorher dev/reset.sh && dev/demo.sh)
 tests/deploy.sh         # das atomare Deployment über lftp file:// unter Last, Zurückschalten bei Fehlern (braucht lftp, openssl und die Datenbank)
 ```
+
+`tests/unit.php` bindet jede Datei aus `tests/unit.d/` ein, `tests/smoke.sh` jede aus `tests/smoke.d/`
+(eine Datei pro Thema, siehe die `README.md` dort), damit Arbeiten an verschiedenen Themen nicht dieselben
+Zeilen ändern.
 
 Der Smoke-Test deckt ab: Login und Sperre, Kontoverwaltung, Datentrennung zwischen Lehrkräften, CSRF,
 Honeypot, XSS-Escaping, SQL-Injection, 20 parallele Buchungen auf einen Termin (genau eine gelingt),
@@ -58,9 +63,19 @@ Syntaxfehlers.
 
 ## Konventionen
 
-- **Sprache:** Code, Kommentare, Commits und Dokumentation auf Englisch. Der Admin-Bereich ist deutsch;
-  die Elternseiten nutzen `app/lang/*.php`, und jeder Schlüssel muss in jeder Sprache vorhanden sein (ein
-  Unit-Test prüft das).
+- **Sprache:** Code, Kommentare, Commits und Dokumentation auf Englisch (die deutsche Anleitung in `docs/de/`
+  auf Deutsch). Der Admin-Bereich ist je Konto deutsch oder englisch, die Elternseiten gibt es in sechs Sprachen.
+- **Admin-Texte** stehen im Code auf Deutsch und laufen durch `__()`: `__('Runde gespeichert.')` gibt den
+  deutschen Text unverändert zurück und für ein englisches Konto den Eintrag aus den Wörterbüchern in
+  `app/lang/admin/en/*.php` (eine Datei pro Thema; alle werden zusammengeführt, ein Text braucht also nur
+  einen Eintrag). Platzhalter werden in beiden Sprachen gefüllt: `__('{count} Termine', ['count' => $n])`.
+  `__h()` macht dasselbe für HTML und setzt die Werte unmaskiert ein (für Links, die der Aufrufer selbst
+  gebaut und maskiert hat). JavaScript im Admin-Bereich nutzt `L('…')` mit `app/lang/admin/en/js.php`. Ein
+  Unit-Test schlägt fehl bei einem Text ohne englischen Eintrag, bei einem Eintrag, den niemand nutzt, und
+  bei abweichenden Platzhaltern. E-Mails an ein Konto folgen dessen Sprache (`AdminI18n::with()`).
+- **Elterntexte** laufen durch `t('schlüssel')` mit `app/lang/{de,en,pl,ru,tr,uk}.php`; jeder Schlüssel muss
+  in jeder Sprache vorhanden sein (ein Unit-Test prüft das). Neue polnische, russische, türkische und
+  ukrainische Texte sollten Muttersprachler gegenlesen.
 - **Commits:** [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `docs:`, …);
   Releases werden daraus abgeleitet.
 - **Datenbank:** ausschließlich Prepared Statements; das SQL-Audit im Unit-Test schlägt bei
@@ -70,9 +85,8 @@ Syntaxfehlers.
   ohne bekannte Rolle ist nur für Admins erreichbar. GET-Routen dürfen keine Daten verändern; der Smoke-Test
   ruft jede GET-Route der Tabelle auf und schlägt bei einem Platzhalter fehl, den er noch nicht füllen kann
   (dann die IDs in `tests/smoke.d/security.sh` ergänzen).
-- **Migrationen** (`app/src/Migrations.php`) fügen nur Spalten mit Standardwerten und Tabellen hinzu, damit
-  ein Rollback auf eine ältere Version weiter funktioniert. Erhöhen Sie `LATEST`, fügen Sie den Schritt
-  hinzu und aktualisieren Sie `schema.sql`.
+- **Migrationen** (`app/src/Migrations.php`) sind additiv, damit ein Rollback auf die vorige Version weiter
+  funktioniert; die Regeln stehen unten unter [Migrationen](#migrationen).
 - **Rechtstext-Vorlagen:** Aktualisieren Sie nach einer Änderung an `app/templates/pages/*.md` die
   `CURRENT_PAGE_HASHES` und verschieben Sie die alten Hashes nach `OLD_PAGE_HASHES`, damit unbearbeitete
   Texte automatisch aktualisiert werden. Der Unit-Test nennt Ihnen die neuen Hashes. Für bearbeitete Texte
@@ -103,6 +117,106 @@ Syntaxfehlers.
   `composer.lock` führen es nur auf, damit Dependabot neue Versionen und Sicherheitswarnungen meldet;
   Composer wird nie ausgeführt. Hebt Dependabot die Version an, führen Sie auf seinem Branch
   `bin/update-vendor.sh` aus und committen `app/vendor/`; bis beides übereinstimmt, schlägt der Unit-Test fehl.
+
+## Architektur
+
+### Ablauf einer Anfrage
+
+Jede Anfrage, die keine Datei unter `public/` trifft, landet in `public/index.php`. Die Datei lädt
+`app/bootstrap.php` (Konfiguration, Autoloader, Fehlerbehandlung; `App\Platform` weist ein zu altes PHP ab) und
+ruft `App::run()` auf:
+
+1. Weiterleitung auf HTTPS (`force_https`) und die Sicherheits-Header.
+2. Auf einem installierten System: `Migrations::run()` bringt die Datenbank auf den neuesten Stand (immer nur
+   eine Anfrage, unter `GET_LOCK`), danach folgen die gespeicherten Rechtstexte neueren Vorlagen;
+   `Cleanup::maybeRun()` übernimmt die Bereinigung, falls kein Cronjob läuft (höchstens alle
+   `cleanup_interval_minutes`, reserviert per Compare-and-Set auf `settings.last_cleanup`); nach der Antwort
+   gehen fällige E-Mails der Warteschlange hinaus. Ein Fehler in diesem Schritt löst eine Fehler-E-Mail aus,
+   blockiert die Seite aber nicht.
+3. Ein Formular, das von einer anderen Website abgeschickt wurde, bekommt 403, bevor etwas verarbeitet wird.
+4. `POST /cron` mit `X-Cron-Token` und `POST /health` mit `X-Health-Token` sind der Web-Cron und die
+   Prüfung des Deployments; ohne den Header sind diese Pfade gewöhnliche Rundenadressen.
+5. `/admin…` geht an `AdminController::dispatch()` (Session, CSRF-Token, Routentabelle mit Rollen), alles
+   andere an `PublicController::dispatch()` (Sprache aus `?lang=`, dem Formular oder dem Browser).
+
+Die Controller geben Templates mit `View::render()` aus, das die Variablen an das Template übergibt; jede
+Ausgabe läuft über `e()`.
+
+### Sperrreihenfolge
+
+Schreibzugriffe, die Buchungen betreffen, sperren Zeilen in einer festen Reihenfolge: **Runde → ihre Tage →
+Termine (mit ihrem Tag) → Buchungen**. Eine Buchung läuft in `Db::transaction()`: Mit Buchungslimit sperrt sie
+die Runde (`BookingService::lockForLimit()`), dann den Termin zusammen mit seinem Tag (`lockSlot()`), dann
+prüft sie, ob der Termin schon gebucht ist. `UNIQUE(slot_id)` ist die harte Garantie; ein Deadlock wird einmal
+wiederholt (`retryOnDeadlock()`). Das Löschen oder Ändern eines Tages, einer Runde oder eines Kontos
+(`ScheduleService::LOCKS`) und der Neuaufbau der Termine eines Tages (`SlotGenerator::sync()`) sperren in
+derselben Reihenfolge. Halten Sie sie auch in neuem Code ein: Sonst kann jede von zwei Anfragen die Sperre
+halten, auf die die andere wartet. E-Mails gehen erst nach dem Commit hinaus (direkt oder über die
+Warteschlange), nie innerhalb der Transaktion.
+
+Hintergrundarbeiten nutzen stattdessen benannte Sperren: Migrationen und die Warteschlange `GET_LOCK`;
+Erinnerungen und Zusammenfassungen reservieren ihre Zeilen mit `UPDATE … WHERE reminded_at IS NULL` und
+`INSERT IGNORE`, damit zwei gleichzeitige Läufe nichts doppelt verschicken.
+
+### Lebenszyklus der Daten
+
+Der Cronjob (`bin/cron.php` oder `POST /cron`) führt `Cleanup::run()` aus, reiht Zusammenfassungen und
+Erinnerungen ein und verschickt die Warteschlange; Seitenaufrufe führen dieselben Datenbankschritte als
+Rückfallebene aus. Was wann gelöscht wird:
+
+| Daten | Gelöscht |
+| --- | --- |
+| Buchungen (Name, E-Mail-Adresse) | ab Mitternacht nach dem Tag des Termins; bei einer Absage sofort, außerdem mit ihrem Tag, ihrer Runde oder ihrem Konto |
+| Runden | nach ihrem letzten Tag deaktiviert, wenn sie in Gebrauch waren, `delete_after_hours` später gelöscht (je Runde; leer = bleibt) |
+| E-Mail-Warteschlange | nach dem Versand; nach 48 Stunden, wenn der Versand weiter scheitert |
+| Ratenlimits (gehashte, gekürzte IP-Adressen) | nach 24 Stunden |
+| Versandprotokoll der Zusammenfassungen | nach 60 Tagen |
+| Admin-Protokoll | nach `audit_log_days` (Standard 90) |
+| Deaktivierte Lehrkraft-Konten ohne Runden in Gebrauch | nach 15 Monaten ohne Anmeldung |
+
+Neue personenbezogene Daten brauchen ihren Löschschritt in `Cleanup::run()` (mit Test), eine Zeile in dieser
+Tabelle und in den Datenschutz-Vorlagen beider Betriebsarten.
+
+### Migrationen
+
+`schema.sql` beschreibt immer den neuesten Stand: Eine neue Installation bekommt ihn und `Migrations::LATEST`
+direkt. Eine bestehende führt beim nächsten Aufruf die fehlenden Schritte aus `Migrations::STEPS` aus.
+
+- Fügen Sie einen Schritt unter der nächsten Nummer hinzu, erhöhen Sie `LATEST` und ändern Sie `schema.sql`
+  im selben Commit. Ein veröffentlichter Schritt wird nie mehr geändert.
+- Schritte sind **additiv und wiederholbar**: `ADD COLUMN IF NOT EXISTS` mit Standardwert, `CREATE TABLE IF
+  NOT EXISTS`, `ADD KEY IF NOT EXISTS`, Datenänderungen, die bei erneutem Lauf dasselbe Ergebnis liefern. Ein
+  abgebrochener Schritt kann dann einfach erneut laufen, und die vorige Version arbeitet mit dem neuen Schema,
+  weil sie ignoriert, was sie nicht kennt. Darauf verlässt sich das Rollback mit einem Klick: Es schaltet den
+  Code um, nicht die Datenbank.
+- **Nicht** in einer Minor-Version: Spalten oder Tabellen umbenennen oder löschen, Typ oder Kollation einer
+  Spalte ändern, `ON DELETE RESTRICT`. Sie brechen die vorige Version. Sie warten auf eine Major-Version und
+  kommen in zwei Schritten (erweitern, dann einschränken): die neue Spalte ergänzen und nutzen, die alte erst in
+  einer späteren Major-Version entfernen. Schritt 3 (Umbenennen von `admin_users`, Löschen von Spalten) stammt
+  aus der Zeit vor dieser Regel.
+- Während die Dateien eines Updates hochgeladen werden, kann neuer Code kurz auf das alte Schema treffen. Code,
+  der eine neue Spalte liest, fällt auf das alte Verhalten zurück, bis der Schritt gelaufen ist (z. B.
+  `RoundAccess::required()`).
+- Die Schritte nutzen MariaDB-Syntax (10.6 oder neuer); MySQL wird nicht unterstützt.
+- Parallele Branches: Zwei Branches, die dieselbe Schrittnummer hinzufügen, lassen sich in Git ohne Konflikt
+  zusammenführen, und PHP behält nur den letzten Array-Schlüssel. Prüfen Sie vor der Wahl einer Nummer `main`
+  und die offenen Branches.
+
+## Sicherheitskorrekturen
+
+Sicherheitslücken werden vertraulich gemeldet (siehe [Sicherheit]({{ '/de/guide/security/' | relative_url }}#sicherheitslücke-melden)
+und `SECURITY.md`), nie in einem öffentlichen Issue. Der Maintainer bearbeitet eine Meldung als GitHub Security
+Advisory:
+
+1. Die Meldung bestätigen und in einem Entwurf des Advisorys bewerten (betroffene Versionen, Schweregrad).
+2. Die Korrektur im **temporären privaten Fork** des Advisorys schreiben, nicht in einem öffentlichen Branch
+   oder Pull Request, und Unit- und Smoke-Tests lokal ausführen: Vor dem Release wird nichts über die Lücke
+   öffentlich.
+3. Die Korrektur aus dem Advisory mergen, sofort ein Release erstellen (`release.yml`) und das Advisory mit der
+   korrigierten Version veröffentlichen (bei Bedarf eine CVE beantragen). Danach die selbst betriebenen
+   Installationen aktualisieren.
+
+Sicherheitskorrekturen gibt es nur für das jeweils neueste Release.
 
 ## Mitwirken
 
