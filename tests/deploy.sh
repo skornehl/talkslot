@@ -92,6 +92,15 @@ ok 'switch to a version without health check (or with an older APP_SECRET): warn
 APP_SECRET= dep switch $B > "$T/out" 2>&1; rc=$?
 ok 'without APP_SECRET (older workflow): warning, pages checked only' \
   '[ $rc = 0 ] && [ "$(cat "$BASE/current")" = $B ] && grep -q "::warning::APP_SECRET missing" "$T/out"'
+mkdir "$T/nossl" # a PATH with every command of this one except openssl
+IFS=: read -ra PD <<< "$PATH"
+for d in "${PD[@]}"; do for f in "$d"/*; do n=${f##*/}; [ -e "$f" ] && [ "$n" != openssl ] && [ ! -e "$T/nossl/$n" ] && ln -s "$f" "$T/nossl/$n"; done; done
+PATH=$T/nossl dep switch previous > "$T/out" 2>&1; rc=$?
+ok 'without openssl: warning, pages checked only' \
+  '[ $rc = 0 ] && [ "$(cat "$BASE/current")" = $A ] && grep -q "::warning::openssl missing" "$T/out"'
+APP_SECRET=$'\t '"$APP_SECRET"$' \r\n' dep switch $B > "$T/out" 2>&1; rc=$?
+ok 'APP_SECRET with spaces and a line break around it (pasted): trimmed like in config.php, health check ok' \
+  '[ $rc = 0 ] && [ "$(cat "$BASE/current")" = $B ] && grep -q "Check ok: $URL serves $B (database: ok)" "$T/out"'
 ok 'active version again: nothing to do' 'dep switch $B 2>&1 | grep -q "already active"'
 ok 'unknown or invalid version rejected' '! dep switch nichtda > /dev/null 2>&1 && ! dep switch ../x > /dev/null 2>&1 && [ "$(cat "$BASE/current")" = $B ]'
 

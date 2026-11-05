@@ -16,11 +16,17 @@ final class App
         header('Content-Type: text/html; charset=utf-8');
 
         $path = Http::path();
-        // The web cron and the health check migrate only after checking their key and report a failed
-        // migration instead of swallowing it; neither needs the clean-up fallback (the cron runs it in full)
-        $probe = $path === '/cron' || $path === '/health';
+        // The web cron and the health check: requests that send their key header. Without it the address is
+        // an ordinary round address, so a round that got /cron or /health before Slug::RESERVED listed them
+        // keeps its link. Both migrate only after checking their key and report a failed migration instead
+        // of swallowing it; neither needs the clean-up fallback (the cron runs it in full).
+        $endpoint = match (true) {
+            $path === '/cron' && isset($_SERVER['HTTP_X_CRON_TOKEN']) => 'cron',
+            $path === '/health' && isset($_SERVER['HTTP_X_HEALTH_TOKEN']) => 'health',
+            default => '',
+        };
         try {
-            if (!$probe && Installer::isInstalled()) {
+            if ($endpoint === '' && Installer::isInstalled()) {
                 Migrations::run();
                 Cleanup::maybeRun();
             }
@@ -35,11 +41,11 @@ final class App
             self::refuseCrossSite($admin);
             return;
         }
-        if ($path === '/cron') {
+        if ($endpoint === 'cron') {
             self::webCron();
             return;
         }
-        if ($path === '/health') {
+        if ($endpoint === 'health') {
             self::health();
             return;
         }

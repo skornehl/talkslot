@@ -47,11 +47,12 @@ final class Health
 
     /**
      * MariaDB from MIN_MARIADB on. VERSION() e.g. "10.11.6-MariaDB-0+deb12u1-log", via some proxies
-     * "5.5.5-10.6.12-MariaDB"; MySQL ("8.0.36") has no "-MariaDB".
+     * "5.5.5-10.6.12-MariaDB", Enterprise Server with a build number "10.6.17-12-MariaDB-enterprise-log";
+     * MySQL ("8.0.36") has no "-MariaDB".
      */
     public static function supportedServer(string $version): bool
     {
-        return preg_match('/(\d+\.\d+)(?:\.\d+)?-MariaDB/i', $version, $m) === 1
+        return preg_match('/(\d+\.\d+)(?:\.\d+)?(?:-\d+)?-MariaDB/i', $version, $m) === 1
             && version_compare($m[1], self::MIN_MARIADB, '>=');
     }
 

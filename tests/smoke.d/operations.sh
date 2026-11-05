@@ -17,17 +17,30 @@ check "health check: JSON, never cached, no cookie" \
   'echo "$OP_H" | grep -qi "^content-type: application/json" && echo "$OP_H" | grep -qi "^cache-control: no-store" && ! echo "$OP_H" | grep -qi "^set-cookie"'
 
 # The clean-up fallback of page requests is due (last run long ago), but neither the health check nor the web
-# cron (even without its key) starts it
+# cron (even with a wrong key) starts it
 OP_LC=$(OP_SETTING last_cleanup)
 DBQ "INSERT INTO tp_settings (name, value) VALUES ('last_cleanup', '1') ON DUPLICATE KEY UPDATE value = '1'"
-op_health > /dev/null; op_code -d '' -H "X-Cron-Token: falsch" "$B/cron" > /dev/null; op_code "$B/health" > /dev/null
+op_health > /dev/null; op_code -d '' -H "X-Cron-Token: falsch" "$B/cron" > /dev/null; op_code -H "X-Health-Token: falsch" "$B/health" > /dev/null
 check "health check and web cron do not start the clean-up fallback of page requests" '[ "$(OP_SETTING last_cleanup)" = 1 ]'
 DBQ "UPDATE tp_settings SET value = '${OP_LC:-1}' WHERE name = 'last_cleanup'"
+
+# New rounds never get /health or /cron (Slug::RESERVED, unit test); a round that got one of them before keeps
+# its link: only a request with the key header is the health check or the web cron
+DBQ "UPDATE tp_rounds SET slug = 'health' WHERE id = $RID"
+OP_RP=$(curl -s -w '\n%{http_code}' "$B/health")
+OP_H=$(op_health)
+DBQ "UPDATE tp_rounds SET slug = 'cron' WHERE id = $RID"
+OP_RC=$(curl -s -w '\n%{http_code}' "$B/cron")
+OP_CW=$(op_code -d '' -H "X-Cron-Token: falsch" "$B/cron")
+DBQ "UPDATE tp_rounds SET slug = '$SLUG' WHERE id = $RID"
+check "a round at /health or /cron from before keeps its page; with the key header the address is the health check or the web cron" \
+  'for p in "$OP_RP" "$OP_RC"; do [ "$(echo "$p" | tail -1)" = 200 ] && echo "$p" | grep -q "Elternsprechtag Größe Übung" || exit 1; done && op_is "$OP_H" 200 ok && [ "$OP_CW" = 404 ]'
 
 # A migration that fails is reported by the health check (503 + alert mail) instead of being swallowed, while
 # pages are still served (that is why the deployment cannot rely on them); here the settings table is missing.
 # Without the lock file the same database counts as empty: before the installer, which the first deployment
 # must pass.
+OP_T0=$(date +%s)
 DBQ "RENAME TABLE tp_settings TO tp_settings_op"
 OP_H=$(op_health)
 OP_PAGE=$(op_code "$B/admin/login")
@@ -42,7 +55,14 @@ check "health check: failed migration → 503 migration_failed and an alert mail
   'op_is "$OP_H" 503 migration_failed && [ "$OP_AL" = 1 ] && [ "$OP_PAGE" = 200 ]'
 check "empty database before the installer: health check 200 not_installed, web cron not_installed" \
   'op_is "$OP_H2" 200 not_installed && [ "$OP_CRON" = "{\"status\":\"not_installed\"}" ]'
-ALERTS "$OP_ALERTS"' file_get_contents($u, false, stream_context_create(["http" => ["method" => "DELETE"]]));' # expected, not an error
+# The report was expected, not an error: delete the mail and the throttle entries written since (a later check
+# expecting a report from the same place would be suppressed for an hour otherwise)
+ALERTS "$OP_ALERTS"' file_get_contents($u, false, stream_context_create(["http" => ["method" => "DELETE"]]));
+  $f = "/srv/app/app/var/alerts.json"; $s = json_decode((string) @file_get_contents($f), true);
+  if (is_array($s)) { $n = count($s["keys"] ?? []); $s["keys"] = array_filter($s["keys"] ?? [], fn ($e) => $e["last"] < '"$OP_T0"');
+    $s["_count"] = max(0, ($s["_count"] ?? 0) - $n + count($s["keys"])); file_put_contents($f, json_encode($s)); }'
+OP_ALS=$(ALERTS '$s = json_decode((string) @file_get_contents("/srv/app/app/var/alerts.json"), true); echo count(array_filter($s["keys"] ?? [], fn ($e) => $e["last"] >= '"$OP_T0"'));')
+check "the expected report leaves no throttle entry behind" '[ "$OP_ALS" = 0 ]'
 
 # Another request holds the migration lock: the health check waits for it (10 s), then reports the schema as
 # outdated instead of passing, so that the deployment tries again

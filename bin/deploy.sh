@@ -41,8 +41,11 @@ for v in "$FTP_URL" "$APP_DIR" "$WEB_DIR" "$BUILD_DIR"; do [[ $v =~ $SAFE_RX ]] 
 [[ $CONFIG_MODE =~ ^(0?[4-7][0-7]0|keep)$ ]] || die "CONFIG_MODE must be 600, 640 (owner may read, others may not) or keep"
 FTP_USER=$(printf '%s' "${FTP_USER:-}" | tr -d '\r\n')
 [[ $FTP_USER != *"'"* ]] || die "Invalid FTP user name"
-# For the health check (like build-config.php: without line breaks and surrounding spaces)
-SECRET=$(printf '%s' "${APP_SECRET:-}" | tr -d '\r\n' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+# For the health check, trimmed like build-config.php trims it into config.php (PHP trim(): spaces, tabs,
+# line breaks, vertical tabs at both ends)
+SECRET=${APP_SECRET:-}
+SECRET=${SECRET#"${SECRET%%[!$' \t\n\r\v']*}"}
+SECRET=${SECRET%"${SECRET##*[!$' \t\n\r\v']}"}
 TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT
 
@@ -95,9 +98,10 @@ set_current() {
 
 # Health check of the active version (POST /health, App\Health): database reachable, MariaDB in the minimum
 # version, every migration applied. The key is derived from APP_SECRET like the web cron's and sent in a
-# header (not in the URL, so it never reaches an access log; read by curl from a file, so it is not on its
-# command line either). Prints the status word, or http_<code> (404: this version has no health check, or
-# its config.php has another APP_SECRET).
+# header (not in the URL, so it never reaches an access log; read by curl from a file, so the key is not on
+# its command line either). APP_SECRET itself is an argument of openssl for a moment, visible in the process
+# list to other users of the same computer (no concern on a GitHub runner). Prints the status word, or
+# http_<code> (404: this version has no health check, or its config.php has another APP_SECRET).
 health() {
   local base=$1 code
   printf 'X-Health-Token: %s\n' "$(printf health | openssl dgst -sha256 -hmac "$SECRET" | sed 's/.*= //')" > "$TMP/health.h"
@@ -113,8 +117,8 @@ health() {
 health_hint() {
   case "$1" in
     db_unreachable) echo "the version cannot connect to the database (check DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS)" ;;
-    db_unsupported) echo "the database is not MariaDB 10.6 or newer (MySQL is not supported)" ;;
-    migration_failed) echo "a database migration failed (details in the alert mail and in app/var/php-error.log)" ;;
+    db_unsupported) echo "the database is not MariaDB 10.6 or newer (MySQL is not supported), or a database proxy reports its own version" ;;
+    migration_failed) echo "a database migration failed (details in the alert mail and in app/var/php-error.log), or DB_NAME/DB_PREFIX point to another database than before" ;;
     schema_outdated) echo "the database migrations did not finish during the check (another request may still be running them)" ;;
     http_404) echo "the new version does not answer the health check: is APP_SECRET the one its config.php was built with?" ;;
     *) echo "unexpected answer of the health check ($1)" ;;
@@ -127,7 +131,6 @@ health_hint() {
 # (switch) an older version without it, or one with an older APP_SECRET, gets the page checks only.
 check() {
   local name=$1 strict=${2:-} base=${BASE_URL:-} html i
-  CHECK_STATUS='' # empty: the pages failed; otherwise the answer of the health check
   base=${base%/}
   if [ -z "$base" ]; then echo "::warning::BASE_URL missing – check skipped"; return 0; fi
   if [ -z "$SECRET" ]; then
@@ -136,6 +139,7 @@ check() {
     echo "::warning::openssl missing – database and migrations are not checked, only the pages"; SECRET=''
   fi
   for i in 1 2 3 4 5 6; do
+    CHECK_STATUS='' # of this try; stays empty if the pages fail, otherwise the answer of the health check
     if html=$(curl -fsS -m 30 "$base/admin/login") && grep -qF "/v/$name/css/app.css" <<< "$html" \
       && curl -fsS -m 30 -o /dev/null "$base/v/$name/css/app.css" \
       && curl -fsS -m 30 -o /dev/null "$base/"; then
@@ -150,8 +154,7 @@ check() {
             echo "::warning::$name has no health check (older version) or another APP_SECRET – only the pages were checked"
             echo "Check ok: $base serves $name"
             return 0
-          fi
-          break ;; # the same answer on every try
+          fi ;; # strict: tried again (with several web servers one may still serve the previous version for a moment)
       esac
     fi
     sleep 5
