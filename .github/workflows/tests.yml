@@ -103,7 +103,7 @@ jobs:
 
       - name: Unit tests in the app container (for the coverage)
         run: |
-          docker compose -f dev/compose.yml exec -T app php tests/unit.php > unit.log 2>&1 || { grep -v '✓' unit.log; exit 1; }
+          docker compose -f dev/compose.yml exec -T -w /srv/app app php tests/unit.php > unit.log 2>&1 || { grep -v '✓' unit.log; exit 1; }
           tail -1 unit.log
 
       - name: Smoke tests
@@ -133,7 +133,7 @@ jobs:
           if [ "$EVENT" = pull_request ]; then ARGS+=(--diff=-); fi
           rc=0
           { if [ "$EVENT" = pull_request ]; then git diff HEAD^1 HEAD; fi; } \
-            | docker compose -f dev/compose.yml exec -T app php tests/coverage/report.php "${ARGS[@]}" || rc=$?
+            | docker compose -f dev/compose.yml exec -T -w /srv/app app php tests/coverage/report.php "${ARGS[@]}" || rc=$?
           cat app/var/coverage.md >> "$GITHUB_STEP_SUMMARY"
           exit $rc
 

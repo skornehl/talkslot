@@ -71,7 +71,7 @@ Syntaxfehlers.
   kein Test ausführt, im Diff markiert. Der Lauf schlägt fehl, wenn die Gesamtabdeckung unter `COVERAGE_MIN` in
   `.github/workflows/tests.yml` fällt (erhöhen Sie den Wert, wenn die Abdeckung steigt) oder wenn kein Test eine
   PHP-Datei überhaupt lädt. Lokal nach den Tests in einem solchen Container:
-  `docker compose -f dev/compose.yml exec app php tests/coverage/report.php`.
+  `docker compose -f dev/compose.yml exec -w /srv/app app php tests/coverage/report.php`.
 - **Statische Analyse.** `dev/phpstan.sh` führt [PHPStan](https://phpstan.org/) auf Stufe 6 aus
   (`tests/phpstan.neon`), die CI ebenso. Die Fehler, die es bei der Einführung schon gab, stehen in
   `tests/phpstan-baseline.neon`; jeder neue lässt den Lauf scheitern. Werttypen von Arrays sind noch nicht

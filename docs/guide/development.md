@@ -69,7 +69,7 @@ and checks that PHP 7.4 and 8.2 get the message of `App\Platform` instead of a s
   the run shows the coverage per file; for a pull request, changed lines that no test executes are marked in the
   diff. The run fails if the total drops below `COVERAGE_MIN` in `.github/workflows/tests.yml` (raise it when
   the coverage rises) or if no test loads a PHP file at all. Locally, after the tests in such a container:
-  `docker compose -f dev/compose.yml exec app php tests/coverage/report.php`.
+  `docker compose -f dev/compose.yml exec -w /srv/app app php tests/coverage/report.php`.
 - **Static analysis.** `dev/phpstan.sh` runs [PHPStan](https://phpstan.org/) at level 6 (`tests/phpstan.neon`);
   CI does the same. The errors that existed when it was introduced are listed in `tests/phpstan-baseline.neon`;
   every new one fails. Value types of arrays are not required yet. PHPStan is a development tool only: the
