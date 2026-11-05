@@ -15,7 +15,7 @@ MariaDB database and runs on ordinary shared hosting.
 |---|---|---|
 | **Parents** | public pages | open a round, book a slot, move or cancel it with their personal link |
 | **Teachers** | `/admin` | create rounds, manage bookings of their own rounds |
-| **Admins** | `/admin` | one or more accounts: invite teachers, see and edit all rounds, create rounds for teachers, maintain templates, imprint and privacy policy on behalf of the school, which is the controller under the GDPR |
+| **Admins** | `/admin` | one or more accounts: invite teachers, see and edit all rounds, create rounds for teachers, maintain templates, imprint and privacy policy on behalf of the operator (the school, or the private person, association or provider running TalkSlot), which is the controller under the GDPR |
 | **Operator** | server, GitHub | installs, configures and updates TalkSlot (often one of the admins) |
 
 The admin area is in German or English (per account). Parent pages and mails are available in German, English, Polish,

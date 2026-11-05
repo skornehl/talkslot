@@ -59,7 +59,7 @@ return [
     'privacy.summary.items' => [
         'Yalnızca girdiğiniz ad, seçtiğiniz saat ve – isteğe bağlı olarak – e-posta adresiniz kaydedilir.',
         'Amaç: yalnızca görüşmenin düzenlenmesi ve yapılması. Üçüncü kişilerle paylaşım, izleme ve çerez yoktur.',
-        'Bilgileriniz randevudan sonraki gün, iptal halinde ise hemen randevu sisteminden otomatik olarak silinir. Saat ve ad (e-posta adresi olmadan) öğretmenin özet e-postalarında en fazla 15 ay kalabilir.',
+        'Bilgileriniz randevudan sonraki gün, iptal halinde ise hemen randevu sisteminden otomatik olarak silinir. Saat ve ad (e-posta adresi olmadan) öğretmene ayrıca e-posta ile gönderilir. Bu e-postaların ne kadar süre saklandığı veri koruma bilgilendirmesinde yer alır.',
         'Diğerlerinin yanı sıra bilgi alma, düzeltme ve silme hakkınız vardır.',
     ],
     'form.privacy.before' => '',
@@ -131,7 +131,7 @@ return [
     'manage.cancel.submit' => 'Randevuyu iptal et',
     'manage.locked' => 'Değişiklik ve iptal çevrimiçi olarak yalnızca randevudan {hours} saat öncesine kadar mümkündür. Lütfen doğrudan öğretmenle iletişime geçin.',
     'manage.notfound' => 'Randevu bulunamadı. İptal edilmiş veya randevu tarihinden sonra otomatik olarak silinmiş olabilir.',
-    'manage.deletion' => 'Bilgileriniz randevudan sonraki gün randevu sisteminden otomatik olarak silinir. Saat ve ad (e-posta adresi olmadan) öğretmenin özet e-postalarında en fazla 15 ay kalabilir.',
+    'manage.deletion' => 'Bilgileriniz randevudan sonraki gün randevu sisteminden otomatik olarak silinir. Saat ve ad (e-posta adresi olmadan) öğretmene ayrıca e-posta ile gönderilir. Bu e-postaların ne kadar süre saklandığı veri koruma bilgilendirmesinde yer alır.',
 
     'cancelled.title' => 'Randevu iptal edildi',
     'cancelled.text' => 'Randevunuz iptal edildi ve bilgileriniz randevu sisteminden silindi.',

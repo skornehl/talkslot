@@ -77,8 +77,10 @@ den eine Schule nicht am Abend des Elternsprechtags findet.
 
 ## Gibt es eine gehostete Version?
 
-Nein. TalkSlot ist dafür gedacht, von der Schule oder ihrem IT-Dienstleister betrieben zu werden, damit
-die Daten unter deren Kontrolle bleiben.
+Nein. TalkSlot ist dafür gedacht, von denen betrieben zu werden, die für die Daten verantwortlich sind: der
+Schule oder ihrem IT-Dienstleister oder einer Privatperson, einem Verein oder freien Träger, dessen Angebot
+Lehrkräfte nutzen (die Betriebsart wählen Sie bei der Installation, siehe
+[Datenschutz und Recht]({{ '/de/guide/privacy/' | relative_url }}#von-der-schule-oder-privat-betrieben)).
 
 ## Was bedeutet die Lizenz für mich?
 

@@ -62,7 +62,7 @@ return [
     'privacy.summary.items' => [
         'Gespeichert werden nur der eingetragene Name, der Termin und – freiwillig – Ihre E-Mail-Adresse.',
         'Zweck: ausschließlich Organisation und Durchführung des Gesprächs. Keine Weitergabe, kein Tracking, keine Cookies.',
-        'In der Terminvergabe werden Ihre Angaben am Tag nach dem Termin automatisch gelöscht, bei einer Absage sofort. Termin und Name (ohne E-Mail-Adresse) können höchstens 15 Monate in E-Mail-Zusammenfassungen der Lehrkraft verbleiben.',
+        'In der Terminvergabe werden Ihre Angaben am Tag nach dem Termin automatisch gelöscht, bei einer Absage sofort. Termin und Name (ohne E-Mail-Adresse) bekommt die Lehrkraft auch per E-Mail. Wie lange diese E-Mails aufbewahrt werden, steht in den Datenschutzhinweisen.',
         'Sie haben u. a. das Recht auf Auskunft, Berichtigung und Löschung.',
     ],
     'form.privacy.before' => 'Ich habe die ',
@@ -134,7 +134,7 @@ return [
     'manage.cancel.submit' => 'Termin absagen',
     'manage.locked' => 'Änderungen und Absagen sind online nur bis {hours} Stunden vor dem Termin möglich. Bitte wenden Sie sich direkt an die Lehrkraft.',
     'manage.notfound' => 'Termin nicht gefunden. Er wurde möglicherweise abgesagt oder nach dem Termin automatisch gelöscht.',
-    'manage.deletion' => 'Ihre Angaben werden am Tag nach dem Termin automatisch aus der Terminvergabe gelöscht. Termin und Name (ohne E-Mail-Adresse) können höchstens 15 Monate in E-Mail-Zusammenfassungen der Lehrkraft verbleiben.',
+    'manage.deletion' => 'Ihre Angaben werden am Tag nach dem Termin automatisch aus der Terminvergabe gelöscht. Termin und Name (ohne E-Mail-Adresse) bekommt die Lehrkraft auch per E-Mail. Wie lange diese E-Mails aufbewahrt werden, steht in den Datenschutzhinweisen.',
 
     'cancelled.title' => 'Termin abgesagt',
     'cancelled.text' => 'Ihr Termin wurde abgesagt, und Ihre Angaben wurden aus der Terminvergabe gelöscht.',

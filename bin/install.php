@@ -2,7 +2,8 @@
 /**
  * Installation from the command line (alternative to public/install.php):
  *   php bin/install.php <username> [notification-email]
- * The password is prompted for without echo.
+ * The password is prompted for without echo (twice), then the operator type (school or private); piped input
+ * gives the three answers one per line, e.g. printf 'pw\npw\nprivate\n' | php bin/install.php sabrina
  */
 declare(strict_types=1);
 
@@ -44,11 +45,19 @@ if (!$errors) {
     }
     $password = $ask('Password: ');
     $password2 = $ask('Repeat password: ');
+    // Who runs the platform decides the templates of legal notice and privacy policy
+    echo 'Operated by the school as a public body (school) or privately, e.g. by a private person, association or independent provider (private): ';
+    $type = trim((string) fgets(STDIN));
+
     $errors = Installer::validate($username, $password, $password2, $email);
+    if (($typeError = Installer::validateType($type)) !== null) {
+        $errors[] = $typeError;
+    }
 }
 if ($errors) {
-    fwrite(STDERR, implode("\n", $errors) . "\nUsage: php bin/install.php <username> [email]\n");
+    fwrite(STDERR, implode("\n", $errors) . "\nUsage: php bin/install.php <username> [email]\n"
+        . "Input: password, password again, operator type (school or private), one per line\n");
     exit(1);
 }
-Installer::install($username, $password, $email);
+Installer::install($username, $password, $email, '', $type);
 echo "Installation complete.\n";

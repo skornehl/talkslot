@@ -69,7 +69,9 @@ of the conference.
 
 ## Is there a hosted version?
 
-No. TalkSlot is meant to be run by the school or its IT provider, so the data stays under their control.
+No. TalkSlot is meant to be run by whoever is responsible for the data: the school or its IT provider, or
+a private person, association or independent provider whose service teachers use (choose the operator type
+when installing, see [Privacy and legal]({{ '/guide/privacy/' | relative_url }}#operated-by-the-school-or-privately)).
 
 ## What does the license mean for me?
 
