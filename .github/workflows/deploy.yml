@@ -7,8 +7,9 @@
 # code of that version, see README "Deploying from your own repository".
 #
 # Atomic: every version is uploaded completely into its own directory and only then made active via
-# the pointer file; afterwards the site is checked and on failure switched back to the previous
-# version at once. Manual rollback: workflow "Switch version" (switch.yml).
+# the pointer file; afterwards the site and its database (health check: reachable, MariaDB, migrations
+# applied) are checked and on failure switched back to the previous version at once. Manual rollback:
+# workflow "Switch version" (switch.yml).
 #
 # Server layout (APP_DIR and WEB_DIR relative to the FTP root):
 #   <APP_DIR>/current            name of the active version
@@ -187,12 +188,15 @@ jobs:
           bin/deploy.sh discard "$NAME"
 
       # Replace the pointer file, update the fixed files in the web directory, check the site (otherwise
-      # switch back at once), delete old versions (the last five are kept) and restrict their config.php too
+      # switch back at once), delete old versions (the last five are kept) and restrict their config.php too.
+      # The check includes the health check (database reachable, MariaDB, migrations applied); its key is
+      # derived from APP_SECRET, so no further secret is needed.
       - name: Switch and check
         if: github.ref == 'refs/heads/main' && steps.current.outputs.superseded != '1' && steps.current_after.outputs.superseded != '1'
         env:
           FTP_USER: ${{ secrets.FTP_USERNAME }}
           FTP_PASS: ${{ secrets.FTP_PASSWORD }}
+          APP_SECRET: ${{ secrets.APP_SECRET }}
           NAME: ${{ steps.version.outputs.name }}
         run: |
           export LFTP_PASSWORD="$(printf '%s' "$FTP_PASS" | tr -d '\r\n')"

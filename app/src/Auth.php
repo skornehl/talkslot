@@ -330,7 +330,12 @@ final class Auth
         );
         session_regenerate_id(true);
         self::endOtherSessions($userId, true);
-        AccountSecurity::passwordChanged($user);
+        session_write_close(); // the account's other tabs do not wait for the mail server
+        try {
+            AccountSecurity::passwordChanged($user);
+        } finally {
+            self::startSession();
+        }
         return true;
     }
 

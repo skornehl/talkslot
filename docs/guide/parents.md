@@ -16,7 +16,8 @@ You received a link or a **round code** from your child's teacher. You do not ne
 3. **Pick a free time slot.** Only free slots are shown, grouped by day.
 4. **Enter a name**, usually your child's first and last name. An **e-mail address is optional**: with it,
    you get a confirmation with your personal link and a calendar file, and usually a reminder the
-   evening before.
+   evening before. If the confirmation cannot be sent at that moment, the page says so and it follows
+   automatically (with a personal link of its own; the one on the page stays valid).
 5. Tick that you have read the **privacy notice** and book.
 
 ![Booking page on a phone]({{ '/assets/img/parent-round-mobile-dark.webp' | relative_url }}){: style="max-width: 320px"}

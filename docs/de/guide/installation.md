@@ -76,7 +76,8 @@ php bin/install.php <username> [email]   # fragt nach dem Passwort und der Betri
 ## 4. Cronjob einrichten
 
 TalkSlot löscht vergangene Buchungen, deaktiviert und löscht abgeschlossene Terminrunden und verschickt
-Zusammenfassungen an Lehrkräfte in einem Cronjob. Lassen Sie ihn stündlich laufen:
+Zusammenfassungen an Lehrkräfte, Erinnerungen an Eltern und E-Mails, die nicht sofort hinausgehen konnten,
+in einem Cronjob. Lassen Sie ihn stündlich laufen:
 
 ```cron
 5 * * * * php /path/to/talkslot/bin/cron.php
@@ -91,7 +92,10 @@ curl -fsS -X POST -H "X-Cron-Token: $TOKEN" https://your-site/cron
 ```
 
 Der mitgelieferte GitHub-Workflow `cron.yml` macht genau das jede Stunde. Als Rückfallebene läuft das
-Aufräumen außerdem bei Seitenaufrufen, höchstens alle 15 Minuten.
+Aufräumen außerdem bei Seitenaufrufen, höchstens alle 15 Minuten; E-Mails gehen dort nur mit PHP-FPM oder
+LiteSpeed hinaus, nachdem die Seite ausgeliefert ist. Ohne Cronjob werden Erinnerungen und Zusammenfassungen
+deshalb womöglich gar nicht verschickt (siehe
+[Mail-Warteschlange]({{ '/de/guide/operations/' | relative_url }}#mail-warteschlange)).
 
 ## 5. Rechtliche Angaben ausfüllen
 

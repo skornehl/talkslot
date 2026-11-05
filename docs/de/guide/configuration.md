@@ -21,7 +21,9 @@ Beim Deployment mit GitHub Actions wird die Datei aus Repository-Variablen und -
 | `install_key` | – | mindestens 16 Zeichen, nur für `install.php` | `INSTALL_KEY` (mit `ALLOW_INSTALL=1`) |
 
 Eine Änderung von `secret` betrifft nur Kurzlebiges: Formulare, die in diesem Moment geöffnet sind,
-Zugänge, die in den letzten Stunden per Rundencode freigeschaltet wurden, und das Web-Cron-Token.
+Zugänge, die in den letzten Stunden per Rundencode freigeschaltet wurden, das Web-Cron-Token und den
+Schlüssel für den [Health-Check]({{ '/de/guide/deployment/' | relative_url }}#health-check) des Deployments
+(die mitgelieferten Workflows leiten beide neu ab).
 Buchungen, Änderungslinks, Einladungs- und Passwortlinks sind Zufallstokens und funktionieren weiter.
 Abgemeldet wird dadurch niemand; dafür gibt es *Benutzer → Alle Sitzungen beenden*.
 
@@ -87,9 +89,22 @@ Auftragsverarbeiter nach Art. 28 DSGVO. Die Server stehen in Deutschland.*
 | `session_absolute_hours` | `8` | Adminbereich: maximale Sitzungsdauer |
 | `access_link_hours` | `48` | Gültigkeit von Einladungs- und Passwortlinks |
 | `cleanup_on_request` | `true` | Aufräumen auch bei Seitenaufrufen ausführen … |
-| `cleanup_interval_minutes` | `15` | … höchstens so oft |
+| `cleanup_interval_minutes` | `15` | … höchstens so oft (nur Datenbankschritte: Zusammenfassungen und Erinnerungen werden dort in die Warteschlange gestellt, nicht verschickt) |
 | `summary_evening_hour` | `18` | ab dieser Stunde erhalten Lehrkräfte die Zusammenfassung für den nächsten Tag und Eltern die Erinnerung |
 | `audit_log_days` | `90` | Einträge im *Protokoll* der Admin-Änderungen werden nach so vielen Tagen gelöscht |
+
+## Mail-Warteschlange
+
+Erinnerungen, Zusammenfassungen und Bestätigungen, die nicht sofort verschickt werden konnten, warten in
+einer Mail-Warteschlange (Outbox), die der Cronjob abarbeitet; siehe
+[Betrieb]({{ '/de/guide/operations/' | relative_url }}#mail-warteschlange).
+
+| Option | Standard | Bedeutung |
+|---|---|---|
+| `mail_queue.batch` | `100` | höchstens so viele E-Mails pro Cron-Lauf |
+| `mail_queue.seconds` | `20` | Zeitbudget pro Cron-Lauf (eine begonnene E-Mail wird noch fertig verschickt) |
+| `mail_queue.hourly_limit` | `0` | höchstens so viele Erinnerungen und Zusammenfassungen pro Stunde, z. B. das Mail-Kontingent Ihres Hosters (`0` = keine Grenze); Bestätigungen und Änderungsmitteilungen gehen vor und werden nie zurückgehalten |
+| `mail_queue.after_response` | `true` | mit PHP-FPM oder LiteSpeed verschickt auch ein Seitenaufruf bis zu 10 fällige E-Mails, nachdem seine Antwort beim Browser ist |
 
 ## Rate-Limits {#rate-limits}
 

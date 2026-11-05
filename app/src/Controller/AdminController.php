@@ -19,6 +19,7 @@ use App\Invitation;
 use App\LegalTexts;
 use App\Notifier;
 use App\Operator;
+use App\Outbox;
 use App\RateLimiter;
 use App\RoundCode;
 use App\SlotGenerator;
@@ -237,6 +238,8 @@ final class AdminController
                 'SELECT COUNT(*) FROM users WHERE is_active = 1 AND COALESCE(last_login_at, created_at) < ?',
                 [self::inactiveSince()]
             ) : 0,
+            // Mails that should have gone out long ago: cron job missing or mail server failing
+            'mailsLate' => Auth::isAdmin() ? Outbox::late() : null,
         ]);
     }
 
@@ -445,8 +448,10 @@ final class AdminController
         $conflicts = 0;
         foreach ($days as &$day) {
             $day['breaks'] = Db::all('SELECT * FROM day_breaks WHERE day_id = ? ORDER BY start_time', [$day['id']]);
+            // mail_waiting: a mail that failed and is retried (not one queued since, e.g. the reminder)
             $day['slots'] = Db::all(
-                'SELECT s.*, b.id AS booking_id, b.name, b.email, b.source, b.created_at AS booked_at, b.updated_at AS booking_updated
+                'SELECT s.*, b.id AS booking_id, b.name, b.email, b.source, b.created_at AS booked_at, b.updated_at AS booking_updated,
+                        b.mail_failed_at, (SELECT COUNT(*) FROM mail_outbox o WHERE o.booking_id = b.id AND o.attempts > 0) AS mail_waiting
                    FROM slots s LEFT JOIN bookings b ON b.slot_id = s.id
                   WHERE s.day_id = ? ORDER BY s.start_time',
                 [$day['id']]
@@ -1035,8 +1040,8 @@ final class AdminController
         $this->audit(fn () => __('Buchung {slot} eingetragen', ['slot' => self::when($slot['day_date'], $slot['start_time'])]), (int) $round['id']);
         $msg = __('Eintrag angelegt. Änderungslink für die Eltern (wird nur jetzt angezeigt): {link}', ['link' => abs_url('/b/' . $token, ['lang' => $old['lang']])]);
         if ($old['send_mail'] && $old['email'] !== '' && $this->teacherMailAllowed($msg)) {
-            $booking = BookingService::findById($id);
-            $msg .= ' – ' . ($booking && Notifier::parentBooked($booking, $token) ? __('Bestätigung per E-Mail gesendet.') : __('E-Mail konnte nicht gesendet werden.'));
+            $mail = $this->withoutSession(static fn () => Notifier::sendOrQueue((array) BookingService::findById($id), 'booked', $token));
+            $msg .= ' – ' . self::mailMessage($mail, __('Bestätigung per E-Mail gesendet.'));
         }
         $this->flash('success', $msg);
         Http::redirect('/admin/round/' . $round['id'], [], 'slot-' . $slotId);
@@ -1093,8 +1098,8 @@ final class AdminController
         // Also without a change here: this is how parents learn the new date, location or teacher of their
         // appointment after the day or the round was changed (the mail carries the current details)
         if ($old['send_mail'] && $old['email'] !== '' && $this->teacherMailAllowed($msg)) {
-            $updated = BookingService::findById($id);
-            $msg .= ' ' . ($updated && Notifier::parentChanged($updated, null) ? __('Änderung per E-Mail mitgeteilt.') : __('E-Mail konnte nicht gesendet werden.'));
+            $mail = $this->withoutSession(static fn () => Notifier::sendOrQueue((array) BookingService::findById($id), 'changed', null));
+            $msg .= ' ' . self::mailMessage($mail, __('Änderung per E-Mail mitgeteilt.'));
         }
         $this->flash('success', $msg);
         Http::redirect('/admin/round/' . $booking['round_id'], [], 'day-' . (BookingService::findById($id)['day_id'] ?? ''));
@@ -1111,6 +1116,29 @@ final class AdminController
             ? __('Die Eltern („{name}“, {email}) wurden NICHT automatisch benachrichtigt – bitte selbst informieren.', ['name' => $booking['name'], 'email' => $booking['email']])
             : __('Die Eltern („{name}“) wurden NICHT automatisch benachrichtigt; es war keine E-Mail-Adresse hinterlegt – bitte persönlich informieren.', ['name' => $booking['name']]));
         Http::redirect('/admin/round/' . $booking['round_id'], [], 'day-' . $booking['day_id']);
+    }
+
+    /** Message about a mail to the parents: $sent, or that it failed and is retried (Notifier::sendOrQueue()). */
+    private static function mailMessage(?string $mail, string $sent): string
+    {
+        return $mail === Notifier::SENT ? $sent : __('Die E-Mail konnte gerade nicht gesendet werden. Sie wird automatisch erneut versucht; bis dahin steht beim Eintrag „E-Mail nicht zugestellt“.');
+    }
+
+    /**
+     * Sends mail with the session closed: while the mail server answers, other tabs of the same person do
+     * not wait for the session file (it stays locked while open). Reopened afterwards for the message.
+     * @template T
+     * @param callable(): T $send
+     * @return T
+     */
+    private function withoutSession(callable $send): mixed
+    {
+        session_write_close();
+        try {
+            return $send();
+        } finally {
+            Auth::startSession();
+        }
     }
 
     /** @return array{name:string,email:string,lang:string,send_mail:bool} */
@@ -1265,7 +1293,8 @@ final class AdminController
             return;
         }
         // To the previous address, in the language of the account (as it was before this change)
-        AccountSecurity::contactChanged(Auth::user(), ['email' => $data['email']] + Auth::user(), Auth::user());
+        $me = Auth::user();
+        $this->withoutSession(static fn () => AccountSecurity::contactChanged($me, ['email' => $data['email']] + $me, $me));
         Db::run(
             'UPDATE users SET display_name = ?, email = ?, summary_evening = ?, summary_deadline = ?, lang = ? WHERE id = ?',
             [$data['display_name'], $data['email'] !== '' ? $data['email'] : null, $data['summary_evening'], $data['summary_deadline'], $data['lang'], Auth::id()]
@@ -1410,10 +1439,13 @@ final class AdminController
             ]);
             $this->audit(fn () => __('Konto {account} bearbeitet', ['account' => self::accountLabel($user)]) . ($changes() ? ': ' . implode(', ', $changes()) : ''));
             $after = $data + $user;
-            AccountSecurity::contactChanged($user, $after, Auth::user());
-            if (($event = AccountSecurity::adminEvent($user, $after)) !== null) {
-                AccountSecurity::adminChange($event, $after, Auth::user());
-            }
+            $me = Auth::user();
+            $this->withoutSession(static function () use ($user, $after, $me): void {
+                AccountSecurity::contactChanged($user, $after, $me);
+                if (($event = AccountSecurity::adminEvent($user, $after)) !== null) {
+                    AccountSecurity::adminChange($event, $after, $me);
+                }
+            });
             $this->flash('success', __('Benutzer gespeichert.') . (!$data['is_active'] ? ' ' . __('Das Konto ist deaktiviert; seine Runden sind öffentlich nicht mehr erreichbar.') : ''));
         } else {
             $id = Db::insert(
@@ -1424,7 +1456,9 @@ final class AdminController
             $this->audit(fn () => __('Konto {account} angelegt ({role}) und eingeladen', ['account' => self::accountLabel($data), 'role' => self::roleLabel($data['role'])]));
             $this->linkFlash($this->userById($id), AccountLinks::INVITE);
             if ($data['role'] === 'admin') {
-                AccountSecurity::adminChange(AccountSecurity::INVITED, $this->userById($id), Auth::user());
+                $invited = $this->userById($id);
+                $me = Auth::user();
+                $this->withoutSession(static fn () => AccountSecurity::adminChange(AccountSecurity::INVITED, $invited, $me));
             }
         }
         Http::redirect('/admin/users');
@@ -1457,7 +1491,8 @@ final class AdminController
      */
     private function linkFlash(array $user, string $kind): void
     {
-        $sent = AccountLinks::send($user, $kind, Auth::user());
+        $me = Auth::user();
+        $sent = $this->withoutSession(static fn () => AccountLinks::send($user, $kind, $me));
         $vars = [
             'what' => $kind === AccountLinks::INVITE ? __('Einladung') : __('Link zum Festlegen eines neuen Passworts'),
             'email' => $user['email'], 'hours' => AccountLinks::validHours(),
@@ -1589,7 +1624,8 @@ final class AdminController
             ? __('Konto {account} gelöscht (mit {count} Runde(n))', ['account' => self::accountLabel($user), 'count' => $rounds])
             : __('Konto {account} gelöscht', ['account' => self::accountLabel($user)]));
         if ($user['role'] === 'admin') {
-            AccountSecurity::adminChange(AccountSecurity::DELETED, $user, Auth::user());
+            $me = Auth::user();
+            $this->withoutSession(static fn () => AccountSecurity::adminChange(AccountSecurity::DELETED, $user, $me));
         }
         $this->flash('success', __('Benutzer „{name}“ mit allen Runden und Buchungen gelöscht.', ['name' => $user['username']]));
         $this->parentsNotNotified($bookings);
@@ -1635,7 +1671,8 @@ final class AdminController
         }
         Auth::endAllSessions();
         $this->audit(fn () => __('Alle Sitzungen beendet'));
-        AccountSecurity::adminChange(AccountSecurity::SESSIONS_ENDED, null, Auth::user());
+        $me = Auth::user();
+        $this->withoutSession(static fn () => AccountSecurity::adminChange(AccountSecurity::SESSIONS_ENDED, null, $me));
         $this->flash('success', __('Alle Sitzungen beendet: Alle Konten müssen sich auf allen Geräten neu anmelden, nur diese Sitzung bleibt bestehen.'));
         Http::redirect('/admin/users');
     }

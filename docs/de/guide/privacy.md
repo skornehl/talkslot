@@ -11,7 +11,8 @@ TDDDG. Diese Seite erläutert die Designentscheidungen; sie ist keine Rechtsbera
 | Daten | Wo | Gelöscht |
 |---|---|---|
 | Name und optionale E-Mail-Adresse einer Buchung | Datenbank | ab 0:00 Uhr am Tag nach dem Termin, bei einer Absage sofort |
-| Hash des persönlichen Änderungslinks (und des zweiten Links in der Erinnerungsmail) | Datenbank | mit der Buchung |
+| Hash des persönlichen Änderungslinks (und der Links in der Erinnerung und in einer später verschickten Bestätigung) | Datenbank | mit der Buchung |
+| Eintrag der Mail-Warteschlange: welche E-Mail für welche Buchung oder welches Konto aussteht (ohne Adresse, Text oder Link) | Datenbank | nach dem Versand, spätestens nach 48 Stunden, mit der Buchung |
 | Gekürzte, per HMAC gehashte IP-Adressen; HMAC-Hashes von Konto-IDs und Geräte-Cookies mit fehlgeschlagenen Anmeldungen | Datenbank (Rate Limiting) | spätestens nach 24 Stunden |
 | Geräte-Cookie eines Admin- oder Lehrkraft-Kontos (Zufallszahl, Zeitpunkt, Signatur) | Browser der Person | nach 365 Tagen, bei jeder Anmeldung erneuert |
 | Konten der Lehrkräfte | Datenbank | durch einen Admin; inaktive Konten ohne Runden in Gebrauch 15 Monate nach der letzten Anmeldung, zusammen mit ihren Entwürfen |
@@ -27,6 +28,16 @@ Datenschutzerklärung.
 - **Datenminimierung:** ein frei eingegebener Name und eine optionale E-Mail-Adresse, sonst nichts.
 - **E-Mail-Adresse nur für den Termin:** Bestätigung, Änderung, Absage und, wenn die Lehrkraft sie für die
   Runde vorgesehen hat, eine Erinnerung am Vorabend. Die Vorlage der Datenschutzerklärung nennt all das.
+- **Mail-Warteschlange nur mit Verweisen:** Erinnerungen, Zusammenfassungen und E-Mails, die der Mailserver
+  abgelehnt hat, warten in einer Warteschlange, die der Cronjob verschickt. Ein Eintrag enthält weder
+  Adresse noch Text noch Link: Sie entstehen erst beim Versand aus der Buchung, eine später verschickte
+  Bestätigung mit einem eigenen, neuen Link (gespeichert wird nur sein Hash, wie bei der Erinnerung).
+  Einträge werden nach dem Versand gelöscht, spätestens nach 48 Stunden und mit ihrer Buchung; die Vorlage
+  der Datenschutzerklärung nennt das.
+- **Erinnerungen nur, wo Eltern davon wissen:** Wer selbst bucht, bekommt die Erinnerung, wenn sie für die
+  Runde beim Buchen eingeschaltet war (das Formular sagt es). Einträge der Lehrkraft bekommen sie erst, wenn
+  eine Bestätigung oder Änderungsmitteilung bei den Eltern angekommen ist, denn diese E-Mail informiert über
+  den Eintrag und die Datenschutzhinweise. Ein späteres Einschalten betrifft frühere Buchungen nicht.
 - **Bestätigung nachträglich per E-Mail:** Eltern ohne Adresse bei der Buchung können sich die Bestätigung
   auf der Seite ihres Termins an eine dort eingegebene Adresse schicken lassen. Diese Adresse dient nur
   dieser einen E-Mail und wird nicht gespeichert; die Fußzeile der E-Mail sagt das. Höchstens zweimal pro

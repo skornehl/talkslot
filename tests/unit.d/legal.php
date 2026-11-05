@@ -115,7 +115,7 @@ check('loading the template of the other type: note that it does not match the o
     && str_contains($pageForm(['private', 'school'], 'school', 'private'), 'Sie passt nicht zur gewählten Betriebsart „Privat betrieben“.')
     && !str_contains($pageForm(['private', 'school'], 'private', 'private'), 'passt nicht') && !str_contains($pageForm(['school', 'private'], 'private', null), 'passt nicht'));
 $dashboardTeacher = static fn (bool $typeMissing): string => App\View::capture('admin/dashboard', ['rounds' => [], 'title' => 'x', 'showOwner' => false,
-    'profileHints' => [], 'legalHints' => [], 'operatorMissing' => false, 'typeMissing' => $typeMissing, 'textsOpen' => true, 'configExposed' => [], 'unusedAccounts' => 0]);
+    'profileHints' => [], 'legalHints' => [], 'operatorMissing' => false, 'typeMissing' => $typeMissing, 'textsOpen' => true, 'configExposed' => [], 'unusedAccounts' => 0, 'mailsLate' => null]);
 check('teachers: notice that the admins still have to choose the operator type (before the one on open placeholders)',
     str_contains($dashboardTeacher(true), 'Die Admins müssen noch wählen, ob die Terminvergabe von der Schule oder privat betrieben wird.')
     && !str_contains($dashboardTeacher(false), 'Die Admins müssen noch wählen') && str_contains($dashboardTeacher(false), 'offene Platzhalter (Aufgabe der Admins)'));

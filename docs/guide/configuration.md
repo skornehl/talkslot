@@ -21,8 +21,9 @@ When you deploy with GitHub Actions, the file is generated from repository varia
 | `install_key` | – | at least 16 characters, only for `install.php` | `INSTALL_KEY` (with `ALLOW_INSTALL=1`) |
 
 Changing `secret` only affects short-lived things: forms that are open at that moment, access granted by
-a round code in the last hours, and the web cron token. Bookings, change links, invitation and password
-links are random tokens and keep working. It does not sign anybody out of the admin area; for that, use
+a round code in the last hours, the web cron token and the key of the deployment's
+[health check]({{ '/guide/deployment/' | relative_url }}#health-check) (the included workflows derive both
+again). Bookings, change links, invitation and password links are random tokens and keep working. It does not sign anybody out of the admin area; for that, use
 *Benutzer → Alle Sitzungen beenden*.
 
 ## Database
@@ -84,9 +85,21 @@ under Art. 28 GDPR. The servers are located in Germany.*
 | `session_absolute_hours` | `8` | admin area: maximum session length |
 | `access_link_hours` | `48` | validity of invitation and password links |
 | `cleanup_on_request` | `true` | also run the clean-up on page views … |
-| `cleanup_interval_minutes` | `15` | … at most this often |
+| `cleanup_interval_minutes` | `15` | … at most this often (database steps only: summaries and reminders are queued there, not sent) |
 | `summary_evening_hour` | `18` | from this hour, teachers get the summary for the next day and parents the reminder |
 | `audit_log_days` | `90` | entries of the admin log (*Protokoll*) are deleted after this many days |
+
+## Mail queue
+
+Reminders, summaries and confirmations that could not be sent at once wait in a mail queue (outbox) that
+the cron job sends; see [Operations]({{ '/guide/operations/' | relative_url }}#mail-queue).
+
+| Option | Default | Meaning |
+|---|---|---|
+| `mail_queue.batch` | `100` | at most this many mails per cron run |
+| `mail_queue.seconds` | `20` | time budget per cron run (a mail that has started is finished) |
+| `mail_queue.hourly_limit` | `0` | at most this many reminders and summaries per hour, e.g. your host's mail quota (`0` = no limit); confirmations and change notices go first and are never held back |
+| `mail_queue.after_response` | `true` | with PHP-FPM or LiteSpeed, a page view also sends up to 10 due mails after its response has gone out |
 
 ## Rate limits
 

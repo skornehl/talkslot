@@ -102,6 +102,7 @@ return [
     'manage.save_link' => 'Wichtig: Nur über diesen Link können Sie den Termin später ändern oder absagen. Bewahren Sie ihn gut auf, zum Beispiel als Lesezeichen, in Ihren Notizen oder im Kalender.',
     'manage.link_label' => 'Ihr persönlicher Link',
     'manage.mail_sent' => 'Eine Bestätigung mit diesem Link wurde an Ihre E-Mail-Adresse gesendet.',
+    'manage.mail_queued' => 'Die Bestätigung konnte gerade nicht gesendet werden. Sie wird automatisch an Ihre E-Mail-Adresse gesendet, sobald das wieder möglich ist. Bewahren Sie Ihren Link bitte trotzdem auf.',
     'manage.copy' => 'Link kopieren',
     'manage.copied' => 'Kopiert ✓',
     'manage.copy.prompt' => 'Link kopieren:',

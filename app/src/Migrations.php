@@ -10,7 +10,7 @@ namespace App;
  */
 final class Migrations
 {
-    public const LATEST = 19;
+    public const LATEST = 20;
 
     /** Version => SQL statements */
     private const STEPS = [
@@ -140,6 +140,32 @@ final class Migrations
               WHERE r.is_active = 1 OR r.expired_at IS NOT NULL
                  OR EXISTS (SELECT 1 FROM round_days d JOIN slots s ON s.day_id = d.id JOIN bookings b ON b.slot_id = s.id WHERE d.round_id = r.id)',
         ],
+        // 20: mail queue (outbox, references only: the text and a new link are made when sending) and per
+        //     booking: may it be reminded (remind_ok), the last confirmation or change notice (notified_at,
+        //     the reminder skips that day instead of looking at updated_at), a failed mail (mail_failed_at)
+        //     and the link of a confirmation sent later from the outbox (mail_token_hash). Existing bookings
+        //     of parents remind as their round does; entries by the teacher only after a new confirmation or
+        //     change notice, as nobody knows whether the parents got one (they never saw the booking form).
+        20 => [
+            'ALTER TABLE bookings
+                ADD COLUMN IF NOT EXISTS remind_ok TINYINT(1) NOT NULL DEFAULT 0 AFTER source,
+                ADD COLUMN IF NOT EXISTS notified_at DATETIME NULL AFTER remind_ok,
+                ADD COLUMN IF NOT EXISTS mail_failed_at DATETIME NULL AFTER notified_at,
+                ADD COLUMN IF NOT EXISTS mail_token_hash CHAR(64) NULL AFTER reminder_token_hash,
+                ADD UNIQUE KEY IF NOT EXISTS uq_bookings_mail_token (mail_token_hash)',
+            "UPDATE bookings b JOIN slots s ON s.id = b.slot_id JOIN round_days d ON d.id = s.day_id JOIN rounds r ON r.id = d.round_id
+                SET b.remind_ok = r.remind_parents WHERE b.source = 'parent'",
+            "UPDATE bookings SET notified_at = updated_at WHERE notified_at IS NULL AND COALESCE(email, '') <> ''",
+            "CREATE TABLE IF NOT EXISTS mail_outbox (
+                id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, kind VARCHAR(20) NOT NULL, booking_id INT UNSIGNED NULL,
+                user_id INT UNSIGNED NULL, ref VARCHAR(40) NULL, priority TINYINT UNSIGNED NOT NULL,
+                attempts SMALLINT UNSIGNED NOT NULL DEFAULT 0, next_attempt_at DATETIME NOT NULL, created_at DATETIME NOT NULL,
+                UNIQUE KEY uq_outbox_booking (booking_id, kind), UNIQUE KEY uq_outbox_account (user_id, kind, ref),
+                KEY idx_outbox_due (next_attempt_at),
+                CONSTRAINT fk_outbox_booking FOREIGN KEY (booking_id) REFERENCES bookings (id) ON DELETE CASCADE,
+                CONSTRAINT fk_outbox_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        ],
     ];
 
     /**
@@ -153,10 +179,10 @@ final class Migrations
         // Unchanged since v1.5.0: the legal notice of a "private, non-commercial service"
         'imprint-private.de' => '036e210b629357dfbf768868e3a5f249c888d3052f301170703b196336058f43',
         'imprint-private.en' => 'f15521ceaa18e97c98190e448cc95eb6130c4cf571164b09819bb40dd7af22c8',
-        'privacy.de' => '12d249130ce60c94e7cd8f430e6cea2809d121351ab59090db0e0cc014eb4afe',
-        'privacy.en' => '53be37d7c9c6697144d9400fe8a4536dee767f9ee22fe2636224d2484d04390a',
-        'privacy-private.de' => '47666fa31138011031ef382e7f5ce461e3eb68695283c070a153ce030b7a9ab9',
-        'privacy-private.en' => '1d889133a590ed13a4a8ae3b072f51fcc583798e899ededd4e184d183d0161c0',
+        'privacy.de' => 'a45b94275b4e42f8635ab7a601e6c52a8e3562c155865e349edf2a3502cedb8d',
+        'privacy.en' => 'b1186539d1140945417e257cc4e04f764be96db65c95e67c6b22e27b44be5e45',
+        'privacy-private.de' => '4a7a2d0b0c1bfb9c518d6aa6b69b079763df0210c2448262e788e8d8aeaf4780',
+        'privacy-private.en' => '9073bf4cc5bc431f2e98298c4a1c4c680c0fcc1116d96892e5e427b7607cc809',
     ];
 
     /**
@@ -176,6 +202,9 @@ final class Migrations
             // protection officer, teachers acting under the operator's instructions
             'de4289fa6a99be078922c0d4f2a945805de5fe1398b6e682f256f99cf9a8dabd',
             '05bcdc8ab770ab9e17046b5b89e2d9bc9bbbe7a39a66e4fa6c777950c345995b',
+            // The same with the mail queue (interim state on main after v1.7.0)
+            '4214ed9b61089be04b820467e61ac06319cd5152a1c9fab2b8c4069f9cdac21c',
+            '0d7cd119cc674671238f4aad67cef56baa057647a71d0e8655b475ba35513fdf',
             // Privacy policy de/en without the reminder mail (up to version 14)
             '0cda1f6b2ca1ad90d1135a27b0087542862a700e0fbcefce7d448895f07a702a',
             '7ab09658494d5af363ab22f52a13140952a72e83656280c26ba54e029b2a0d51',
@@ -235,6 +264,9 @@ final class Migrations
             // mail and the expiry of the remember-me entry (interim state on main after v1.5.0)
             'ac8cf4d882a13a6e127476ab13de02524316d343a746b4b8ff055c3aa0d09347',
             '320c437da7fbf0e1ab24328e555348c160b1ac8bc551dfcb7229ae0593de2683',
+            // Privacy policy de/en for public schools without the mail queue (outbox; v1.7.0, up to schema version 19)
+            '12d249130ce60c94e7cd8f430e6cea2809d121351ab59090db0e0cc014eb4afe',
+            '53be37d7c9c6697144d9400fe8a4536dee767f9ee22fe2636224d2484d04390a',
         ],
     ];
 

@@ -4,6 +4,9 @@
 # Prerequisite: freshly installed (dev/reset.sh), config from dev/config.dev.php. The test then
 # reinstalls once more on its own via the web installer (same credentials).
 set -u
+# Dates in the time zone of the app (timezone in config/config.sample.php): "tomorrow" in the test is the
+# app's tomorrow, also on a CI runner in UTC between midnight in Berlin and midnight UTC
+export TZ=Europe/Berlin
 B=${1:-http://localhost:8080}
 USER=${2:-sabrina}
 PASS=${3:-Sehr-Sicheres-Dev-Pw1}
@@ -25,7 +28,7 @@ check "CLI installer after installation: abort" 'dcx exec -T app php /srv/app/bi
 # Reinstall, this time via the web installer (same credentials as dev/reset.sh). It deletes
 # itself after success; the file is restored afterwards.
 INSTALL_BAK=$(mktemp); cp "$ROOT/public/install.php" "$INSTALL_BAK"
-dcx exec -T db mariadb -uapp -papp-dev-only talkslot -e "SET FOREIGN_KEY_CHECKS=0; DROP TABLE IF EXISTS tp_round_templates, tp_audit_log, tp_round_translations, tp_sent_summaries, tp_bookings, tp_slots, tp_day_breaks, tp_round_days, tp_rounds, tp_pages, tp_rate_limits, tp_settings, tp_users, tp_admin_users; CREATE TABLE tp_users (id INT)"
+dcx exec -T db mariadb -uapp -papp-dev-only talkslot -e "SET FOREIGN_KEY_CHECKS=0; DROP TABLE IF EXISTS tp_mail_outbox, tp_round_templates, tp_audit_log, tp_round_translations, tp_sent_summaries, tp_bookings, tp_slots, tp_day_breaks, tp_round_days, tp_rounds, tp_pages, tp_rate_limits, tp_settings, tp_users, tp_admin_users; CREATE TABLE tp_users (id INT)"
 dcx exec -T app php -r '@unlink("/srv/app/app/var/installed.lock");'
 check "installer reachable while not installed" 'curl -s "$B/install.php" | grep -q "name=\"install_key\""'
 check "CLI installer: different passwords → abort" 'printf "Sehr-Sicheres-Pw-1\nanderes-Passwort-2\n" | dcx exec -T app php /srv/app/bin/install.php sabrina 2>&1 | grep -q "Passwörter stimmen nicht überein"'
@@ -984,7 +987,7 @@ RN=$(mkrem Vorabend+aus 0); RNS=$(slugof "$RN")
 check "reminder setting: shown in the round and in the parents' email hint" 'curl -s -b "$J" "$B/admin/round/$RR" | grep -q "Erinnerung am Vorabend" && ! curl -s -b "$J" "$B/admin/round/$RN" | grep -q "Erinnerung am Vorabend" && curl -s "$B/$RRS" | grep -q "und eine Erinnerung am Vorabend" && ! curl -s "$B/$RNS" | grep -q "Erinnerung am Vorabend"'
 RA=$(book "$RRS" "Rem A" "rem-a-$RUN@example.org"); RB=$(book "$RRS" "Rem B" ""); RD=$(book "$RRS" "Rem D" "rem-d-$RUN@example.org"); RC=$(book "$RNS" "Rem C" "rem-c-$RUN@example.org")
 RAL=${RA#* }; RAL=${RAL%%\?*}
-DBQ "UPDATE tp_bookings SET created_at = NOW() - INTERVAL 2 DAY, updated_at = NOW() - INTERVAL 2 DAY WHERE name IN ('Rem A', 'Rem B', 'Rem C')"
+DBQ "UPDATE tp_bookings SET created_at = NOW() - INTERVAL 2 DAY, updated_at = NOW() - INTERVAL 2 DAY, notified_at = notified_at - INTERVAL 2 DAY WHERE name IN ('Rem A', 'Rem B', 'Rem C')"
 $DC exec -T app php /srv/app/bin/cron.php >/dev/null
 remmail() { $DC exec -T app php -r '$r=json_decode(file_get_contents("http://mail:8025/api/v1/search?query=to:'"$1"'%20subject:Erinnerung"),true); echo count($r["messages"] ?? []), "\n"; if (!empty($r["messages"])) echo json_decode(file_get_contents("http://mail:8025/api/v1/message/".$r["messages"][0]["ID"]),true)["Text"];'; }
 REMA=$(remmail rem-a-$RUN@example.org)
