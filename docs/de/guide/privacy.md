@@ -17,7 +17,7 @@ TDDDG. Diese Seite erläutert die Designentscheidungen; sie ist keine Rechtsbera
 | Gekürzte, per HMAC gehashte IP-Adressen; HMAC-Hashes von Konto-IDs und Geräte-Cookies mit fehlgeschlagenen Anmeldungen | Datenbank (Rate Limiting) | spätestens nach 24 Stunden |
 | Geräte-Cookie eines Admin- oder Lehrkraft-Kontos (Zufallszahl, Zeitpunkt, Signatur) | Browser der Person | nach 365 Tagen, bei jeder Anmeldung erneuert |
 | Konten der Lehrkräfte | Datenbank | durch einen Admin; inaktive Konten ohne Runden in Gebrauch 15 Monate nach der letzten Anmeldung, zusammen mit ihren Entwürfen |
-| Zusammenfassungen per E-Mail an Lehrkräfte (Uhrzeit und Name, keine E-Mail-Adressen) | Postfach der Lehrkraft | die Datenschutzerklärung sagt höchstens 15 Monate zu |
+| Zusammenfassungen per E-Mail an Lehrkräfte (Uhrzeit und Name, keine E-Mail-Adressen) | Postfach der Lehrkraft | von der Schule betrieben: die Datenschutzerklärung sagt höchstens 15 Monate zu; privat betrieben: Vorgaben der Schule (die Vorlage empfiehlt 15 Monate) |
 | Protokoll der Änderungen durch Admins (wer, wann, was; keine Daten von Eltern) | Datenbank | nach 90 Tagen (`audit_log_days`) |
 
 TalkSlot führt **keine** eigenen Zugriffsprotokolle. Für die Logs des Webservers ist der Hoster
@@ -133,7 +133,7 @@ Datenschutz* ändern.
 | Betriebsart | Verantwortlich | Vorlage der Datenschutzerklärung | Vorlage des Impressums |
 |---|---|---|---|
 | *Wird von der Schule betrieben*: eine staatliche Schule als öffentliche Stelle | die Schule | Art. 6 Abs. 1 lit. e, Abs. 3 DSGVO in Verbindung mit dem Schulgesetz Ihres Landes (Buchung, E-Mails, Zusammenfassungen) und dem Landesdatenschutzgesetz (Missbrauchsschutz, Server-Protokolle); Datenschutzbeauftragte der Schule; Widerspruchsrecht nach Art. 21, kein Recht auf Datenübertragbarkeit (Art. 20 Abs. 3) | die Schule als Anbieter |
-| *Wird privat betrieben*: eine Privatperson, ein Verein oder ein freier Träger (z. B. eine Schule in freier Trägerschaft) | der Betreiber; Lehrkräfte nutzen das Angebot | Art. 6 Abs. 1 lit. b und f DSGVO; Widerspruchsrecht für lit. f, Recht auf Datenübertragbarkeit; bei Privatpersonen in der Regel keine Datenschutzbeauftragte, mit einem Platzhalter, um das zu prüfen | ein privates, nicht kommerzielles Angebot (wie bis v1.5) |
+| *Wird privat betrieben*: eine Privatperson, ein Verein oder ein freier Träger (z. B. eine Schule in freier Trägerschaft) | der Betreiber, für die Terminvergabe; das Gespräch selbst, die Zusammenfassungen im Postfach der Lehrkraft und Ausdrucke gehören zur Tätigkeit der Lehrkraft an ihrer Schule (verantwortlich ist in der Regel die Schule, es gelten deren Vorgaben) | Art. 6 Abs. 1 lit. b und f DSGVO; Widerspruchsrecht für lit. f, Recht auf Datenübertragbarkeit; bei Privatpersonen in der Regel keine Datenschutzbeauftragte, mit einem Platzhalter, um das zu prüfen | ein privates, nicht kommerzielles Angebot (wie bis v1.5) |
 
 Behörden können sich bei der Erfüllung ihrer Aufgaben nicht auf berechtigte Interessen stützen (Art. 6
 Abs. 1 Unterabs. 2 DSGVO), und Gespräche an einer staatlichen Schule gehören zu ihren gesetzlichen Aufgaben,

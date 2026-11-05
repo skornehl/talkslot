@@ -2,17 +2,19 @@ This notice informs you, in accordance with Art. 13 of the General Data Protecti
 
 # 1. Controller
 
-The controller within the meaning of the GDPR for this booking service and all appointments booked through it is:
+The controller within the meaning of the GDPR for this booking service, i.e. for booking, changing and cancelling appointments on this site and the data stored for it, is:
 
 [[VERANTWORTLICHE]]
 
 The teachers who offer appointments on this platform use this service of the controller.
 
+**The meeting itself** and whatever the teacher does with your details outside this booking service – such as notes on the meeting, the summary e-mails in their mailbox (section 5) or printed appointment lists – is part of the teacher's work at their school. The operator of this booking service is not responsible for that; as a rule the school is, and its privacy notices and rules apply. Please direct questions about it to the teacher or the school.
+
 **Data protection officer:** none appointed, as there is no legal obligation to do so (Art. 37 GDPR, section 38 BDSG). [PLEASE CHECK, THEN DELETE THIS BRACKET: IF ONE HAS BEEN APPOINTED (E.G. BY AN ASSOCIATION OR INDEPENDENT PROVIDER), GIVE THEIR CONTACT DETAILS INSTEAD OF THE SENTENCE BEFORE.]
 
 # 2. Purpose
 
-Parents and guardians can use this page to book, change and cancel meetings (e.g. parent-teacher conferences) with the teacher named on the booking page. The data is used solely to organise and hold these meetings and – appointment and name only – as a record of the meetings held in summary e-mails to the teacher (for at most 15 months), and for no other purpose.
+Parents and guardians can use this page to book, change and cancel meetings (e.g. parent-teacher conferences) with the teacher named on the booking page. The data is used solely to organise and hold these meetings and – appointment and name only – for summary e-mails to the teacher, and for no other purpose.
 
 # 3. Data processed
 
@@ -36,7 +38,7 @@ There are no user accounts, no advertising, no tracking and no usage analytics. 
 - **Booking, changing and cancelling:** Art. 6(1)(b) GDPR – processing is necessary to carry out the appointment you requested.
 - **E-mail confirmation:** Art. 6(1)(b) GDPR, at your request by voluntarily providing the address.
 - **Abuse protection and server logs:** Art. 6(1)(f) GDPR. The legitimate interest is the secure and reliable operation of the booking service and protection against spam, multiple and unauthorised bookings.
-- **Summary e-mails to the teacher and their retention:** Art. 6(1)(b) GDPR (carrying out the agreed appointment) and Art. 6(1)(f) GDPR. The legitimate interest is reliable appointment planning and being able to trace, during the current school year, with whom a parent meeting took place and when.
+- **Summary e-mails to the teacher:** Art. 6(1)(b) GDPR (carrying out the agreed appointment) and Art. 6(1)(f) GDPR. The legitimate interest is the teacher's reliable appointment planning. Keeping them in the teacher's mailbox afterwards is covered by section 1 (the school's rules).
 - **Browser storage (“Remember my appointment”):** Section 25(1) TDDDG and Art. 6(1)(a) GDPR (your consent by ticking the box), see section 7.
 
 By ticking the required box in the booking form you only confirm that you have read this notice. This is not consent; the processing of your booking data is based on the legal grounds stated above.
@@ -48,9 +50,9 @@ By ticking the required box in the booking form you only confirm that you have r
 - If the teacher cancels your appointment or deletes a day or the booking round, the bookings concerned are deleted immediately. If you gave an e-mail address, you receive a cancellation by e-mail.
 - Shortened and hashed IP addresses are deleted after 24 hours at the latest.
 - **E-mails still to be sent** (e.g. the reminder the evening before, or a confirmation that could not be delivered at once): until it is sent, only a note of which e-mail is due for which booking is kept, without address or content; both are created from your booking when sending. The note is deleted once the e-mail is sent, after 48 hours at the latest, and together with your booking. The only exception is a cancellation by the teacher: your booking is already deleted then, so for this e-mail the address, language, name and appointment (without a link) are kept until it is sent and deleted afterwards, also after 48 hours at the latest.
-- **Summary e-mails to the teacher** (see section 6) contain the appointment and name – without e-mail address – and are deleted, as a record of the meetings, **at the latest 15 months after the appointment**. This is usually done in one batch after the end of the school year; the 15-month period ensures that appointments from the start of the school year are also deleted in time.
-- If you would like these entries deleted earlier, a short message to the controller (section 1) or to the teacher is sufficient (Art. 17 GDPR).
-- Printed appointment lists are destroyed after the meeting day.
+- **Summary e-mails to the teacher** (see section 6) contain the appointment and name – without e-mail address. Once sent, they leave this booking service. How long the teacher keeps them in their mailbox follows the rules of their school (section 1); deleting them at the latest 15 months after the appointment is recommended, usually in one batch after the end of the school year.
+- If you would like these e-mails deleted earlier, please contact the teacher or the school (Art. 17 GDPR). For your details in the booking service, a short message to the controller (section 1) is sufficient.
+- Printed appointment lists made by the teacher are also subject to the rules of the school; destroying them after the meeting day is recommended.
 
 # 6. Recipients
 
