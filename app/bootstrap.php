@@ -74,7 +74,7 @@ set_error_handler(static function (int $type, string $message, string $file, int
         return false;
     }
     $kind = in_array($type, [E_WARNING, E_USER_WARNING], true) ? 'Warning' : (in_array($type, [E_DEPRECATED, E_USER_DEPRECATED], true) ? 'Deprecated' : 'Notice');
-    App\ErrorPage::writeLog(sprintf('PHP %s: %s (%s:%d)', $kind, App\ErrorPage::sanitize($message), str_replace(APP_ROOT, '', $file), $line));
+    App\ErrorPage::writeLog(sprintf('PHP %s: %s (%s:%d)', $kind, App\ErrorPage::sanitize($message), App\ErrorPage::relativePath($file), $line));
     if (in_array($type, [E_WARNING, E_USER_WARNING], true)) {
         App\Alert::phpError($type, $message, $file, $line);
     }
@@ -90,7 +90,7 @@ register_shutdown_function(static function (): void {
     if ($err === null || !in_array($err['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR, E_RECOVERABLE_ERROR], true)) {
         return;
     }
-    App\ErrorPage::writeLog(sprintf('PHP Fatal error: %s (%s:%d)', App\ErrorPage::sanitize($err['message']), str_replace(APP_ROOT, '', $err['file']), $err['line']));
+    App\ErrorPage::writeLog(sprintf('PHP Fatal error: %s (%s:%d)', App\ErrorPage::sanitize($err['message']), App\ErrorPage::relativePath($err['file']), $err['line']));
     App\Alert::phpError($err['type'], $err['message'], $err['file'], $err['line']);
     if (PHP_SAPI !== 'cli' && !headers_sent()) {
         App\ErrorPage::show();

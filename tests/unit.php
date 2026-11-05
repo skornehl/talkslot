@@ -339,12 +339,17 @@ foreach (App\I18n::languages() as $lang) {
     @unlink($mailFile); @unlink($mailFile . '.expected'); @unlink($sendmail);
 }
 
+// PHP 8.5 adds a warning of its own for the failing sendmail: provoked here, so it goes to a log of its own
+// (tests/php-errors.sh would count it in app/var/php-error.log)
+$mailLog = tempnam(sys_get_temp_dir(), 'log');
 [$rc, , $err] = $run(['-d', 'sendmail_path=/bin/false', '-r', '
     require "app/bootstrap.php";
+    ini_set("error_log", ' . var_export($mailLog, true) . ');
     App\Alert::$stateFile = tempnam(sys_get_temp_dir(), "alert");
     App\Config::load(["alert_email" => "b@example.org", "mail" => ["transport" => "mail", "from_address" => "absender@example.org", "from_name" => "", "reply_to" => ""]] + (require "config/config.php"));
     App\Alert::$transport = static function ($to, $s, $b) { fwrite(STDERR, "ALERT:$to|$s|$b\n"); return true; };
     exit(App\Mailer::send("eltern@example.org", "Termin", "Hallo") ? 0 : 1);']);
+@unlink($mailLog);
 check('mail() fails: reported as failed, admin alerted without the recipient', $rc === 1
     && str_contains($err, 'ALERT:b@example.org|[TalkSlot] Mailversand fehlgeschlagen') && !str_contains($err, 'eltern@example.org'));
 

@@ -57,6 +57,13 @@ check('error log: deprecations as "PHP Deprecated", notices as "PHP Notice", war
     && str_contains($qLines, 'PHP Deprecated: bald weg (/app/src/Time.php:12)') && str_contains($qLines, 'PHP Notice: nur ein Hinweis (/app/src/Time.php:13)')
     && str_contains($qLines, 'PHP Warning: kaputt mit [email] (/app/src/Time.php:14)') && !str_contains($qLines, 'unterdrückt'));
 
+// The place in log lines and error reports: only the leading project root goes (CI mounts the project at /app,
+// where str_replace() turned /app/app/src/Db.php into /src/Db.php, which tests/php-errors.sh does not recognise)
+check('error log: the place relative to the project root, a directory named like the root stays, other paths unchanged',
+    App\ErrorPage::relativePath(APP_ROOT . '/app/src/Db.php') === '/app/src/Db.php'
+    && App\ErrorPage::relativePath(APP_ROOT . APP_ROOT . '/x.php') === APP_ROOT . '/x.php'
+    && App\ErrorPage::relativePath('/tmp/x' . APP_ROOT . '/a.php') === '/tmp/x' . APP_ROOT . '/a.php' && App\ErrorPage::relativePath(APP_ROOT . 'x/a.php') === APP_ROOT . 'x/a.php');
+
 // tests/php-errors.sh: warnings, notices, deprecations and fatal errors of the app since a given point of the log
 $phpErrors = static function (string $log, int $offset = 0): array {
     exec('bash ' . escapeshellarg(dirname(__DIR__) . '/php-errors.sh') . ' ' . escapeshellarg($log) . ' ' . $offset . ' 2>&1', $out, $rc);
