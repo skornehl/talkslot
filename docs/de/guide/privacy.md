@@ -13,6 +13,7 @@ TDDDG. Diese Seite erläutert die Designentscheidungen; sie ist keine Rechtsbera
 | Name und optionale E-Mail-Adresse einer Buchung | Datenbank | ab 0:00 Uhr am Tag nach dem Termin, bei einer Absage sofort |
 | Hash des persönlichen Änderungslinks (und der Links in der Erinnerung und in einer später verschickten Bestätigung) | Datenbank | mit der Buchung |
 | Eintrag der Mail-Warteschlange: welche E-Mail für welche Buchung oder welches Konto aussteht (ohne Adresse, Text oder Link) | Datenbank | nach dem Versand, spätestens nach 48 Stunden, mit der Buchung |
+| Absage durch die Lehrkraft in der Mail-Warteschlange: Adresse, Sprache, Name, Termin und Lehrkraft der gelöschten Buchung (ohne Link) | Datenbank | nach dem Versand, spätestens nach 48 Stunden |
 | Gekürzte, per HMAC gehashte IP-Adressen; HMAC-Hashes von Konto-IDs und Geräte-Cookies mit fehlgeschlagenen Anmeldungen | Datenbank (Rate Limiting) | spätestens nach 24 Stunden |
 | Geräte-Cookie eines Admin- oder Lehrkraft-Kontos (Zufallszahl, Zeitpunkt, Signatur) | Browser der Person | nach 365 Tagen, bei jeder Anmeldung erneuert |
 | Konten der Lehrkräfte | Datenbank | durch einen Admin; inaktive Konten ohne Runden in Gebrauch 15 Monate nach der letzten Anmeldung, zusammen mit ihren Entwürfen |
@@ -33,7 +34,10 @@ Datenschutzerklärung.
   Adresse noch Text noch Link: Sie entstehen erst beim Versand aus der Buchung, eine später verschickte
   Bestätigung mit einem eigenen, neuen Link (gespeichert wird nur sein Hash, wie bei der Erinnerung).
   Einträge werden nach dem Versand gelöscht, spätestens nach 48 Stunden und mit ihrer Buchung; die Vorlage
-  der Datenschutzerklärung nennt das.
+  der Datenschutzerklärung nennt das. Einzige Ausnahme ist die Absage durch die Lehrkraft: Die Buchung ist
+  dann schon gelöscht, deshalb behält der Eintrag, was genau diese E-Mail braucht (Adresse, Sprache, Name,
+  Termin, Lehrkraft; keinen Link, keinen Token, keine Beschreibung), bis sie verschickt ist, höchstens
+  48 Stunden. Auch das nennt die Vorlage.
 - **Erinnerungen nur, wo Eltern davon wissen:** Wer selbst bucht, bekommt die Erinnerung, wenn sie für die
   Runde beim Buchen eingeschaltet war (das Formular sagt es). Einträge der Lehrkraft bekommen sie erst, wenn
   eine Bestätigung oder Änderungsmitteilung bei den Eltern angekommen ist, denn diese E-Mail informiert über
@@ -49,13 +53,19 @@ Datenschutzerklärung.
 - **Änderungen durch die Lehrkraft:** Ändert oder verschiebt die Lehrkraft eine einzelne Buchung, geht
   standardmäßig eine Änderungs-E-Mail mit den aktuellen Termindaten an die Eltern (sofern eine Adresse
   hinterlegt ist; das Häkchen lässt sich herausnehmen). Beim Löschen einer Buchung, eines Tages, einer
-  Runde oder eines Kontos, wenn ein Tag ein anderes Datum oder einen anderen Ort bekommt und wenn die
-  Runde einen anderen Ort oder eine andere Lehrkraft bekommt, geht noch keine E-Mail an die Eltern;
-  Bestätigungsdialoge, Formularhinweise und die Meldung danach sagen das. Auf einen `mailto:`-Link an die
-  Eltern wurde bewusst verzichtet, damit ihre Adressen nicht über das Mailprogramm des Browsers in private
-  Postfächer gelangen. Nach dem Löschen einer Buchung nennt die Meldung die Eltern einmal mit ihrer
-  Adresse (beides stand vorher auf der Seite der Runde), damit die Lehrkraft sie informieren kann, am
-  besten aus dem dienstlichen Postfach.
+  Runde oder eines Kontos geht eine Absage hinaus, bei einem neuen Datum, einer neuen Uhrzeit oder einem
+  neuen Ort eines Tages und bei einem neuen Ort oder einer neuen Lehrkraft der Runde eine
+  Änderungsmitteilung, jeweils in der Sprache der Eltern und mit standardmäßig angehaktem *Eltern per
+  E-Mail informieren*. Das ist der Zweck, für den die Adresse angegeben wurde (Absage und Änderung stehen
+  in der Datenschutzerklärung). E-Mails gehen nur an Eltern, die selbst gebucht haben, oder deren Eintrag
+  durch die Lehrkraft schon eine Bestätigung oder Änderungsmitteilung erhalten hat; Eltern, die nie eine
+  E-Mail von TalkSlot bekommen haben, erhalten auch keine Absage (die Regel der Erinnerung). Das verhindert
+  zugleich, dass ein Konto über selbst angelegte Einträge mit beliebigen Adressen und das Löschen eines
+  Tages E-Mails an beliebige Empfänger schickt. Der Audit-Eintrag nennt nur die Zahl der benachrichtigten
+  Eltern. Auf einen `mailto:`-Link an die Eltern wurde bewusst verzichtet, damit ihre Adressen nicht über
+  das Mailprogramm des Browsers in private Postfächer gelangen. Wer keine E-Mail bekommt, wird in der
+  Meldung danach einmal mit Termin und gegebenenfalls Adresse genannt (beides stand vorher auf der Seite
+  der Runde), damit die Lehrkraft ihn persönlich informieren kann, am besten aus dem dienstlichen Postfach.
 - **Protokoll ohne Kontrolle der Lehrkräfte:** Erfasst werden nur Änderungen durch Admin-Konten, damit bei
   mehreren Admins nachvollziehbar ist, wer was getan hat. Was Lehrkräfte in ihren eigenen Runden tun,
   wird nicht aufgezeichnet, Buchungen erscheinen nur mit Datum und Uhrzeit. Je nach Bundesland kann ein

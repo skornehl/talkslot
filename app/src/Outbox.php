@@ -14,16 +14,22 @@ namespace App;
  * a mail with a link gets a new token then (as the reminder does), so the outbox holds no secrets. Rows are
  * deleted once sent, together with their booking or account (foreign keys), and after at most MAX_AGE_HOURS
  * if sending keeps failing; such a booking is marked "mail not delivered" (bookings.mail_failed_at).
+ * The one exception is the cancellation of a booking the teacher deleted (kind "cancelled", ScheduleService):
+ * the booking is gone, so the row keeps what that mail needs in payload (Notifier::cancellationData():
+ * address, language, name, appointment; no link or token), and is deleted like any other row.
  *
- * Order: priority (single mails to parents before summaries before reminders), then due time. A failed
- * attempt is retried after a growing pause (BACKOFF). Each run is limited in mails and seconds; summaries
- * and reminders also respect an optional hourly limit (mail_queue.hourly_limit, e.g. the host's quota),
- * single mails do not, but they count against it.
+ * Order: priority (single mails to parents before bulk mails and summaries before reminders), then due time.
+ * A failed attempt is retried after a growing pause (BACKOFF). Each run is limited in mails and seconds;
+ * bulk mails (many parents after one change by the teacher), summaries and reminders also respect an
+ * optional hourly limit (mail_queue.hourly_limit, e.g. the host's quota), single mails do not, but they
+ * count against it.
  */
 final class Outbox
 {
     /** Kind of mail => priority (lower goes first). */
-    public const KINDS = ['booked' => 1, 'changed' => 1, 'summary_deadline' => 2, 'summary_evening' => 2, 'reminder' => 3];
+    public const KINDS = ['booked' => 1, 'changed' => 1, 'cancelled' => 1, 'summary_deadline' => 2, 'summary_evening' => 2, 'reminder' => 3];
+    /** Priority of bulk mails: after single mails, so they respect the hourly limit (spread over hours), before reminders. */
+    public const BULK = 2;
     /** Mails not sent after this long are given up (the booking shows "mail not delivered"). */
     public const MAX_AGE_HOURS = 48;
     /** Mails waiting longer than this are shown to admins (cron job missing or mail server failing). */
@@ -42,17 +48,31 @@ final class Outbox
 
     /**
      * Queues a mail about a booking (once per booking and kind). $failedOnce: sending it right away has
-     * just failed, so the first retry waits. A change notice is not queued while the confirmation still
-     * waits: that one is created when sending and already has the current details.
+     * just failed, so the first retry waits. $bulk: one of many after a change by the teacher (BULK). A
+     * change notice is not queued while the confirmation still waits: that one is created when sending and
+     * already has the current details.
      */
-    public static function queueBooking(int $bookingId, string $kind, bool $failedOnce = false): void
+    public static function queueBooking(int $bookingId, string $kind, bool $failedOnce = false, bool $bulk = false): void
     {
         if ($kind === 'changed' && Db::value("SELECT id FROM mail_outbox WHERE booking_id = ? AND kind = 'booked'", [$bookingId]) !== null) {
             return;
         }
         Db::run(
             'INSERT IGNORE INTO mail_outbox (kind, booking_id, priority, attempts, next_attempt_at, created_at) VALUES (?, ?, ?, ?, ?, ?)',
-            [$kind, $bookingId, self::KINDS[$kind], $failedOnce ? 1 : 0, self::retryAt($failedOnce ? 1 : 0), Time::nowSql()]
+            [$kind, $bookingId, $bulk ? self::BULK : self::KINDS[$kind], $failedOnce ? 1 : 0, self::retryAt($failedOnce ? 1 : 0), Time::nowSql()]
+        );
+    }
+
+    /**
+     * Queues the cancellation of a booking the teacher deleted, with what the mail needs (Notifier::cancellationData()).
+     * $failedOnce and $bulk as for queueBooking().
+     */
+    public static function queueCancellation(array $data, bool $failedOnce = false, bool $bulk = false): void
+    {
+        Db::run(
+            'INSERT INTO mail_outbox (kind, payload, priority, attempts, next_attempt_at, created_at) VALUES (?, ?, ?, ?, ?, ?)',
+            ['cancelled', json_encode($data, JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE | JSON_THROW_ON_ERROR),
+             $bulk ? self::BULK : self::KINDS['cancelled'], $failedOnce ? 1 : 0, self::retryAt($failedOnce ? 1 : 0), Time::nowSql()]
         );
     }
 
@@ -204,10 +224,15 @@ final class Outbox
 
     /**
      * Creates and sends the mail of a row. true = sent, false = failed (retry), null = no longer needed:
-     * the booking has no address any more or its day is over (the booking itself is deleted then).
+     * the booking has no address any more or its day is over (the booking itself is deleted then), or the
+     * cancelled appointment would have begun already.
      */
     private static function deliver(array $row): ?bool
     {
+        if ($row['kind'] === 'cancelled') {
+            $data = json_decode((string) $row['payload'], true);
+            return isset($data['day_date'], $data['start_time']) && ScheduleService::upcoming($data) ? Notifier::teacherCancelled($data) : null;
+        }
         if ($row['booking_id'] === null) {
             return Summaries::deliver((string) $row['kind'], (int) $row['user_id'], (string) $row['ref']);
         }

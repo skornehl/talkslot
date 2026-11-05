@@ -63,11 +63,12 @@ return [
     'cleanup_on_request' => true,
     'cleanup_interval_minutes' => 15,
 
-    // Mail queue (outbox): reminders, summaries and confirmations that could not be sent at once.
-    // The cron job sends them, at most 'batch' mails within about 'seconds' per run, retrying failed ones
-    // for up to 48 hours. With PHP-FPM or LiteSpeed a page request also sends up to 10 due mails after its
-    // response has gone out ('after_response'). 'hourly_limit': at most this many reminders and summaries
-    // per hour, e.g. the hosting quota (0 = no limit); single mails to parents always go out first.
+    // Mail queue (outbox): reminders, summaries, mails to parents after a change by a teacher, and
+    // confirmations that could not be sent at once. The cron job sends them, at most 'batch' mails within
+    // about 'seconds' per run, retrying failed ones for up to 48 hours. With PHP-FPM or LiteSpeed a page
+    // request also sends up to 10 due mails after its response has gone out ('after_response').
+    // 'hourly_limit': at most this many reminders, summaries and mails to many parents after one change by
+    // a teacher per hour, e.g. the hosting quota (0 = no limit); single mails to parents always go out first.
     'mail_queue' => [
         'batch' => 100,
         'seconds' => 20,
