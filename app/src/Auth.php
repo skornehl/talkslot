@@ -29,9 +29,25 @@ final class Auth
     }
 
     /**
+     * Where to go after signing in (?next= of the login page): only a page of the admin area, as a path of the
+     * app with an optional query, e.g. "/admin/round/5?print=1". Anything else (other sites, "//host", "\\",
+     * "..", encoded characters outside the query, the login page itself) gives null, i.e. the overview.
+     */
+    public static function returnPath(string $next): ?string
+    {
+        if (!preg_match('~^/admin(/[A-Za-z0-9/_.-]*)?(\?[A-Za-z0-9=&_.%+-]*)?\z~', $next) || str_contains($next, '//')
+            || str_contains($next, '/.') || preg_match('~^/admin/?(\?|$)|^/admin/(login|logout)\b~', $next)) {
+            return null;
+        }
+        return $next;
+    }
+
+    /**
      * Starts the admin session. Without $force only if the browser already has a session cookie:
      * login, "forgot password" and invitation pages do not create a session file for anonymous
-     * visitors (otherwise the storage could be filled up with requests).
+     * visitors (otherwise the storage could be filled up with requests). AdminController never forces it
+     * for a request without the cookie (see there): no session file for scanners, and no new cookie that
+     * replaces a valid one the browser held back (a link from a webmailer, SameSite=Strict).
      */
     public static function startSession(bool $force = true): void
     {

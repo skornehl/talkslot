@@ -5,7 +5,8 @@ namespace App;
 
 /**
  * Email notifications to parents – only if they voluntarily provided an address.
- * Replies go to the teacher (Reply-To). Summaries for teachers: see Summaries.
+ * Replies go to the teacher (Reply-To: the reply address of the account, else its e-mail address; not to an
+ * address outside allowed_account_domains, see AccountDomains). Summaries for teachers: see Summaries.
  * Mails to the address stored with the booking record their result there (BookingService::mailResult()).
  * Changes by the teacher (ScheduleService) send change notices and cancellations; a cancellation is sent once
  * the booking is gone, from what cancellationData() kept of it.
@@ -151,7 +152,8 @@ final class Notifier
                 ];
                 $body .= "\n\n" . t('mail.ics.cancel_hint');
             }
-            $replyTo = filter_var((string) ($b['teacher_email'] ?? ''), FILTER_VALIDATE_EMAIL) ? (string) $b['teacher_email'] : null;
+            $replyTo = (string) ($b['teacher_email'] ?? '');
+            $replyTo = filter_var($replyTo, FILTER_VALIDATE_EMAIL) && AccountDomains::permits($replyTo) ? $replyTo : null;
             return Mailer::send($email, t("mail.$type.subject", $vars), $body . "\n\n" . t($footer, $vars), $attachments, $replyTo);
         });
     }

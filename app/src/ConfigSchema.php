@@ -20,7 +20,8 @@ final class ConfigSchema
     /**
      * Dot path => [type, default, options]. Types: string, url, email, bool, int (options: min, max or null),
      * enum (options: the allowed values), limit ([count, seconds] of a rate limit), map (texts per language),
-     * and secret, timezone, languages, language, prefix, which errors() or warnings() check on their own.
+     * domains (a list of mail domains), and secret, timezone, languages, language, prefix, which errors() or
+     * warnings() check on their own.
      */
     public const KEYS = [
         'app_name' => ['string', 'TalkSlot'],
@@ -60,6 +61,8 @@ final class ConfigSchema
         'mail_queue.hourly_limit' => ['int', 0, 0, null],
         'mail_queue.after_response' => ['bool', true],
         'summary_evening_hour' => ['int', 18, 0, 23],
+        'summary_names' => ['bool', false],
+        'allowed_account_domains' => ['domains', []],
         'admin_language' => ['enum', 'de', AdminI18n::LANGUAGES],
         'audit_log_days' => ['int', 90, 1, null],
         'rate_limits.code' => ['limit', [30, 900]],
@@ -223,6 +226,7 @@ final class ConfigSchema
             // RateLimiter::limits() takes any two values and casts them: [0, 900] would block every request
             'limit' => is_array($value) && array_keys($value) === [0, 1] && is_int($value[0]) && is_int($value[1]) && min($value) >= 1,
             'map' => is_array($value) && !array_filter($value, static fn ($text): bool => !is_string($text)),
+            'domains' => is_array($value) && array_is_list($value) && !array_filter($value, static fn ($domain): bool => !is_string($domain) || !AccountDomains::valid($domain)),
             default => true, // secret, timezone, languages, prefix: errors() stops the app instead
         };
     }
@@ -239,6 +243,7 @@ final class ConfigSchema
             'enum' => __('einer dieser Werte: {values}', ['values' => implode(', ', array_map(static fn (string $v): string => "'$v'", $spec[2]))]),
             'limit' => __('[Anzahl, Sekunden] mit ganzen Zahlen ab 1'),
             'map' => __('Texte je Sprache, z. B. [\'de\' => \'…\']'),
+            'domains' => __('eine Liste von Domains, z. B. [\'schule.example.org\']'),
             default => __('ein Text in Anführungszeichen'),
         };
     }

@@ -1,4 +1,4 @@
-<?php /** @var array $rounds @var list<string> $profileHints @var list<string> $legalHints @var bool $showOwner @var bool $operatorMissing @var bool $typeMissing @var bool $textsOpen @var int $unusedAccounts @var ?array $mailsLate @var array{state: string, last: ?int}|null $cron @var list<string> $setupHints */ ?>
+<?php /** @var array $rounds @var list<string> $profileHints @var list<string> $legalHints @var bool $showOwner @var bool $operatorMissing @var bool $typeMissing @var bool $textsOpen @var int $unusedAccounts @var ?array $mailsLate @var array{state: string, last: ?int}|null $cron @var list<string> $setupHints @var ?string $summaryNotice @var int $foreignAddresses */ ?>
 <?php if ($mailsLate): ?>
   <div class="alert alert-warning" role="status" data-mails-late><p><?= e(__('{count} E-Mail(s) warten seit über {hours} Stunden auf den Versand (die älteste seit {since}). Erinnerungen, Zusammenfassungen und Bestätigungen, die nicht sofort zugestellt werden konnten, verschickt der Cron-Job: Bitte prüfen Sie, ob er stündlich läuft und ob der Mailversand funktioniert. Nach 48 Stunden werden sie verworfen.', ['count' => $mailsLate['count'], 'hours' => App\Outbox::LATE_HOURS, 'since' => date('d.m.Y H:i', (int) strtotime($mailsLate['since']))])) ?></p></div>
 <?php endif; ?>
@@ -28,6 +28,15 @@
     <p><strong><?= e(__('Die Einrichtung des Servers braucht Aufmerksamkeit (Aufgabe der technischen Betreuung, die Einstellungen stehen in config/config.php):')) ?></strong></p>
     <ul><?php foreach ($setupHints as $h): ?><li><?= e($h) ?></li><?php endforeach; ?></ul>
   </div>
+<?php endif; ?>
+<?php if ($summaryNotice ?? null): ?>
+  <div class="alert alert-info" role="status" data-summary-notice>
+    <p><?= e($summaryNotice) ?> <a href="<?= e(url('/admin/profile')) ?>"><?= e(__('Zum Profil')) ?></a></p>
+    <form method="post" action="<?= e(url('/admin/profile/summaries')) ?>"><?= App\Csrf::adminField() ?><button type="submit" class="button button-small"><?= e(__('Verstanden')) ?></button></form>
+  </div>
+<?php endif; ?>
+<?php if ($foreignAddresses ?? 0): ?>
+  <div class="alert alert-warning" role="status" data-foreign-addresses><p><?= e(__('Aktive Konten mit einer Adresse außerhalb von „allowed_account_domains“: {count}. Sie erhalten keine Zusammenfassungen, und Antworten der Eltern gehen nicht an sie. Bitte ändern Sie die Adressen.', ['count' => $foreignAddresses])) ?> <a href="<?= e(url('/admin/users')) ?>"><?= e(__('Zu den Benutzern')) ?></a></p></div>
 <?php endif; ?>
 <?php if ($profileHints): ?>
   <div class="alert alert-warning" role="status">

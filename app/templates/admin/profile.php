@@ -14,13 +14,19 @@
     <?php if (App\Auth::isAdmin()): ?>
     <p class="hint"><?= __h('Die Angaben für Impressum und Datenschutz (die Schule bzw. der Betreiber) pflegen alle Admins gemeinsam unter {link}.', ['link' => '<a href="' . e(url('/admin/texts')) . '">' . e(__('„Texte“')) . '</a>']) ?></p>
     <?php endif; ?>
+    <?php $domains = App\AccountDomains::allowed(); ?>
     <div class="field">
       <label for="email"><?= e(__('E-Mail-Adresse')) ?></label>
       <input type="email" id="email" name="email" maxlength="254" value="<?= e($data['email'] ?? '') ?>" aria-describedby="em-hint">
-      <p class="hint" id="em-hint"><?= e(__('Für Ihre Zusammenfassungen und Links zum Zurücksetzen des Passworts. Eltern sehen sie nicht, Antworten auf Bestätigungsmails gehen aber an diese Adresse (Reply-To).')) ?></p>
+      <p class="hint" id="em-hint"><?= e(__('Für Ihre Zusammenfassungen und Links zum Zurücksetzen des Passworts. Eltern sehen sie nicht; ihre Antworten auf E-Mails zu ihrem Termin gehen an diese Adresse, wenn Sie keine Antwortadresse angeben.')) ?><?= $domains ? ' ' . e(__('Die Schule erlaubt nur Adressen bei {domains}.', ['domains' => implode(', ', $domains)])) : '' ?></p>
     </div>
     <div class="field">
-      <label for="current_password_email"><?= e(__('Aktuelles Passwort')) ?> <span class="muted small"><?= e(__('(nur nötig, wenn Sie die E-Mail-Adresse ändern)')) ?></span></label>
+      <label for="reply_to"><?= e(__('Antwortadresse für Eltern')) ?> <span class="muted small"><?= e(__('(optional)')) ?></span></label>
+      <input type="email" id="reply_to" name="reply_to" maxlength="254" value="<?= e($data['reply_to'] ?? '') ?>" aria-describedby="rt-hint">
+      <p class="hint" id="rt-hint"><?= e(__('Antworten der Eltern auf E-Mails zu ihrem Termin gehen an diese Adresse statt an Ihre E-Mail-Adresse, z. B. an Ihre dienstliche Adresse. Eltern sehen sie, sobald sie antworten.')) ?></p>
+    </div>
+    <div class="field">
+      <label for="current_password_email"><?= e(__('Aktuelles Passwort')) ?> <span class="muted small"><?= e(__('(nur nötig, wenn Sie eine der beiden Adressen ändern)')) ?></span></label>
       <input type="password" id="current_password_email" name="current_password" autocomplete="current-password">
     </div>
     <div class="field">
@@ -35,13 +41,19 @@
       <legend><?= e(__('Zusammenfassungen per E-Mail')) ?></legend>
       <div class="check">
         <input type="checkbox" id="summary_evening" name="summary_evening" value="1"<?= !empty($data['summary_evening']) ? ' checked' : '' ?>>
-        <label for="summary_evening"><strong><?= e(__('Tagesübersicht am Vorabend:')) ?></strong> <?= e(__('Am Abend vor einem Termintag alle Termine des nächsten Tages (Uhrzeit und Name, mit Kalenderdatei).')) ?></label>
+        <label for="summary_evening"><strong><?= e(__('Tagesübersicht am Vorabend:')) ?></strong> <?= e(__('Am Abend vor einem Termintag die Termine des nächsten Tages.')) ?></label>
       </div>
       <div class="check">
         <input type="checkbox" id="summary_deadline" name="summary_deadline" value="1"<?= !empty($data['summary_deadline']) ? ' checked' : '' ?>>
         <label for="summary_deadline"><strong><?= e(__('Übersicht nach Buchungsschluss:')) ?></strong> <?= e(__('Sobald für einen Tag keine Buchungen mehr möglich sind, die endgültige Terminliste dieses Tages.')) ?></label>
       </div>
-      <p class="hint"><?= e(__('Die Mails enthalten nur Uhrzeiten und Namen, keine E-Mail-Adressen der Eltern. Bitte nach den Vorgaben Ihrer Schule löschen, spätestens 15 Monate nach dem Termin.')) ?></p>
+      <p class="hint"><?= e(__('Die E-Mails nennen je Tag die Zahl der Termine, Auffälliges (z. B. denselben Namen mehrmals) und den Link zur Terminliste, aber nie E-Mail-Adressen der Eltern.')) ?></p>
+      <?php if (App\Config::get('summary_names', false)): ?>
+      <div class="check">
+        <input type="checkbox" id="summary_names" name="summary_names" value="1"<?= App\Summaries::wantsNames($data) ? ' checked' : '' ?>>
+        <label for="summary_names"><strong><?= e(__('Mit Namen:')) ?></strong> <?= e(__('zusätzlich Uhrzeit und Name jedes Termins und eine Kalenderdatei der Termine (ohne Namen). Ihre Schule hat das freigegeben. Bitte löschen Sie diese E-Mails, sobald Sie sie nicht mehr brauchen, spätestens zum Ende des Schuljahres.')) ?></label>
+      </div>
+      <?php endif; ?>
     </fieldset>
     <div class="actions"><button type="submit" class="button button-primary"><?= e(__('Speichern')) ?></button></div>
   </form>
