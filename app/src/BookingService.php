@@ -28,8 +28,8 @@ final class BookingService
     /** Values of rounds.booking_limit */
     public const LIMITS = ['none', 'round', 'day'];
 
-    /** SQL skeleton: booking with slot, day and round. */
-    private const DETAIL_SQL = 'SELECT b.*, s.start_time, s.end_time, s.is_conflict, d.day_date, d.id AS day_id,
+    /** SQL skeleton: booking with slot, day and round (also used by ScheduleService). */
+    public const DETAIL_SQL = 'SELECT b.*, s.start_time, s.end_time, s.is_conflict, d.day_date, d.id AS day_id,
                                        r.id AS round_id, r.title, r.description, r.source_lang,
                                        COALESCE(NULLIF(TRIM(d.location), \'\'), r.location) AS location, r.slug, r.is_active, r.cancel_deadline_hours,
                                        r.booking_deadline_hours, r.user_id, r.remind_parents,

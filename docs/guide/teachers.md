@@ -90,16 +90,28 @@ Per day you see all slots with the bookings:
 If you change times or breaks, **booked appointments are never deleted**; slots that no longer fit are
 marked with ⚠ so you can move them.
 
-**Parents are not notified automatically** when you delete a booking, a day or a round, when a day gets
-another date or location, the round another location or (by an admin) another teacher, or when a booking
-becomes a conflict; the same goes for an admin deleting an account. The confirmation dialogs, the hints in
-the forms and the message afterwards say so, with the number of bookings concerned. Please inform the
-parents yourself, in person if no e-mail address is stored. If the booking still exists, the simplest way
-is the entry itself: open *Bearbeiten* and save with *Änderung per E-Mail mitteilen* ticked, and parents
-with an e-mail address receive the new details in their language (at most 30 mails per hour from your
-account; beyond that the message asks you to save again later). Before deleting a day or a round, open the
-print view: afterwards nobody can see who had booked. To move a conflicting booking, edit it and leave
-*Änderung per E-Mail mitteilen* ticked.
+**Parents hear about your changes by e-mail.** When you delete a booking, a day or a round, give a day
+another date, time or location, or the round another location or (as an admin) another teacher, the box
+***Eltern per E-Mail informieren*** is ticked in the dialog or form. Parents then get a mail in their language:
+
+- a **cancellation** when their booking is deleted, with a calendar file that removes the appointment from
+  their calendar, and the link to the round page to book again if the round still takes bookings. It has
+  no personal link, as the booking is gone. A single entry is sent at once; several (a day, a round) go
+  out from the [mail queue]({{ '/guide/operations/' | relative_url }}#mail-queue), with the next run of the
+  cron job or, on PHP-FPM, right after the page;
+- a **change notice** with the current date, time, location and teacher when these changed (from the
+  mail queue). Their personal link stays valid.
+
+Mails go to parents who booked with an e-mail address themselves, and to entries you made yourself once
+their parents got a confirmation or change notice from TalkSlot. Everybody else, and everybody if you untick
+the box, is **not** notified: the dialogs and forms give the number, and the message afterwards names them
+with date, time and address (once; after a deletion nothing else shows them), so that you can tell them in
+person. Appointments that are over concern nobody.
+
+Bookings that no longer fit after a change of times or breaks become **conflicts** (⚠). Their parents are
+not mailed yet: they hear of it when you move the booking (*Bearbeiten*, *Änderung per E-Mail mitteilen*
+ticked) or delete it (*Eltern per E-Mail informieren* ticked). Saving an entry with *Änderung per E-Mail
+mitteilen* also sends the current details without a change (at most 30 mails per hour from your account).
 
 Further actions on the round: edit, deactivate, **print view / PDF** (*Druckansicht / PDF*), and
 **duplicate** (*Duplizieren …*): a copy with new link and code, including times, breaks, blocked slots,

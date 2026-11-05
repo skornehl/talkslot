@@ -231,10 +231,13 @@ var L = (function () {
     });
   });
 
-  // Confirmation prompt before delete actions
+  // Confirmation prompt before delete actions. With the box "Eltern per E-Mail informieren" unticked, the
+  // prompt says that the parents are not told (data-confirm-off)
   Array.prototype.forEach.call(document.querySelectorAll('form[data-confirm]'), function (form) {
     form.addEventListener('submit', function (ev) {
-      if (!window.confirm(form.getAttribute('data-confirm'))) {
+      var notify = form.querySelector('input[name="notify"]');
+      var off = notify && !notify.checked && form.hasAttribute('data-confirm-off');
+      if (!window.confirm(form.getAttribute(off ? 'data-confirm-off' : 'data-confirm'))) {
         ev.preventDefault();
       }
     });

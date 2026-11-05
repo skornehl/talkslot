@@ -128,7 +128,8 @@ runs queue the teachers' summary mails and the parents' reminders; the cron job 
 Apart from the confirmations sent right away (below), no visitor waits for the mail server: page views
 only run the database steps of the clean-up, and reminders, summaries and mails that failed go to a
 **mail queue** (outbox) that the **cron job** sends (`bin/cron.php` or the web cron). Per run it sends at most 100 mails within about 20 seconds over one SMTP
-connection; confirmations and change notices to parents go first, then summaries, then reminders
+connection; single confirmations, change notices and cancellations to parents go first, then the mails to
+many parents after one change by a teacher (a day or round deleted or moved) and summaries, then reminders
 (see [configuration]({{ '/guide/configuration/' | relative_url }}#mail-queue), also for an hourly limit).
 Only one run sends at a time, per database, so installations sharing a database server do not hold each
 other up; the cron job waits up to 15 seconds for a run in progress.
@@ -140,6 +141,13 @@ other up; the cron job waits up to 15 seconds for a run in progress.
   address and text are taken from the booking when sending, and a confirmation sent later gets a new
   personal link of its own (the first one stays valid), so the queue holds no address and no link. Entries
   go with their booking and are deleted once sent, after 48 hours at the latest.
+- **Except cancellations by the teacher.** When a teacher deletes a booking, a day, a round or an admin an
+  account, with *Eltern per E-Mail informieren* ticked, the booking is gone before its cancellation is
+  sent. Such an entry therefore keeps what this one mail needs (address, language, name, appointment and
+  teacher, as JSON in `mail_outbox.payload`, schema version 20), never a link or token, and is deleted like
+  the others: once sent, after 48 hours at the latest. A cancellation whose appointment has begun meanwhile
+  is dropped. Older versions drop such entries unsent, so a rollback loses at most the cancellations still
+  waiting.
 - **Nothing gets lost unnoticed.** The booking list shows *E-Mail nicht zugestellt* at an entry whose mail
   failed (with *neuer Versuch folgt* while it is retried), and admins see a notice on the overview when
   mails have waited for more than two hours, usually because the cron job does not run or the mail server

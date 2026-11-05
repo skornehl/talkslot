@@ -10,7 +10,7 @@ namespace App;
  */
 final class Migrations
 {
-    public const LATEST = 20;
+    public const LATEST = 21;
 
     /** Version => SQL statements */
     private const STEPS = [
@@ -166,6 +166,11 @@ final class Migrations
                 CONSTRAINT fk_outbox_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
         ],
+        // 21: cancellations by the teacher (booking, day, round or account deleted) wait in the outbox with
+        //     what the mail needs, as the booking is gone (additive: older code drops such rows unsent)
+        21 => [
+            'ALTER TABLE mail_outbox ADD COLUMN IF NOT EXISTS payload TEXT NULL AFTER ref',
+        ],
     ];
 
     /**
@@ -179,10 +184,10 @@ final class Migrations
         // Unchanged since v1.5.0: the legal notice of a "private, non-commercial service"
         'imprint-private.de' => '036e210b629357dfbf768868e3a5f249c888d3052f301170703b196336058f43',
         'imprint-private.en' => 'f15521ceaa18e97c98190e448cc95eb6130c4cf571164b09819bb40dd7af22c8',
-        'privacy.de' => 'a45b94275b4e42f8635ab7a601e6c52a8e3562c155865e349edf2a3502cedb8d',
-        'privacy.en' => 'b1186539d1140945417e257cc4e04f764be96db65c95e67c6b22e27b44be5e45',
-        'privacy-private.de' => '4a7a2d0b0c1bfb9c518d6aa6b69b079763df0210c2448262e788e8d8aeaf4780',
-        'privacy-private.en' => '9073bf4cc5bc431f2e98298c4a1c4c680c0fcc1116d96892e5e427b7607cc809',
+        'privacy.de' => '6a3e56b92970cd83352b6d4fbff9ff64fbb6765bf8d622c9c66cd5bb8812f374',
+        'privacy.en' => '5c1350ac669db8120b946879389dd3cfb6bb1720a86aa523d6df95520c2b7878',
+        'privacy-private.de' => 'a91e6d899e2ca6d66eae227adc0fcc634c5fd9f5f88aa3f8dc4161637cd64cd4',
+        'privacy-private.en' => 'c3bbc77e4142176554ae4ebec892c1341dd39b0572962a85aa69e187a25dc59c',
     ];
 
     /**
@@ -198,13 +203,23 @@ final class Migrations
             // imprint-private template)
             '3885e997cd3bbf330158fdccc730f7fe1b93044379cc2df060ea5e0e7b6396ec',
             'ffbcc88fbd8b760efc7c4f173bb4e8850517392f88f9ffc0100da3aad921253f',
+            // The same before the calendar download and the later confirmation mail (interim state on main
+            // before v1.7.0)
+            '8e63fee7c9e729b8faf94be1e0ed98291a59170a51b768b4c8ac9a75b2226693',
+            '91d703acbd4ef5aa44d3c0527bffac75ccb3bf5376643e4b0605c1bef1a5cc47',
             // v1.7.0: privacy policy de/en for private operators with a required placeholder for the data
             // protection officer, teachers acting under the operator's instructions
             'de4289fa6a99be078922c0d4f2a945805de5fe1398b6e682f256f99cf9a8dabd',
             '05bcdc8ab770ab9e17046b5b89e2d9bc9bbbe7a39a66e4fa6c777950c345995b',
-            // The same with the mail queue (interim state on main after v1.7.0)
+            // The same with the mail queue (interim state on main after v1.7.0, schema version 20)
             '4214ed9b61089be04b820467e61ac06319cd5152a1c9fab2b8c4069f9cdac21c',
             '0d7cd119cc674671238f4aad67cef56baa057647a71d0e8655b475ba35513fdf',
+            // The same with the cancellation by the teacher (interim state on main, schema version 21)
+            '47c6e2a09756b3fd45840c2eca28ccab265ce3f1913bca70e8a6972e60324bbe',
+            '02f09a8774e42c1b7c17ac6818f92a79879865e114456f36d0974f86f55d3b4b',
+            // Operator-type rework before the cancellation by the teacher (test installations only)
+            '4a7a2d0b0c1bfb9c518d6aa6b69b079763df0210c2448262e788e8d8aeaf4780',
+            '9073bf4cc5bc431f2e98298c4a1c4c680c0fcc1116d96892e5e427b7607cc809',
             // Privacy policy de/en without the reminder mail (up to version 14)
             '0cda1f6b2ca1ad90d1135a27b0087542862a700e0fbcefce7d448895f07a702a',
             '7ab09658494d5af363ab22f52a13140952a72e83656280c26ba54e029b2a0d51',
@@ -255,7 +270,6 @@ final class Migrations
             '98f8990bdb164f0a01ab54ce25e61b8e930fac7d66a1834bb10526ce86106c1a',
             'a6b368a3a7312f1f052f593e9076e5e26300de5d01839904e002ebe0b100041b',
             'aa35ca887f189a6991e91d669f0d9ccd82be164a34663c722ffbad4de0c4f343',
-            'c503bcd0596bc7bc45098fedc8f2b910f452909701ba9e28fc247dd9854fcc94',
             'd71943ef603c979ebf3bda10357c80b6395568f07d1690798db8b52dfd016a5c',
             'f1ac0f64ece1e1ce11b4322831f8d121b6d5a3ea450183d6a277cf26d9c0f3b1',
         ],
@@ -267,6 +281,10 @@ final class Migrations
             // Privacy policy de/en for public schools without the mail queue (outbox; v1.7.0, up to schema version 19)
             '12d249130ce60c94e7cd8f430e6cea2809d121351ab59090db0e0cc014eb4afe',
             '53be37d7c9c6697144d9400fe8a4536dee767f9ee22fe2636224d2484d04390a',
+            // The same with the mail queue, without the cancellation by the teacher (interim state on main
+            // after v1.7.0, schema version 20)
+            'a45b94275b4e42f8635ab7a601e6c52a8e3562c155865e349edf2a3502cedb8d',
+            'b1186539d1140945417e257cc4e04f764be96db65c95e67c6b22e27b44be5e45',
         ],
     ];
 

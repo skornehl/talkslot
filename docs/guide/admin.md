@@ -54,9 +54,10 @@ For an existing account you can:
 - send a new **invitation** or a **password reset link** (*Einladung erneut senden* / *Link zum
   Zurücksetzen senden*). The old password stops working and all sessions of the account end;
 - change its **role**, e.g. make a teacher an admin or the other way round;
-- **delete** it, including all its rounds and bookings. The parents of these bookings are **not**
-  notified automatically; the confirmation dialog and the message afterwards give their number. Open the
-  print view of the rounds first, afterwards nobody can see who had booked.
+- **delete** it, including all its rounds and bookings. With *Eltern per E-Mail informieren* ticked (the
+  default), parents of upcoming appointments get a cancellation by e-mail, as when a teacher deletes a round
+  (see the [Teacher guide]({{ '/guide/teachers/' | relative_url }})); the dialog gives their number, and the
+  message afterwards names those who could not be mailed, so they can be told in person.
 
 Nobody can change their own role, deactivate or delete their own account, and at least one active admin
 always remains, even when two admins demote each other at the same moment.
@@ -94,8 +95,9 @@ The hint on the overview about accounts unused for over 12 months helps you not 
 
 Admins see and edit **all rounds** (*Alle Runden*) with their bookings, and can create a round for a
 teacher or move a round to another teacher (field *Lehrkraft* in the round form). The round then appears
-for that teacher, parents see their name and summaries go to them. Parents who have already booked are not
-notified automatically; the message after saving says so and how to send them the new details. Teachers
+for that teacher, parents see their name and summaries go to them. Parents who have already booked get a
+change notice with the new teacher if *Eltern per E-Mail informieren* stays ticked; the message after saving
+names those who could not be mailed. Teachers
 only ever see their own rounds; this is enforced centrally and covered by tests.
 
 How rounds work is described in the [Teacher guide]({{ '/guide/teachers/' | relative_url }}).

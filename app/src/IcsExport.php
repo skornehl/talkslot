@@ -9,8 +9,9 @@ use DateTimeZone;
 /**
  * Calendar files (iCalendar, RFC 5545).
  * - forRound(): booked appointments of a round for the teacher (title = name from the free-text field)
- * - forParent(): own appointment as an email attachment for parents (title = name of the round)
- * Data-minimal: no email addresses. Times in UTC, so no VTIMEZONE block needed.
+ * - forParent(): own appointment as an email attachment for parents (title = name of the round and teacher)
+ * - cancelForParent(): the cancellation of that appointment (METHOD:CANCEL, same UID)
+ * Data-minimal: no email addresses of parents or teachers. Times in UTC, so no VTIMEZONE block needed.
  */
 final class IcsExport
 {
@@ -31,22 +32,44 @@ final class IcsExport
 
     /**
      * The parents' appointment. The UID is fixed per booking, SEQUENCE increases with every change,
-     * so that calendars recognize a rebooking as an update of the same appointment.
+     * so that calendars recognize a rebooking as an update of the same appointment. The title names the
+     * teacher as well: parents with appointments at several teachers can tell them apart.
      */
     public static function forParent(array $booking, string $description = ''): string
     {
-        return self::calendar($booking['title'], [[
-            'uid' => 'appointment-' . (int) $booking['id'],
-            'date' => $booking['day_date'], 'start' => $booking['start_time'], 'end' => $booking['end_time'],
-            'summary' => $booking['title'],
+        return self::calendar($booking['title'], [self::parentEvent($booking, max(0, strtotime((string) ($booking['updated_at'] ?? 'now')) - strtotime((string) ($booking['created_at'] ?? 'now')))) + [
             'description' => $description,
-            'location' => trim((string) ($booking['location'] ?? '')),
-            'sequence' => max(0, strtotime((string) ($booking['updated_at'] ?? 'now')) - strtotime((string) ($booking['created_at'] ?? 'now'))),
         ]]);
     }
 
-    /** @param list<array{uid:string,date:string,start:string,end:string,summary:string,description?:string,location?:string,sequence?:int}> $events */
-    private static function calendar(string $name, array $events): string
+    /**
+     * Cancellation of the parents' appointment (METHOD:CANCEL, RFC 5546): same UID, a SEQUENCE above that of
+     * every earlier calendar file of the booking, STATUS:CANCELLED. The organizer is the sender address of
+     * the installation (the method requires one), not a person's address.
+     */
+    public static function cancelForParent(array $booking): string
+    {
+        $from = (string) Config::get('mail.from_address', '');
+        return self::calendar($booking['title'], [self::parentEvent($booking, max(0, strtotime(Time::nowSql()) - strtotime((string) ($booking['created_at'] ?? 'now'))) + 1) + [
+            'status' => 'CANCELLED',
+            'organizer' => filter_var($from, FILTER_VALIDATE_EMAIL) ? 'ORGANIZER;CN="' . preg_replace('/[\x00-\x1F\x7F"]/', '', app_name()) . '":mailto:' . $from : '',
+        ]], 'CANCEL');
+    }
+
+    private static function parentEvent(array $booking, int $sequence): array
+    {
+        $teacher = trim((string) ($booking['teacher_name'] ?? ''));
+        return [
+            'uid' => 'appointment-' . (int) $booking['id'],
+            'date' => $booking['day_date'], 'start' => $booking['start_time'], 'end' => $booking['end_time'],
+            'summary' => $booking['title'] . ($teacher !== '' ? ' – ' . $teacher : ''),
+            'location' => trim((string) ($booking['location'] ?? '')),
+            'sequence' => $sequence,
+        ];
+    }
+
+    /** @param list<array{uid:string,date:string,start:string,end:string,summary:string,description?:string,location?:string,sequence?:int,status?:string,organizer?:string}> $events */
+    private static function calendar(string $name, array $events, string $method = 'PUBLISH'): string
     {
         $host = (string) (parse_url((string) Config::get('base_url', ''), PHP_URL_HOST) ?: 'localhost');
         $stamp = self::utc(Time::now());
@@ -55,7 +78,7 @@ final class IcsExport
             'VERSION:2.0',
             'PRODID:-//TalkSlot//DE',
             'CALSCALE:GREGORIAN',
-            'METHOD:PUBLISH',
+            'METHOD:' . $method,
             'X-WR-CALNAME:' . self::text($name),
         ];
         foreach ($events as $ev) {
@@ -66,6 +89,12 @@ final class IcsExport
             $lines[] = 'DTEND:' . self::utc(new DateTimeImmutable($ev['date'] . ' ' . $ev['end']));
             $lines[] = 'SEQUENCE:' . (int) ($ev['sequence'] ?? 0);
             $lines[] = 'SUMMARY:' . self::text($ev['summary']);
+            if (($ev['status'] ?? '') !== '') {
+                $lines[] = 'STATUS:' . $ev['status'];
+            }
+            if (($ev['organizer'] ?? '') !== '') {
+                $lines[] = $ev['organizer'];
+            }
             if (($ev['description'] ?? '') !== '') {
                 $lines[] = 'DESCRIPTION:' . self::text($ev['description']);
             }

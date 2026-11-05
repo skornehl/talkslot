@@ -186,7 +186,7 @@ check('invitation: only one language → no language lines', !str_contains($invi
 App\Config::load($cfg);
 App\I18n::set('de');
 
-echo "Admin: parents are not notified automatically\n";
+echo "Admin: parents are notified of changes, or told that they are not\n";
 // Manual entry: the mail option is ticked by default (the controller passes send_mail = true) and stays ticked
 // while no address is entered, so it is on as soon as one is typed (app.js follows the e-mail field)
 $entryForm = static fn (?array $booking, array $old): string => App\View::capture('admin/booking_form', [
@@ -206,17 +206,24 @@ $hinted = static fn (string $html): bool => str_contains($mailBox($html), 'aria-
     && str_contains($html, '<p class="hint hint-indent" id="mail-hint">Die E-Mail nennt die aktuellen Termindaten in der Sprache der Eltern und geht auch ohne Änderung hier hinaus');
 check('edit form: hint that the mail also goes out without a change, not for a new entry',
     $hinted($entryForm(['id' => 9], ['email' => 'eltern@example.org'])) && !str_contains($entryForm(null, []), 'mail-hint'));
-// Day form: with bookings a warning that the parents hear nothing about a new date, time or place
-$dayForm = static fn (int $bookings): string => App\View::capture('admin/day_form', [
+// Day form: with upcoming bookings whose parents can be mailed, the box "Eltern per E-Mail informieren" (ticked)
+// and how many get no mail; if none can be mailed, the warning that nobody is told; nothing without bookings
+$dayForm = static fn (int $upcoming, int $mailable = 0): string => App\View::capture('admin/day_form', [
     'day' => ['id' => 3, 'day_date' => '2030-01-07', 'start_time' => '14:00:00', 'end_time' => '16:00:00', 'slot_minutes' => 15, 'location' => null],
-    'round' => ['id' => 1, 'title' => 'Elternsprechtag', 'location' => 'Raum 1.12'], 'bookings' => $bookings, 'errors' => [],
+    'round' => ['id' => 1, 'title' => 'Elternsprechtag', 'location' => 'Raum 1.12'], 'parents' => ['upcoming' => $upcoming, 'mailable' => $mailable], 'errors' => [],
 ]);
-check('day form: warning with the number of bookings, none without bookings',
+$notifyBox = '<input type="checkbox" id="notify" name="notify" value="1" checked>';
+check('day form: parents with an address get the new details (box ticked), the others are counted',
+    str_contains($dayForm(3, 2), 'An diesem Tag sind 3 Termin(e) gebucht. Ändern sich Datum, Uhrzeit oder Ort eines Termins, erhalten die Eltern die neuen Daten per E-Mail, solange „Eltern per E-Mail informieren“ angehakt ist.')
+    && str_contains($dayForm(3, 2), '1 Buchung(en) ohne E-Mail an die Eltern – bitte persönlich informieren.') && str_contains($dayForm(3, 2), $notifyBox)
+    && !str_contains($dayForm(2, 2), 'ohne E-Mail an die Eltern') && !str_contains($dayForm(2, 2), 'NICHT automatisch'));
+check('day form: nobody to mail → warning that the parents are not told, no box; without bookings neither',
     str_contains($dayForm(2), 'An diesem Tag sind 2 Termin(e) gebucht. Die Eltern werden über Änderungen an Datum, Zeiten oder Ort NICHT automatisch benachrichtigt')
-    && !str_contains($dayForm(0), 'NICHT automatisch benachrichtigt – bitte selbst')
-    && str_contains($dayForm(0), 'Bereits gebuchte Eltern werden bei einer Änderung NICHT automatisch benachrichtigt.'));
-check('English: the warnings are translated',
-    App\AdminI18n::with('en', static fn () => str_contains($dayForm(1), '1 appointment(s) booked on this day. Parents are NOT notified automatically')));
+    && !str_contains($dayForm(2), 'name="notify"')
+    && !str_contains($dayForm(0), 'NICHT automatisch') && !str_contains($dayForm(0), 'name="notify"') && !str_contains($dayForm(0), 'Termin(e) gebucht'));
+check('English: the hints are translated',
+    App\AdminI18n::with('en', static fn () => str_contains($dayForm(1), '1 appointment(s) booked on this day. Parents are NOT notified automatically')
+        && str_contains($dayForm(1, 1), 'the parents receive the new details by email as long as “Inform parents by email” is ticked.')));
 
 echo "Appointment page: keeping the link (copy, calendar, share, mail), siblings on one device\n";
 $mToken = str_repeat('Tk', 21) . 'x';
