@@ -98,9 +98,9 @@ valid.
 | What | When |
 |---|---|
 | Bookings (name, e-mail) of a day | from 0:00 of the following day |
-| Rounds | deactivated after their last day, deleted 24 h later by default (per round, empty = never) |
+| Rounds | deactivated after their last day, deleted 24 h later by default (per round, empty = never); only rounds that were in use (active at some point or with an entry by the teacher); drafts that were never active stay |
 | Rate-limit data | after 24 hours at the latest |
-| Inactive teacher accounts without rounds | 15 months after the last login |
+| Inactive teacher accounts without rounds in use | 15 months after the last login, together with their drafts |
 | Admin log (*Protokoll*) | after 90 days (`audit_log_days`) |
 
 The clean-up runs in the cron job and, as a fallback, on page views at most every 15 minutes. The same

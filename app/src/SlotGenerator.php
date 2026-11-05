@@ -54,6 +54,13 @@ final class SlotGenerator
      * - unbooked slots that no longer fit are deleted
      * - booked slots that no longer fit are marked as conflicts
      *
+     * Locks: the day row first (FOR UPDATE), then the slots it changes. A booking locks its slot
+     * together with the day row (BookingService::lockSlot joins round_days), so a booking and a sync of
+     * the same day are serialized; where they cross, InnoDB ends one of them as a deadlock (bookings
+     * retry). The list of slots below is a plain snapshot read, though, and a deleted slot takes its
+     * booking with it (ON DELETE CASCADE). So the DELETE checks for a booking itself and does not
+     * rely on that lock: a slot booked in the meantime is kept as a conflict instead.
+     *
      * @return int number of conflicts
      */
     public static function sync(int $dayId): int
@@ -106,11 +113,9 @@ final class SlotGenerator
                 if (isset($desiredStarts[$start])) {
                     Db::run('UPDATE slots SET end_time = ?, is_conflict = 0 WHERE id = ?', [$desiredStarts[$start], $s['id']]);
                     unset($desiredStarts[$start]);
-                } elseif ($s['booking_id'] !== null) {
+                } elseif ($s['booking_id'] !== null || !self::deleteIfFree((int) $s['id'])) {
                     Db::run('UPDATE slots SET is_conflict = 1 WHERE id = ?', [$s['id']]);
                     $conflicts++;
-                } else {
-                    Db::run('DELETE FROM slots WHERE id = ?', [$s['id']]);
                 }
             }
             foreach ($desiredStarts as $start => $end) {
@@ -118,5 +123,11 @@ final class SlotGenerator
             }
             return $conflicts;
         });
+    }
+
+    /** Deletes a slot only if it has no booking now (the DELETE reads bookings with a lock, not the snapshot). */
+    private static function deleteIfFree(int $slotId): bool
+    {
+        return Db::exec('DELETE s FROM slots s LEFT JOIN bookings b ON b.slot_id = s.id WHERE s.id = ? AND b.id IS NULL', [$slotId]) > 0;
     }
 }

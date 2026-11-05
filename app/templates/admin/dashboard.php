@@ -41,7 +41,7 @@
       <td><?= (int) $r['booking_count'] ?> / <?= (int) $r['slot_count'] ?></td>
       <td>
         <?php if ($r['is_active']): ?><span class="status status-on"><?= e(__('aktiv')) ?></span>
-        <?php elseif ($r['expired_at']): ?><span class="status status-off"><?= e(__('abgelaufen')) ?></span>
+        <?php elseif ($r['expired_at']): ?><span class="status status-off"><?= e(__('abgelaufen')) ?></span><?php if ($r['deletion_at']): ?><br><span class="small muted"><?= e(__('wird am {date} gelöscht', ['date' => $r['deletion_at']->format('d.m.Y')])) ?></span><?php endif; ?>
         <?php else: ?><span class="status status-off"><?= e(__('inaktiv')) ?></span><?php endif; ?>
       </td>
       <td><button type="button" class="button button-small" data-copy="<?= e($link) ?>"><?= e(__('Link kopieren')) ?></button></td>

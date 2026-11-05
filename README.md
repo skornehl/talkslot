@@ -70,7 +70,8 @@ schools (GDPR/DSGVO, TDDDG) and multilingual families.
 - Bookings: overview, edit, move, delete, add manually (with a mail to the parents, ticked as soon as an
   address is entered). Changed times never delete bookings, conflicts are flagged with ⚠. Dialogs, hints
   and messages say clearly that parents are not notified automatically of deletions, of a new date or
-  location for a day and of a new location or teacher for the round. Print view per round or day.
+  location for a day and of a new location or teacher for the round. Deleting a day or a round with
+  bookings needs an extra tick, checked on the server. Print view per round or day.
 - Translation of title and description **in the teacher's browser** (Chrome/Edge Translator API with a
   local model, no text leaves the device), manually editable.
 - Summary mails: evening before a day and after the booking deadline (time and name only).
@@ -81,9 +82,11 @@ schools (GDPR/DSGVO, TDDDG) and multilingual families.
 
 **Automatic clean-up**
 - Bookings of a day are deleted from 0:00 the following day.
-- A round is deactivated after its last day and deleted 24 h later (configurable per round).
-- Rate-limit data after 24 h, inactive teacher accounts without rounds after 15 months, admin log entries
-  after 90 days.
+- A round is deactivated after its last day and deleted 24 h later (configurable per round). This applies
+  to rounds that were in use (active at some point or with an entry by the teacher); a draft that was never
+  active, e.g. a copy with the old dates, stays. The round page shows the date of the deletion.
+- Rate-limit data after 24 h, inactive teacher accounts without rounds in use (with their drafts) after
+  15 months, admin log entries after 90 days.
 - Runs hourly via cron (or the included GitHub workflow), plus as a fallback on page views.
 
 **Operations**
