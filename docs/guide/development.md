@@ -108,7 +108,18 @@ PHP). Dependabot proposes new digests; which versions are tested is changed by h
   to an older version keeps working. Raise `LATEST`, add the step, update `schema.sql`.
 - **Legal templates:** after changing `app/templates/pages/*.md`, update `CURRENT_PAGE_HASHES` and move
   the old hashes to `OLD_PAGE_HASHES`, so unedited texts are upgraded automatically. The unit test tells
-  you the new hashes.
+  you the new hashes. Edited texts need no new hint in `AdminController::legalHints()`: their version
+  markers show admins the changed sections by themselves (`LegalTexts::outdated()`). Keep sections under
+  first-level headings (`# 5. …`) and put each paragraph or list item on one line, so the comparison works
+  per section and line; a unit test checks that the four privacy templates have the same numbered sections.
+  Avoid renaming headings: a section is known by its heading without the number, a renamed one counts as a
+  new section, and taking it over does not carry the filled-in details of the old one along. A placeholder
+  inside a line stands for text up to the end of that line; only one alone on its line (like
+  `[[VERANTWORTLICHE]]`) may stand for several lines. A placeholder may also be filled in by nothing, so a
+  line that is little more than a placeholder (`- [WEITERE EMPFÄNGER]`) is filled in by almost any line:
+  give such a line some fixed wording of its own (`- **Weitere Empfänger:** [NAME UND ANSCHRIFT]`). Whenever what TalkSlot processes changes (data, recipients, retention periods,
+  browser storage, kinds of mail), update the privacy templates of both operator types in German and
+  English in the same change.
 - **Deployment variables:** every variable read by `bin/build-config.php` must be passed in the build step
   of `.github/workflows/deploy.yml`; a unit test checks this too.
 - **Configuration options:** a new option goes into `App\ConfigSchema::KEYS` (type, default) and
