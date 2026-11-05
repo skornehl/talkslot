@@ -204,8 +204,8 @@ NG=$(DBQ "SELECT COUNT(*) FROM tp_mail_outbox WHERE booking_id = $(n_id "Outbox 
 DBQ "INSERT INTO tp_mail_outbox (kind, booking_id, priority, next_attempt_at, created_at) VALUES ('reminder', $(n_id "Outbox Ohne Mail"), 3, NOW() + INTERVAL 1 HOUR, NOW())"
 check "after 48 hours: given up, the entry shows \"E-Mail nicht zugestellt\" without a retry (also with another mail queued since)" 'echo "$NO" | grep -qE "mails_expired +1" && [ "$NG" = 0 ] && curl -s -b "$J" "$B/admin/round/$NR" | grep -q "data-mail-failed title=\"Es folgt kein weiterer Versuch[^\"]*\">E-Mail nicht zugestellt</span>"'
 DBQ "DELETE FROM tp_mail_outbox WHERE booking_id = $(n_id "Outbox Ohne Mail")"
-DBQ "INSERT INTO tp_mail_outbox (kind, booking_id, priority, attempts, next_attempt_at, created_at) VALUES ('changed', $(n_id "Outbox Eintrag"), 1, 3, NOW() + INTERVAL 1 HOUR, NOW() - INTERVAL 3 HOUR)"
-check "admins see mails waiting for more than two hours (cron job or mail server)" 'curl -s -b "$J" "$B/admin" | has "1 E-Mail(s) warten seit über 2 Stunden auf den Versand"'
+DBQ "INSERT INTO tp_mail_outbox (kind, booking_id, priority, attempts, next_attempt_at, created_at) VALUES ('changed', $(n_id "Outbox Eintrag"), 1, 3, NOW() + INTERVAL 1 HOUR, NOW() - INTERVAL 4 HOUR)"
+check "admins see mails waiting longer than cron_alert_hours (3 in the dev configuration; cron job or mail server)" 'curl -s -b "$J" "$B/admin" | has "1 E-Mail(s) warten seit über 3 Stunden auf den Versand"'
 DBQ "DELETE FROM tp_mail_outbox WHERE booking_id = $(n_id "Outbox Eintrag")"
 check "… and no notice without them" '! curl -s -b "$J" "$B/admin" | has "data-mails-late"'
 check "web cron: reports the mails it sent" 'curl -s -X POST -H "X-Cron-Token: $CTOK" "$B/cron" | has "\"mails_sent\":"'
