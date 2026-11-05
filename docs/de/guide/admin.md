@@ -28,8 +28,12 @@ des deutschen Admin-Bereichs; jedes Konto kann ihn unter *Mein Profil* auf Engli
 4. **E-Mail-Versand prüfen:** *Texte → E-Mail-Versand* zeigt Versandweg und Absender. Machen Sie eine
    Testbuchung mit Ihrer eigenen E-Mail-Adresse und prüfen Sie, ob die Bestätigung ankommt (und nicht als
    Spam markiert wird).
-5. ***Vorlagen*** (optional): die üblichen Formate einmal anlegen, z. B. Ihren Elternsprechtag.
-6. **Lehrkräfte einladen** und bei Bedarf weitere Admins (*Benutzer*).
+5. **Kontakt für Eltern** (*Texte → Kontakt für Eltern bei Fragen*, optional): z. B. das Sekretariat mit
+   Telefonnummer und Zeiten. Eltern sehen ihn, wenn sie nicht weiterkommen: auf der Seite „Nicht gefunden“,
+   bei Runden mit Rundencode vor der Eingabe des Codes und bei den Runden von Lehrkräften, die in ihrem
+   Profil keinen eigenen Kontakt angegeben haben.
+6. ***Vorlagen*** (optional): die üblichen Formate einmal anlegen, z. B. Ihren Elternsprechtag.
+7. **Lehrkräfte einladen** und bei Bedarf weitere Admins (*Benutzer*).
 
 Warnt die Übersicht, dass die Konfiguration für alle Benutzer des Servers lesbar ist, setzen Sie die
 Rechte der genannten Dateien auf `600` oder geben Sie die Warnung an die technische Betreuung weiter: Sie
@@ -52,7 +56,9 @@ Unter *Benutzer* → *+ Neuer Benutzer* geben Sie **Name und E-Mail-Adresse** ei
 *Lehrkraft* (verwaltet ihre eigenen Runden) oder *Admin*. Die Person erhält
 eine **Einladungs-E-Mail** mit einem Link, über den sie ein eigenes Passwort festlegt (einmal verwendbar,
 standardmäßig 48 Stunden gültig). Passwörter werden nie per E-Mail verschickt. Der Benutzername ist die
-E-Mail-Adresse. Kann die E-Mail nicht versendet werden, sehen Sie nur einen Hinweis, nicht den Link (mit
+E-Mail-Adresse, außer Sie geben unter *Benutzername (Login)* einen eigenen ein: Der ist schwerer zu
+erraten, denn die E-Mail-Adresse sehen Eltern, wenn sie auf eine E-Mail antworten; die Einladung nennt
+ihn. Kann die E-Mail nicht versendet werden, sehen Sie nur einen Hinweis, nicht den Link (mit
 ihm könnten Sie das Passwort eines fremden Kontos festlegen): Prüfen Sie den Mailversand (*Texte →
 E-Mail-Versand*) und senden Sie die Einladung danach erneut.
 

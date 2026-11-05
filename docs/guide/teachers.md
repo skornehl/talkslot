@@ -196,6 +196,15 @@ the teacher. If the school allows only its own addresses (`allowed_account_domai
 domain. A reply address from before that rule is then not used (the replies go to your e-mail address, if
 that is at the school's domain), and the overview asks you to change it.
 
+### Contact for parents
+
+Under *Mein Profil → Kontakt für Eltern bei Fragen* (*Contact for parents with questions*) you can say how
+parents reach you, for example your work e-mail address or the school office with its phone number and
+hours. It is shown on the booking page of your rounds and on the page of booked appointments, where parents
+need it most when all slots are taken or the deadline for changes has passed. Left empty, parents see the
+contact the admins set for all, if any. Parents see it as you write it (not translated); please no private
+phone numbers.
+
 ### Links from the mails
 
 The link in a summary opens the page directly. If you are signed in, it opens signed in (the browser keeps
