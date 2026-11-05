@@ -26,6 +26,8 @@ return [
     'notfound.text' => 'Ta strona nie istnieje lub rezerwacja nie jest już aktywna.',
     'error.title' => 'Wystąpił błąd',
     'error.text' => 'Prosimy spróbować ponownie później.',
+    'error.contact' => 'Jeśli błąd będzie się powtarzał, prosimy o kontakt z operatorem tej strony (zob. {imprint}).',
+    'error.home' => 'Przejdź do strony głównej',
     'crosssite.title' => 'Żądanie odrzucone',
     'crosssite.text' => 'Ten formularz został wysłany z innej strony internetowej, dlatego nie został przetworzony. Prosimy otworzyć stronę bezpośrednio i spróbować ponownie.',
     'privacy.controller.generic' => 'Dane administratora są właśnie uzupełniane. Do tego czasu prosimy kontaktować się z nauczycielem, u którego zarezerwowali Państwo termin.',

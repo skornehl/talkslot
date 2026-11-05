@@ -53,6 +53,10 @@ final class ErrorPage
 
     public static function show(?\Throwable $e = null): void
     {
+        // Output already under way (a template that failed, a fatal error while rendering) must not end up in
+        // front of the error page: the browser would get half a page followed by a second document
+        while (ob_get_level() > 0 && @ob_end_clean()) {
+        }
         if (!headers_sent()) {
             // Also when the error happens before the front controller has sent them
             Http::sendSecurityHeaders();
@@ -64,15 +68,30 @@ final class ErrorPage
             header('Content-Type: text/html; charset=utf-8');
             header('Cache-Control: no-store');
         }
+        echo self::page($e);
+    }
+
+    /**
+     * The error page in the language of the request, with a way back and whom to contact. Before a language
+     * was set (e.g. the database failed while signing in to the admin area) in the default language, never
+     * as raw text keys.
+     */
+    public static function page(?\Throwable $e = null): string
+    {
+        $lang = I18n::raw('error.title') !== null ? I18n::lang() : I18n::defaultLanguage();
+        $text = static fn (string $key): string => I18n::textIn($lang, $key);
         $detail = ($e && Config::get('debug', false)) ? $e->getMessage() . "\n" . $e->getTraceAsString() : '';
-        $title = function_exists('t') ? t('error.title') : 'Fehler';
-        $text = function_exists('t') ? t('error.text') : '';
+        $admin = Http::path() === '/admin' || str_starts_with(Http::path(), '/admin/');
+        // The legal notice names the operator; it needs the database, so not while that is the problem
+        $contact = Db::isUnavailable() ? '' : '<p>' . str_replace('{imprint}',
+            '<a href="' . e(url('/impressum')) . '">' . e($text('footer.imprint')) . '</a>', e($text('error.contact'))) . '</p>';
         // No inline styles (the CSP only allows our own stylesheet)
-        $css = function_exists('asset') && defined('PUBLIC_ROOT') ? '<link rel="stylesheet" href="' . e(asset('css/app.css')) . '">' : '';
-        echo '<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">'
-            . '<title>' . e($title) . '</title>' . $css
+        $css = defined('PUBLIC_ROOT') ? '<link rel="stylesheet" href="' . e(asset('css/app.css')) . '">' : '';
+        return '<!doctype html><html lang="' . e($lang) . '"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">'
+            . '<title>' . e($text('error.title')) . '</title>' . $css
             . '<main class="wrap error-page">'
-            . '<h1>' . e($title) . '</h1><p>' . e($text) . '</p>'
+            . '<h1>' . e($text('error.title')) . '</h1><p>' . e($text('error.text')) . '</p>' . $contact
+            . '<p><a href="' . e(url($admin ? '/admin' : '/')) . '">' . e($text('error.home')) . '</a></p>'
             . ($detail !== '' ? '<pre class="error-detail">' . e($detail) . '</pre>' : '')
             . '</main>';
     }

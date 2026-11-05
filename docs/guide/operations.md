@@ -25,6 +25,10 @@ A migration that fails is reported by alert mail; pages keep being served. With 
 first and switches back to the previous version if one fails, if the database cannot be reached or if it
 is not MariaDB 10.6 or newer.
 
+On MySQL or a MariaDB before 10.6 a pending migration does not start at all (its MariaDB syntax would fail
+half-way): the alert mail and the admins' dashboard name the database server. The cron job reports it as
+well: `db_server` is `ok` or `unsupported` in the output of `php bin/cron.php -v` and of the web cron.
+
 Migrations only add columns (with defaults) and tables, so a rollback to an older version keeps working.
 Imprint and privacy texts that were never edited are replaced by newer templates of the operator type
 (operated by the school or privately) automatically; edited texts stay untouched, and admins see on the
@@ -47,7 +51,9 @@ are already active stay online. Plan a minute for this right after the update, s
 
 Unhandled exceptions, fatal PHP errors, PHP warnings, failed migrations or clean-ups, an unreachable
 database and failed mail delivery are caught. Visitors only see a neutral error page (503 with
-`Retry-After` if the database is down). The operator gets a mail:
+`Retry-After` if the database is down) in their language, with a link back to the start page and, unless the
+database is down, to the legal notice that names the operator; whatever the page had shown so far is
+discarded. The operator gets a mail:
 
 - **Recipient:** `alert_email`, otherwise the address of the oldest active admin. Set `alert_email`: while
   the database is down, no address can be read from it.
@@ -212,6 +218,11 @@ other up; the cron job waits up to 15 seconds for a run in progress.
   reminders and summaries are not sent there, and queued mails are given up after 48 hours.
 
 ## Troubleshooting
+
+**"TalkSlot kann nicht starten / cannot start" on every page.** The page lists what is wrong: a PHP version
+before 8.3, a missing PHP extension, a missing `config/config.php` or a mistake in it (see
+[Checking the configuration]({{ '/guide/configuration/' | relative_url }}#checking)). The cron job prints the
+same in English. Visitors see it too, as the site cannot work until it is fixed.
 
 **503 on every page.** The database is unreachable, or (with the
 atomic deployment, plain text "Temporarily unavailable.") no complete version is on the server. Check the alert mail and `app/var/php-error.log`.

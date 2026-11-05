@@ -3,7 +3,7 @@ title: Installation
 description: TalkSlot von Hand auf einen Webserver bringen. Automatische Deployments beschreiben die folgenden Kapitel.
 ---
 
-## Voraussetzungen
+## Voraussetzungen {#requirements}
 
 - **PHP 8.3 oder neuer** (getestet mit 8.3, 8.4 und 8.5) mit `pdo_mysql`, `mbstring` und `iconv`;
   `openssl` für SMTP mit TLS
@@ -13,6 +13,14 @@ description: TalkSlot von Hand auf einen Webserver bringen. Automatische Deploym
   sperren, Sicherheits-Header).
 - **HTTPS** mit gültigem Zertifikat. TalkSlot leitet unverschlüsseltes HTTP um.
 - Eine **Absenderadresse**, deren Domain SPF und DKIM hat, sonst landen E-Mails im Spam.
+
+TalkSlot prüft das selbst. Ist die PHP-Version zu alt oder fehlt eine Erweiterung, sagt das jede Seite auf
+Deutsch und Englisch, statt eine leere Fehlerseite zu zeigen (ab PHP 7.1; auf der Kommandozeile, etwa im
+Cronjob, auf Englisch). Hoster nutzen auf der Kommandozeile oft ein älteres `php` als auf dem Webserver:
+Dann im Cronjob den vollen Pfad des neueren angeben (etwa `/usr/bin/php8.3`). Der Installer lehnt MySQL
+und MariaDB vor 10.6 ab, ebenso ein `app/var/`, in das PHP nicht schreiben darf; bei einer bereits
+installierten Seite weist die Übersicht Admins darauf hin. Siehe auch
+[Prüfung der Konfiguration]({{ '/de/guide/configuration/' | relative_url }}#checking).
 
 ## 1. Dateien hochladen
 

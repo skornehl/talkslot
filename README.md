@@ -127,6 +127,10 @@ schools (GDPR/DSGVO, TDDDG) and multilingual families.
 - HTTPS
 - A sender address with SPF/DKIM (PHP `mail()` or SMTP; PHPMailer is bundled)
 
+TalkSlot checks this itself: an older PHP or a missing extension gets a page that says so (in German and
+English, from PHP 7.1 on) instead of a blank 500, and the installer refuses MySQL, MariaDB before 10.6 and a
+read-only `app/var/`.
+
 ## Quick start (local)
 
 ```bash
@@ -291,6 +295,10 @@ All options are documented in [`config/config.sample.php`](config/config.sample.
 | `cron_alert_hours` | `3` | warn admins and mail the operator after this many hours without a completed cron run (`0` = off) |
 | `rate_limits` | see file | generous, since many parents share an IP (mobile CGNAT, school Wi-Fi) |
 
+Every option is known to `app/src/ConfigSchema.php`. A missing secret, an unknown time zone, a language
+without its file or an invalid table prefix stop the site with a message; unknown keys (typos) and invalid
+values are listed for admins on the dashboard.
+
 **Adding a language:** copy `app/lang/en.php` to e.g. `app/lang/it.php`, translate it, add the code to
 `languages` and a flag `public/assets/flags/it.svg` (admin translation form). Optionally add the legal templates
 `app/templates/pages/{imprint,imprint-private,privacy,privacy-private}.it.md` (with their hashes in
@@ -353,7 +361,8 @@ node tests/browser.mjs  # the JavaScript in headless Chrome (after dev/reset.sh 
 tests/deploy.sh         # atomic deployment via lftp file:// under load, switch-back on errors (needs lftp, openssl and the local DB)
 ```
 
-CI runs all four on every push: the unit tests on PHP 8.3–8.5, the others against the Docker environment.
+CI runs all four on every push: the unit tests on PHP 8.3–8.5, the others against the Docker environment,
+the smoke tests also against MariaDB 10.6; PHP 7.4 and 8.2 must get the "cannot start" message.
 
 The smoke test covers login and lockout, account management, **data separation between teachers**,
 CSRF, honeypot, XSS escaping, SQL injection, **20 parallel bookings on one slot → exactly one succeeds**,

@@ -41,6 +41,11 @@ oder noch kein vollständiger Lauf verzeichnet ist, prüfen Sie den Cronjob auf 
 Sie die Warnung an die technische Betreuung weiter; siehe
 [Überwachung des Cronjobs]({{ '/de/guide/operations/' | relative_url }}#cron-monitoring).
 
+Meldet die Übersicht, dass die Einrichtung des Servers Aufmerksamkeit braucht, geben Sie die Liste an die
+technische Betreuung weiter: Sie nennt Optionen in `config/config.php`, die so nicht wirken (etwa wegen eines
+Tippfehlers), und einen Datenbankserver, der nicht MariaDB 10.6 oder neuer ist; siehe
+[Prüfung der Konfiguration]({{ '/de/guide/configuration/' | relative_url }}#checking).
+
 ## Konten
 
 Unter *Benutzer* → *+ Neuer Benutzer* geben Sie **Name und E-Mail-Adresse** ein und wählen die **Rolle**:
