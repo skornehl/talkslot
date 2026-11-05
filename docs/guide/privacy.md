@@ -27,11 +27,12 @@ ask how long they are kept and state it in the privacy policy.
 
 - **Data minimisation:** a free-text name and an optional e-mail address, nothing else. The field asks for the
   **child's name** (*Name des Kindes*), first and last name, with the class if needed, so that teachers can
-  match the booking and parents do not enter their own name for two children; with a booking limit the hint
-  at the field tells parents to book once per child. The round form asks teachers for **neutral titles**
-  (e.g. "Elternsprechtag 7b"): title and description appear in the mails to parents and in calendar files,
-  the title also in the log, and a round such as "consultation on special needs" would turn every booking
-  into a hint at special category data (Art. 9 GDPR). The column for notes in the print view is labelled
+  match the booking and parents do not enter their own name for two children; the info box of a round with a
+  booking limit says one appointment per child and how to book siblings. The round form asks teachers for
+  **neutral titles** (e.g. "Elternsprechtag 7b"): title and description appear in the mails to parents and in
+  calendar files, the title also in the log and, when the round is created, in its address (and so in the web
+  server's logs), and with a round such as "consultation on special needs" every booking could come close to a
+  hint at health data (Art. 9 GDPR). The column for notes in the print view is labelled
   *Organisatorisches* (organisational notes only, nothing about the conversation), since the list is meant
   to be destroyed after the appointment.
 - **E-mail address only for the appointment:** confirmation, changes, cancellation and, if the teacher
@@ -83,7 +84,9 @@ ask how long they are kept and state it in the privacy policy.
 - **Admin log without monitoring teachers:** only changes made by admin accounts are logged, so it shows
   who among several admins did what. What teachers do in their own rounds is not recorded, and bookings
   appear with their date only: with the time, an entry together with a summary mail or a printed list would
-  still tell whose booking it was, 90 days after the booking itself was deleted. Depending on your state, a log of staff actions may still be a matter for
+  tell whose booking it was, 90 days after the booking itself was deleted. Round, teacher and date can still
+  point to a family (one booking on a day), so the entries remain pseudonymous data, visible to admins only.
+  Entries from before this change lose their time on the next clean-up run. Depending on your state, a log of staff actions may still be a matter for
   the staff council (*Personalrat*); you can shorten the retention with `audit_log_days`.
 - **Sign-in times only in coarse steps:** the time of the last sign-in is stored (to tidy up unused
   accounts), but the users list only shows *never*, *within the last 12 months* or *more than 12 months

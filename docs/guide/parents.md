@@ -14,8 +14,7 @@ You received a link or a **round code** from your child's teacher. You do not ne
    link above the page offers it; the page does not switch by itself. Invitations from the teacher usually
    contain a direct link for each language.
 3. **Pick a free time slot.** Only free slots are shown, grouped by day.
-4. **Enter your child's name**, first and last name, with the class if needed; nothing more is needed. If the
-   page allows one appointment per person, book siblings separately, each with their name. An **e-mail address is optional**: with it,
+4. **Enter your child's name**, first and last name, with the class if needed; no other details are needed. An **e-mail address is optional**: with it,
    you get a confirmation with your personal link and a calendar file, and usually a reminder the
    evening before. If the confirmation cannot be sent at that moment, the page says so and it follows
    automatically (with a personal link of its own; the one on the page stays valid).

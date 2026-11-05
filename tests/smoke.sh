@@ -115,7 +115,7 @@ check "duplicate date rejected, input kept" 'echo "$DUP" | grep -q "gibt es in d
 echo "Parents"
 P=$(curl -s -D - "$B/$SLUG")
 check "round page without cookie" '! echo "$P" | grep -qi "^set-cookie"'
-check "new round: one appointment per person (default), notice for parents" 'echo "$P" | grep -q "Pro Person ist nur ein Termin möglich. Für Geschwister" && curl -s -b "$J" "$B/admin/round/$RID" | grep -q "Ein Termin pro Person ·"'
+check "new round: one appointment per person (default), notice for parents" 'echo "$P" | grep -q "Pro Kind ist nur ein Termin möglich. Für Geschwister" && curl -s -b "$J" "$B/admin/round/$RID" | grep -q "Ein Termin pro Person ·"'
 PC=$(echo "$P" | csrf)
 SLOT=$(echo "$P" | grep -o 'name="slot_id" id="slot-[0-9]*" value="[0-9]*"' | head -1 | grep -o 'value="[0-9]*"' | grep -o '[0-9]*')
 code=$(curl -s -o /dev/null -w '%{http_code}' --data-urlencode "csrf=$PC" -d "slot_id=$SLOT&name=Max&privacy=1&website=spam" "$B/$SLUG")
@@ -629,7 +629,7 @@ check "round: siblings (other name, same email) allowed" '[[ "$(book "$LRS" "Eri
 check "round: same name, other email (other family) allowed" '[[ "$(book "$LRS" "Max Muster" "eltern-b@example.org")" == 303* ]]'
 check "round: teacher's entry not limited" 'curl -s -o /dev/null -b "$J" -d "csrf=$T&name=Max+Muster&lang=de" "$B$(curl -s -b "$J" "$B/admin/round/$LR" | grep -o "/admin/slot/[0-9]*/book" | head -1)" && [ "$(DBQ "SELECT COUNT(*) FROM tp_bookings b JOIN tp_slots s ON s.id=b.slot_id JOIN tp_round_days d ON d.id=s.day_id WHERE d.round_id=$LR AND b.name=\"Max Muster\"")" = 3 ]'
 LT=$(mkround Sperre+Tag day); LTS=$(slugof "$LT")
-check "day: notice 'one appointment per person and day'" 'curl -s "$B/$LTS" | grep -q "Pro Person ist nur ein Termin pro Tag möglich" && curl -s -b "$J" "$B/admin/round/$LT" | grep -q "Ein Termin pro Person und Tag ·"'
+check "day: notice 'one appointment per person and day'" 'curl -s "$B/$LTS" | grep -q "Pro Kind ist nur ein Termin pro Tag möglich" && curl -s -b "$J" "$B/admin/round/$LT" | grep -q "Ein Termin pro Person und Tag ·"'
 TOM1=$(book "$LTS" "Tom" "")
 check "day: second appointment on the same day rejected" '[[ "$(book "$LTS" "Tom" "")" == 422* ]] && P=$(curl -s "$B/$LTS"); curl -s --data-urlencode "csrf=$(echo "$P" | csrf)" -d "name=Tom&privacy=1&slot_id=$(echo "$P" | grep -o "value=\"[0-9]*\" required" | head -1 | grep -o "[0-9]*")" "$B/$LTS" | grep -q "an diesem Tag bereits einen Termin"'
 TOM2=$(book "$LTS" "Tom" "" 4)

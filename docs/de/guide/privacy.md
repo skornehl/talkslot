@@ -28,12 +28,12 @@ Datenschutzerklärung.
 
 - **Datenminimierung:** ein frei eingegebener Name und eine optionale E-Mail-Adresse, sonst nichts. Das Feld
   fragt nach dem **Namen des Kindes** (Vor- und Nachname, bei Bedarf mit Klasse), damit die Lehrkraft die
-  Buchung zuordnen kann und Eltern nicht für zwei Kinder ihren eigenen Namen eintragen; mit
-  Buchungsbegrenzung sagt der Hinweis am Feld, dass je Kind ein eigener Termin zu buchen ist. Das
-  Rundenformular bittet Lehrkräfte um **neutrale Titel** (z. B. „Elternsprechtag 7b“): Titel und
-  Beschreibung stehen in den E-Mails an Eltern und in Kalenderdateien, der Titel auch im Protokoll, und eine
-  Runde wie „Beratung Förderbedarf“ machte jede Buchung zu einem Hinweis auf besondere Kategorien von Daten
-  (Art. 9 DSGVO). Die Spalte für Notizen in der Druckansicht heißt *Organisatorisches* (nur Organisatorisches,
+  Buchung zuordnen kann und Eltern nicht für zwei Kinder ihren eigenen Namen eintragen; der Infokasten einer
+  Runde mit Buchungsbegrenzung sagt „ein Termin pro Kind“ und wie Geschwister buchen. Das Rundenformular
+  bittet Lehrkräfte um **neutrale Titel** (z. B. „Elternsprechtag 7b“): Titel und Beschreibung stehen in den
+  E-Mails an Eltern und in Kalenderdateien, der Titel auch im Protokoll und beim Anlegen in der Adresse der
+  Runde (und damit in den Logs des Webservers), und bei einer Runde wie „Beratung Förderbedarf“ könnte jede
+  Buchung einem Hinweis auf Gesundheitsdaten (Art. 9 DSGVO) nahekommen. Die Spalte für Notizen in der Druckansicht heißt *Organisatorisches* (nur Organisatorisches,
   keine Gesprächsinhalte), weil die Liste nach dem Termin vernichtet werden soll.
 - **E-Mail-Adresse nur für den Termin:** Bestätigung, Änderung, Absage und, wenn die Lehrkraft sie für die
   Runde vorgesehen hat, eine Erinnerung am Vorabend. Die Vorlage der Datenschutzerklärung nennt all das.
@@ -91,7 +91,9 @@ Datenschutzerklärung.
   mehreren Admins nachvollziehbar ist, wer was getan hat. Was Lehrkräfte in ihren eigenen Runden tun,
   wird nicht aufgezeichnet, Buchungen erscheinen nur mit ihrem Datum: Mit der Uhrzeit ließe sich ein Eintrag
   zusammen mit einer Zusammenfassung oder einem Ausdruck noch 90 Tage nach dem Löschen der Buchung einer
-  Person zuordnen. Je nach Bundesland kann ein
+  Person zuordnen. Runde, Lehrkraft und Datum können trotzdem auf eine Familie deuten (eine Buchung an einem
+  Tag), die Einträge bleiben also pseudonyme Daten, die nur Admins sehen. Einträge von vor dieser Änderung
+  verlieren ihre Uhrzeit beim nächsten Aufräumlauf. Je nach Bundesland kann ein
   Protokoll von Handlungen der Beschäftigten trotzdem den Personalrat betreffen; die Aufbewahrung lässt
   sich mit `audit_log_days` verkürzen.
 - **Anmeldezeiten nur grob:** Der Zeitpunkt der letzten Anmeldung wird gespeichert (um ungenutzte Konten

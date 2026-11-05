@@ -38,9 +38,9 @@ return [
 
     'round.teacher' => 'Gesprächstermine bei {name}',
     'round.location' => 'Ort: {location}',
-    'round.one_only' => 'Bitte buchen Sie nur einen Termin.',
-    'round.limit_round' => 'Pro Person ist nur ein Termin möglich. Für Geschwister buchen Sie bitte jeweils mit dem Namen des Kindes.',
-    'round.limit_day' => 'Pro Person ist nur ein Termin pro Tag möglich. Für Geschwister buchen Sie bitte jeweils mit dem Namen des Kindes.',
+    'round.one_only' => 'Bitte buchen Sie nur einen Termin pro Kind.',
+    'round.limit_round' => 'Pro Kind ist nur ein Termin möglich. Für Geschwister buchen Sie bitte jeweils mit dem Namen des Kindes.',
+    'round.limit_day' => 'Pro Kind ist nur ein Termin pro Tag möglich. Für Geschwister buchen Sie bitte jeweils mit dem Namen des Kindes.',
     'round.auto_translated' => 'Titel und Beschreibung wurden automatisch übersetzt (Original: {source}). Im Zweifel gilt das Original.',
     'round.choose' => '1. Freien Termin wählen',
     'round.no_slots' => 'Zurzeit sind keine freien Termine verfügbar.',
@@ -54,8 +54,7 @@ return [
 
     'form.required' => 'Pflichtfeld',
     'form.name' => 'Name des Kindes',
-    'form.name.hint' => 'Vor- und Nachname, bei Bedarf mit Klasse (z. B. „Mia Schmidt, 7b“). Mehr ist nicht nötig.',
-    'form.name.siblings' => 'Für Geschwister buchen Sie bitte je Kind einen eigenen Termin mit dessen Namen.',
+    'form.name.hint' => 'Vor- und Nachname, bei Bedarf mit Klasse (z. B. „Mia Schmidt, 7b“). Weitere Angaben sind nicht nötig.',
     'form.email' => 'E-Mail-Adresse (freiwillig)',
     'form.email.hint' => 'Nur für die Terminbestätigung mit Änderungslink. Ohne Adresse erhalten Sie den Link nur auf der nächsten Seite.',
     'form.email.hint_reminder' => 'Nur für die Terminbestätigung mit Änderungslink und eine Erinnerung am Vorabend. Ohne Adresse erhalten Sie den Link nur auf der nächsten Seite.',

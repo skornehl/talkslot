@@ -16,9 +16,10 @@ Englisch umstellen.
   änderbar; nur Titel und Datum fehlen dann noch.
 - **Titel** und optional ein ***Beschreibungstext***, die den Eltern angezeigt werden. Reiner Text. Bitte
   neutral halten, z. B. „Elternsprechtag 7b“: Beide stehen in den E-Mails an Eltern und in Kalenderdateien,
-  der Titel auch im Protokoll. Ein Titel wie „Beratung Förderbedarf“ verriete jedem, der eine Buchung sieht,
-  mehr als den Termin. Bei Klassen mit volljährigen Schülerinnen und Schülern klären Sie vorher mit Ihrer
-  Schule, ob und worüber Sie mit deren Eltern sprechen dürfen (Landesrecht).
+  der Titel auch im Protokoll und beim Anlegen in der Adresse der Runde. Ein Titel wie „Beratung
+  Förderbedarf“ verriete jedem, der eine Buchung sieht, mehr als den Termin.
+- **Volljährige Schülerinnen und Schüler:** Bei Klassen mit Schülerinnen und Schülern ab 18 klären Sie vorher
+  mit Ihrer Schule, ob und worüber Sie mit deren Eltern sprechen dürfen (Schulrecht des Landes).
 - ***Ort*** (optional), z. B. „Raum 1.12“. Er steht auf der Buchungsseite, auf der Bestätigungsseite, in
   der Bestätigungsmail, in der Kalenderdatei, in der Druckansicht und im Einladungstext. Findet ein Tag
   woanders statt, tragen Sie das unter *Tag bearbeiten* ein.

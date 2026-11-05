@@ -2,8 +2,9 @@
 /** English texts of the admin area: German original => English (see App\AdminI18n). Privacy and legal texts. */
 return [
     // Data-minimal wording (expert review P2-4): neutral round titles, organisational notes only, the log
-    'Bitte neutral halten, z. B. „Elternsprechtag 7b“: Titel und Beschreibung stehen in den E-Mails an Eltern und in Kalenderdateien, der Titel auch im Protokoll. Keine Hinweise auf Förderbedarf, Gesundheit oder andere sensible Themen.'
-        => 'Please keep it neutral, e.g. “Parents’ evening 7b”: title and description appear in the e-mails to parents and in calendar files, the title also in the log. No hints at special educational needs, health or other sensitive topics.',
+    'Bitte neutral halten: Titel und Beschreibung stehen in den E-Mails an Eltern und in Kalenderdateien, der Titel auch im Protokoll und beim Anlegen in der Adresse der Runde. Keine Hinweise auf Förderbedarf, Gesundheit oder andere sensible Themen.'
+        => 'Please keep it neutral: title and description appear in the emails to parents and in calendar files, the title also in the log and, when the round is created, in its address. No hints at special educational needs, health or other sensitive topics.',
+    'Name des Kindes wie bei der Online-Buchung, bei Bedarf mit Klasse.' => 'The child’s name as in an online booking, with the class if needed.',
     'Organisatorisches' => 'Organisational notes',
     'Stand: {time} Uhr · Vertraulich – nur Organisatorisches notieren, keine Gesprächsinhalte; nach dem Termin vernichten.'
         => 'As of {time} · Confidential – organisational notes only, nothing about the conversation; destroy after the appointment.',

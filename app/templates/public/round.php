@@ -37,8 +37,8 @@
       <div class="field">
         <label for="name"><?= e(t('form.name')) ?> <span class="req" aria-hidden="true">*</span><span class="visually-hidden">(<?= e(t('form.required')) ?>)</span></label>
         <input type="text" id="name" name="name" required maxlength="200" autocomplete="off" aria-describedby="name-hint" value="<?= e($old['name'] ?? '') ?>">
-        <?php /* The child's name, nothing more (expert review P2-4); the sibling rule where the round limits bookings per name */ ?>
-        <p class="hint" id="name-hint"><?= e(t('form.name.hint')) ?><?php if (in_array($round['booking_limit'] ?? 'none', ['round', 'day'], true)): ?> <?= e(t('form.name.siblings')) ?><?php endif; ?></p>
+        <?php /* The child's name, nothing more (expert review P2-4); the sibling rule is in the info box above */ ?>
+        <p class="hint" id="name-hint"><?= e(t('form.name.hint')) ?></p>
       </div>
       <div class="field">
         <label for="email"><?= e(t('form.email')) ?></label>

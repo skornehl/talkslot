@@ -13,7 +13,8 @@ $action = $booking ? url('/admin/booking/' . (int) $booking['id'] . '/edit') : u
   <?= Csrf::adminField() ?>
   <div class="field">
     <label for="name"><?= e(__('Name(n)')) ?></label>
-    <input type="text" id="name" name="name" required maxlength="200" value="<?= e($old['name']) ?>">
+    <input type="text" id="name" name="name" required maxlength="200" value="<?= e($old['name']) ?>" aria-describedby="name-hint">
+    <p class="hint" id="name-hint"><?= e(__('Name des Kindes wie bei der Online-Buchung, bei Bedarf mit Klasse.')) ?></p>
   </div>
   <div class="field">
     <label for="email"><?= e(__('E-Mail (optional)')) ?></label>

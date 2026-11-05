@@ -40,7 +40,7 @@ $action = $round ? url('/admin/round/' . (int) $round['id'] . '/edit') : url('/a
     <label for="title"><?= e(__('Titel')) ?></label>
     <input type="text" id="title" name="title" required maxlength="200" value="<?= e($data['title']) ?>" placeholder="<?= e(__('z. B. Elternsprechtag August 2026')) ?>" aria-describedby="title-hint">
     <?php /* Expert review P2-4: a title such as "Beratung Förderbedarf" would make every booking a hint at special needs */ ?>
-    <p class="hint" id="title-hint"><?= e(__('Bitte neutral halten, z. B. „Elternsprechtag 7b“: Titel und Beschreibung stehen in den E-Mails an Eltern und in Kalenderdateien, der Titel auch im Protokoll. Keine Hinweise auf Förderbedarf, Gesundheit oder andere sensible Themen.')) ?></p>
+    <p class="hint" id="title-hint"><?= e(__('Bitte neutral halten: Titel und Beschreibung stehen in den E-Mails an Eltern und in Kalenderdateien, der Titel auch im Protokoll und beim Anlegen in der Adresse der Runde. Keine Hinweise auf Förderbedarf, Gesundheit oder andere sensible Themen.')) ?></p>
   </div>
 
   <?php if ($round): ?>
@@ -103,7 +103,7 @@ $action = $round ? url('/admin/round/' . (int) $round['id'] . '/edit') : url('/a
 
   <div class="field">
     <label for="description"><?= e(__('Beschreibungstext (optional)')) ?></label>
-    <textarea id="description" name="description" rows="4" maxlength="5000" placeholder="<?= e(__('z. B. Bitte nur einen Termin pro Kind buchen. Bringen Sie gern das letzte Zeugnis mit.')) ?>"><?= e($data['description'] ?? '') ?></textarea>
+    <textarea id="description" name="description" rows="4" maxlength="5000" aria-describedby="title-hint" placeholder="<?= e(__('z. B. Bitte nur einen Termin pro Kind buchen. Bringen Sie gern das letzte Zeugnis mit.')) ?>"><?= e($data['description'] ?? '') ?></textarea>
   </div>
 
   <div class="field">

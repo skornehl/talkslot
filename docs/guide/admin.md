@@ -144,7 +144,8 @@ legal text saved after reconciling it with a newer template is logged as such.
 
 The log does **not** record what teachers do in their own rounds, and it never contains names or e-mail
 addresses of parents: a booking appears with its date only (e.g. "Buchung am 12.11.2026 gelöscht"), without
-the time, which together with a summary mail or a printed list would still tell whose booking it was. Entries are deleted
+the time, which together with a summary mail or a printed list would tell whose booking it was; round, teacher
+and date can still point to a family, so the log stays for admins only. Entries are deleted
 after 90 days (configurable, `audit_log_days`). Only admins can see the log.
 
 ## Legal texts

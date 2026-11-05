@@ -159,8 +159,9 @@ dem aktuellen Stand der Vorlage … abgeglichen“.
 
 Was Lehrkräfte in ihren eigenen Runden tun, erfasst das Protokoll **nicht**, und es enthält nie Namen oder
 E-Mail-Adressen von Eltern: Eine Buchung erscheint nur mit ihrem Datum (z. B. „Buchung am 12.11.2026
-gelöscht“), ohne Uhrzeit, mit der sie sich zusammen mit einer Zusammenfassung oder einem Ausdruck noch einer
-Person zuordnen ließe.
+gelöscht“), ohne Uhrzeit, mit der sie sich zusammen mit einer Zusammenfassung oder einem Ausdruck einer Person
+zuordnen ließe; Runde, Lehrkraft und Datum können trotzdem auf eine Familie deuten, deshalb sehen das Protokoll
+nur Admins.
 Einträge werden nach 90 Tagen gelöscht (einstellbar, `audit_log_days`). Nur Admins sehen das Protokoll.
 
 ## Rechtstexte
