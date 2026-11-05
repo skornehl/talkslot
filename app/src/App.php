@@ -29,6 +29,7 @@ final class App
             if ($endpoint === '' && Installer::isInstalled()) {
                 Migrations::run();
                 Cleanup::maybeRun();
+                CronMonitor::check(); // on page views only: the web cron records its own run
             }
         } catch (\Throwable $e) {
             Alert::exception($e, 'Migration/Bereinigung'); // must not block the page
@@ -106,6 +107,7 @@ final class App
         }
         Migrations::run();
         echo json_encode(['status' => 'ok'] + Cleanup::run() + Summaries::run() + Reminders::run());
+        CronMonitor::ran();
     }
 
     /**

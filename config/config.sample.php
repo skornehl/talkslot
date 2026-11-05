@@ -62,6 +62,10 @@ return [
     'cleanup_on_request' => true,
     'cleanup_interval_minutes' => 15,
 
+    // Cron monitoring: without a completed cron run for this many hours (3 = two hourly runs missed), admins
+    // see a warning on the dashboard and the operator gets an alert mail, repeated daily while it lasts. 0 = off
+    'cron_alert_hours' => 3,
+
     // Daily summary for teachers and reminders to parents are sent for the next day from this hour on (local time)
     'summary_evening_hour' => 18,
 

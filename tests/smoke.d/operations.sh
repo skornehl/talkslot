@@ -171,3 +171,69 @@ check "health check: migration still running elsewhere → 503 schema_outdated w
 [[ $OP_CONN =~ ^[0-9]+$ ]] && DBQ "KILL $OP_CONN" 2> /dev/null # ends the session holding the lock
 wait "$OP_BG" 2> /dev/null
 check "health check: ok again once the migrations are through" 'op_is "$(op_health)" 200 ok'
+
+echo "Operations: cron monitoring"
+# Expert review P1-2: every completed cron run (bin/cron.php, web cron) records last_cron, apart from the
+# clean-up on page views (last_cleanup). Without a completed run for cron_alert_hours (3 by default), admins
+# see a warning on the dashboard and the operator gets one alert mail per outage, repeated daily.
+op_set() { DBQ "INSERT INTO tp_settings (name, value) VALUES ('$1', '$2') ON DUPLICATE KEY UPDATE value = '$2'"; }
+op_get() { DBQ "SELECT value FROM tp_settings WHERE name = '$1'"; }
+op_recent() { [[ "$1" =~ ^[0-9]+$ ]] && [ $(( $(date +%s) - $1 )) -lt 300 ]; }
+op_cron_mails() { ALERTS 'echo json_decode(file_get_contents("http://mail:8025/api/v1/search?query=to:betrieb@example.org%20subject:Cronjob"), true)["messages_count"] ?? "?";'; }
+op_throttle_reset() { ALERTS '@unlink("/srv/app/app/var/alerts.json");'; } # App\Alert: the same alert at most once per hour
+DBQ "DELETE FROM tp_settings WHERE name IN ('last_cron', 'cron_alert_sent'); UPDATE tp_settings SET value = '0' WHERE name = 'last_cleanup'"
+curl -s -o /dev/null "$B/"
+OPC_PAGE="$(op_get last_cron)|$(op_get last_cleanup)"
+$DC exec -T app php /srv/app/bin/cron.php >/dev/null
+OPC_CLI=$(op_get last_cron)
+op_set last_cron 1
+OPC_WEBOUT=$(curl -s -X POST -H "X-Cron-Token: $CTOK" "$B/cron")
+OPC_WEB=$(op_get last_cron)
+check "a page view runs the clean-up (last_cleanup) but records no cron run; bin/cron.php and the web cron do" '[[ "$OPC_PAGE" == "|"* ]] && op_recent "${OPC_PAGE#|}" && op_recent "$OPC_CLI" && echo "$OPC_WEBOUT" | has "\"status\":\"ok\"" && op_recent "$OPC_WEB"'
+
+# Late: last completed run 4 hours ago
+OPC_LAST=$(( $(date +%s) - 4 * 3600 ))
+op_set last_cron "$OPC_LAST"; op_throttle_reset
+OPC_DASH=$(curl -s -b "$J" "$B/admin")
+curl -s -o /dev/null "$B/"; curl -s -o /dev/null "$B/impressum"
+check "late (4 h): admins see a warning with the time of the last run, the GitHub rule and a link to the guide" 'echo "$OPC_DASH" | has "<div class=\"alert alert-warning\" role=\"status\"><p>Der Cronjob ist seit dem $(TZ=Europe/Berlin date -d "@$OPC_LAST" "+%d.%m.%Y %H:%M") Uhr nicht mehr gelaufen." && echo "$OPC_DASH" | has "nach 60 Tagen ohne Aktivität ab" && echo "$OPC_DASH" | has "<a href=\"https://skornehl.github.io/talkslot/de/guide/operations/#cron-monitoring\">Zur Anleitung</a>"'
+OPC_TPW=$($DC exec -T app php -r 'echo password_hash("Betrieb-Cron-Passwort-1", PASSWORD_DEFAULT);')
+DBQ "INSERT INTO tp_users (username, password_hash, role, display_name, email, is_active, created_at) VALUES ('betrieb-cron@example.org', '$OPC_TPW', 'teacher', 'Herr Cron', 'betrieb-cron@example.org', 1, NOW())"
+JC=$(mktemp)
+curl -s -o /dev/null -c "$JC" -b "$JC" -d "csrf=$(curl -s -c "$JC" -b "$JC" "$B/admin/login" | csrf)&username=betrieb-cron@example.org&password=Betrieb-Cron-Passwort-1" "$B/admin/login"
+OPC_TDASH=$(curl -s -b "$JC" "$B/admin")
+check "late: teachers see no warning (only admins can have it fixed)" 'echo "$OPC_TDASH" | has "Meine Terminrunden" && ! echo "$OPC_TDASH" | has "Cronjob"'
+OPC_MAIL=$(ALERTS '$r = json_decode(file_get_contents("http://mail:8025/api/v1/search?query=to:betrieb@example.org%20subject:Cronjob"), true); $m = $r["messages"][0] ?? ["ID" => "x", "Subject" => ""]; echo $m["Subject"], "\n", json_decode(file_get_contents("http://mail:8025/api/v1/message/" . $m["ID"]), true)["Text"] ?? "";')
+check "late: exactly one alert mail for several page views, with the time of the last run and what to check ($(op_cron_mails))" '[ "$(op_cron_mails)" = 1 ] && echo "$OPC_MAIL" | head -1 | has "Cronjob läuft nicht" && echo "$OPC_MAIL" | has "seit dem $(TZ=Europe/Berlin date -d "@$OPC_LAST" "+%d.%m.%Y %H:%M") Uhr nicht mehr vollständig gelaufen (gemeldet wird nach 3 Stunden)" && echo "$OPC_MAIL" | has "gh workflow enable cron.yml" && op_recent "$(op_get cron_alert_sent)"'
+# The outage goes on: mailed 23 hours ago → nothing yet; a day ago → once more
+op_set last_cron $(( $(date +%s) - 30 * 3600 )); op_set cron_alert_sent $(( $(date +%s) - 23 * 3600 )); op_throttle_reset
+curl -s -o /dev/null "$B/"
+OPC_DAY=$(op_cron_mails)
+op_set cron_alert_sent $(( $(date +%s) - 86400 - 60 )); op_throttle_reset
+curl -s -o /dev/null "$B/"; curl -s -o /dev/null "$B/impressum"
+check "an outage that goes on is mailed again once a day, not before ($OPC_DAY, then $(op_cron_mails))" '[ "$OPC_DAY" = 1 ] && [ "$(op_cron_mails)" = 2 ]'
+op_set cron_alert_sent $(( $(date +%s) - 86400 - 60 )); op_throttle_reset
+OPC_WEBOUT=$(curl -s -X POST -H "X-Cron-Token: $CTOK" "$B/cron")
+curl -s -o /dev/null "$B/"
+check "the web cron ends the outage without reporting it: no mail, no warning any more ($(op_cron_mails))" 'echo "$OPC_WEBOUT" | has "\"status\":\"ok\"" && [ "$(op_cron_mails)" = 2 ] && op_recent "$(op_get last_cron)" && ! curl -s -b "$J" "$B/admin" | has "Cronjob"'
+
+# Never: no run recorded (e.g. after the update, or never set up)
+DBQ "DELETE FROM tp_settings WHERE name IN ('last_cron', 'cron_watch_since')"
+OPC_FRESH=$(curl -s -b "$J" "$B/admin")
+OPC_SINCE=$(op_get cron_watch_since)
+op_set cron_watch_since $(( $(date +%s) - 4 * 3600 )); op_throttle_reset
+OPC_NEVER=$(curl -s -b "$J" "$B/admin"); curl -s -o /dev/null "$B/"
+check "no run recorded: the monitoring begins with a page view, 3 h later admins are asked to set up the cron job; no mail" 'op_recent "$OPC_SINCE" && ! echo "$OPC_FRESH" | has "Cronjob" && echo "$OPC_NEVER" | has "<div class=\"alert alert-info\" role=\"status\"><p>Es ist noch kein Lauf des Cronjobs verzeichnet." && echo "$OPC_NEVER" | has "cron_alert_hours = 0" && [ "$(op_cron_mails)" = 2 ]'
+OPC_OFF=$(ALERTS 'require "/srv/app/app/bootstrap.php";
+  App\Config::load(["cron_alert_hours" => 0] + (require "/srv/app/config/config.php"));
+  App\Db::run("DELETE FROM settings WHERE name = ?", ["cron_watch_since"]);
+  App\CronMonitor::check();
+  echo App\Settings::get("cron_watch_since") ?? "none", "|", json_encode(App\CronMonitor::status());')
+check "cron_alert_hours = 0: no monitoring, no notice ($OPC_OFF)" '[ "$OPC_OFF" = "none|null" ]'
+
+$DC exec -T app php /srv/app/bin/cron.php >/dev/null
+DBQ "DELETE FROM tp_users WHERE username = 'betrieb-cron@example.org'"
+rm -f "$JC"
+# The alert mails of this section are expected; the final check counts unexpected ones
+ALERTS 'file_get_contents("http://mail:8025/api/v1/search?query=to:betrieb@example.org%20subject:Cronjob", false, stream_context_create(["http" => ["method" => "DELETE"]]));'
+op_throttle_reset

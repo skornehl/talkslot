@@ -1,4 +1,4 @@
-<?php /** @var array $rounds @var list<string> $profileHints @var list<string> $legalHints @var bool $showOwner @var bool $operatorMissing @var bool $textsOpen @var int $unusedAccounts */ ?>
+<?php /** @var array $rounds @var list<string> $profileHints @var list<string> $legalHints @var bool $showOwner @var bool $operatorMissing @var bool $textsOpen @var int $unusedAccounts @var array{state: string, last: ?int}|null $cron */ ?>
 <?php foreach ($legalHints as $h): ?>
   <div class="alert alert-warning" role="status"><p><?= e($h) ?> <a href="<?= e(url('/admin/texts')) ?>"><?= e(__('Zu den Texten')) ?></a></p></div>
 <?php endforeach; ?>
@@ -9,6 +9,11 @@
   <div class="alert alert-warning" role="status"><p><?= e(__('Es sind noch keine Angaben für Impressum und Datenschutz hinterlegt (Aufgabe der Admins). Bis dahin sind keine Terminrunden öffentlich erreichbar.')) ?></p></div>
 <?php elseif ($textsOpen ?? false): ?>
   <div class="alert alert-warning" role="status"><p><?= e(__('Impressum bzw. Datenschutzerklärung enthalten noch offene Platzhalter (Aufgabe der Admins). Bis sie ausgefüllt sind, lassen sich keine Runden aktivieren; bereits aktive Runden bleiben erreichbar.')) ?></p></div>
+<?php endif; ?>
+<?php if ($cron ?? null): $cronGuide = App\Version::PROJECT_URL . (App\AdminI18n::lang() === 'de' ? 'de/' : '') . 'guide/operations/#cron-monitoring'; ?>
+  <div class="alert alert-<?= $cron['state'] === 'late' ? 'warning' : 'info' ?>" role="status"><p><?= e($cron['state'] === 'late'
+      ? __('Der Cronjob ist seit dem {time} Uhr nicht mehr gelaufen. Ohne ihn werden Buchungen vergangener Tage verspätet gelöscht und Zusammenfassungen und Erinnerungen verspätet oder gar nicht verschickt. Bitte prüfen Sie den Cronjob auf dem Server bzw. den GitHub-Workflow „Cron“: GitHub schaltet geplante Workflows in öffentlichen Repositorys nach 60 Tagen ohne Aktivität ab, unter „Actions“ lässt er sich wieder einschalten.', ['time' => date('d.m.Y H:i', (int) $cron['last'])])
+      : __('Es ist noch kein Lauf des Cronjobs verzeichnet. Bitte richten Sie ihn ein (stündlich bin/cron.php oder der Web-Cron, z. B. über den GitHub-Workflow „Cron“), damit Buchungen pünktlich gelöscht und Zusammenfassungen und Erinnerungen rechtzeitig verschickt werden. Wer bewusst ohne Cronjob arbeitet, schaltet diesen Hinweis mit cron_alert_hours = 0 in der Konfiguration ab.')) ?> <a href="<?= e($cronGuide) ?>"><?= e(__('Zur Anleitung')) ?></a></p></div>
 <?php endif; ?>
 <?php if ($configExposed): ?>
   <div class="alert alert-warning" role="status"><p><?= e(__('Die Konfiguration ist für alle Benutzer des Servers lesbar: {files}. Sie enthält die Passwörter für Datenbank und Mailversand sowie den geheimen Schlüssel. Bitte setzen Sie die Rechte auf 600 (oder 640), z. B. im FTP-Programm, oder geben Sie diesen Hinweis an die technische Betreuung weiter.', ['files' => implode(', ', array_map(static fn (string $file, string $mode): string => "$file ($mode)", array_keys($configExposed), $configExposed))])) ?></p></div>

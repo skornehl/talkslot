@@ -67,3 +67,31 @@ foreach (scandir(dirname(__DIR__, 2) . '/public') ?: [] as $opFile) {
 check('round addresses: every fixed address of the app is reserved (routes incl. /cron and /health, web directory)',
     !array_diff(['admin', 'cron', 'health', 'b', 'impressum', 'privacy', 'assets', 'index', 'robots'], $opPaths)
     && !array_diff($opPaths, App\Slug::RESERVED));
+
+// Cron monitoring (expert review P1-2). Recording the runs, the dashboard notice and the alert mail need the
+// database: tests/smoke.d/operations.sh
+echo "Operations: cron monitoring\n";
+$h = 3600;
+$now = 1_800_000_000;
+check('late: no completed run for cron_alert_hours (also exactly then); a run within them is fine',
+    App\CronMonitor::state($now - 3 * $h, null, $now, 3) === 'late' && App\CronMonitor::state($now - 5 * $h, $now - $h, $now, 3) === 'late'
+    && App\CronMonitor::state($now - 3 * $h + 1, null, $now, 3) === null && App\CronMonitor::state($now - 2 * $h, $now - 9 * $h, $now, 3) === null);
+check('never: no run at all, cron_alert_hours since the monitoring began; not before, and not without its start',
+    App\CronMonitor::state(null, $now - 3 * $h, $now, 3) === 'never' && App\CronMonitor::state(null, $now - 3 * $h + 1, $now, 3) === null
+    && App\CronMonitor::state(null, null, $now, 3) === null);
+check('cron_alert_hours = 0: monitoring off', App\CronMonitor::state($now - 99 * $h, $now - 99 * $h, $now, 0) === null);
+check('alert mail: due at a new outage (none since the last run), then once a day',
+    App\CronMonitor::alertDue($now - 3 * $h, 0, $now) && App\CronMonitor::alertDue($now - 3 * $h, $now - 30 * $h, $now)
+    && !App\CronMonitor::alertDue($now - 30 * $h, $now - 23 * $h, $now) && App\CronMonitor::alertDue($now - 30 * $h, $now - 24 * $h, $now));
+$opHours = [];
+foreach ([[], ['cron_alert_hours' => 0], ['cron_alert_hours' => -2], ['cron_alert_hours' => '6']] as $set) {
+    App\Config::load($set + array_diff_key($cfg, ['cron_alert_hours' => 1]));
+    $opHours[] = App\CronMonitor::alertHours();
+}
+App\Config::load($cfg);
+check('cron_alert_hours: 3 by default, 0 (also below) switches it off (' . implode(',', $opHours) . ')', $opHours === [3, 0, 0, 6]);
+$opMail = implode("\n", App\CronMonitor::alertLines(mktime(10, 17, 0, 11, 5, 2026), 3));
+check('alert mail: since when, after how many hours, what to check (GitHub: 60 days, enable again), no address or token',
+    str_contains($opMail, 'seit dem 05.11.2026 10:17 Uhr nicht mehr vollständig gelaufen (gemeldet wird nach 3 Stunden)')
+    && str_contains($opMail, 'nach 60 Tagen ohne Aktivität ab') && str_contains($opMail, 'gh workflow enable cron.yml')
+    && str_contains($opMail, 'einmal am Tag') && !preg_match('/@|https?:|[0-9a-f]{32}/', $opMail));
