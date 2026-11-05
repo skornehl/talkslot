@@ -207,12 +207,10 @@ final class ScheduleService
                 if ($differs) {
                     $touched[] = (int) $b['id'];
                 }
-                if (!self::upcoming($b)) {
-                    continue;
-                }
-                if ($b['is_conflict']) {
+                $ahead = self::upcoming($b); // one that is over now concerns nobody
+                if ($ahead && $b['is_conflict']) {
                     $moved += (int) $differs;
-                } elseif ($differs || ($before['is_conflict'] && self::outdated($b))) {
+                } elseif ($ahead && ($differs || ($before['is_conflict'] && self::outdated($b)))) {
                     $changed[] = $b;
                 }
             }
