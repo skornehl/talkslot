@@ -27,8 +27,12 @@ is not MariaDB 10.6 or newer.
 
 Migrations only add columns (with defaults) and tables, so a rollback to an older version keeps working.
 Imprint and privacy texts that were never edited are replaced by newer templates of the operator type
-(operated by the school or privately) automatically; edited texts stay untouched and admins see a hint under
-*Texte* when something needs attention. If a new template brings new `[PLACEHOLDERS]`, rounds that are
+(operated by the school or privately) automatically; edited texts stay untouched, and admins see on the
+dashboard and under *Texte* which sections a newer template has changed since the text was based on it, to
+take them over (version markers, see
+[Privacy and legal]({{ '/guide/privacy/' | relative_url }}#template-updates-for-edited-texts)). On the first
+request after the update to the version with version markers, texts that have the wording of the current
+templates get them as their markers; for other edited texts the hint lists the sections that differ. If a new template brings new `[PLACEHOLDERS]`, rounds that are
 already active stay online; the dashboard lists the placeholders, and the next round can only be activated
 once they are filled in.
 

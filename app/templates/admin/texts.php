@@ -1,4 +1,8 @@
-<?php /** @var array $languages @var string $mailTransport @var string $mailFrom @var string $operatorContact @var ?string $operatorType @var list<string> $operatorHints @var string $privacyTemplate */ use App\Csrf; ?>
+<?php /** @var array $languages @var string $mailTransport @var string $mailFrom @var string $operatorContact @var ?string $operatorType @var list<string> $operatorHints @var string $privacyTemplate @var array<string, bool> $outdated */ use App\Csrf;
+// Behind the current template (LegalTexts::outdated()): with a version marker "changed", otherwise "differs"
+$outdated ??= [];
+$behind = static fn (string $page): string => isset($outdated[$page])
+    ? ' <span class="small muted">– ' . e($outdated[$page] ? __('Vorlage geändert') : __('weicht von der Vorlage ab')) . '</span>' : ''; ?>
 <h1><?= e(__('Impressum & Datenschutz')) ?></h1>
 <?php foreach ($operatorHints ?? [] as $h): ?>
   <div class="alert alert-warning" role="status"><p><?= e($h) ?></p></div>
@@ -26,8 +30,8 @@
   <p><?= __h('Impressum und Datenschutzerklärung gibt es als Vorlage für beide Betriebsarten. Ändern Sie oben die Betriebsart, werden unveränderte Vorlagentexte durch die passende Vorlage ersetzt, bearbeitete Texte nie; eine Vorlage laden Sie beim jeweiligen Text über „Vorlage laden“. Angaben in eckigen Klammern wie {example} müssen Sie selbst ersetzen – vorher lässt sich keine Runde aktivieren.', ['example' => '<code>[ZUSTÄNDIGE LANDESDATENSCHUTZBEHÖRDE MIT ADRESSE]</code>']) ?></p>
   <ul class="link-list">
     <?php foreach ($languages as $l): ?>
-      <li><a href="<?= e(url('/admin/page/imprint/' . $l)) ?>"><?= e(__('Impressum ({lang})', ['lang' => strtoupper($l)])) ?></a></li>
-      <li><a href="<?= e(url('/admin/page/privacy/' . $l)) ?>"><?= e(__('Datenschutzerklärung ({lang})', ['lang' => strtoupper($l)])) ?></a></li>
+      <li><a href="<?= e(url('/admin/page/imprint/' . $l)) ?>"><?= e(__('Impressum ({lang})', ['lang' => strtoupper($l)])) ?></a><?= $behind("imprint/$l") ?></li>
+      <li><a href="<?= e(url('/admin/page/privacy/' . $l)) ?>"><?= e(__('Datenschutzerklärung ({lang})', ['lang' => strtoupper($l)])) ?></a><?= $behind("privacy/$l") ?></li>
     <?php endforeach; ?>
   </ul>
 </section>

@@ -68,7 +68,12 @@ CI runs the unit tests on every push, and the smoke, browser and deployment test
   to an older version keeps working. Raise `LATEST`, add the step, update `schema.sql`.
 - **Legal templates:** after changing `app/templates/pages/*.md`, update `CURRENT_PAGE_HASHES` and move
   the old hashes to `OLD_PAGE_HASHES`, so unedited texts are upgraded automatically. The unit test tells
-  you the new hashes.
+  you the new hashes. Edited texts need no new hint in `AdminController::legalHints()`: their version
+  markers show admins the changed sections by themselves (`LegalTexts::outdated()`). Keep sections under
+  first-level headings (`# 5. …`) and put each paragraph or list item on one line, so the comparison works
+  per section and line. Whenever what TalkSlot processes changes (data, recipients, retention periods,
+  browser storage, kinds of mail), update the privacy templates of both operator types in German and
+  English in the same change.
 - **Deployment variables:** every variable read by `bin/build-config.php` must be passed in the build step
   of `.github/workflows/deploy.yml`; a unit test checks this too.
 - **Bundled libraries:** PHPMailer is committed in `app/vendor/`. `composer.json` and `composer.lock` only

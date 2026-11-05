@@ -88,7 +88,9 @@ schools (GDPR/DSGVO, TDDDG) and multilingual families.
 - Imprint and privacy policy per language, editable (simple Markdown), with templates per operator type:
   *operated by the school* (public body, Art. 6(1)(e) GDPR, the school's data protection officer) or
   *operated privately* (Art. 6(1)(b)/(f) GDPR, legal notice of a private, non-commercial service). Unedited
-  texts follow the operator type; hints point out texts that do not fit it. The operator's details replace
+  texts follow the operator type; hints point out texts that do not fit it. Edited texts are never
+  overwritten: when an update brings a newer template, admins see which sections changed and can take them
+  over section by section, keeping what they filled in. The operator's details replace
   `[[VERANTWORTLICHE]]` automatically; no round is public until they are filled in.
 
 **Automatic clean-up**

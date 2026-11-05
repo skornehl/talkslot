@@ -72,7 +72,13 @@ Die CI führt bei jedem Push die Unit-Tests aus sowie Smoke-, Browser- und Deplo
   hinzu und aktualisieren Sie `schema.sql`.
 - **Rechtstext-Vorlagen:** Aktualisieren Sie nach einer Änderung an `app/templates/pages/*.md` die
   `CURRENT_PAGE_HASHES` und verschieben Sie die alten Hashes nach `OLD_PAGE_HASHES`, damit unbearbeitete
-  Texte automatisch aktualisiert werden. Der Unit-Test nennt Ihnen die neuen Hashes.
+  Texte automatisch aktualisiert werden. Der Unit-Test nennt Ihnen die neuen Hashes. Für bearbeitete Texte
+  braucht es keinen neuen Hinweis in `AdminController::legalHints()`: Ihr Vorlagenstand zeigt Admins die
+  geänderten Abschnitte von selbst (`LegalTexts::outdated()`). Halten Sie die Abschnitte unter Überschriften
+  der ersten Ebene (`# 5. …`) und jeden Absatz bzw. Listenpunkt in einer Zeile, damit der Vergleich je
+  Abschnitt und Zeile funktioniert. Ändert sich, was TalkSlot verarbeitet (Daten, Empfänger, Fristen,
+  Speicherung im Browser, Arten von E-Mails), passen Sie in derselben Änderung die Datenschutz-Vorlagen
+  beider Betriebsarten auf Deutsch und Englisch an.
 - **Deployment-Variablen:** Jede Variable, die `bin/build-config.php` liest, muss im Build-Schritt von
   `.github/workflows/deploy.yml` übergeben werden; auch das prüft ein Unit-Test.
 - **Mitgelieferte Bibliotheken:** PHPMailer liegt fertig in `app/vendor/`. `composer.json` und
