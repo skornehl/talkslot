@@ -27,6 +27,9 @@ $inMinutes = static fn (string $at): int => (int) round((strtotime($at) - time()
 check('retries: at once, then after 5, 15, 30, 60, 120 and 240 minutes, never longer',
     array_map(static fn (int $failures): int => $inMinutes(App\Outbox::retryAt($failures)), [0, 1, 2, 3, 4, 5, 6, 7, 50]) === [0, 5, 15, 30, 60, 120, 240, 240, 240]);
 check('a mail is retried for at most 48 hours, overdue ones are shown after 2', App\Outbox::MAX_AGE_HOURS === 48 && App\Outbox::LATE_HOURS === 2);
+$lateHours = static function (int $hours) use ($cfg): int { App\Config::load(['cron_alert_hours' => $hours] + $cfg); return App\Outbox::lateHours(); };
+check('overdue mails: not before the cron monitoring would warn (12 → 12, 3 → 3), at least 2 hours (also with it off), before mails are given up (72 → 47)', [$lateHours(12), $lateHours(3), $lateHours(1), $lateHours(0), $lateHours(72)] === [12, 3, 2, 2, 47]);
+App\Config::load($cfg);
 $sample = (array) ((require dirname(__DIR__, 2) . '/config/config.sample.php')['mail_queue'] ?? []);
 check('config.sample.php: mail_queue with the defaults of the code', $sample === ['batch' => 100, 'seconds' => 20, 'hourly_limit' => 0, 'after_response' => true]);
 
@@ -144,6 +147,10 @@ check('cancellation data: only what the mail needs (address, language, name, app
     array_keys($data) === ['booking_id', 'round_id', 'email', 'lang', 'name', 'title', 'auto_translated', 'source_lang', 'teacher_name', 'teacher_email', 'day_date', 'start_time', 'end_time', 'location', 'created_at']
     && $data['booking_id'] === 3 && $data['title'] === 'Elternsprechtag 3b' && $data['auto_translated'] === false
     && !array_filter($data, static fn ($v): bool => is_string($v) && (str_contains($v, 'aaaa') || str_contains($v, 'bbbb') || str_contains($v, 'runde-3b') || str_contains($v, 'K7MP'))));
+$sampleLimits = (array) ((require dirname(__DIR__, 2) . '/config/config.sample.php')['rate_limits'] ?? []);
+check('config.sample.php: mails to parents per teacher account and hour with the defaults of the code (30 from entries, the bulk limit after changes)',
+    ($sampleLimits['teacher_mail'] ?? null) === [30, 3600] && ($sampleLimits['teacher_bulk'] ?? null) === [App\ScheduleService::BULK_LIMIT, 3600]
+    && App\ScheduleService::BULK_LIMIT >= 100);
 check('outbox: a single cancellation goes first like other single mails, bulk mails after them but before reminders',
     App\Outbox::KINDS['cancelled'] === App\Outbox::KINDS['booked'] && App\Outbox::BULK > App\Outbox::KINDS['changed']
     && App\Outbox::BULK <= App\Outbox::KINDS['summary_evening'] && App\Outbox::BULK < App\Outbox::KINDS['reminder']);

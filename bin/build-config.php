@@ -106,6 +106,14 @@ $config['alert_email'] = $env('ALERT_EMAIL');
 // Names in the summaries for teachers only where the school allows them (SUMMARY_NAMES=1)
 $config['summary_names'] = in_array(strtolower($env('SUMMARY_NAMES')), ['1', 'true'], true);
 $config['allowed_account_domains'] = $domains;
+// Hours without a completed cron run before admins are warned (App\CronMonitor; empty = default of the sample)
+if ($env('CRON_ALERT_HOURS') !== '') {
+    if (!ctype_digit($env('CRON_ALERT_HOURS'))) {
+        fwrite(STDERR, "CRON_ALERT_HOURS must be a whole number (0 = off)\n");
+        exit(1);
+    }
+    $config['cron_alert_hours'] = (int) $env('CRON_ALERT_HOURS');
+}
 $config['languages'] = $languages;
 $config['default_language'] = $default;
 $config['app_name'] = $env('APP_NAME', (string) $config['app_name']);

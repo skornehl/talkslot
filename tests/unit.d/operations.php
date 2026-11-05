@@ -92,7 +92,7 @@ foreach ([[], ['cron_alert_hours' => 0], ['cron_alert_hours' => -2], ['cron_aler
     $opHours[] = App\CronMonitor::alertHours();
 }
 App\Config::load($cfg);
-check('cron_alert_hours: 3 by default, 0 (also below) switches it off (' . implode(',', $opHours) . ')', $opHours === [3, 0, 0, 6]);
+check('cron_alert_hours: 12 by default (GitHub starts scheduled runs hours late), 0 (also below) switches it off (' . implode(',', $opHours) . ')', $opHours === [12, 0, 0, 6]);
 // Switched off, page views do not even read the settings: any database access throws here
 $opDbError = new ReflectionProperty(App\Db::class, 'connectError');
 $opSaved = $opDbError->getValue();

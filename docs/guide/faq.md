@@ -10,11 +10,12 @@ calendar entry) or have the confirmation sent to an e-mail address after all; th
 
 ## Are parents told when a teacher cancels or moves their appointment?
 
-Yes, by e-mail in their language, if they gave an address: a cancellation when the teacher deletes the
-booking, its day or the round (or an admin the teacher's account), and the new details when a day gets
+As a rule, by e-mail in their language, if they gave an address: a cancellation when the teacher deletes
+the booking, its day or the round (or an admin the teacher's account), and the new details when a day gets
 another date, time or location, or the round another location or teacher. The box *Eltern per E-Mail
-informieren* is ticked by default. Parents without an address, or entries the teacher made without ever
-sending a mail, are named in the message afterwards so the teacher can tell them in person. See the
+informieren* is ticked by default; the teacher can untick it. Parents without an address, entries the
+teacher made without ever sending a mail, and parents above the hourly limit of change notices per account
+are named in the message afterwards so the teacher can tell them in person. See the
 [Teacher guide]({{ '/guide/teachers/' | relative_url }}).
 
 ## Can I use TalkSlot for something other than parent-teacher conferences?
@@ -31,7 +32,7 @@ with PHP-FPM or LiteSpeed a page view sends up to 10 waiting mails after its res
 
 ## How do I notice that the cron job has stopped?
 
-Once no cron run has completed for 3 hours, admins see a warning on the dashboard and the operator gets an
+Once no cron run has completed for 12 hours (configurable), admins see a warning on the dashboard and the operator gets an
 alert mail, repeated daily while it lasts. A common cause: GitHub disables scheduled workflows in public
 repositories after 60 days without activity. See
 [cron monitoring]({{ '/guide/operations/' | relative_url }}#cron-monitoring).

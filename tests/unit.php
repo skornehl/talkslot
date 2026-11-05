@@ -548,6 +548,16 @@ check('build-config: placeholder CHANGE_ME → abort', $rc === 1 && str_contains
 check('build-config: unknown admin language → abort', $rc === 1 && str_contains($err, 'ADMIN_LANGUAGE must be de or en'));
 [$rc] = $run(['bin/build-config.php', $cfgFile], ['ADMIN_LANGUAGE' => 'EN'] + $envOk);
 check('build-config: admin language taken over', $rc === 0 && (static fn ($f) => require $f)($cfgFile)['admin_language'] === 'en');
+$cronBuilt = static function (string $value) use ($run, $cfgFile, $envOk): ?int {
+    [$rc] = $run(['bin/build-config.php', $cfgFile], ['CRON_ALERT_HOURS' => $value] + $envOk);
+    return $rc === 0 ? (static fn ($f) => require $f)($cfgFile)['cron_alert_hours'] : null;
+};
+[$rcBad, , $err] = $run(['bin/build-config.php', $cfgFile], ['CRON_ALERT_HOURS' => 'drei'] + $envOk);
+[$rcNeg] = $run(['bin/build-config.php', $cfgFile], ['CRON_ALERT_HOURS' => '-1'] + $envOk);
+// An unset GitHub variable arrives as an empty string: the default of the sample
+check('build-config: CRON_ALERT_HOURS taken over (also 0 = off), empty → default 12, not a whole number → abort',
+    $cronBuilt('3') === 3 && $cronBuilt('0') === 0 && $cronBuilt('') === 12 && $cronBuilt(' 6 ') === 6
+    && $rcBad === 1 && str_contains($err, 'CRON_ALERT_HOURS must be a whole number') && $rcNeg === 1);
 [$rc, , $err] = $run(['bin/build-config.php', $cfgFile], ['APP_SECRET' => 'kurz'] + $envOk);
 check('build-config: secret too short → abort', $rc === 1 && str_contains($err, 'too short'));
 [$rc] = $run(['bin/build-config.php', $cfgFile], $envOk);

@@ -110,7 +110,7 @@ under Art. 28 GDPR. The servers are located in Germany.*
 | `cleanup_interval_minutes` | `15` | … at most this often (database steps only: summaries and reminders are queued there, not sent) |
 | `summary_evening_hour` | `18` | from this hour, teachers get the summary for the next day and parents the reminder |
 | `audit_log_days` | `90` | entries of the admin log (*Protokoll*) are deleted after this many days |
-| `cron_alert_hours` | `3` | without a completed cron run for this many hours, admins see a warning on the dashboard and the operator gets an alert mail ([cron monitoring]({{ '/guide/operations/' | relative_url }}#cron-monitoring); `0` = off) |
+| `cron_alert_hours` | `12` | without a completed cron run for this many hours, admins see a warning on the dashboard and the operator gets an alert mail ([cron monitoring]({{ '/guide/operations/' | relative_url }}#cron-monitoring); `0` = off); deployment variable `CRON_ALERT_HOURS` |
 
 ## Summaries and accounts {#summaries-and-accounts}
 
@@ -156,7 +156,8 @@ Wi-Fi).
 | `reauth` | 5 per 15 min | wrong passwords when confirming a change of admin rights, an e-mail address or ending all sessions, and when changing the own password (one counter per sign-in, not per IP address) |
 | `invite` | 20 per hour | invalid invitation and password links |
 | `forgot` | 5 per hour | requests under *Passwort vergessen* (forgotten password) |
-| `teacher_mail` | 30 per hour | mails to parents after entries or changes by a teacher, per account, not per IP address |
+| `teacher_mail` | 30 per hour | mails to parents a teacher sends from an entry (confirmation, change notice), per account, not per IP address |
+| `teacher_bulk` | 200 per hour | change notices to parents after a teacher changed a day or a round, per account; parents above the limit are named to the teacher instead. Together with `teacher_mail` this keeps an account from sending mails to addresses of its choice in bulk |
 
 `csrf_min_age_seconds` (default 2) is the minimum time between loading and submitting a public form, a
 simple brake for bots. `csrf_max_age_seconds` (default 14400, 4 hours) is how long a public form and the

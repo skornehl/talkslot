@@ -43,10 +43,11 @@ entered an e-mail address when booking, the link is also in the confirmation mai
 the calendar entry updates itself when you move the appointment. The booking page, the confirmation and the
 calendar file also show where the meeting takes place, if the teacher entered a location.
 
-**If the teacher changes or cancels your appointment**, you get an e-mail in your language, as long as you
-entered an address: with the new date, time or location, or with the cancellation. A cancellation comes
-with a calendar file that removes the appointment from your calendar, and, if the round still takes
-bookings, with the link to book a new one. Without an e-mail address, the teacher tells you in person.
+**If the teacher changes or cancels your appointment**, you usually get an e-mail in your language, as long
+as you entered an address: with the new date, time or location, or with the cancellation. A cancellation
+comes with a calendar file that removes the appointment from your calendar, and, if the round still takes
+bookings, with the link to book a new one. Without an e-mail address, or if the teacher chooses to tell you
+in person, the teacher contacts you directly.
 
 ![Confirmation page with the personal link]({{ '/assets/img/booking-confirmed.webp' | relative_url }})
 

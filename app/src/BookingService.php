@@ -165,18 +165,35 @@ final class BookingService
         self::removeOrphanedConflict((int) $booking['slot_id']);
     }
 
-    public static function delete(array $booking): void
+    /** false: it was deleted already (e.g. at the same time by the parents and the teacher). */
+    public static function delete(array $booking): bool
     {
-        Db::run('DELETE FROM bookings WHERE id = ?', [$booking['id']]);
+        $deleted = Db::exec('DELETE FROM bookings WHERE id = ?', [$booking['id']]) > 0;
         self::removeOrphanedConflict((int) $booking['slot_id']);
+        return $deleted;
     }
 
-    public static function update(int $bookingId, string $name, ?string $email, string $lang): void
+    /**
+     * The teacher edits name, address and language of a booking. A new address counts as unknown, as for a new
+     * entry by the teacher (source "admin"): it gets change notices, cancellations and reminders only once a
+     * confirmation or change notice from the entry reached it (mailResult()), which counts against the limit
+     * of such mails per account. Otherwise an account could replace the addresses of its bookings and send
+     * the bulk mails after a change of a day or round (ScheduleService) to addresses of its choice. Mails
+     * still waiting for the old address are dropped. true = new address.
+     */
+    public static function update(int $bookingId, string $name, ?string $email, string $lang): bool
     {
+        $old = (string) Db::value('SELECT email FROM bookings WHERE id = ?', [$bookingId]);
+        $newAddress = (string) $email !== '' && mb_strtolower(trim((string) $email)) !== mb_strtolower(trim($old));
         Db::run(
             'UPDATE bookings SET name = ?, email = ?, lang = ?, updated_at = ? WHERE id = ?',
             [$name, $email, $lang, Time::nowSql(), $bookingId]
         );
+        if ($newAddress) {
+            Db::run("UPDATE bookings SET source = 'admin', notified_at = NULL, remind_ok = 0, mail_failed_at = NULL WHERE id = ?", [$bookingId]);
+            Db::run('DELETE FROM mail_outbox WHERE booking_id = ?', [$bookingId]);
+        }
+        return $newAddress;
     }
 
     public static function findByToken(#[\SensitiveParameter] string $plain): ?array

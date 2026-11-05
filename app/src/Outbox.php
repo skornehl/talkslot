@@ -63,6 +63,12 @@ final class Outbox
         );
     }
 
+    /** Does a confirmation or change notice about the booking wait? It is created when sending, with the details then. */
+    public static function waiting(int $bookingId): bool
+    {
+        return Db::value("SELECT 1 FROM mail_outbox WHERE booking_id = ? AND kind IN ('booked', 'changed') LIMIT 1", [$bookingId]) !== null;
+    }
+
     /**
      * Queues the cancellation of a booking the teacher deleted, with what the mail needs (Notifier::cancellationData()).
      * $failedOnce and $bulk as for queueBooking().
@@ -209,7 +215,17 @@ final class Outbox
     }
 
     /**
-     * Mails waiting longer than LATE_HOURS (for the admins' overview): the cron job does not run or the
+     * Hours after which waiting mails are shown to admins: LATE_HOURS, or cron_alert_hours if longer (the
+     * cron job sends them; with the GitHub workflow it often runs only every few hours, see CronMonitor), but
+     * always before mails are given up (MAX_AGE_HOURS), so that the notice can appear at all.
+     */
+    public static function lateHours(): int
+    {
+        return min(max(self::LATE_HOURS, CronMonitor::alertHours()), self::MAX_AGE_HOURS - 1);
+    }
+
+    /**
+     * Mails waiting longer than lateHours() (for the admins' overview): the cron job does not run or the
      * mail server keeps refusing. null = none.
      * @return ?array{count:int,since:string}
      */
@@ -217,7 +233,7 @@ final class Outbox
     {
         $row = Db::one(
             'SELECT COUNT(*) AS n, MIN(created_at) AS since FROM mail_outbox WHERE created_at < ?',
-            [Time::now()->modify('-' . self::LATE_HOURS . ' hours')->format('Y-m-d H:i:s')]
+            [Time::now()->modify('-' . self::lateHours() . ' hours')->format('Y-m-d H:i:s')]
         );
         return (int) ($row['n'] ?? 0) > 0 ? ['count' => (int) $row['n'], 'since' => (string) $row['since']] : null;
     }

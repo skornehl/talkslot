@@ -40,23 +40,32 @@ final class RateLimiter
         return is_array($cfg) && count($cfg) === 2 ? [(int) $cfg[0], (int) $cfg[1]] : [$limit, $window];
     }
 
-    /** Counts an attempt. true = still within the limit. */
     private static function key(?string $subject): string
     {
         return $subject === null ? self::clientKey() : hash_hmac('sha256', 'subject|' . $subject, (string) Config::get('secret', ''));
     }
 
+    /** Counts an attempt. true = still within the limit. */
     public static function hit(string $bucket, int $limit, int $window, ?string $subject = null): bool
     {
+        self::add($bucket, $window, 1, $subject);
+        return self::count($bucket, $window, $subject) <= $limit;
+    }
+
+    /** Counts $n attempts at once (e.g. mails queued together after checking count()). */
+    public static function add(string $bucket, int $window, int $n, ?string $subject = null): void
+    {
+        if ($n < 1) {
+            return;
+        }
         $now = time();
         $cut = $now - $window;
         Db::run(
-            'INSERT INTO rate_limits (bucket, key_hash, window_start, hits) VALUES (?, ?, ?, 1)
-             ON DUPLICATE KEY UPDATE hits = IF(window_start < ?, 1, hits + 1),
+            'INSERT INTO rate_limits (bucket, key_hash, window_start, hits) VALUES (?, ?, ?, ?)
+             ON DUPLICATE KEY UPDATE hits = IF(window_start < ?, ?, hits + ?),
                                      window_start = IF(window_start < ?, ?, window_start)',
-            [$bucket, self::key($subject), $now, $cut, $cut, $now]
+            [$bucket, self::key($subject), $now, $n, $cut, $n, $n, $cut, $now]
         );
-        return self::count($bucket, $window, $subject) <= $limit;
     }
 
     public static function count(string $bucket, int $window, ?string $subject = null): int

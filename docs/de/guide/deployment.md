@@ -72,6 +72,7 @@ Die Sessions liegen im gemeinsamen `app/var/`, daher wird durch ein Deployment n
 | `HOSTING_DE`, `HOSTING_EN` | Variablen | | Hoster für die Datenschutzerklärung |
 | `MAIL_FROM`, `MAIL_FROM_NAME`, `MAIL_REPLY_TO`, `ALERT_EMAIL` | Variablen | | E-Mail-Einstellungen |
 | `SUMMARY_NAMES`, `ALLOWED_ACCOUNT_DOMAINS` | Variablen | | Namen in den Zusammenfassungen (`1`), Domains für die Adressen der Konten (durch Kommas getrennt); siehe [Konfiguration]({{ '/de/guide/configuration/' | relative_url }}#zusammenfassungen-und-konten) |
+| `CRON_ALERT_HOURS` | Variable | | Stunden ohne vollständigen Cron-Lauf, bis Admins gewarnt werden (Standard 12, `0` = aus; siehe [Überwachung des Cronjobs]({{ '/de/guide/operations/' | relative_url }}#cron-monitoring)) |
 | `MAIL_TRANSPORT`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_ENCRYPTION` | Variablen | | für SMTP |
 | `SMTP_USER`, `SMTP_PASS` | Secrets | | für SMTP |
 | `CONFIG_MODE` | Variable | | Dateirechte von `config.php` auf dem Server: `600` (Standard), `640` oder `keep`; Rechte, die andere lesen lassen, werden abgelehnt; siehe unten |

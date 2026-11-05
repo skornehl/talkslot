@@ -196,4 +196,4 @@ address; if you have edited your privacy policy, a hint on the dashboard asks yo
 
 Summaries and reminders are sent by the cron job through the
 [mail queue]({{ '/guide/operations/' | relative_url }}#mail-queue); the overview tells admins when mails
-have been waiting for more than two hours.
+have been waiting longer than `cron_alert_hours` (at least two hours).
