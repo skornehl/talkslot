@@ -291,7 +291,7 @@ All options are documented in [`config/config.sample.php`](config/config.sample.
 | `summary_evening_hour` | `18` | time of the evening summary |
 | `mail_queue` | see file | mails per cron run (`batch`), seconds per run (`seconds`), reminders, summaries and mails to many parents after a change per hour (`hourly_limit`, `0` = no limit), sending after the response with PHP-FPM (`after_response`) |
 | `cron_alert_hours` | `3` | warn admins and mail the operator after this many hours without a completed cron run (`0` = off) |
-| `rate_limits` | see file | generous, since many parents share an IP (mobile CGNAT, school Wi-Fi) |
+| `rate_limits` | see file | generous, since many parents share an IP (mobile CGNAT, school Wi-Fi); mails to parents per teacher account and hour (`teacher_mail` from entries, `teacher_bulk` after a change of a day or round) |
 
 Every option is known to `app/src/ConfigSchema.php`. A missing secret, an unknown time zone, a language
 without its file or an invalid table prefix stop the site with a message; unknown keys (typos) and invalid

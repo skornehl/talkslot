@@ -13,7 +13,7 @@ This page explains the design decisions; it is not legal advice.
 | Name and optional e-mail address of a booking | database | from 0:00 the day after the appointment, or immediately on cancellation |
 | Hash of the personal change link (and of the links in the reminder and in a confirmation sent later) | database | with the booking |
 | Mail queue entry: which mail is due for which booking or account (no address, text or link) | database | once sent, after 48 hours at the latest, with the booking |
-| Cancellation by the teacher in the mail queue: address, language, name, appointment and teacher of the deleted booking (no link) | database | once sent, after 48 hours at the latest |
+| Cancellation by the teacher in the mail queue: address, language, name, appointment and teacher (name and address for replies; no address once the account is deleted) of the deleted booking (no link) | database | once sent, after 48 hours at the latest |
 | Shortened, HMAC-hashed IP addresses; HMAC hashes of account IDs and known-device cookies with failed logins | database (rate limiting) | after 24 hours at the latest |
 | Known-device cookie of an admin or teacher account (random number, time, signature) | that person's browser | after 365 days, renewed at every sign-in |
 | Teacher accounts | database | by an admin; inactive accounts without rounds in use 15 months after the last login, together with their drafts |
@@ -54,8 +54,11 @@ ask how long they are kept and state it in the privacy policy.
   *Eltern per E-Mail informieren* ticked by default. That is what the address was given for (the privacy
   policy names changes and cancellations). Mails only go to parents who booked themselves, or whose entry
   by the teacher already got a confirmation or change notice; parents who never got a mail from TalkSlot
-  get no cancellation either (the rule of the reminder). This also keeps an account from mailing arbitrary
-  addresses by adding entries with them and deleting the day. The admin log only gives the number of
+  get no cancellation either (the rule of the reminder). A new address the teacher enters for a booking
+  counts as unknown until such a mail from the entry reached it, and change notices after a change of a day
+  or round are limited per account and hour (`rate_limits.teacher_bulk`, like the 30 mails per hour from
+  entries). This also keeps an account from mailing arbitrary addresses by adding entries with them, or
+  changing the addresses of bookings, and then changing or deleting the day. The admin log only gives the number of
   parents notified. A `mailto:` link to the parents was deliberately left out, so that their addresses do
   not end up in private mailboxes through the browser's mail program. Whoever gets no mail is named once
   in the message afterwards, with the appointment and the address if there is one (the round page showed

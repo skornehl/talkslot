@@ -11,12 +11,13 @@ wird nicht gespeichert.
 
 ## Erfahren Eltern, wenn eine Lehrkraft ihren Termin absagt oder verlegt?
 
-Ja, per E-Mail in ihrer Sprache, sofern sie eine Adresse angegeben haben: eine Absage, wenn die Lehrkraft
-die Buchung, ihren Tag oder die Runde löscht (oder ein Admin das Konto der Lehrkraft), und die neuen Daten,
-wenn ein Tag ein anderes Datum, eine andere Uhrzeit oder einen anderen Ort bekommt oder die Runde einen
-anderen Ort oder eine andere Lehrkraft. *Eltern per E-Mail informieren* ist standardmäßig angehakt. Eltern
-ohne Adresse und Einträge, zu denen die Lehrkraft nie eine E-Mail geschickt hat, nennt die Meldung danach,
-damit die Lehrkraft sie persönlich informiert. Siehe die
+In der Regel ja, per E-Mail in ihrer Sprache, sofern sie eine Adresse angegeben haben: eine Absage, wenn die
+Lehrkraft die Buchung, ihren Tag oder die Runde löscht (oder ein Admin das Konto der Lehrkraft), und die neuen
+Daten, wenn ein Tag ein anderes Datum, eine andere Uhrzeit oder einen anderen Ort bekommt oder die Runde
+einen anderen Ort oder eine andere Lehrkraft. *Eltern per E-Mail informieren* ist standardmäßig angehakt;
+die Lehrkraft kann das Häkchen herausnehmen. Eltern ohne Adresse, Einträge, zu denen die Lehrkraft nie eine
+E-Mail geschickt hat, und Eltern über der Stundengrenze für Änderungsmitteilungen eines Kontos nennt die
+Meldung danach, damit die Lehrkraft sie persönlich informiert. Siehe die
 [Anleitung für Lehrkräfte]({{ '/de/guide/teachers/' | relative_url }}).
 
 ## Kann ich TalkSlot auch für etwas anderes als Elternsprechtage nutzen?

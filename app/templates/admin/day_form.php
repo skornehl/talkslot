@@ -1,4 +1,4 @@
-<?php /** @var array $day @var array $round @var array $parents upcoming bookings, how many can be mailed @var array $errors */ use App\Csrf; ?>
+<?php /** @var array $day @var array $round @var array $parents upcoming bookings, how many can be mailed @var array $errors @var bool $notify the box as sent (ticked by default) */ use App\Csrf; ?>
 <p class="breadcrumb"><a href="<?= e(url('/admin')) ?>"><?= e(__('Runden')) ?></a> › <a href="<?= e(url('/admin/round/' . (int) $round['id'])) ?>"><?= e($round['title']) ?></a></p>
 <h1><?= e(__('Tag bearbeiten')) ?></h1>
 <?php require __DIR__ . '/_errors.php'; ?>
@@ -23,7 +23,7 @@
   </div>
   <?php if ($parents['mailable'] > 0): ?>
   <div class="check">
-    <input type="checkbox" id="notify" name="notify" value="1" checked>
+    <input type="checkbox" id="notify" name="notify" value="1"<?= ($notify ?? true) ? ' checked' : '' ?>>
     <label for="notify"><?= e(__('Eltern per E-Mail informieren')) ?></label>
   </div>
   <?php endif; ?>

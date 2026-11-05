@@ -97,6 +97,8 @@ CREATE TABLE IF NOT EXISTS slots (
 -- token_hash: SHA-256 of the change token; the plain text is not stored.
 -- reminder_token_hash: a second change token, for the link in the reminder mail (see Reminders).
 -- mail_token_hash: a third one, for the link in a confirmation sent later from the outbox (see Outbox).
+-- source: who gave the address: the parents when booking, or the teacher (an entry, or a new address for a
+-- booking, see BookingService::update()).
 -- remind_ok: may get the reminder (parents: as the round said when booking; entries by the teacher: once
 -- the parents got a confirmation or change notice). notified_at: last confirmation or change notice sent
 -- to the address (no reminder on that day). mail_failed_at: a mail to the address could not be sent.

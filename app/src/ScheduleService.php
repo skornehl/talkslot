@@ -10,7 +10,9 @@ namespace App;
  * - changeDay() (date, times, location; the slots are recalculated), resyncDay() (after a break was added or
  *   removed) and changeRound() (location, teacher): parents whose appointment changed get the current details
  *   (Notifier::parentChanged()). A booking that no longer fits the schedule becomes a conflict; its parents are
- *   told when the teacher moves or deletes it.
+ *   told when the teacher moves or deletes it, or when a later change makes it fit again and its details
+ *   changed since their last mail. Each change of the details counts as a change of the booking (updated_at),
+ *   so that the calendar file of the next mail updates the appointment (IcsExport::forParent(), SEQUENCE).
  *
  * Each method finds the bookings concerned before it deletes or changes anything, in the same transaction, and
  * with $notify queues the mails in the outbox in the language of each booking. Several mails at once are bulk
@@ -19,18 +21,33 @@ namespace App;
  * make sure that nobody is left out.
  *
  * Mails go to parents who know the booking from this system: they booked themselves, or the teacher's entry got
- * a confirmation or change notice (mailable(), the rule of the reminder). Everybody else, and everybody when the
- * teacher unticks the box, is listed in the result so the teacher can tell them in person. Appointments that are
- * over concern nobody.
+ * a confirmation or change notice (mailable(), the rule of the reminder; an address the teacher changes counts
+ * as unknown until a mail from the entry reached it, see BookingService::update()). Everybody else, and
+ * everybody when the teacher unticks the box, is listed in the result so the teacher can tell them in person.
+ * Appointments that are over concern nobody.
+ *
+ * Change notices count against a limit per account and hour (rate limit "teacher_bulk", BULK_LIMIT): the
+ * teacher chooses the details of the mail and may repeat a change at will, so without it an account could
+ * send any number of mails, beyond the limit of the mails from single entries ("teacher_mail"). Parents
+ * above the limit are listed as well. Cancellations need no such limit: a booking is cancelled only once.
  */
 final class ScheduleService
 {
+    /** Change notices per account and hour by default (rate_limits.teacher_bulk). */
+    public const BULK_LIMIT = 200;
+    /**
+     * Cancellations of appointments within this many hours are queued like single mails, not held back by the
+     * hourly limit (a lost one leaves no trace: there is no booking left to mark "mail not delivered").
+     */
+    public const SOON_HOURS = 24;
     /** Bookings of a day, a round or an account: condition on the joins of BookingService::DETAIL_SQL. */
     private const SCOPES = ['day' => 'd.id = ?', 'round' => 'd.round_id = ?', 'account' => 'r.user_id = ?'];
     /**
      * Locking reads per scope (see concerned()): the days, then the bookings with their slots, the order in which
-     * a deletion or SlotGenerator::sync() locks them. The rows of the rounds stay unlocked (a booking with a limit
-     * locks its round first), except for an account, whose rounds are deleted anyway.
+     * a deletion or SlotGenerator::sync() locks them. A round is locked first, as a booking with a limit of the
+     * round does (BookingService::lockForLimit(), then the slot with its day): both lock in the same order, and a
+     * change or deletion of the round does not end in a deadlock with such a booking. A day leaves its round
+     * unlocked (it does not change it); an account locks its rounds with its days.
      */
     private const LOCKS = [
         'day' => [
@@ -38,6 +55,7 @@ final class ScheduleService
             'SELECT b.id FROM bookings b JOIN slots s ON s.id = b.slot_id WHERE s.day_id = ? FOR UPDATE',
         ],
         'round' => [
+            'SELECT id FROM rounds WHERE id = ? FOR UPDATE',
             'SELECT id FROM round_days WHERE round_id = ? FOR UPDATE',
             'SELECT b.id FROM bookings b JOIN slots s ON s.id = b.slot_id JOIN round_days d ON d.id = s.day_id WHERE d.round_id = ? FOR UPDATE',
         ],
@@ -68,8 +86,8 @@ final class ScheduleService
     public static function deleteBooking(array $booking, bool $notify): ?string
     {
         $data = $notify && self::mailable($booking) && self::upcoming($booking) ? Notifier::cancellationData($booking) : null;
-        BookingService::delete($booking);
-        if ($data === null) {
+        // Deleted meanwhile (by the parents or in another tab): they got their mail then, not a second one now
+        if (!BookingService::delete($booking) || $data === null) {
             return null;
         }
         if (Notifier::teacherCancelled($data)) {
@@ -145,13 +163,21 @@ final class ScheduleService
         );
     }
 
-    /** Queues the cancellations of the upcoming bookings in $scope, then runs $delete (same transaction). */
+    /**
+     * Queues the cancellations of the upcoming bookings in $scope, then runs $delete (same transaction). The
+     * address of a deleted account is not kept for the replies (Reply-To): nobody reads it any more.
+     * Cancellations of appointments soon (SOON_HOURS) are not bulk mails.
+     */
     private static function delete(string $scope, int $id, bool $notify, \Closure $delete): ScheduleChange
     {
         return Db::transaction(static function () use ($scope, $id, $notify, $delete): ScheduleChange {
             // The rows have no foreign key to the booking: they outlive the deletion
-            $change = self::tell(self::concerned($scope, $id, true), $notify,
-                static fn (array $b) => Outbox::queueCancellation(Notifier::cancellationData($b), false, true));
+            $change = self::tell(self::concerned($scope, $id, true), $notify, static function (array $b) use ($scope): bool {
+                $soon = $b['day_date'] . ' ' . $b['start_time'] <= Time::now()->modify('+' . self::SOON_HOURS . ' hours')->format('Y-m-d H:i:s');
+                $data = Notifier::cancellationData($b);
+                Outbox::queueCancellation($scope === 'account' ? array_replace($data, ['teacher_email' => '']) : $data, false, !$soon);
+                return true;
+            });
             $delete();
             return $change;
         });
@@ -159,36 +185,80 @@ final class ScheduleService
 
     /**
      * Runs $change (returns the number of conflicts or nothing) and queues a change notice for each upcoming
-     * booking in $scope whose details changed, unless it became a conflict.
+     * booking in $scope whose details changed, unless it became a conflict, and for each former conflict that
+     * fits again if its details changed since the parents' last mail (theirs may be out of date: a conflict's
+     * new date or location is not mailed, see ScheduleChange::$movedConflicts). Every booking whose details
+     * changed counts as changed (updated_at), conflicts too.
      */
     private static function change(string $scope, int $id, bool $notify, \Closure $change): ScheduleChange
     {
         return Db::transaction(static function () use ($scope, $id, $notify, $change): ScheduleChange {
             $old = array_column(self::concerned($scope, $id, true), null, 'id');
             $conflicts = $change();
-            // The same bookings afterwards (a change keeps them in the day, round or account)
+            // The same bookings afterwards (a change keeps them in the day, round or account); the ones that
+            // were over before concern nobody
             $where = self::SCOPES[$scope];
-            $changed = array_filter(
-                $old ? Db::all(BookingService::DETAIL_SQL . " WHERE $where ORDER BY d.day_date, s.start_time, b.id", [$id]) : [],
-                static fn (array $b): bool => isset($old[$b['id']]) && !$b['is_conflict'] && self::upcoming($b) && self::details($b) !== self::details($old[$b['id']])
-            );
-            return self::tell(array_values($changed), $notify,
-                static fn (array $b) => Outbox::queueBooking((int) $b['id'], 'changed', false, true), is_int($conflicts) ? $conflicts : 0);
+            $after = $old ? array_column(Db::all(BookingService::DETAIL_SQL . " WHERE $where ORDER BY d.day_date, s.start_time, b.id", [$id]), null, 'id') : [];
+            $changed = $touched = [];
+            $moved = 0;
+            foreach (array_intersect_key($after, $old) as $b) {
+                $before = $old[$b['id']];
+                $differs = self::details($b) !== self::details($before);
+                if ($differs) {
+                    $touched[] = (int) $b['id'];
+                }
+                $ahead = self::upcoming($b); // one that is over now concerns nobody
+                if ($ahead && $b['is_conflict']) {
+                    $moved += (int) $differs;
+                } elseif ($ahead && ($differs || ($before['is_conflict'] && self::outdated($b)))) {
+                    $changed[] = $b;
+                }
+            }
+            foreach ($touched as $bookingId) {
+                Db::run('UPDATE bookings SET updated_at = ? WHERE id = ?', [Time::nowSql(), $bookingId]);
+            }
+            [$limit, $window] = RateLimiter::limits('teacher_bulk', self::BULK_LIMIT, 3600);
+            $account = 'user:' . Auth::id();
+            $left = $limit - RateLimiter::count('teacher_bulk', $window, $account);
+            $queued = 0;
+            $result = self::tell($changed, $notify, static function (array $b) use ($left, &$queued): bool {
+                // A mail about the booking still waits: it is created when sending, with the new details
+                if (Outbox::waiting((int) $b['id'])) {
+                    return true;
+                }
+                if ($queued >= $left) {
+                    return false;
+                }
+                Outbox::queueBooking((int) $b['id'], 'changed', false, true);
+                $queued++;
+                return true;
+            }, is_int($conflicts) ? $conflicts : 0, $moved);
+            RateLimiter::add('teacher_bulk', $window, $queued, $account);
+            return $result;
         });
     }
 
-    /** With $notify, $mail queues the mail to the parents of each booking who can be mailed; the others are listed. */
-    private static function tell(array $bookings, bool $notify, \Closure $mail, int $conflicts = 0): ScheduleChange
+    /**
+     * With $notify, $mail queues the mail to the parents of each booking who can be mailed (false: held back by
+     * the hourly limit); the others are listed.
+     */
+    private static function tell(array $bookings, bool $notify, \Closure $mail, int $conflicts = 0, int $moved = 0): ScheduleChange
     {
-        $inPerson = [];
+        $inPerson = $held = [];
         foreach ($bookings as $b) {
-            if ($notify && self::mailable($b)) {
-                $mail($b);
-            } else {
+            if (!$notify || !self::mailable($b)) {
                 $inPerson[] = self::person($b);
+            } elseif (!$mail($b)) {
+                $held[] = self::person($b);
             }
         }
-        return new ScheduleChange(count($bookings), count($bookings) - count($inPerson), $inPerson, $notify, $conflicts);
+        return new ScheduleChange(count($bookings), count($bookings) - count($inPerson) - count($held), $inPerson, $notify, $conflicts, $held, $moved);
+    }
+
+    /** Did the details of the booking change since its parents' last mail (confirmation or change notice)? */
+    private static function outdated(array $b): bool
+    {
+        return (string) $b['updated_at'] > (string) ($b['notified_at'] ?? $b['created_at']);
     }
 
     private static function details(array $b): array

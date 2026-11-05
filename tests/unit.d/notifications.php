@@ -144,6 +144,10 @@ check('cancellation data: only what the mail needs (address, language, name, app
     array_keys($data) === ['booking_id', 'round_id', 'email', 'lang', 'name', 'title', 'auto_translated', 'source_lang', 'teacher_name', 'teacher_email', 'day_date', 'start_time', 'end_time', 'location', 'created_at']
     && $data['booking_id'] === 3 && $data['title'] === 'Elternsprechtag 3b' && $data['auto_translated'] === false
     && !array_filter($data, static fn ($v): bool => is_string($v) && (str_contains($v, 'aaaa') || str_contains($v, 'bbbb') || str_contains($v, 'runde-3b') || str_contains($v, 'K7MP'))));
+$sampleLimits = (array) ((require dirname(__DIR__, 2) . '/config/config.sample.php')['rate_limits'] ?? []);
+check('config.sample.php: mails to parents per teacher account and hour with the defaults of the code (30 from entries, the bulk limit after changes)',
+    ($sampleLimits['teacher_mail'] ?? null) === [30, 3600] && ($sampleLimits['teacher_bulk'] ?? null) === [App\ScheduleService::BULK_LIMIT, 3600]
+    && App\ScheduleService::BULK_LIMIT >= 100);
 check('outbox: a single cancellation goes first like other single mails, bulk mails after them but before reminders',
     App\Outbox::KINDS['cancelled'] === App\Outbox::KINDS['booked'] && App\Outbox::BULK > App\Outbox::KINDS['changed']
     && App\Outbox::BULK <= App\Outbox::KINDS['summary_evening'] && App\Outbox::BULK < App\Outbox::KINDS['reminder']);

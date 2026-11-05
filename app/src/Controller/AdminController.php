@@ -418,6 +418,10 @@ final class AdminController
             }
             // Told: parents whose teacher or location changed (days with a location of their own keep it)
             $this->parentsFlash($parents, true);
+            if ($parents->movedConflicts > 0) {
+                $this->flash('warning', __('Achtung: {count} gebuchte(r) Termin(e) sind als Konflikt markiert und haben jetzt einen anderen Ort oder eine andere Lehrkraft; die Eltern kennen die neuen Daten noch nicht.', ['count' => $parents->movedConflicts])
+                    . ' ' . self::conflictHint());
+            }
         } else {
             // Round and days together: if creating the days fails, no empty round is left behind
             $ownerId = (int) $owner['id'];
@@ -876,7 +880,8 @@ final class AdminController
         });
     }
 
-    private function dayForm(int $id, array $errors = []): void
+    /** $notify: the box "Eltern per E-Mail informieren" (ticked, unless it was unticked when the form was sent with an error). */
+    private function dayForm(int $id, array $errors = [], bool $notify = true): void
     {
         $day = $this->day($id);
         $this->render('admin/day_form', [
@@ -885,6 +890,7 @@ final class AdminController
             'round' => $this->round((int) $day['round_id']),
             'parents' => self::parentCounts(ScheduleService::concerned('day', $id)),
             'errors' => $errors,
+            'notify' => $notify,
         ]);
     }
 
@@ -902,7 +908,7 @@ final class AdminController
             }
         }
         if ($errors) {
-            $this->dayForm($id, $errors);
+            $this->dayForm($id, $errors, Http::post('notify') === '1');
             return;
         }
         // New date, times or location; the slots are recalculated, parents with a new appointment are told
@@ -969,18 +975,34 @@ final class AdminController
      * Message after the slots of a day were recalculated ($parents, see ScheduleService); without $parents
      * (a break added or removed) they are recalculated here. Conflicts are not mailed about: the parents learn
      * of them when the teacher moves or deletes the booking.
+     *
+     * A break has no box "Eltern per E-Mail informieren": it never changes a booking that fits (its slot keeps
+     * its time), it only makes bookings conflicts or lets former conflicts fit again. Only the parents of such a
+     * former conflict get mail, and only if its details changed while it was a conflict (ScheduleService): what
+     * they know is out of date then, as after a change of the day with the box ticked. The message names them.
      */
     private function afterSync(int $roundId, int $dayId, string $message, ?ScheduleChange $parents = null): never
     {
         $parents ??= ScheduleService::resyncDay($dayId, true);
         if ($parents->conflicts > 0) {
             $this->flash('warning', $message . ' ' . __('Achtung: {count} gebuchte(r) Termin(e) passen nicht mehr zum Zeitplan und sind als Konflikt markiert. Bitte umbuchen oder löschen.', ['count' => $parents->conflicts])
-                . ' ' . __('Die Eltern erfahren davon, wenn Sie den Termin umbuchen (mit „Änderung per E-Mail mitteilen“) oder löschen (mit „Eltern per E-Mail informieren“); ohne E-Mail-Adresse bitte persönlich informieren.'));
+                . self::movedNote($parents) . ' ' . self::conflictHint());
         } else {
             $this->flash('success', $message . ' ' . __('Slots wurden aktualisiert.'));
         }
         $this->parentsFlash($parents, true);
         Http::redirect('/admin/round/' . $roundId, [], 'day-' . $dayId);
+    }
+
+    /** Conflicts that got a new date, location or teacher: their parents do not know it (for the conflict warning). */
+    private static function movedNote(ScheduleChange $parents): string
+    {
+        return $parents->movedConflicts > 0 ? ' ' . __('Bei {count} davon haben sich zugleich Datum, Ort oder Lehrkraft geändert; die Eltern kennen die neuen Daten noch nicht.', ['count' => $parents->movedConflicts]) : '';
+    }
+
+    private static function conflictHint(): string
+    {
+        return __('Die Eltern erfahren davon, wenn Sie den Termin umbuchen (mit „Änderung per E-Mail mitteilen“) oder löschen (mit „Eltern per E-Mail informieren“); ohne E-Mail-Adresse bitte persönlich informieren.');
     }
 
     /** @return array{0:array,1:list<string>} */
@@ -1099,7 +1121,7 @@ final class AdminController
                 return;
             }
         }
-        BookingService::update($id, PublicController::cleanName($old['name']), $old['email'] ?: null, $old['lang']);
+        $newAddress = BookingService::update($id, PublicController::cleanName($old['name']), $old['email'] ?: null, $old['lang']);
         $target = $moved ? BookingService::findById($id) : null;
         $this->audit(fn () => $target
             ? __('Buchung {slot} geändert, umgebucht auf {target}', ['slot' => self::when($booking['day_date'], $booking['start_time']), 'target' => self::when($target['day_date'], $target['start_time'])])
@@ -1107,11 +1129,16 @@ final class AdminController
         $msg = $moved ? __('Eintrag gespeichert und umgebucht.') : __('Eintrag gespeichert.');
         // Also without a change here: this is how parents learn the new date, location or teacher of their
         // appointment after the day or the round was changed (the mail carries the current details)
+        $mail = null;
         if ($old['send_mail'] && $old['email'] !== '' && $this->teacherMailAllowed($msg)) {
             $mail = $this->withoutSession(static fn () => Notifier::sendOrQueue((array) BookingService::findById($id), 'changed', null));
             $msg .= ' ' . self::mailMessage($mail, __('Änderung per E-Mail mitgeteilt.'));
         }
         $this->flash('success', $msg);
+        // A new address gets mails after changes only once one from here reached it (BookingService::update())
+        if ($newAddress && $mail === null) {
+            $this->flash('warning', __('Neue E-Mail-Adresse ohne E-Mail gespeichert: Die Eltern erhalten dort Änderungen, Absagen und Erinnerungen erst, wenn Sie den Eintrag mit „Änderung per E-Mail mitteilen“ speichern.'));
+        }
         Http::redirect('/admin/round/' . $booking['round_id'], [], 'day-' . (BookingService::findById($id)['day_id'] ?? ''));
     }
 
@@ -1132,7 +1159,8 @@ final class AdminController
         if ($mail === null && ScheduleService::upcoming($booking)) {
             $this->flash('warning', match (true) {
                 (string) $booking['email'] === '' => __('Die Eltern („{name}“) wurden NICHT automatisch benachrichtigt; es war keine E-Mail-Adresse hinterlegt – bitte persönlich informieren.', ['name' => $booking['name']]),
-                $notify => __('Die Eltern („{name}“, {email}) haben zu diesem Eintrag nie eine E-Mail erhalten und wurden deshalb nicht benachrichtigt – bitte persönlich informieren.', ['name' => $booking['name'], 'email' => $booking['email']]),
+                // As the delete dialog says, which has no box then
+                !ScheduleService::mailable($booking) => __('Die Eltern („{name}“, {email}) haben zu diesem Eintrag nie eine E-Mail erhalten und wurden deshalb nicht benachrichtigt – bitte persönlich informieren.', ['name' => $booking['name'], 'email' => $booking['email']]),
                 default => __('Die Eltern („{name}“, {email}) wurden NICHT automatisch benachrichtigt – bitte selbst informieren.', ['name' => $booking['name'], 'email' => $booking['email']]),
             });
         }
@@ -2176,13 +2204,18 @@ final class AdminController
                 ? __('Die Eltern von {count} Buchung(en) erhalten die neuen Termindaten per E-Mail in ihrer Sprache.', ['count' => $parents->mailed])
                 : __('Die Eltern von {count} Buchung(en) erhalten eine Absage per E-Mail in ihrer Sprache.', ['count' => $parents->mailed]));
         }
+        $names = static fn (array $persons): string => implode('; ', array_map(
+            static fn (array $p): string => $p['name'] . ($p['email'] !== '' ? ', ' . $p['email'] : '') . ' (' . self::when($p['day_date'], $p['start_time']) . ')',
+            $persons
+        ));
+        if ($parents->held) {
+            $this->flash('warning', __('Keine E-Mail an die Eltern von {count} Buchung(en): Ihr Konto hat die Höchstzahl von Änderungsmitteilungen je Stunde erreicht. Bitte persönlich informieren oder später den Eintrag mit „Änderung per E-Mail mitteilen“ speichern:', ['count' => count($parents->held)])
+                . ' ' . $names($parents->held) . '.');
+        }
         if (!$parents->inPerson) {
             return;
         }
-        $list = implode('; ', array_map(
-            static fn (array $p): string => $p['name'] . ($p['email'] !== '' ? ', ' . $p['email'] : '') . ' (' . self::when($p['day_date'], $p['start_time']) . ')',
-            $parents->inPerson
-        ));
+        $list = $names($parents->inPerson);
         $count = ['count' => count($parents->inPerson)];
         $this->flash('warning', $parents->notify
             ? __('Keine E-Mail an die Eltern von {count} Buchung(en) (keine Adresse hinterlegt oder Eintrag nie per E-Mail bestätigt) – bitte persönlich informieren:', $count) . ' ' . $list . '.'
