@@ -3,7 +3,7 @@ title: Installation
 description: Put TalkSlot on a web server by hand. For automatic deployments see the next chapters.
 ---
 
-## Requirements
+## Requirements {#requirements}
 
 - **PHP 8.3 or newer** (tested with 8.3, 8.4 and 8.5) with `pdo_mysql`, `mbstring` and `iconv`;
   `openssl` for SMTP with TLS
@@ -12,6 +12,14 @@ description: Put TalkSlot on a web server by hand. For automatic deployments see
   servers need equivalent rules (front controller, deny hidden and internal files, security headers).
 - **HTTPS** with a valid certificate. TalkSlot redirects plain HTTP.
 - A **sender address** whose domain has SPF and DKIM, otherwise mails end up in spam.
+
+TalkSlot checks this itself. If the PHP version is too old or an extension is missing, every page says so
+in German and English instead of showing a blank error page (from PHP 7.1 on; on the command line, for
+example in the cron job, in English). Hosts often run an older `php` on the command line than on the web
+server: then use the full path of the newer one in the cron job (for example `/usr/bin/php8.3`). The
+installer refuses MySQL and MariaDB before 10.6, and an `app/var/` that PHP cannot write to; on a site that is
+already installed, the dashboard tells admins. See also
+[Checking the configuration]({{ '/guide/configuration/' | relative_url }}#checking).
 
 ## 1. Upload the files
 

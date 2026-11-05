@@ -39,6 +39,20 @@ jobs:
             find . -name "*.php" -not -path "./app/vendor/*" -print0 | xargs -0 -n1 php -l > /dev/null
             php tests/unit.php'
 
+      # A web host or a cron job on an older PHP must get the explanation of App\Platform, not a syntax error or a
+      # blank page: the entry points and what they load before the check parse on PHP 7.4 (once is enough)
+      - name: Older PHP versions get a clear message
+        if: matrix.php == '8.3'
+        run: |
+          for v in 7.4 8.2; do
+            docker run --rm -v "$PWD:/app" -w /app "php:$v-cli" sh -c 'for f in app/bootstrap.php app/src/Platform.php public/index.php public/install.php bin/cron.php bin/install.php; do php -l "$f" || exit 1; done'
+            for entry in public/index.php bin/cron.php; do
+              rc=0; out=$(docker run --rm -v "$PWD:/app" -w /app "php:$v-cli" php "$entry" 2>&1) || rc=$?
+              echo "PHP $v, $entry (exit $rc): $out"
+              if [ "$rc" != 1 ] || ! printf '%s\n' "$out" | grep -q "^PHP 8.3 or newer is required; this server runs PHP $v\."; then exit 1; fi
+            done
+          done
+
   e2e:
     name: End-to-end and browser tests
     runs-on: ubuntu-latest
@@ -78,3 +92,37 @@ jobs:
       - name: Server log
         if: failure()
         run: docker compose -f dev/compose.yml logs --tail 200 app
+
+  # The documented minimum MariaDB (App\Health::MIN_MARIADB): the Docker environment runs 11.8, whose locking
+  # differs (innodb_snapshot_isolation); the smoke tests once more against 10.6
+  mariadb-min:
+    name: Smoke tests on MariaDB 10.6
+    runs-on: ubuntu-latest
+    env:
+      MARIADB_VERSION: '10.6' # dev/compose.yml
+    steps:
+      - name: Fetch code
+        env:
+          REPO: ${{ github.repository }}
+          REF: ${{ github.sha }}
+          TOKEN: ${{ github.token }}
+        run: |
+          git init -q . && git remote add origin "https://github.com/$REPO.git"
+          AUTH="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$TOKEN" | base64 -w0)"
+          git -c http.extraheader="$AUTH" fetch -q --depth=1 origin "$REF"
+          git checkout -q --detach "FETCH_HEAD^{commit}"
+          git log -1 --format='Checked out: %h %s'
+
+      - name: Start the Docker environment
+        run: |
+          cp dev/config.dev.php config/config.php
+          docker compose -f dev/compose.yml up -d --build --wait --quiet-pull
+          docker compose -f dev/compose.yml exec -T db mariadb -uapp -papp-dev-only -Ne 'SELECT VERSION()'
+          for i in $(seq 1 60); do [ "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/)" != 000 ] && break; sleep 1; done
+
+      - name: Smoke tests
+        run: dev/reset.sh && tests/smoke.sh
+
+      - name: Server log
+        if: failure()
+        run: docker compose -f dev/compose.yml logs --tail 200 app db

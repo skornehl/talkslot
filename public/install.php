@@ -9,6 +9,7 @@ declare(strict_types=1);
 define('PUBLIC_ROOT', __DIR__);
 $appRoot = is_file(__DIR__ . '/app_root.php') ? require __DIR__ . '/app_root.php' : dirname(__DIR__);
 require $appRoot . '/app/bootstrap.php';
+App\Platform::enforce(true); // needs the database: also pdo_mysql
 
 use App\Config;
 use App\AdminI18n;
@@ -45,6 +46,9 @@ if (Http::isPost()) {
     }
     if (!$errors && ($conflicts = Installer::conflictingTables())) {
         $errors[] = __('Die Datenbank enthält bereits Tabellen mit gleichem Namen ({tables}), vermutlich von einer anderen Anwendung. Bitte legen Sie für TalkSlot eine eigene, leere Datenbank an und tragen Sie deren Zugangsdaten ein. Es wurde nichts verändert.', ['tables' => implode(', ', $conflicts)]);
+    }
+    if (!$errors) {
+        $errors = Installer::environmentProblems(); // MariaDB from 10.6 on, app/var writable
     }
     if (!$errors) {
         $errors = Installer::validate($old['username'], Http::postRaw('password'), Http::postRaw('password2'), $old['notify_email']);

@@ -248,3 +248,45 @@ for _ in 1 2 3 4 5; do
 done
 op_throttle_reset "$OPC_COUNT"
 check "cron monitoring: the expected alert mails are removed again, the cron job ran last ($(op_cron_mails))" '[ "$(op_cron_mails)" = 0 ] && op_recent "$(op_get last_cron)"'
+
+# Operations: start and platform checks (expert review P1-10). PHP version, extensions, configuration and the
+# texts: tests/unit.d/operations.php; old PHP versions: the CI workflow (tests.yml)
+echo "Operations: start and platform checks"
+OP_DASH=$(curl -s -b "$J" "$B/admin")
+check "dashboard: no setup hint with the dev configuration on MariaDB (no false alarm)" \
+  'echo "$OP_DASH" | grep -q "<h1>Alle Terminrunden</h1>" && ! echo "$OP_DASH" | grep -q "data-setup-hints"'
+check "cron job and web cron report the database server as supported" \
+  '$DC exec -T app php /srv/app/bin/cron.php -v | grep -qE "^db_server +ok$" && curl -s -d "" -H "X-Cron-Token: $OP_CTOK" "$B/cron" | grep -q "^{\"status\":\"ok\",\"db_server\":\"ok\","'
+# A typo in config.php (here "sumary_evening_hour") is listed for admins; config.php changed for a moment. The
+# waits let a PHP opcache notice the changed file (it checks every 2 seconds by default).
+ALERTS '$f = "/srv/app/config/config.php"; copy($f, "$f.op"); $c = require $f; $c["sumary_evening_hour"] = 18;
+  file_put_contents($f, "<?php return " . var_export($c, true) . ";");'
+sleep 3
+OP_HINTS=$(curl -s -b "$J" "$B/admin" | sed -n '/data-setup-hints/,/<\/div>/p')
+ALERTS '$f = "/srv/app/config/config.php"; file_put_contents($f, file_get_contents("$f.op")) && unlink("$f.op");' # same file, owner and permissions
+sleep 3
+check "dashboard: a typo in config.php is listed for admins, with the setting probably meant" \
+  'echo "$OP_HINTS" | grep -q "<li>„sumary_evening_hour“ ist keine Einstellung von TalkSlot und wirkt nicht. Gemeint ist vermutlich „summary_evening_hour“.</li>" && ! curl -s -b "$J" "$B/admin" | grep -q "data-setup-hints"'
+# A pending migration on MySQL (or MariaDB before 10.6) is refused before its first step, with the reason, instead
+# of failing half-way on MariaDB syntax. Stood in for by App\Health::$serverVersion; a script file (not php -r),
+# so that a coverage run sees the lines it runs.
+OP_SCRIPT="$ROOT/tests/.op-platform.php"
+cat > "$OP_SCRIPT" <<'PHP'
+<?php
+require dirname(__DIR__) . '/app/bootstrap.php';
+App\Health::$serverVersion = '8.0.36';
+try {
+    App\Migrations::run();
+    echo 'migrated';
+} catch (RuntimeException $e) {
+    echo $e->getMessage();
+}
+PHP
+DBQ "UPDATE tp_settings SET value = '$((OP_LATEST - 1))' WHERE name = 'schema_version'"
+OP_MIG=$($DC exec -T app php /srv/app/tests/.op-platform.php)
+OP_MV=$(OP_SETTING schema_version)
+DBQ "UPDATE tp_settings SET value = '$OP_LATEST' WHERE name = 'schema_version'"
+rm -f "$OP_SCRIPT"
+check "migration on MySQL: refused before the first step, with the reason (schema $OP_MV of $OP_LATEST)" \
+  '[ "$OP_MV" = "$((OP_LATEST - 1))" ] && [[ "$OP_MIG" == "Der Datenbankserver wird nicht unterstützt: MySQL 8.0.36. TalkSlot braucht MariaDB 10.6 oder neuer;"* ]]' \
+  || echo "    $OP_MIG"

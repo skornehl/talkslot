@@ -1,4 +1,5 @@
--- Database schema TalkSlot (MariaDB/MySQL, InnoDB, utf8mb4)
+-- Database schema TalkSlot (MariaDB 10.6 or newer, InnoDB, utf8mb4). MySQL is not supported: this file would
+-- run there, but the migrations of later updates use MariaDB syntax (the installers refuse other servers).
 -- Executed by install.php or bin/install.php.
 
 -- Accounts: role admin = may manage accounts, every person manages only their own rounds.
