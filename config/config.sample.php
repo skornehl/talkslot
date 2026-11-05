@@ -41,7 +41,7 @@ return [
 
     'mail' => [
         'transport' => 'mail',      // mail (PHP mail/sendmail) | smtp (PHPMailer) | none
-        'from_address' => '',       // sender, e.g. termine@example.org (domain with SPF/DKIM)
+        'from_address' => '',       // sender, e.g. termine@example.org (domain with SPF/DKIM); bounces come back here
         'from_name' => 'TalkSlot',
         'reply_to' => '',           // optional
         'smtp' => [

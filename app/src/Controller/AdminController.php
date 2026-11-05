@@ -14,6 +14,7 @@ use App\BookingService;
 use App\Cleanup;
 use App\Csrf;
 use App\Db;
+use App\Email;
 use App\Http;
 use App\I18n;
 use App\Invitation;
@@ -1254,7 +1255,7 @@ final class AdminController
         $lang = Http::post('lang');
         return [
             'name' => Http::post('name'),
-            'email' => Http::post('email'),
+            'email' => Email::input(Http::post('email')),
             'lang' => in_array($lang, I18n::languages(), true) ? $lang : I18n::defaultLanguage(),
             'send_mail' => Http::post('send_mail') === '1',
         ];
@@ -1381,8 +1382,8 @@ final class AdminController
         $me = Auth::user();
         $data = [
             'display_name' => mb_substr(Http::post('display_name'), 0, 200),
-            'email' => Http::post('email'),
-            'reply_to' => Http::post('reply_to'),
+            'email' => Email::input(Http::post('email')),
+            'reply_to' => Email::input(Http::post('reply_to')),
             'summary_evening' => Http::post('summary_evening') === '1' ? 1 : 0,
             'summary_deadline' => Http::post('summary_deadline') === '1' ? 1 : 0,
             // Only offered where the school allows names; otherwise the choice so far stays (NULL included)
@@ -1514,7 +1515,7 @@ final class AdminController
         $isSelf = $user && (int) $user['id'] === Auth::id();
         $data = [
             'display_name' => mb_substr(Http::post('display_name'), 0, 200),
-            'email' => mb_strtolower(Http::post('email')),
+            'email' => mb_strtolower(Email::input(Http::post('email'))),
             // Admins can make others admins and take the role away again, but not change their own
             'role' => $isSelf ? $user['role'] : (Http::post('role') === 'admin' ? 'admin' : 'teacher'),
             'is_active' => $user ? (Http::post('is_active') === '1' ? 1 : 0) : 1,
@@ -1605,7 +1606,7 @@ final class AdminController
             $this->flash('error', __('Ihr eigenes Passwort ändern Sie unter „Mein Profil“.'));
             Http::redirect('/admin/users');
         }
-        if (!filter_var((string) $user['email'], FILTER_VALIDATE_EMAIL)) {
+        if (!Email::isValid((string) $user['email'])) {
             $this->flash('error', __('Für dieses Konto ist keine E-Mail-Adresse hinterlegt.'));
             Http::redirect('/admin/users/' . $id . '/edit');
         }
