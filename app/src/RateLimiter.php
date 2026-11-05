@@ -45,27 +45,35 @@ final class RateLimiter
         return $subject === null ? self::clientKey() : hash_hmac('sha256', 'subject|' . $subject, (string) Config::get('secret', ''));
     }
 
-    /** Counts an attempt. true = still within the limit. */
+    /**
+     * Counts an attempt. true = still within the limit. The count compared is the one this request made
+     * (atomic, see add()): of several parallel requests at the limit exactly those within it pass, not
+     * none (each reading the others' increments) or all (each reading before the others').
+     */
     public static function hit(string $bucket, int $limit, int $window, ?string $subject = null): bool
     {
-        self::add($bucket, $window, 1, $subject);
-        return self::count($bucket, $window, $subject) <= $limit;
+        return self::add($bucket, $window, 1, $subject) <= $limit;
     }
 
-    /** Counts $n attempts at once (e.g. mails queued together after checking count()). */
-    public static function add(string $bucket, int $window, int $n, ?string $subject = null): void
+    /**
+     * Counts $n attempts at once (e.g. mails queued together after checking count()) and returns the count
+     * of the window after this request's own increment: LAST_INSERT_ID(expr) keeps the value per connection,
+     * whatever other requests do meanwhile.
+     */
+    public static function add(string $bucket, int $window, int $n, ?string $subject = null): int
     {
         if ($n < 1) {
-            return;
+            return self::count($bucket, $window, $subject);
         }
         $now = time();
         $cut = $now - $window;
         Db::run(
-            'INSERT INTO rate_limits (bucket, key_hash, window_start, hits) VALUES (?, ?, ?, ?)
-             ON DUPLICATE KEY UPDATE hits = IF(window_start < ?, ?, hits + ?),
+            'INSERT INTO rate_limits (bucket, key_hash, window_start, hits) VALUES (?, ?, ?, LAST_INSERT_ID(?))
+             ON DUPLICATE KEY UPDATE hits = LAST_INSERT_ID(IF(window_start < ?, ?, hits + ?)),
                                      window_start = IF(window_start < ?, ?, window_start)',
             [$bucket, self::key($subject), $now, $n, $cut, $n, $n, $cut, $now]
         );
+        return (int) Db::value('SELECT LAST_INSERT_ID()');
     }
 
     public static function count(string $bucket, int $window, ?string $subject = null): int
