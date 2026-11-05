@@ -235,7 +235,9 @@ updates:
 
 Variablen und Secrets liegen in Ihrem Repository (oder in dessen Environment `production`). Für den
 stündlichen Cronjob kopieren Sie
-[`cron.yml`](https://github.com/skornehl/talkslot/blob/main/.github/workflows/cron.yml).
+[`cron.yml`](https://github.com/skornehl/talkslot/blob/main/.github/workflows/cron.yml). Ist das
+Repository öffentlich, schaltet GitHub den Zeitplan nach 60 Tagen ohne Aktivität darin ab; TalkSlot warnt
+Sie dann (siehe [Überwachung des Cronjobs]({{ '/de/guide/operations/' | relative_url }}#github-60-days)).
 
 ## Releases
 

@@ -50,7 +50,48 @@ Der Betreiber erhält eine E-Mail:
 
 Grenzen: Ist der E-Mail-Versand selbst defekt, kommt keine Meldung an. Ist die ganze Seite ausgefallen
 (Hoster, PHP), kann sie sich nicht selbst melden. Dann schlägt der stündliche Cron-Workflow fehl, und
-GitHub benachrichtigt Sie (*GitHub → Settings → Notifications → Actions*).
+GitHub benachrichtigt Sie (*GitHub → Settings → Notifications → Actions*). Einen Cronjob, der stehen
+bleibt, ohne fehlzuschlagen, meldet die Seite selbst, siehe [Überwachung des Cronjobs](#cron-monitoring).
+
+## Überwachung des Cronjobs {#cron-monitoring}
+
+Der Cronjob löscht vergangene Buchungen und verschickt die Zusammenfassungen und Erinnerungen. Bleibt er
+stehen, schlägt nichts sichtbar fehl: Die Bereinigung läuft zwar weiter bei Seitenaufrufen, aber später und
+nur, wenn jemand die Seite aufruft. TalkSlot speichert deshalb jeden vollständigen Lauf von `bin/cron.php`
+oder dem Web-Cron (`last_cron` in der Tabelle `settings`, getrennt von `last_cleanup`, das auch
+Seitenaufrufe setzen) und prüft ihn bei Seitenaufrufen:
+
+- **Seit 3 Stunden kein vollständiger Lauf** (`cron_alert_hours`): Beim stündlichen Takt sind das zwei
+  ausgefallene Läufe, ein einzelner Lauf, den GitHub verzögert oder auslässt, löst also noch nichts aus.
+  Admins sehen in der Übersicht eine Warnung mit der Zeit des letzten Laufs und einem Link auf diesen
+  Abschnitt, und der Betreiber erhält die Warnmeldung *Cronjob läuft nicht* (Empfänger wie bei den
+  Fehlermeldungen oben). Sie kommt einmal pro Ausfall und alle 24 Stunden erneut, solange er anhält, mit der
+  Zeit des letzten Laufs und den Punkten, die zu prüfen sind; ohne personenbezogene Daten. Der nächste
+  vollständige Lauf beendet die Warnung.
+- **Noch gar kein Lauf verzeichnet** (neue Installation oder Update, während der Cronjob schon ausgefallen
+  war): 3 Stunden nach Beginn der Überwachung bittet die Übersicht die Admins, den Cronjob einzurichten.
+  Eine E-Mail gibt es dafür nicht, damit Installationen, die bewusst auf die Bereinigung bei Seitenaufrufen
+  setzen, nicht jeden Tag daran erinnert werden.
+- **`cron_alert_hours = 0`** schaltet beides ab.
+
+Geprüft wird bei Seitenaufrufen: Eine Seite, die niemand aufruft, kann nichts melden, aber jeder Aufruf,
+auch durch Eltern, verschickt die Warnmeldung, wenn sie fällig ist. Lehrkräfte sehen die Warnung nicht;
+beheben lassen können sie nur Admins.
+
+### GitHub schaltet den Cron-Workflow nach 60 Tagen ab {#github-60-days}
+
+Nutzen Sie das mitgelieferte `cron.yml` in einem **öffentlichen** Repository (Fork von TalkSlot oder eigenes
+[Repository nur mit Konfiguration]({{ '/de/guide/deployment/' | relative_url }}#deploying-from-your-own-repository)),
+schaltet GitHub geplante Workflows ab, wenn es im Repository 60 Tage lang keine Aktivität gab. In einem
+Fork sind geplante Workflows von Anfang an aus. Der Workflow schlägt dann nicht fehl, er läuft einfach nicht
+mehr, deshalb kommt von GitHub keine Fehlermeldung; die Überwachung bemerkt es nach 3 Stunden.
+
+Er bleibt aus, bis Sie ihn wieder einschalten: *Actions → Cron → Enable workflow* oder
+`gh workflow enable cron.yml`. Starten Sie ihn danach einmal von Hand, um ihn zu prüfen (*Run workflow* oder
+`gh workflow run cron.yml`); die Warnung in der Übersicht verschwindet nach dem ersten vollständigen Lauf.
+
+Außerdem verzögert GitHub geplante Läufe bei hoher Last, besonders zur vollen Stunde, und lässt einzelne
+ganz aus. Deshalb startet `cron.yml` zur Minute 17, und die Überwachung wartet zwei ausgefallene Läufe ab.
 
 ## Logs
 

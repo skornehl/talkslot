@@ -19,6 +19,13 @@ It is recommended, so that bookings are deleted and summary mails and reminders 
 use the web cron (the included GitHub workflow calls it hourly). As a fallback, clean-up also runs on page
 views at most every 15 minutes.
 
+## How do I notice that the cron job has stopped?
+
+Once no cron run has completed for 3 hours, admins see a warning on the dashboard and the operator gets an
+alert mail, repeated daily while it lasts. A common cause: GitHub disables scheduled workflows in public
+repositories after 60 days without activity. See
+[cron monitoring]({{ '/guide/operations/' | relative_url }}#cron-monitoring).
+
 ## Which languages does the admin area speak?
 
 German and English. Every account picks its language under *Mein Profil* (*Sprache / Language*); mails to

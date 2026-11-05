@@ -22,6 +22,13 @@ werden. Ohne
 Shell-Zugang nutzen Sie den Web-Cron (der mitgelieferte GitHub-Workflow ruft ihn stündlich auf). Als
 Rückfallebene läuft das Aufräumen außerdem bei Seitenaufrufen, höchstens alle 15 Minuten.
 
+## Wie merke ich, dass der Cronjob nicht mehr läuft?
+
+Ist seit 3 Stunden kein Cron-Lauf vollständig durchgelaufen, sehen Admins eine Warnung in der Übersicht,
+und der Betreiber erhält eine Warnmeldung per E-Mail, täglich wiederholt, solange der Ausfall anhält. Eine
+häufige Ursache: GitHub schaltet geplante Workflows in öffentlichen Repositorys nach 60 Tagen ohne
+Aktivität ab. Siehe [Überwachung des Cronjobs]({{ '/de/guide/operations/' | relative_url }}#cron-monitoring).
+
 ## In welchen Sprachen gibt es den Adminbereich?
 
 Auf Deutsch und Englisch. Jedes Konto wählt seine Sprache unter *Mein Profil* (*Sprache / Language*);

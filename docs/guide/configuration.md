@@ -88,6 +88,7 @@ under Art. 28 GDPR. The servers are located in Germany.*
 | `cleanup_interval_minutes` | `15` | … at most this often |
 | `summary_evening_hour` | `18` | from this hour, teachers get the summary for the next day and parents the reminder |
 | `audit_log_days` | `90` | entries of the admin log (*Protokoll*) are deleted after this many days |
+| `cron_alert_hours` | `3` | without a completed cron run for this many hours, admins see a warning on the dashboard and the operator gets an alert mail ([cron monitoring]({{ '/guide/operations/' | relative_url }}#cron-monitoring); `0` = off) |
 
 ## Rate limits
 

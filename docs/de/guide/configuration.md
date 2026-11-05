@@ -92,6 +92,7 @@ Auftragsverarbeiter nach Art. 28 DSGVO. Die Server stehen in Deutschland.*
 | `cleanup_interval_minutes` | `15` | … höchstens so oft |
 | `summary_evening_hour` | `18` | ab dieser Stunde erhalten Lehrkräfte die Zusammenfassung für den nächsten Tag und Eltern die Erinnerung |
 | `audit_log_days` | `90` | Einträge im *Protokoll* der Admin-Änderungen werden nach so vielen Tagen gelöscht |
+| `cron_alert_hours` | `3` | ohne vollständigen Cron-Lauf seit so vielen Stunden sehen Admins eine Warnung in der Übersicht, und der Betreiber erhält eine Warnmeldung per E-Mail ([Überwachung des Cronjobs]({{ '/de/guide/operations/' | relative_url }}#cron-monitoring); `0` = aus) |
 
 ## Rate-Limits {#rate-limits}
 

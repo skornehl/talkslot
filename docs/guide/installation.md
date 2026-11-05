@@ -98,7 +98,8 @@ then **no round can be activated**. See [Privacy and legal]({{ '/guide/privacy/'
 - [ ] HTTPS active, `http://` redirects to `https://`
 - [ ] `install.php` returns 404; `config/config.php` is not readable by others
 - [ ] `debug` is `false`, `alert_email` is set
-- [ ] Cron job or web cron runs (`bin/cron.php -v` prints the counts)
+- [ ] Cron job or web cron runs (`bin/cron.php -v` prints the counts); if it stops, admins see a warning on
+      the dashboard and you get an alert mail ([cron monitoring]({{ '/guide/operations/' | relative_url }}#cron-monitoring))
 - [ ] Test booking with e-mail address: the mail arrives and is not marked as spam
 - [ ] Admin details, imprint and privacy policy complete in all languages you offer (no `[PLACEHOLDERS]`
       left; the dashboard shows no hint)
