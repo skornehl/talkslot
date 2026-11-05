@@ -67,9 +67,9 @@ check('marker: own changes in sections the template did not change are not liste
 // left where it is removed must not make the line seem to say more than the earlier one (talkslot PR #41)
 $pvMail = '- **E-Mail-Versand:** über den Mailserver des Hosters (siehe oben).';
 $pvMid = str_replace($pvMail, '- **E-Mail-Versand:** über den Mailserver des Hosters [ODER NAME UND ANSCHRIFT DES MAILDIENSTES] (siehe oben).', $pvPrivate);
-$pvPunct = str_replace('Art. 77 DSGVO)', 'Art. 77 DSGVO) [FRIST] ,', $pvPrivate);
+$pvPunct = str_replace('Art. 77 DSGVO),', 'Art. 77 DSGVO) [FRIST],', $pvPrivate);
 check('marker: a placeholder the template inserts mid-line or before a punctuation mark is reported (the text does not follow then)',
-    str_contains($pvPrivate, $pvMail) && str_contains($pvPrivate, 'Art. 77 DSGVO)')
+    str_contains($pvPrivate, $pvMail) && str_contains($pvPrivate, 'Art. 77 DSGVO),')
     && $pvTitles($pvChanges($pvFill($pvPrivate), $pvPrivate, $pvMid)) === ['6. Empfänger']
     && $pvTitles($pvChanges($pvFill($pvPrivate), $pvPrivate, $pvPunct)) === ['9. Ihre Rechte']);
 $pvAdded = $pvPrivate . "\n# 12. Neu in der Vorlage\n\nNeuer Satz.\n";
