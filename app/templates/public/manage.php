@@ -57,7 +57,8 @@ $doneText = ['booked' => 'manage.booked', 'changed' => 'manage.changed', 'sent' 
 <details class="card" id="confirm-mail"<?= $open === 'mail' ? ' open' : '' ?>>
   <summary><h2><?= e(t('manage.mail')) ?></h2></summary>
   <p><?= e(t('manage.mail.text')) ?></p>
-  <form method="post" action="<?= e($manageUrl) ?>" data-once>
+  <?php // novalidate: browsers check type="email" against ASCII only, the server also takes umlauts in the domain ?>
+  <form method="post" action="<?= e($manageUrl) ?>" novalidate data-once>
     <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
     <input type="hidden" name="action" value="mail">
     <div class="field">

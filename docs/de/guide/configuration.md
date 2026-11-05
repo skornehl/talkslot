@@ -88,7 +88,7 @@ prüfen.
 | Option | Standard | Bedeutung | Deployment |
 |---|---|---|---|
 | `mail.transport` | `mail` | `mail` (PHP `mail()`), `smtp` (mitgeliefertes PHPMailer) oder `none` | `MAIL_TRANSPORT` |
-| `mail.from_address` | – | Absenderadresse (Domain mit SPF/DKIM); zugleich der Envelope-Absender, Unzustellbarkeitsmeldungen landen also in diesem Postfach ([lesen](#unzustellbar)) | `MAIL_FROM` |
+| `mail.from_address` | – | Absenderadresse (Domain mit SPF/DKIM); zugleich der Envelope-Absender, Unzustellbarkeitsmeldungen landen also in diesem Postfach (siehe [Unzustellbare E-Mails](#bounces)); ein Postfach, das jemand liest, keine No-Reply-Adresse | `MAIL_FROM` |
 | `mail.from_name` | `TalkSlot` | Absendername; folgt beim Deployment `APP_NAME` | `MAIL_FROM_NAME` |
 | `mail.reply_to` | – | optional; E-Mails an Eltern nutzen die Antwortadresse der Lehrkraft (*Mein Profil*) oder sonst ihre E-Mail-Adresse als Antwortadresse | `MAIL_REPLY_TO` |
 | `mail.smtp.host` / `port` | – / `587` | | `SMTP_HOST` / `SMTP_PORT` |
@@ -96,7 +96,7 @@ prüfen.
 | `mail.smtp.user` / `pass` | – | | `SMTP_USER` / `SMTP_PASS` (Secrets) |
 | `alert_email` | – | Empfänger von Fehlermeldungen; leer = Adresse des Admins (nicht verfügbar, solange die Datenbank ausgefallen ist) | `ALERT_EMAIL` |
 
-### Unzustellbare E-Mails (Bounces) {#unzustellbar}
+### Unzustellbare E-Mails (Bounces) {#bounces}
 
 Eine E-Mail, die der Mailserver angenommen hat, kann sich später noch als unzustellbar erweisen, etwa wegen
 eines Tippfehlers in der Adresse von Eltern. Der empfangende Server schickt dann eine Unzustellbarkeitsmeldung
@@ -109,8 +109,10 @@ wenn eine Meldung die Adresse von Eltern nennt, damit sie die Eltern auf anderem
 
 Adressen mit Umlauten in der Domain (`eltern@müller.de`) werden in allen Formularen und in der
 Konfiguration angenommen. Gespeichert und verschickt werden sie in ihrer ASCII-Form (`eltern@xn--mller-kva.de`,
-Punycode), die Mailserver verwenden; die Buchungsliste zeigt diese Form. Umlaute vor dem `@` werden nicht
-angenommen: Nur wenige Mailserver können an solche Adressen zustellen.
+Punycode), die Mailserver verwenden; Buchungsliste, Druckansicht, Benutzerliste und Profil zeigen diese Form,
+und auch der Benutzername eines neuen Kontos ist diese Form (Anmelden und *Passwort vergessen* nehmen auch die
+Adresse mit Umlauten). Umlaute oder andere Sonderbuchstaben (ß, é) vor dem `@` werden nicht angenommen: Nur
+wenige Mailserver können an solche Adressen zustellen.
 
 ## Rechtsseiten
 

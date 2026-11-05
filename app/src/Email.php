@@ -15,8 +15,12 @@ namespace App;
  * - isValid(): an address in that stored form.
  *
  * Built in rather than idn_to_ascii(): the intl extension is missing on many web hosts (and in the test
- * images). Labels are lower-cased and, where intl's Normalizer exists, brought to NFC; without it a label
- * with combining marks (ü typed as u + ¨) is refused rather than encoded into a different domain.
+ * images). Labels are lower-cased, full-width letters and digits become ASCII, and where intl's Normalizer
+ * exists they are brought to NFC; without it a label with combining marks (ü typed as u + ¨) is refused
+ * rather than encoded into a different domain. A label with umlauts must consist of letters, digits and
+ * inner hyphens (no spaces, invisible characters or emoji, which an address copied from a document may
+ * carry). ß stays ß (IDNA2008, as browsers and the German registry encode it: straße.de → xn--strae-oqa.de);
+ * an intl path added later would need IDNA_NONTRANSITIONAL_TO_ASCII to store the same form.
  */
 final class Email
 {
@@ -25,7 +29,12 @@ final class Email
 
     public static function normalize(string $input): ?string
     {
-        $email = trim($input);
+        // Also spaces and invisible characters of Unicode at both ends (no-break space, zero width space, BOM)
+        $email = preg_replace('/^[\s\p{Z}\x{200B}\x{FEFF}]+|[\s\p{Z}\x{200B}\x{FEFF}]+\z/u', '', $input);
+        // Before encoding: an encoded domain is never shorter (and encoding a very long one takes long)
+        if ($email === null || mb_strlen($email, 'UTF-8') > self::MAX_LENGTH) {
+            return null;
+        }
         $at = strrpos($email, '@');
         if ($at === false || $at === 0) {
             return null;
@@ -71,8 +80,9 @@ final class Email
         if (!mb_check_encoding($domain, 'UTF-8')) {
             return null;
         }
-        // The ideographic and full-width full stops separate labels as well (IDNA)
-        $domain = str_replace(["\u{3002}", "\u{FF0E}", "\u{FF61}"], '.', mb_strtolower($domain, 'UTF-8'));
+        // The ideographic and full-width full stops separate labels as well (IDNA); full-width letters and digits
+        // are the ASCII ones
+        $domain = str_replace(["\u{3002}", "\u{FF0E}", "\u{FF61}"], '.', mb_strtolower(mb_convert_kana($domain, 'a', 'UTF-8'), 'UTF-8'));
         if (class_exists(\Normalizer::class)) {
             $domain = (string) \Normalizer::normalize($domain, \Normalizer::FORM_C);
         } elseif (preg_match('/\p{M}/u', $domain)) {
@@ -80,10 +90,18 @@ final class Email
         }
         $labels = [];
         foreach (explode('.', $domain) as $label) {
-            if ($label === '') {
+            if ($label === '' || strlen($label) > 63) {
                 return null;
             }
-            $ascii = preg_match('/[^\x00-\x7F]/', $label) ? 'xn--' . self::punycode($label) : $label;
+            if (!preg_match('/[^\x00-\x7F]/', $label)) {
+                $labels[] = $label; // checked with the whole address (FILTER_VALIDATE_EMAIL)
+                continue;
+            }
+            // Letters and digits, inner hyphens; at most 59 characters, as "xn--" and the encoding add at least 4
+            if (mb_strlen($label, 'UTF-8') > 59 || !preg_match('/^[\p{L}\p{N}](?:[\p{L}\p{M}\p{N}-]*[\p{L}\p{M}\p{N}])?\z/u', $label)) {
+                return null;
+            }
+            $ascii = 'xn--' . self::punycode($label);
             if (strlen($ascii) > 63) {
                 return null;
             }

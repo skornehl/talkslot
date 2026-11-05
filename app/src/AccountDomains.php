@@ -21,6 +21,18 @@ final class AccountDomains
         return array_values(array_unique(array_filter($domains, self::valid(...))));
     }
 
+    /**
+     * The configured domains for messages: in lower case, umlauts as the admin wrote them (allowed() has the
+     * punycode form that addresses are compared in).
+     * @return list<string>
+     */
+    public static function shown(): array
+    {
+        $domains = Config::get('allowed_account_domains', []);
+        $domains = array_map(static fn ($d): string => is_string($d) ? mb_strtolower(ltrim(trim($d), '@'), 'UTF-8') : '', is_array($domains) ? $domains : []);
+        return array_values(array_unique(array_filter($domains, self::valid(...))));
+    }
+
     /** May an account use this address? Always without a restriction; with one, only at a listed domain. */
     public static function permits(string $email): bool
     {
@@ -33,7 +45,7 @@ final class AccountDomains
     public static function error(string $email): ?string
     {
         return $email === '' || self::permits($email) ? null
-            : __('Bitte eine Adresse bei {domains} angeben: Die Schule erlaubt für Konten nur ihre dienstlichen Adressen.', ['domains' => implode(', ', self::allowed())]);
+            : __('Bitte eine Adresse bei {domains} angeben: Die Schule erlaubt für Konten nur ihre dienstlichen Adressen.', ['domains' => implode(', ', self::shown())]);
     }
 
     /**

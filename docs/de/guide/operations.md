@@ -254,7 +254,7 @@ laufenden Lauf.
   nur den Hinweis in der Übersicht, solange sie wartet.
 - **Unzustellbarkeitsmeldungen** zu E-Mails, die der Mailserver angenommen, aber später nicht zustellen konnte,
   gehen an `mail.from_address`, nicht an TalkSlot; siehe
-  [Unzustellbare E-Mails]({{ '/de/guide/configuration/' | relative_url }}#unzustellbar).
+  [Unzustellbare E-Mails]({{ '/de/guide/configuration/' | relative_url }}#bounces).
 - **Ohne Cronjob** können E-Mails nur bei Seitenaufrufen hinausgehen, wenn PHP als PHP-FPM oder LiteSpeed
   läuft: Die Seite wird zuerst ausgeliefert, danach gehen bis zu 10 fällige E-Mails hinaus
   (`mail_queue.after_response`). Mit Apaches mod_php geht das nicht; richten Sie deshalb den Cronjob ein,

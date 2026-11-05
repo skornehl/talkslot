@@ -240,7 +240,8 @@ final class AdminController
             $this->login(__('Das Formular ist abgelaufen. Bitte erneut versuchen.'));
             return;
         }
-        $result = Auth::attempt(Http::post('username'), Http::postRaw('password'));
+        // A new account's username is its address, with umlauts in the domain as punycode (App\Email)
+        $result = Auth::attempt(Email::input(Http::post('username')), Http::postRaw('password'));
         if ($result === true) {
             self::redirectTo(Auth::returnPath(Http::post('next')));
         }
@@ -1358,11 +1359,11 @@ final class AdminController
         if ((string) $u['email'] === '' && ($u['summary_evening'] || $u['summary_deadline'])) {
             $hints[] = __('Keine E-Mail-Adresse hinterlegt – Zusammenfassungen können nicht versendet werden.');
         } elseif ((string) $u['email'] !== '' && !AccountDomains::permits((string) $u['email'])) {
-            $hints[] = __('Ihre E-Mail-Adresse ist keine dienstliche Adresse bei {domains}, wie die Schule es vorgibt – bitte ändern. Bis dahin erhalten Sie keine Zusammenfassungen.', ['domains' => implode(', ', AccountDomains::allowed())]);
+            $hints[] = __('Ihre E-Mail-Adresse ist keine dienstliche Adresse bei {domains}, wie die Schule es vorgibt – bitte ändern. Bis dahin erhalten Sie keine Zusammenfassungen.', ['domains' => implode(', ', AccountDomains::shown())]);
         }
         // A reply address from before allowed_account_domains: not used (Notifier::replyTo())
         if ((string) $u['reply_to'] !== '' && !AccountDomains::permits((string) $u['reply_to'])) {
-            $hints[] = __('Ihre Antwortadresse für Eltern ist keine dienstliche Adresse bei {domains}, wie die Schule es vorgibt – bitte ändern. Bis dahin gehen Antworten der Eltern nicht an diese Adresse.', ['domains' => implode(', ', AccountDomains::allowed())]);
+            $hints[] = __('Ihre Antwortadresse für Eltern ist keine dienstliche Adresse bei {domains}, wie die Schule es vorgibt – bitte ändern. Bis dahin gehen Antworten der Eltern nicht an diese Adresse.', ['domains' => implode(', ', AccountDomains::shown())]);
         }
         return $hints;
     }
@@ -1707,7 +1708,7 @@ final class AdminController
         [$limit, $window] = RateLimiter::limits('forgot', 5, 3600);
         $user = null;
         if (self::checkFormToken('forgot') && RateLimiter::hit('forgot', $limit, $window)) {
-            $input = mb_strtolower(Http::post('email'));
+            $input = mb_strtolower(Email::input(Http::post('email')));
             // Username before email (unique); with multiple matches the oldest account
             $user = $input !== '' ? Db::one(
                 'SELECT * FROM users WHERE (LOWER(email) = ? OR LOWER(username) = ?) AND is_active = 1 AND email IS NOT NULL

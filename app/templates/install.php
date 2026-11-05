@@ -8,7 +8,7 @@
 <?php else: ?>
   <p><?= __h('Legt die Datenbanktabellen und das erste Konto (Admin) an. Weitere Lehrkräfte legen Sie danach im Admin-Bereich unter „Benutzer“ an. Die Datenbank-Zugangsdaten stehen in {file}.', ['file' => '<code>config/config.php</code>']) ?></p>
   <?php require __DIR__ . '/admin/_errors.php'; ?>
-  <form method="post" class="card form-grid">
+  <form method="post" class="card form-grid" novalidate>
     <div class="field">
       <label for="install_key"><?= __h('Installationsschlüssel (aus config.php, {key})', ['key' => '<code>install_key</code>']) ?></label>
       <input type="password" id="install_key" name="install_key" required autocomplete="off">

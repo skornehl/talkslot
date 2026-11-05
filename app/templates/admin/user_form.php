@@ -3,7 +3,7 @@
 <h1><?= e($title) ?></h1>
 <?php require __DIR__ . '/_errors.php'; ?>
 
-<form method="post" action="<?= e($user ? url('/admin/users/' . (int) $user['id'] . '/edit') : url('/admin/users/new')) ?>" class="card form-grid">
+<form method="post" action="<?= e($user ? url('/admin/users/' . (int) $user['id'] . '/edit') : url('/admin/users/new')) ?>" class="card form-grid" novalidate>
   <?= Csrf::adminField() ?>
   <div class="field">
     <label for="display_name"><?= e(__('Name')) ?></label>
