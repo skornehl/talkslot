@@ -116,7 +116,7 @@ health() {
 # What a failed health check means, for the log of the run
 health_hint() {
   case "$1" in
-    db_unreachable) echo "the version cannot connect to the database (check DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS)" ;;
+    db_unreachable) echo "the version cannot connect to the database (check DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS and DB_SSL_CA if set)" ;;
     db_unsupported) echo "the database is not MariaDB 10.6 or newer (MySQL is not supported), or a database proxy reports its own version" ;;
     migration_failed) echo "a database migration failed (details in the alert mail and in app/var/php-error.log), or DB_NAME/DB_PREFIX point to another database than before" ;;
     schema_outdated) echo "the database migrations did not finish during the check (another request may still be running them)" ;;

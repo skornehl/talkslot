@@ -36,7 +36,8 @@ final class BookingService
                                        r.id AS round_id, r.title, r.description, r.source_lang,
                                        COALESCE(NULLIF(TRIM(d.location), \'\'), r.location) AS location, r.slug, r.is_active, r.cancel_deadline_hours,
                                        r.booking_deadline_hours, r.user_id, r.remind_parents,
-                                       u.display_name AS teacher_name, u.reply_to AS teacher_reply_to, u.email AS teacher_email, u.is_active AS teacher_active
+                                       u.display_name AS teacher_name, u.reply_to AS teacher_reply_to, u.email AS teacher_email, u.is_active AS teacher_active,
+                                       u.parent_contact AS teacher_contact
                                   FROM bookings b
                                   JOIN slots s ON s.id = b.slot_id
                                   JOIN round_days d ON d.id = s.day_id
@@ -72,6 +73,30 @@ final class BookingService
         );
         $limit = self::deadline((int) $round['booking_deadline_hours']);
         return array_values(array_filter($rows, static fn (array $r) => self::slotStart($r) > $limit));
+    }
+
+    /**
+     * Why a round has no free slot for parents (freeSlots() is empty), for the notice on its page:
+     * "closed" – slots are still free, but the booking deadline has passed for all of them;
+     * "full" – every upcoming slot is booked (or blocked by the teacher);
+     * "none" – no upcoming slots at all (no days, or all of them over).
+     */
+    public static function unavailableReason(array $round): string
+    {
+        $rows = Db::all(
+            'SELECT s.start_time, d.day_date, (b.id IS NULL AND s.is_blocked = 0 AND s.is_conflict = 0) AS free
+               FROM slots s
+               JOIN round_days d ON d.id = s.day_id
+               LEFT JOIN bookings b ON b.slot_id = s.id
+              WHERE d.round_id = ? AND d.day_date >= ?',
+            [$round['id'], Time::today()]
+        );
+        $upcoming = array_filter($rows, static fn (array $r): bool => self::slotStart($r) > Time::now());
+        return match (true) {
+            (bool) array_filter($upcoming, static fn (array $r): bool => (bool) $r['free']) => 'closed',
+            $upcoming !== [] => 'full',
+            default => 'none',
+        };
     }
 
     /** Groups slots by date: [['date' => Y-m-d, 'slots' => [...]], ...] */
