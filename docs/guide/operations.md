@@ -29,7 +29,8 @@ On MySQL or a MariaDB before 10.6 a pending migration does not start at all (its
 half-way): the alert mail and the admins' dashboard name the database server. The cron job reports it as
 well: `db_server` is `ok` or `unsupported` in the output of `php bin/cron.php -v` and of the web cron.
 
-Migrations only add columns (with defaults) and tables, so a rollback to an older version keeps working.
+Migrations only add columns, tables and indexes, so a rollback to the previous version of the same major
+version keeps working ([rules for migrations]({{ '/guide/development/' | relative_url }}#migrations)).
 Imprint and privacy texts that were never edited are replaced by newer templates of the operator type
 (operated by the school or privately) automatically; edited texts stay untouched, and admins see on the
 dashboard and under *Texte* which sections a newer template has changed since the text was based on it, to

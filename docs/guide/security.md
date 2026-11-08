@@ -7,7 +7,10 @@ description: The protections built into TalkSlot, and how to report a vulnerabil
 
 Please use GitHub's **private vulnerability reporting**
 ([*Security → Report a vulnerability*](https://github.com/skornehl/talkslot/security/advisories/new)),
-not public issues.
+not public issues. [`SECURITY.md`](https://github.com/skornehl/talkslot/blob/main/SECURITY.md) says which
+details help and what happens next: the fix is prepared privately in a GitHub Security Advisory and published
+together with the release that contains it (see
+[Security fixes]({{ '/guide/development/' | relative_url }}#security-fixes)).
 
 ## Built-in protections
 

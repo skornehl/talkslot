@@ -24,6 +24,12 @@ return [
     'home.code.submit' => 'Далі',
     'notfound.title' => 'Сторінку не знайдено',
     'notfound.text' => 'Такої сторінки немає, або запис більше не ведеться.',
+    // Dead ends and the way on (expert review P2-1): code input on "not found", who to ask, why no slot is free
+    'notfound.code' => 'У вас є код із запрошення?',
+    'contact' => 'Якщо у вас є питання: {contact}',
+    'contact.none' => 'Якщо у вас є питання, зверніться, будь ласка, до школи або до оператора цього сайту (див. {imprint}).',
+    'round.no_slots.full' => 'Увесь час для запису вже зайнято. Якщо хтось скасує запис, час знову звільниться.',
+    'round.no_slots.closed' => 'Строк запису минув. Записатися тут більше не можна.',
     'error.title' => 'Сталася помилка',
     'error.text' => 'Будь ласка, спробуйте пізніше.',
     'error.contact' => 'Якщо помилка повторюється, зверніться, будь ласка, до оператора цього сайту (див. {imprint}).',

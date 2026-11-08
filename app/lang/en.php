@@ -24,6 +24,12 @@ return [
     'home.code.submit' => 'Continue',
     'notfound.title' => 'Not found',
     'notfound.text' => 'This page does not exist, or booking is no longer open.',
+    // Dead ends and the way on (expert review P2-1): code input on "not found", who to ask, why no slot is free
+    'notfound.code' => 'Do you have a code from your invitation?',
+    'contact' => 'If you have questions: {contact}',
+    'contact.none' => 'If you have questions, please contact the school or the operator of this site (see {imprint}).',
+    'round.no_slots.full' => 'All time slots have been taken. If someone cancels, a slot becomes free again.',
+    'round.no_slots.closed' => 'The booking deadline has passed. You can no longer book a time slot here.',
     'error.title' => 'Something went wrong',
     'error.text' => 'Please try again later.',
     'error.contact' => 'If the error persists, please contact the operator of this site (see {imprint}).',
