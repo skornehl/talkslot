@@ -218,6 +218,9 @@ on the dashboard and under *Texte* list the open placeholders per text and tell 
 a placeholder, is outdated or does not fit the operator type (e.g. the legal bases of the school template
 when TalkSlot is operated privately).
 
+Schools run as public bodies usually also have to publish an **accessibility statement**: see the
+[template]({{ '/guide/accessibility-statement/' | relative_url }}).
+
 ## Notifications
 
 Under *Mein Profil* every account chooses its **summary mails** (*Zusammenfassungen per E-Mail*): an
