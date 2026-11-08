@@ -66,7 +66,7 @@ final class Csrf
     {
         $s = (string) Config::get('secret', '');
         if (strlen($s) < 32) {
-            throw new \RuntimeException('config: "secret" is missing or too short');
+            throw new \RuntimeException('config: secret is missing or too short');
         }
         return $s;
     }

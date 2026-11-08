@@ -88,6 +88,7 @@ final class LegalTexts
                 default => preg_quote(rtrim($part, " \t"), '/') . '\h*[^\n]*?',
             };
         }
+        // $ on purpose, not \z: a line break at the very end of the stored text does not make it a different text
         return $text === $template || ($last > 0 && preg_match('/^' . $re . '$/su', $text) === 1);
     }
 

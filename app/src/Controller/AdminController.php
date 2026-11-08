@@ -2396,7 +2396,7 @@ final class AdminController
 
     private static function when(string $date, ?string $time = null): string
     {
-        return date('d.m.Y', (int) strtotime($date)) . ($time !== null ? ' ' . substr($time, 0, 5) : '');
+        return fmt_datetime($date, 'd.m.Y') . ($time !== null ? ' ' . substr($time, 0, 5) : '');
     }
 
     private static function accountLabel(array $user): string

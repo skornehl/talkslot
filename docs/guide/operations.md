@@ -14,10 +14,9 @@ moment; use a quiet time, or switch to the atomic deployment.
 
 Read the [release notes](https://github.com/skornehl/talkslot/releases) before updating.
 
-**Upgrade path:** every 1.x version can be updated directly to the latest 1.x. Version 2.0 will require
-v1.3.0 or newer: it drops code that only bridges older database versions during an upload (the access PIN
-before migration 10, the operator's details in the profile before migration 13). Update an older
-installation to the latest 1.x first.
+**Upgrade path:** every 1.x version can be updated directly to the latest 1.x. A future version 2.0 will only
+update installations of v1.3.0 or newer, so bring an installation older than that to the latest 1.x first.
+Your version is shown at the bottom of every page (*Powered by TalkSlot v…*).
 
 ## Database migrations
 

@@ -19,6 +19,6 @@ check('fmt_datetime(): date and time of a DATETIME, the date alone with a format
     fmt_datetime('2026-08-17 14:05:09') === '17.08.2026 14:05' && fmt_datetime('2026-08-17', 'd.m.Y') === '17.08.2026'
     && fmt_datetime(null) === '' && fmt_datetime('') === '' && fmt_datetime('kein Datum') === '');
 // strtotime() gives false for an unreadable value, which date() shows as 01.01.1970
-$hyTemplates = implode("\n", array_map('file_get_contents', glob(dirname(__DIR__, 2) . '/app/templates/*/*.php')));
+$hyTemplates = implode("\n", array_map('file_get_contents', array_merge(glob(dirname(__DIR__, 2) . '/app/templates/*.php'), glob(dirname(__DIR__, 2) . '/app/templates/*/*.php'))));
 check('templates format DATETIME values with fmt_datetime(), no strtotime() of their own', !str_contains($hyTemplates, 'strtotime('));
 check('unused RateLimiter::clear() removed', !method_exists(App\RateLimiter::class, 'clear'));

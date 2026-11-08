@@ -15,10 +15,9 @@ atomare Deployment um.
 
 Lesen Sie vor dem Update die [Release Notes](https://github.com/skornehl/talkslot/releases).
 
-**Upgrade-Pfad:** Jede 1.x-Version lässt sich direkt auf die neueste 1.x aktualisieren. Version 2.0 wird v1.3.0
-oder neuer voraussetzen: Sie lässt Code weg, der nur während eines Uploads ältere Datenbankstände überbrückt
-(die Zugangs-PIN vor Migration 10, die Angaben des Betreibers im Profil vor Migration 13). Aktualisieren Sie
-eine ältere Installation zuerst auf die neueste 1.x.
+**Upgrade-Pfad:** Jede 1.x-Version lässt sich direkt auf die neueste 1.x aktualisieren. Eine künftige Version 2.0
+wird nur Installationen ab v1.3.0 aktualisieren; bringen Sie eine ältere Installation daher zuerst auf die neueste
+1.x. Ihre Version steht unten auf jeder Seite (*Powered by TalkSlot v…*).
 
 ## Datenbank-Migrationen
 

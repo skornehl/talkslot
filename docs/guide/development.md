@@ -22,7 +22,7 @@ app/              application (outside the document root)
 bin/              cron.php, install.php, build.sh, deploy.sh, build-config.php, …
 config/           config.sample.php → config.php (not in Git)
 public/           document root: index.php (front controller), install.php, .htaccess, assets/
-dev/              Docker environment, reset.sh, demo.sh
+dev/              Docker environment, reset.sh, demo.sh, cs.sh
 docs/             this website (GitHub Pages, Jekyll)
 tests/            unit.php, smoke.sh, browser.mjs, deploy.sh
 ```
@@ -78,10 +78,11 @@ and checks that PHP 7.4 and 8.2 get the message of `App\Platform` instead of a s
   Ukrainian texts.
 - **Commits:** [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `docs:`, …);
   releases are derived from them.
-- **Coding standard:** PSR-12 for `app/src`, `bin`, `public` and `config` (`.php-cs-fixer.dist.php` names two
-  rules the code follows differently). `dev/cs.sh` checks it with a pinned PHP-CS-Fixer, `dev/cs.sh --fix`
-  applies it; CI runs the check in the workflow *Coding standard*. Anchored regular expressions end with
-  `\z`, not `$`, which also matches before a final line break (a unit test checks the routes).
+- **Coding standard:** PSR-12 for `app/src`, `bin`, `public` and `config` (the exceptions are in
+  `.php-cs-fixer.dist.php`). `dev/cs.sh` checks it with a pinned PHP-CS-Fixer, `dev/cs.sh --fix` applies it; CI
+  runs the check in the workflow *Coding standard*.
+- **Regular expressions:** routes and checks of a whole value end with `\z`, not `$`, which also matches before
+  a final line break (a unit test checks the routes).
 - **Database:** only prepared statements; the unit test's SQL audit fails on concatenated variables.
 - **Admin routes:** add a route to `AdminController::ROUTES` with the role it needs as the fourth element
   (`'teacher'` for every signed-in account, `'admin'` for admin accounts only). A route without a known role
@@ -212,7 +213,9 @@ directly. An existing one runs the missing steps of `Migrations::STEPS` on the n
   Step 3 (renaming `admin_users`, dropping columns) dates from before this rule.
 - While the files of an update are uploaded, new code may meet the old schema for a moment. Where that
   matters (a page that must not fail), let the code fall back to the old behaviour until the step has run,
-  as `RoundAccess::required()` does.
+  as `RoundAccess::required()` does. Such a fallback names the migration it bridges and can go with the next
+  major version only if the [upgrade path]({{ '/guide/operations/' | relative_url }}#updates) no longer starts
+  below that migration: 2.0 is planned to require v1.3.0 (migration 13).
 - The steps use MariaDB syntax (10.6 or newer); MySQL is not supported.
 - Parallel branches: two branches that add a step under the same number conflict in Git, and keeping both
   blocks when resolving it loses one of them silently (PHP keeps only the last of two equal array keys).
