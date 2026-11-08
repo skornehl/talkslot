@@ -65,6 +65,10 @@ Syntaxfehlers.
 
 - **Sprache:** Code, Kommentare, Commits und Dokumentation auf Englisch (die deutsche Anleitung in `docs/de/`
   auf Deutsch). Der Admin-Bereich ist je Konto deutsch oder englisch, die Elternseiten gibt es in sechs Sprachen.
+- **Begriffe in der Oberfläche:** Ein *Termin* ist ein Zeitfenster (englisch: slot), eine *Buchung* ist ein
+  Termin, den Eltern gebucht oder die Lehrkraft eingetragen hat; in deutschen Texten kein „Slot“. Eltern lesen keine
+  Fachbegriffe wie „localStorage“; der Datenschutztext heißt für sie *Datenschutzhinweise* (*Datenschutz* als kurzer
+  Link im Fußbereich).
 - **Admin-Texte** stehen im Code auf Deutsch und laufen durch `__()`: `__('Runde gespeichert.')` gibt den
   deutschen Text unverändert zurück und für ein englisches Konto den Eintrag aus den Wörterbüchern in
   `app/lang/admin/en/*.php` (eine Datei pro Thema, alle zusammengeführt; ein Text braucht genau einen

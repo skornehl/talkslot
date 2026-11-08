@@ -9,12 +9,14 @@ Englisch umstellen.
 
 ## Runde anlegen
 
-*+ Neue Runde* öffnet das Formular. Die Termine werden zusammen mit der Runde angelegt:
+*+ Neue Runde* öffnet das Formular. Die Termine werden zusammen mit der Runde angelegt. Das Formular geht vom
+Wichtigsten zu den Details: *Worum geht es?*, *Wann?*, *Regeln für Eltern*, und die technischen Einstellungen
+sind unter *Erweitert* eingeklappt:
 
 - ***Vorlage*** (falls Ihre Admins welche angelegt haben): *Übernehmen* trägt Zeiten, Pausen und
   Einstellungen ein, z. B. „Elternsprechtag: 08:00–16:00, 15 Minuten, Mittagspause“. Alles bleibt
   änderbar; nur Titel und Datum fehlen dann noch.
-- **Titel** und optional ein ***Beschreibungstext***, die den Eltern angezeigt werden. Reiner Text.
+- **Titel** und optional eine ***Beschreibung***, die den Eltern angezeigt werden. Reiner Text.
 - ***Ort*** (optional), z. B. „Raum 1.12“. Er steht auf der Buchungsseite, auf der Bestätigungsseite, in
   der Bestätigungsmail, in der Kalenderdatei, in der Druckansicht und im Einladungstext. Findet ein Tag
   woanders statt, tragen Sie das unter *Tag bearbeiten* ein.
@@ -30,7 +32,7 @@ Englisch umstellen.
   Geschwister buchen jeweils mit dem Namen des Kindes. Ihre eigenen Einträge sind nicht begrenzt.
 - **Fristen**: Buchungen sind bis *N* Stunden vor einem Termin möglich (*Buchungsschluss*), Eltern können
   bis *N* Stunden vorher ändern oder absagen (*Ändern/Absagen bis*).
-- ***Runde löschen nach Ablauf***: Stunden nach dem letzten Tag, standardmäßig 24, leer = nie. Buchungen werden in jedem Fall am Tag nach dem Termin gelöscht.
+- ***Runde löschen nach Ablauf*** (unter *Erweitert*): Tage nach dem letzten Tag, standardmäßig 1, leer = nie. Buchungen werden in jedem Fall am Tag nach dem Termin gelöscht.
   Ablaufen kann nur eine Runde, die in Gebrauch war: die irgendwann aktiv war oder in die Sie etwas
   eingetragen haben. Eine Runde, die nie aktiv war, etwa eine Kopie mit den alten Daten, bleibt, bis Sie
   sie nutzen oder löschen (*Noch nie aktiv: wird nicht automatisch gelöscht*). Die Seite der Runde nennt
@@ -41,8 +43,8 @@ Englisch umstellen.
   Bestätigung oder Änderungsmitteilung bekommen hat, bekommt keine (eine Namenskorrektur ohne E-Mail zählt
   nicht). Sie gilt für Buchungen, die gemacht wurden, während sie eingeschaltet war; Ihre eigenen Einträge
   bekommen sie erst, wenn die Eltern eine Bestätigung oder Änderungsmitteilung per E-Mail erhalten haben.
-- **Zufallsanteil in der Adresse** (empfohlen), damit die Runde nicht durch Ausprobieren gefunden wird,
-  und optional *Nur mit Rundencode*.
+- **Zufallsanteil in der Adresse** (empfohlen, unter *Erweitert*), damit die Runde nicht durch Ausprobieren
+  gefunden wird, und optional *Nur mit Rundencode*. Beim Bearbeiten steht dort auch die *Webadresse* selbst.
 - **Aktiv**: Eltern können buchen. Inaktive Runden nehmen keine Buchungen an, Eltern können aber weiterhin
   absagen. Solange sich noch keine Runde aktivieren lässt (z. B. weil die Admins noch Platzhalter in den
   Rechtstexten ausfüllen müssen), sagt das Formular unter dem Häkchen, warum, und eine neue Runde ist
@@ -94,8 +96,11 @@ Pro Tag sehen Sie alle Termine mit den Buchungen:
   angelegten Eintrags nie an, löschen Sie den Eintrag stattdessen und tragen ihn mit der richtigen Adresse
   neu ein, damit die Eltern den Link bekommen.
 - ***Sperren***: einen Termin sperren, damit niemand ihn buchen kann, und wieder freigeben.
-- **Tage**: Zeiten und den Ort eines einzelnen Tages bearbeiten (*Tag bearbeiten*), Pausen hinzufügen,
-  einen Tag drucken (*Tag drucken*), weitere Tage hinzufügen (*+ Tag hinzufügen*) oder einen Tag löschen.
+- **Tage**: Zeiten, Pausen und den Ort eines einzelnen Tages bearbeiten (*Tag bearbeiten*; wie bei einem neuen
+  Tag zeigt die Vorschau die entstehenden Termine und zusätzlich, wie viele Buchungen nicht mehr passen
+  würden), eine Pause direkt auf der Seite hinzufügen (*+ Pause hinzufügen*), einen Tag drucken (*Tag drucken*),
+  weitere Tage hinzufügen (*+ Tag hinzufügen*) oder einen Tag löschen. Bei mehreren Tagen springen die Links
+  oben zum jeweiligen Tag.
 
 Wenn Sie Zeiten oder Pausen ändern, werden **gebuchte Termine nie gelöscht**; Termine, die nicht mehr
 passen, werden mit ⚠ markiert, damit Sie sie verschieben können.
@@ -158,7 +163,8 @@ Bestätigungsdialog nicht anzeigt. Sollen nur keine neuen Buchungen mehr möglic
 ## Übersetzungen
 
 Eltern sehen Titel und Beschreibung in ihrer Sprache, wenn eine Übersetzung vorhanden ist. Unter
-*Übersetzungen von Titel und Beschreibung* können Sie:
+*Übersetzungen von Titel und Beschreibung*, eingeklappt unter den Tagen (dort steht, welche Sprachen fehlen oder
+veraltet sind), können Sie:
 
 - ***Im Browser übersetzen***: Chrome ab 138 oder Edge ab 148 am Computer
   übersetzen mit einem lokalen Modell auf Ihrem Gerät. Der Text wird an keinen Dienst gesendet; nur das
