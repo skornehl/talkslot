@@ -55,3 +55,21 @@ check('what\'s new: keys are dates with a letter, unique, oldest first; every no
     $rsKeys && $rsKeys === $rsSorted && count(array_unique($rsKeys)) === count($rsKeys) && App\WhatsNew::latest() === end($rsKeys)
     && !array_filter($rsKeys, static fn (string $k): bool => preg_match('/^\d{4}-\d\d-\d\d[a-z]\d?$/', $k) !== 1)
     && !array_filter(App\WhatsNew::entries(), static fn (array $e): bool => trim($e['text']) === '' || !is_bool($e['admin'])));
+$rsState = static fn (array $i): string => $i['state'] . '|' . $i['text'];
+$rsMail = static fn (?array $late, string $from, bool $arrived): array => App\Readiness::mailItem($late, $from, 'Versand', $arrived);
+check('checklist, mail: late mails and a missing sender are to do, an invitation that arrived is done, otherwise please check',
+    str_starts_with($rsState($rsMail(['count' => 2], 'a@b.de', true)), 'todo|2 E-Mail(s) warten')
+    && str_starts_with($rsState($rsMail(null, '', true)), 'todo|In der Konfiguration fehlt die Absenderadresse')
+    && str_starts_with($rsState($rsMail(null, 'a@b.de', true)), 'done|E-Mails kommen an')
+    && str_starts_with($rsState($rsMail(null, 'a@b.de', false)), 'check|Ob E-Mails ankommen'));
+$rsCron = static fn (?array $status, ?int $last, bool $off): array => App\Readiness::cronItem($status, $last, $off, 1000000, '/guide');
+check('checklist, cron job: late and never run are to do; with the monitoring off, a run long ago or none is to check; a recent run is done',
+    $rsCron(['state' => 'late', 'last' => 1000], 1000, false)['state'] === 'todo'
+    && str_contains($rsCron(null, null, false)['text'], 'Noch kein vollständiger Lauf') && $rsCron(null, null, false)['state'] === 'todo'
+    && str_contains($rsCron(null, null, true)['text'], 'die Überwachung ist abgeschaltet') && $rsCron(null, null, true)['state'] === 'check'
+    && str_contains($rsCron(null, 1000, true)['text'], 'Bitte prüfen, ob er noch läuft') && $rsCron(null, 1000, true)['state'] === 'check'
+    && $rsCron(null, 999000, true)['state'] === 'done' && $rsCron(null, 999000, false)['state'] === 'done');
+check('checklist, server: an unsupported database is to do, settings that do not work to check, listed',
+    App\Readiness::serverItem('Server x', ['w'], 'y')['state'] === 'todo' && App\Readiness::serverItem('Server x', ['w'], 'y')['text'] === 'Server x'
+    && App\Readiness::serverItem(null, ['w'], 'y')['state'] === 'check' && App\Readiness::serverItem(null, ['w'], 'y')['details'] === ['w']
+    && App\Readiness::serverItem(null, [], '11.8.2-MariaDB')['state'] === 'done' && str_contains(App\Readiness::serverItem(null, [], '11.8.2-MariaDB')['text'], '11.8.2-MariaDB'));

@@ -47,9 +47,6 @@ final class WhatsNew
      */
     public static function unseen(array $user): array
     {
-        if (!isset($user['id'])) {
-            return [];
-        }
         return self::visible(self::entries(), (string) Settings::get(self::seenSetting((int) $user['id']), ''), self::arrivals(),
             strtotime((string) ($user['created_at'] ?? '')) ?: 0, ($user['role'] ?? '') === 'admin');
     }

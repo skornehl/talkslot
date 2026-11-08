@@ -118,6 +118,15 @@ final class Readiness
         $from = (string) Config::get('mail.from_address', '');
         $via = __('Versand über {transport} von {from}.', ['transport' => (string) Config::get('mail.transport', 'mail') === 'smtp' ? 'SMTP' : 'PHP mail()', 'from' => $from]);
         $arrived = Db::value('SELECT 1 FROM users WHERE last_login_at IS NOT NULL AND id <> (SELECT MIN(id) FROM users) LIMIT 1') !== null;
+        return self::mailItem($late, $from, $via, $arrived);
+    }
+
+    /**
+     * @param ?array{count: int} $late Outbox::late()
+     * @param bool $arrived an invited account has signed in
+     */
+    public static function mailItem(?array $late, string $from, string $via, bool $arrived): array
+    {
         return match (true) {
             $late !== null => self::item('mail', self::TODO, __('E-Mail-Versand'),
                 __('{count} E-Mail(s) warten seit über {hours} Stunden auf den Versand. Bitte prüfen Sie den Mailversand und den Cronjob (Aufgabe der technischen Betreuung).', ['count' => $late['count'], 'hours' => Outbox::lateHours()]), [$via]),
@@ -132,17 +141,23 @@ final class Readiness
     private static function cron(): array
     {
         $guide = Version::PROJECT_URL . (AdminI18n::lang() === 'de' ? 'de/' : '') . 'guide/operations/#cron-monitoring';
-        $status = CronMonitor::status();
-        $last = CronMonitor::lastRun();
+        return self::cronItem(CronMonitor::status(), CronMonitor::lastRun(), CronMonitor::alertHours() === 0, time(), $guide);
+    }
+
+    /**
+     * @param ?array{state: string, last: ?int} $status CronMonitor::status()
+     * @param bool $off the monitoring is switched off (cron_alert_hours = 0)
+     */
+    public static function cronItem(?array $status, ?int $last, bool $off, int $now, string $guide): array
+    {
         $help = [
             __('Läuft er über den GitHub-Workflow „Cron“: GitHub schaltet geplante Workflows in öffentlichen Repositorys nach 60 Tagen ohne Aktivität ab, unter „Actions“ lässt er sich wieder einschalten.'),
             __('„php bin/cron.php -v“ auf dem Server zeigt, woran er scheitert.'),
         ];
-        $off = CronMonitor::alertHours() === 0;
         return match (true) {
             ($status['state'] ?? null) === 'late' => self::item('cron', self::TODO, __('Cronjob'),
                 __('Seit dem {time} Uhr nicht mehr vollständig gelaufen (Aufgabe der technischen Betreuung). Ohne ihn gehen Erinnerungen und Zusammenfassungen verspätet oder gar nicht hinaus.', ['time' => date('d.m.Y H:i', (int) $status['last'])]), $help, $guide, __('Zur Anleitung')),
-            $last !== null && $off && time() - $last > CronMonitor::DEFAULT_HOURS * 3600 => self::item('cron', self::CHECK, __('Cronjob'),
+            $last !== null && $off && $now - $last > CronMonitor::DEFAULT_HOURS * 3600 => self::item('cron', self::CHECK, __('Cronjob'),
                 __('Zuletzt vollständig gelaufen am {time} Uhr, die Überwachung ist abgeschaltet (cron_alert_hours = 0). Bitte prüfen, ob er noch läuft.', ['time' => date('d.m.Y H:i', $last)]), $help, $guide, __('Zur Anleitung')),
             $last !== null => self::item('cron', self::DONE, __('Cronjob'), __('Zuletzt vollständig gelaufen am {time} Uhr.', ['time' => date('d.m.Y H:i', $last)])),
             $off => self::item('cron', self::CHECK, __('Cronjob'),
@@ -154,14 +169,18 @@ final class Readiness
 
     private static function server(): array
     {
-        $problem = Health::serverProblem();
-        $warnings = ConfigSchema::warnings(Config::all());
+        return self::serverItem(Health::serverProblem(), ConfigSchema::warnings(Config::all()), Health::serverVersion());
+    }
+
+    /** @param list<string> $warnings ConfigSchema::warnings() */
+    public static function serverItem(?string $problem, array $warnings, string $database): array
+    {
         return match (true) {
             $problem !== null => self::item('server', self::TODO, __('Server und Konfiguration'), $problem, $warnings),
             $warnings !== [] => self::item('server', self::CHECK, __('Server und Konfiguration'),
                 __('Diese Einstellungen in config/config.php wirken nicht wie geschrieben (Aufgabe der technischen Betreuung):'), $warnings),
             default => self::item('server', self::DONE, __('Server und Konfiguration'),
-                __('PHP {php}, Datenbank {database}; die Konfiguration ist in Ordnung.', ['php' => PHP_VERSION, 'database' => Health::serverVersion()])),
+                __('PHP {php}, Datenbank {database}; die Konfiguration ist in Ordnung.', ['php' => PHP_VERSION, 'database' => $database])),
         };
     }
 
