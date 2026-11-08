@@ -36,8 +36,9 @@ MariaDB-Syntax würde mittendrin scheitern): Die Fehler-E-Mail und die Übersich
 Datenbankserver. Auch der Cronjob meldet ihn: `db_server` ist `ok` oder `unsupported` in der Ausgabe von
 `php bin/cron.php -v` und des Web-Crons.
 
-Migrationen fügen nur Spalten (mit Standardwerten) und Tabellen hinzu, sodass ein Rollback auf eine ältere
-Version weiter funktioniert. Texte für Impressum und Datenschutzerklärung, die nie bearbeitet wurden, werden
+Migrationen fügen nur Spalten, Tabellen und Indizes hinzu, sodass ein Rollback auf die vorige Version derselben
+Major-Version weiter funktioniert ([Regeln für Migrationen]({{ '/de/guide/development/' | relative_url }}#migrationen)).
+ Texte für Impressum und Datenschutzerklärung, die nie bearbeitet wurden, werden
 automatisch durch neuere Vorlagen der Betriebsart (von der Schule oder privat betrieben) ersetzt; bearbeitete
 Texte bleiben unverändert, und Admins sehen im Dashboard und unter *Texte*, welche Abschnitte eine neuere
 Vorlage geändert hat, seit der Text auf ihr beruht, und können sie übernehmen (Vorlagenstand, siehe
