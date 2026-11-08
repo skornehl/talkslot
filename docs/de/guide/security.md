@@ -70,6 +70,9 @@ GitHub Security Advisory und wird zusammen mit dem Release veröffentlicht, das 
   TalkSlot aus öffnet (Meta-Refresh). So landet ein angemeldeter Browser angemeldet, und sein Cookie wird
   nie ersetzt. Das geschieht nur einmal: Die Adresse, die sie öffnet, trägt `reopened=1`, und ein Browser,
   der das Cookie weiter zurückhält, erhält dann die Login-Seite statt einer Schleife.
+- Admins sehen die Namen und Adressen der Eltern in den Runden anderer Lehrkräfte erst nach *Vertretung
+  übernehmen* (mit Passwort, im Protokoll, die Lehrkraft erhält eine E-Mail, für eine Anmeldung). Das begrenzt,
+  was eine übernommene Admin-Sitzung auf einmal lesen kann.
 - Eine Passwortänderung oder -zurücksetzung beendet alle anderen Sessions des Kontos. *Alle Sitzungen
   beenden* (unter *Benutzer*) beendet die Sessions aller Konten (ein globaler Zähler in den Einstellungen).
 - Brute-Force-Schutz: höchstens 5 fehlgeschlagene Logins pro gekürzter IP-Adresse in 15 Minuten und 20 pro

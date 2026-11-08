@@ -72,6 +72,11 @@ ask how long they are kept and state it in the privacy policy.
   not end up in private mailboxes through the browser's mail program. Whoever gets no mail is named once
   in the message afterwards, with the appointment and the address if there is one (the round page showed
   both before), so that the teacher can tell them in person, ideally from the school's mail account.
+- **Admins and the parents' data:** an admin sees how another teacher's round is booked, but names and e-mail
+  addresses only after choosing *Vertretung übernehmen* for it, with the password. That lasts for the sign-in, the
+  teacher gets an e-mail and the log records it. This is the technical measure against unnecessary disclosure
+  (Art. 5(1)(c), (f), Art. 25 GDPR), for example where a parent is the volunteer admin; it does not replace
+  instructing admins and committing them to confidentiality.
 - **Admin log without monitoring teachers:** only changes made by admin accounts are logged, so it shows
   who among several admins did what. What teachers do in their own rounds is not recorded, and bookings
   appear only as date and time. Depending on your state, a log of staff actions may still be a matter for

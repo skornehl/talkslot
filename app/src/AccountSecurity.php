@@ -113,6 +113,19 @@ final class AccountSecurity
         }
     }
 
+    /** An admin took over a round to see the parents' data (Substitution): to the teacher of the round. */
+    public static function substitution(array $round, array $owner, array $actor): void
+    {
+        self::send($owner, static function () use ($round, $actor): array {
+            $vars = self::vars(['title' => (string) $round['title'], 'actor' => self::name($actor)]);
+            return [__('Vertretung für Ihre Runde „{title}“', $vars), [
+                __('{actor} (Admin) hat bei {app} ({url}) die Vertretung für Ihre Runde „{title}“ übernommen und kann die Namen und E-Mail-Adressen der Eltern sehen und Buchungen bearbeiten, bis diese Anmeldung endet. Der Vorgang steht im Protokoll.', $vars),
+                '',
+                __('War das nicht abgesprochen, wenden Sie sich bitte umgehend an einen anderen Admin.'),
+            ]];
+        });
+    }
+
     /** @return array{0:string,1:list<string>} [subject, lines] */
     private static function passwordChangedText(array $user): array
     {

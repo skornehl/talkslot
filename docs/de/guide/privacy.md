@@ -79,6 +79,11 @@ Datenschutzerklärung.
   das Mailprogramm des Browsers in private Postfächer gelangen. Wer keine E-Mail bekommt, wird in der
   Meldung danach einmal mit Termin und gegebenenfalls Adresse genannt (beides stand vorher auf der Seite
   der Runde), damit die Lehrkraft ihn persönlich informieren kann, am besten aus dem dienstlichen Postfach.
+- **Admins und die Daten der Eltern:** Ein Admin sieht, wie die Runde einer anderen Lehrkraft belegt ist, Namen
+  und E-Mail-Adressen aber erst, nachdem er mit seinem Passwort *Vertretung übernehmen* gewählt hat. Das gilt für
+  die Anmeldung, die Lehrkraft erhält eine E-Mail, und das Protokoll hält es fest. Das ist die technische Maßnahme
+  gegen eine unnötige Offenlegung (Art. 5 Abs. 1 lit. c, f, Art. 25 DSGVO), etwa wenn ein Elternteil ehrenamtlich
+  Admin ist; sie ersetzt nicht die Weisung und die Verpflichtung der Admins auf Vertraulichkeit.
 - **Protokoll ohne Kontrolle der Lehrkräfte:** Erfasst werden nur Änderungen durch Admin-Konten, damit bei
   mehreren Admins nachvollziehbar ist, wer was getan hat. Was Lehrkräfte in ihren eigenen Runden tun,
   wird nicht aufgezeichnet, Buchungen erscheinen nur mit Datum und Uhrzeit. Je nach Bundesland kann ein

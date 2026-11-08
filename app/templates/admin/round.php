@@ -3,6 +3,7 @@
  * Overview of a round: days, breaks, slots, bookings. @var array $round @var array $days @var int $conflicts @var string $publicUrl
  * @var ?DateTimeImmutable $deletion when the clean-up deletes the round (null = not automatically)
  * @var array $parents upcoming bookings of the round and how many of their parents can be mailed (also per day: $day['parents'])
+ * @var bool $seesParents false for an admin who has not taken over another teacher's round (Substitution): names and addresses are empty
  */
 use App\Csrf;
 $rid = (int) $round['id'];
@@ -31,6 +32,17 @@ $deletionText = $deletion ? __('{date}, {time} Uhr', ['date' => fmt_date($deleti
   <?php if ($showOwner): ?><span class="badge" title="<?= e(__('Lehrkraft der Runde')) ?>"><?= e(__('Lehrkraft: {name}', ['name' => $owner['display_name'] !== '' ? $owner['display_name'] : $owner['username']])) ?><?= !$owner['is_active'] ? ' ' . e(__('(deaktiviert – Runde öffentlich nicht erreichbar)')) : '' ?></span><?php endif; ?>
   <?php if ($round['is_active']): ?><span class="status status-on"><?= e(__('aktiv')) ?></span><?php else: ?><span class="status status-off"><?= e($round['expired_at'] ? __('abgelaufen') : __('inaktiv')) ?></span><?php endif; ?>
 </div>
+<?php if (!$seesParents): ?>
+<?php /* Expert review P2-10: another teacher's round shows how it is booked, the parents' data only after taking over */ ?>
+<section class="card" id="substitute">
+  <h2><?= e(__('Vertretung übernehmen')) ?></h2>
+  <p><?= e(__('Namen und E-Mail-Adressen der Eltern sehen Admins in fremden Runden erst, wenn sie die Vertretung übernehmen, z. B. weil die Lehrkraft krank ist. Das gilt bis zum Abmelden, steht im Protokoll, und die Lehrkraft erhält eine E-Mail.')) ?></p>
+  <form method="post" action="<?= e(url('/admin/round/' . $rid . '/substitute')) ?>" class="inline-form"><?= $csrf ?>
+    <label><?= e(__('Ihr Passwort (zur Bestätigung)')) ?> <input type="password" name="current_password" required autocomplete="current-password"></label>
+    <button type="submit" class="button"><?= e(__('Vertretung übernehmen')) ?></button>
+  </form>
+</section>
+<?php endif; ?>
 <?php if ($round['expired_at'] && $deletion): ?>
   <div class="alert alert-warning" role="status"><p><?= e(__('Abgelaufen: Die Runde wird am {date} automatisch gelöscht, mit allen Tagen und Einstellungen. Zum Behalten einen Tag ab heute hinzufügen oder unter „Bearbeiten“ das Feld „Runde löschen nach Ablauf“ leeren.', ['date' => $deletionText])) ?></p></div>
 <?php endif; ?>
@@ -72,7 +84,7 @@ $deletionText = $deletion ? __('{date}, {time} Uhr', ['date' => fmt_date($deleti
     <a class="button" href="#add-day"><?= e(__('+ Tag hinzufügen')) ?></a>
     <form method="post" action="<?= e(url('/admin/round/' . $rid . '/toggle')) ?>" class="inline"><?= $csrf ?>
       <button type="submit" class="button"><?= e($round['is_active'] ? __('Deaktivieren') : __('Aktivieren')) ?></button></form>
-    <a class="button" href="<?= e(url('/admin/round/' . $rid . '/print')) ?>" target="_blank" rel="noopener"><?= e(__('Druckansicht / PDF')) ?></a>
+    <?php if ($seesParents): ?><a class="button" href="<?= e(url('/admin/round/' . $rid . '/print')) ?>" target="_blank" rel="noopener"><?= e(__('Druckansicht / PDF')) ?></a><?php endif; ?>
     <a class="button" href="#duplicate" data-open-details="duplicate"><?= e(__('Duplizieren …')) ?></a>
     <?php if (App\Auth::isAdmin()): ?>
     <form method="post" action="<?= e(url('/admin/templates/from-round/' . $rid)) ?>" class="inline" data-once><?= $csrf ?>
@@ -146,15 +158,17 @@ $deletionText = $deletion ? __('{date}, {time} Uhr', ['date' => fmt_date($deleti
   </div>
   <div class="actions">
     <a class="button button-small" href="<?= e(url('/admin/day/' . $did . '/edit')) ?>"><?= e(__('Tag bearbeiten')) ?></a>
-    <a class="button button-small" href="<?= e(url('/admin/round/' . $rid . '/print', ['day' => $did])) ?>" target="_blank" rel="noopener"><?= e(__('Tag drucken')) ?></a>
+    <?php if ($seesParents): ?><a class="button button-small" href="<?= e(url('/admin/round/' . $rid . '/print', ['day' => $did])) ?>" target="_blank" rel="noopener"><?= e(__('Tag drucken')) ?></a><?php endif; ?>
     <?php $dayBookings = count(array_filter($day['slots'], static fn ($s) => $s['booking_id'] !== null)); ?>
     <?php $question = $dayBookings ? __('Diesen Tag mit allen Slots und {count} Buchung(en) löschen?', ['count' => $dayBookings]) : __('Diesen Tag mit allen Slots löschen?'); ?>
+    <?php if ($seesParents || !$dayBookings): ?>
     <form method="post" action="<?= e(url('/admin/day/' . $did . '/delete')) ?>" class="inline-delete" data-confirm="<?= e($question . $cancelNote($day['parents'])) ?>" data-confirm-off="<?= e($question . $offNote($day['parents'])) ?>"><?= $csrf ?>
       <?php if ($dayBookings): ?>
         <label class="small"><input type="checkbox" name="confirm" value="1" required> <?= e(__('inkl. {count} Buchung(en)', ['count' => $dayBookings])) ?></label>
       <?php endif; ?>
       <?= $notifyBox($day['parents']) ?>
       <button type="submit" class="button button-small button-danger"><?= e(__('Tag löschen')) ?></button></form>
+    <?php endif; ?>
   </div>
 
   <h3><?= e(__('Pausen')) ?></h3>
@@ -184,7 +198,7 @@ $deletionText = $deletion ? __('{date}, {time} Uhr', ['date' => fmt_date($deleti
         <td class="nowrap"><?= $s['is_conflict'] ? '<span title="' . e(__('Konflikt')) . '">⚠ </span>' : '' ?><?= e(fmt_range($s['start_time'], $s['end_time'])) ?></td>
         <td>
           <?php if ($s['booking_id']): ?>
-            <strong><?= e($s['name']) ?></strong><?php if ($s['email']): ?><br><span class="small"><?= e($s['email']) ?></span><?php endif; ?>
+            <?php if ($seesParents): ?><strong><?= e($s['name']) ?></strong><?php if ($s['email']): ?><br><span class="small"><?= e($s['email']) ?></span><?php endif; ?><?php else: ?><span class="muted"><?= e(__('gebucht')) ?></span><?php endif; ?>
             <?php if ($s['source'] === 'admin'): ?> <span class="badge"><?= e(__('selbst eingetragen')) ?></span><?php endif; ?>
             <?php if ($s['mail_failed_at'] !== null): ?> <span class="badge badge-warning" data-mail-failed title="<?= e($s['mail_waiting'] ? __('Neuer Versuch folgt automatisch. Erhalten die Eltern sie nicht, informieren Sie sie bitte persönlich oder prüfen Sie die Adresse.') : __('Es folgt kein weiterer Versuch. Bitte informieren Sie die Eltern persönlich oder prüfen Sie die Adresse.')) ?>"><?= e($s['mail_waiting'] ? __('E-Mail nicht zugestellt – neuer Versuch folgt') : __('E-Mail nicht zugestellt')) ?></span><?php endif; ?>
           <?php elseif ($s['is_blocked']): ?><span class="muted"><?= e(__('gesperrt')) ?></span>
@@ -192,7 +206,9 @@ $deletionText = $deletion ? __('{date}, {time} Uhr', ['date' => fmt_date($deleti
         </td>
         <td class="small nowrap"><?= $s['booking_id'] ? e(date('d.m.Y H:i', strtotime($s['booked_at']))) : '' ?></td>
         <td class="row-actions">
-          <?php if ($s['booking_id']): ?>
+          <?php if ($s['booking_id'] && !$seesParents): ?>
+            <?php /* Nothing to do with a booking without taking over */ ?>
+          <?php elseif ($s['booking_id']): ?>
             <a class="button button-small" href="<?= e(url('/admin/booking/' . (int) $s['booking_id'] . '/edit')) ?>"><?= e(__('Bearbeiten')) ?></a>
             <?php
             $question = __('Eintrag von „{name}“ löschen? Der Slot wird wieder frei.', ['name' => $s['name']]);
@@ -207,7 +223,7 @@ $deletionText = $deletion ? __('{date}, {time} Uhr', ['date' => fmt_date($deleti
               <?= $notifyBox(['mailable' => (int) $s['mailable']]) ?>
               <button type="submit" class="button button-small button-danger"><?= e(__('Löschen')) ?></button></form>
           <?php else: ?>
-            <a class="button button-small" href="<?= e(url('/admin/slot/' . $sid . '/book')) ?>"><?= e(__('Eintragen')) ?></a>
+            <?php if ($seesParents): ?><a class="button button-small" href="<?= e(url('/admin/slot/' . $sid . '/book')) ?>"><?= e(__('Eintragen')) ?></a><?php endif; ?>
             <form method="post" action="<?= e(url('/admin/slot/' . $sid . '/block')) ?>" class="inline"><?= $csrf ?>
               <button type="submit" class="button button-small"><?= e($s['is_blocked'] ? __('Freigeben') : __('Sperren')) ?></button></form>
           <?php endif; ?>
@@ -218,7 +234,7 @@ $deletionText = $deletion ? __('{date}, {time} Uhr', ['date' => fmt_date($deleti
     </tbody>
   </table>
   </div>
-  <?php if ($dayBookings > 1): ?>
+  <?php if ($dayBookings > 1 && $seesParents): ?>
   <?php /* Expert review P1-7: after slots were taken with made-up names, several bookings at once (next page lists them) */ ?>
   <details class="bulk-delete">
     <summary><?= e(__('Mehrere Buchungen löschen …')) ?></summary>
@@ -245,10 +261,14 @@ $deletionText = $deletion ? __('{date}, {time} Uhr', ['date' => fmt_date($deleti
     <button type="submit" class="button"><?= e(__('Stattdessen deaktivieren')) ?></button></form>
   <?php endif; ?>
   <?php $question = $roundBookings ? __('Runde „{title}“ mit allen Tagen und {count} Buchung(en) endgültig löschen?', ['title' => $round['title'], 'count' => $roundBookings]) : __('Runde „{title}“ mit allen Tagen und Buchungen endgültig löschen?', ['title' => $round['title']]); ?>
+  <?php if (!$seesParents && $roundBookings): ?>
+  <p class="small muted"><?= e(__('Diese Runde hat Buchungen. Zum Löschen übernehmen Sie bitte zuerst die Vertretung: Danach müssen Sie wissen, wen Sie informieren.')) ?></p>
+  <?php else: ?>
   <form method="post" action="<?= e(url('/admin/round/' . $rid . '/delete')) ?>" class="actions inline-delete" data-confirm="<?= e($question . $cancelNote($parents)) ?>" data-confirm-off="<?= e($question . $offNote($parents)) ?>"><?= $csrf ?>
     <?php if ($roundBookings): ?>
       <label class="small"><input type="checkbox" name="confirm" value="1" required> <?= e(__('inkl. {count} Buchung(en)', ['count' => $roundBookings])) ?></label>
     <?php endif; ?>
     <?= $notifyBox($parents) ?>
     <button type="submit" class="button button-danger"><?= e(__('Runde löschen')) ?></button></form>
+  <?php endif; ?>
 </section>

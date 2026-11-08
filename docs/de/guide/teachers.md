@@ -156,6 +156,10 @@ aktuellen Daten, wenn sich diese seit ihrer letzten E-Mail geändert haben. Ein 
 *Änderung per E-Mail mitteilen* speichern, schickt die aktuellen Daten auch ohne Änderung (höchstens 30
 E-Mails pro Stunde aus Ihrem Konto).
 
+**Vertritt ein Admin Sie**, kann er die Namen und Adressen der Eltern einer Runde erst sehen, nachdem er für sie
+*Vertretung übernehmen* gewählt hat; Sie erhalten dann eine E-Mail, und das Protokoll hält es fest. Sonst sehen
+Admins, wie Ihre Runden belegt sind, aber nicht, wer gebucht hat.
+
 Weitere Aktionen für die Runde: bearbeiten, deaktivieren, ***Druckansicht / PDF*** und
 ***Duplizieren …***: eine Kopie mit neuem Link und Code, mit Zeiten, Pausen, gesperrten Terminen,
 Einstellungen und Übersetzungen, aber ohne Buchungen; die Kopie ist inaktiv. Geben Sie den **ersten Tag

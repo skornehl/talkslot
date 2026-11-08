@@ -10,7 +10,7 @@ namespace App;
  */
 final class Migrations
 {
-    public const LATEST = 23;
+    public const LATEST = 27;
 
     /** Version => SQL statements */
     private const STEPS = [
@@ -184,6 +184,15 @@ final class Migrations
         //     ParentContact); NULL = the contact the admins set for all (setting parent_contact) or none
         23 => [
             'ALTER TABLE users ADD COLUMN IF NOT EXISTS parent_contact VARCHAR(300) NULL AFTER reply_to',
+        ],
+        // 27: the log says in a structured form what an entry is about (expert review P2-10): kind of change, round
+        //     (no foreign key: the entry outlives the round), a few values without data of parents. Entries from
+        //     before keep their text. 24 to 26 belong to other changes.
+        27 => [
+            'ALTER TABLE audit_log ADD COLUMN IF NOT EXISTS action VARCHAR(40) NULL AFTER message,
+                ADD COLUMN IF NOT EXISTS round_id INT UNSIGNED NULL AFTER action,
+                ADD COLUMN IF NOT EXISTS params VARCHAR(500) NULL AFTER round_id,
+                ADD KEY IF NOT EXISTS idx_audit_round (round_id)',
         ],
     ];
 

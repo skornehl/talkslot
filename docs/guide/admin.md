@@ -124,12 +124,20 @@ The hint on the overview about accounts unused for over 12 months helps you not 
 
 ## Rounds of all teachers
 
-Admins see and edit **all rounds** (*Alle Runden*) with their bookings, and can create a round for a
+Admins see and edit **all rounds** (*Alle Runden*) and how they are booked, and can create a round for a
 teacher or move a round to another teacher (field *Lehrkraft* in the round form). The round then appears
 for that teacher, parents see their name and summaries go to them. Parents who have already booked get a
 change notice with the new teacher if *Eltern per E-Mail informieren* stays ticked; the message after saving
 names those who could not be mailed. Teachers
 only ever see their own rounds; this is enforced centrally and covered by tests.
+
+**Names and e-mail addresses of parents in another teacher's round** stay hidden: such a round shows *gebucht*
+(booked), without the print view or the actions on bookings. If you stand in for the teacher, choose
+***Vertretung übernehmen*** (take over as substitute) on the round page and confirm with your password. You then
+see the parents' data of this round and can edit its bookings until you sign out; a new sign-in has to take over
+again. The teacher gets an e-mail, and the log says who took over which round. Deleting a day or a round with
+bookings needs this too, as you then have to know whom to inform. If you change a round without taking it over,
+the message after saving gives only the number of parents to inform and asks you to tell the teacher.
 
 How rounds work is described in the [Teacher guide]({{ '/guide/teachers/' | relative_url }}).
 

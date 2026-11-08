@@ -138,13 +138,22 @@ vergessen.
 
 ## Runden aller Lehrkräfte
 
-Admins sehen und bearbeiten unter *Alle Runden* die Runden aller Lehrkräfte mit ihren Buchungen. Sie
+Admins sehen und bearbeiten unter *Alle Runden* die Runden aller Lehrkräfte und wie sie belegt sind. Sie
 können eine Runde für eine Lehrkraft anlegen oder eine Runde einer anderen Lehrkraft zuordnen (Feld *Lehrkraft* im
 Rundenformular). Die Runde erscheint dann bei dieser Lehrkraft, die Eltern sehen ihren Namen, und die
 Zusammenfassungen gehen an sie. Eltern, die schon gebucht haben, erhalten eine Änderungsmitteilung mit der
 neuen Lehrkraft, wenn *Eltern per E-Mail informieren* angehakt bleibt; die Meldung nach dem Speichern nennt
 diejenigen, die keine E-Mail bekommen konnten. Lehrkräfte sehen immer nur
 ihre eigenen Runden; das wird zentral durchgesetzt und ist durch Tests abgesichert.
+
+**Namen und E-Mail-Adressen von Eltern in den Runden anderer Lehrkräfte** bleiben ausgeblendet: Dort steht
+*gebucht*, ohne Druckansicht und ohne die Aktionen an den Buchungen. Vertreten Sie die Lehrkraft, wählen Sie auf
+der Seite der Runde ***Vertretung übernehmen*** und bestätigen Sie mit Ihrem Passwort. Dann sehen Sie die Daten
+der Eltern dieser Runde und können ihre Buchungen bearbeiten, bis Sie sich abmelden; nach einer neuen Anmeldung
+ist das erneut nötig. Die Lehrkraft erhält eine E-Mail, und im Protokoll steht, wer welche Runde übernommen hat.
+Auch das Löschen eines Tages oder einer Runde mit Buchungen setzt das voraus, weil Sie danach wissen müssen, wen
+Sie informieren. Ändern Sie eine Runde, ohne sie zu übernehmen, nennt die Meldung nach dem Speichern nur die Zahl
+der zu informierenden Eltern und bittet Sie, der Lehrkraft Bescheid zu sagen.
 
 Wie Runden funktionieren, steht in der [Anleitung für Lehrkräfte]({{ '/de/guide/teachers/' | relative_url }}).
 
