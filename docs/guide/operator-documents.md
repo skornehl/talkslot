@@ -53,7 +53,7 @@ The exception for small organisations (Art. 30(5)) does not apply: the processin
 | Special categories (Art. 9) | Not intended. Round titles and descriptions are kept neutral (the form says so) |
 | Recipients | The teacher of the round; the admins; the web host and the mail provider as processors. Privately: the teacher acts for the school, a controller of its own |
 | Third countries | None, unless `[MAIL PROVIDER OUTSIDE THE EU/EEA AND ITS SAFEGUARD]` |
-| Retention | Bookings from 0:00 the day after the appointment, at cancellation immediately; queued mails after sending, at most 48 hours; abuse protection data 24 hours; admin log 90 days; inactive teacher accounts 15 months after the last sign-in; summary mails in the mailbox by the end of the school year if they contain names; backups `[RETENTION, E.G. 14 DAYS]`; web server logs `[RETENTION AT THE HOST]` (details: [Privacy and legal]({{ '/guide/privacy/' | relative_url }}#what-is-stored)) |
+| Retention | Bookings from 0:00 the day after the appointment, at cancellation immediately; queued mails after sending, at most 48 hours; abuse protection data 24 hours; admin log 90 days; deactivated teacher accounts without rounds in use 15 months after the last sign-in; summary mails in the mailbox by the end of the school year if they contain names; backups `[RETENTION, E.G. 14 DAYS]`; web server logs `[RETENTION AT THE HOST]` (details: [Privacy and legal]({{ '/guide/privacy/' | relative_url }}#what-is-stored)) |
 | Technical and organisational measures | See [TOMs](#toms) and the processors' agreements |
 | Date, responsible person | `[DATE, NAME]` |
 
@@ -134,8 +134,8 @@ Teachers are data subjects too. Hand them this sheet with their invitation, comp
 >
 > **What is stored:** your user name (usually your e-mail address), display name, e-mail address, an optional
 > reply address and contact for parents, your language and settings, your password as a secure hash, the
-> time of your last sign-in (other admins only see "never", "within the last 12 months" or "more than 12
-> months ago"), failed sign-ins (for 24 hours), and the changes admins make to your account or rounds in the
+> time of your last sign-in (admins only see "never", "within the last 12 months" or "more than 12 months
+> ago"), failed sign-ins (to limit attempts), and the changes admins make to your account or rounds in the
 > admin log (90 days). After a successful sign-in your browser keeps a known-device cookie for 365 days, so
 > that this device can still sign in when somebody else has used up the limit for your account.
 >
@@ -151,8 +151,8 @@ Teachers are data subjects too. Hand them this sheet with their invitation, comp
 > are allowed and you turn them on, delete those mails once you no longer need them, by the end of the school
 > year at the latest. `[SCHOOL'S RULES FOR WORK MAILBOXES]`
 >
-> **How long:** while you use TalkSlot; an account without rounds in use is deleted 15 months after its last
-> sign-in, or earlier by the admins when you leave.
+> **How long:** while you use TalkSlot. The admins delete or deactivate your account when you leave; a deactivated
+> account without rounds in use is deleted automatically 15 months after its last sign-in.
 >
 > **Your rights:** access, rectification, erasure, restriction, objection, and a complaint to
 > `[SUPERVISORY AUTHORITY]`.
@@ -209,8 +209,8 @@ requests concern data that is already gone or a booking still ahead.
 
 Keep two kinds of backup with a fixed retention, encrypted, and test a restore `[ONCE A YEAR]`:
 
-- **Configuration backup** (`config/config.php` and the database without the tables of parents' data): may be
-  kept for `[E.G. 12 MONTHS]`.
+- **Configuration backup** (`config/config.php` and the database without the tables of parents' data; it does
+  contain the teachers' accounts): may be kept for `[E.G. 12 MONTHS]`.
 - **Full backup**: kept for at most `[14]` days, then overwritten.
 
 The commands and the restore are in [Operations]({{ '/guide/operations/' | relative_url }}#backups). Ask your
@@ -249,7 +249,7 @@ When a teacher or admin leaves:
 
 1. **Rounds:** an admin moves rounds that continue to another teacher (*Runde bearbeiten → Lehrkraft*), or
    deletes them (parents can be told by mail).
-2. **Account:** deactivate it under *Benutzer* (it can no longer sign in; inactive accounts without rounds in
+2. **Account:** deactivate it under *Benutzer* (it can no longer sign in; deactivated accounts without rounds in
    use are deleted 15 months after the last sign-in), or delete it.
 3. **Admins:** take away the admin role before; if they had access to the server, FTP, GitHub or
    `config.php`, [change the secrets]({{ '/guide/operations/' | relative_url }}#changing-secrets).

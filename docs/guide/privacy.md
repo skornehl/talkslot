@@ -202,7 +202,10 @@ Before going live:
    school the provisions of your state (school act, data protection act), the retention of the web server
    logs (ask your web host) and the competent supervisory authority. At a school, its data protection
    officer can tell you the provisions.
-5. **Data processing agreement** (DPA, *AVV*) with your web host.
+5. **Data processing agreement** (DPA, *AVV*) with your web host (and, if separate, your mail provider), and
+   your **documentation**: record of processing, TOMs, DPIA check, procedures for data breaches and requests,
+   information sheet for teachers. [Documents for the operator]({{ '/guide/operator-documents/' | relative_url }})
+   has templates for all of them, for both operator types.
 6. **Admin accounts** only for staff of the operator (at a school: school staff) or for persons bound to
    confidentiality in writing: the privacy policy tells parents that, apart from the teacher, only such
    persons can see their bookings.

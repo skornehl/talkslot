@@ -148,15 +148,71 @@ weil dessen Meldungen Eingaben enthalten können. Werte in Anführungszeichen un
 E-Mail-Adressen werden vor dem Schreiben entfernt. Das Log wird bei 5 MB rotiert (eine Vorgängerdatei
 `php-error.log.1`).
 
-## Backups
+## Backups {#backups}
 
-Sichern Sie die **Datenbank** (z. B. `mysqldump --single-transaction`) und `config/config.php`. `app/var/`
-enthält nur Sessions, den Zähler für Fehlermeldungen und Logs und braucht kein Backup. Sichern Sie die
-Datenbank vor einem Update, dessen Release Notes eine Datenbank-Migration nennen: Ein Rollback schaltet den
-Code um, nicht die Datenbank.
+Sichern Sie die **Datenbank** und `config/config.php`. `app/var/` enthält nur Sessions, den Zähler für
+Fehlermeldungen und Logs und braucht kein Backup. Sichern Sie die Datenbank vor einem Update, dessen Release
+Notes eine Datenbank-Migration nennen: Ein Rollback schaltet den Code um, nicht die Datenbank.
 
-Bedenken Sie, dass Buchungen personenbezogene Daten mit kurzer Lebensdauer sind: Spielen Sie ein Backup nur
-so weit wie nötig zurück und lassen Sie anschließend die Bereinigung laufen.
+Buchungen sind personenbezogene Daten mit kurzer Lebensdauer, ein Backup bewahrt sie aber so lange auf, wie
+es besteht. Halten Sie **zwei Arten** vor, verschlüsselt und mit fester Frist, und tragen Sie die Fristen in das
+Verzeichnis von Verarbeitungstätigkeiten und die Datenschutzerklärung ein
+([Unterlagen für Schule und Betreiber]({{ '/de/guide/operator-documents/' | relative_url }}#backups-and-retention)):
+
+| Art | Inhalt | Frist |
+|---|---|---|
+| Konfigurations-Backup | `config.php`, die Struktur aller Tabellen und die Daten aller außer denen mit Daten von Eltern | z. B. 12 Monate |
+| Voll-Backup | `config.php` und die ganze Datenbank | höchstens 14 Tage, dann überschrieben |
+
+Die Tabellen mit Daten von Eltern sind `bookings` und `mail_outbox`; `audit_log` und `rate_limits` werden ebenfalls
+nicht gebraucht. Mit Tabellenpräfix (`db.prefix`, z. B. `tp_`) beginnt jeder Tabellenname damit; bei einer
+gemeinsam genutzten Datenbank exportieren Sie nur die Tabellen mit Ihrem Präfix.
+
+**Mit Shell** (Benutzer und Passwort in `~/.my.cnf` unter `[client]`, damit sie weder in der Befehlszeile noch in der
+Shell-Historie erscheinen; `DB` = Datenbank, `P` = Tabellenpräfix):
+
+```bash
+TABLES=$(mysql -N -e "SHOW TABLES" "$DB" | grep "^${P}")
+# Voll-Backup
+mysqldump --single-transaction --default-character-set=utf8mb4 "$DB" $TABLES > talkslot-full-$(date +%F).sql
+# Konfigurations-Backup: Struktur aller Tabellen, Daten ohne Buchungen, Mail-Warteschlange, Protokoll und Rate-Limits
+CONF=talkslot-config-$(date +%F).sql
+mysqldump --single-transaction --default-character-set=utf8mb4 --no-data "$DB" $TABLES > "$CONF"
+mysqldump --single-transaction --default-character-set=utf8mb4 --no-create-info "$DB" \
+  $(echo "$TABLES" | grep -vE "^${P}(bookings|mail_outbox|audit_log|rate_limits)$") >> "$CONF"
+```
+
+**Ohne Shell** (phpMyAdmin oder das Werkzeug des Hosters): *Exportieren → Angepasst*, nur die Tabellen mit Ihrem
+Präfix wählen, Zeichensatz `utf8mb4`; beim Konfigurations-Backup die vier Tabellen oben nur mit ihrer Struktur
+exportieren. Viele Hoster führen zusätzlich eigene Backups: Fragen Sie nach der Dauer und rechnen Sie diese Frist mit.
+
+Verschlüsseln Sie die Dateien (z. B. `gpg -c` oder ein verschlüsseltes Archiv) und bewahren Sie sie getrennt vom
+Webserver auf.
+
+### Wiederherstellen
+
+Stellen Sie nur her, was Sie brauchen: Einen verlorenen Text oder eine Runde können Sie oft neu eintragen. Ein
+Voll-Backup holt Buchungen zurück, die inzwischen abgesagt oder verschoben wurden, und dafür gingen Erinnerungen und
+Zusammenfassungen hinaus.
+
+1. **Cronjob anhalten** (Workflow *Cron* oder den externen Cron-Dienst), damit zwischendurch nichts verschickt wird.
+2. **Backup einspielen** (`mysql … < datei.sql` oder *Importieren* in phpMyAdmin).
+3. **E-Mails aus der Zeit des Backups zurückhalten**, vor dem ersten Aufruf:
+   ```sql
+   DELETE FROM tp_mail_outbox;
+   UPDATE tp_bookings SET reminded_at = NOW() WHERE reminded_at IS NULL;
+   ```
+   (mit Ihrem Präfix statt `tp_`). Eltern wiederhergestellter Buchungen bekommen dann keine Erinnerung; ihre Links
+   funktionieren weiter.
+4. **Admin-Bereich einmal öffnen:** Stammt das Backup von einer älteren Version, laufen die Datenbank-Migrationen
+   automatisch. Dann die Bereinigung starten (`php bin/cron.php` oder den Cronjob wieder aktivieren): Buchungen
+   vergangener Tage werden gelöscht.
+5. **Lehrkräfte informieren**, dass nach `[ZEITPUNKT DES BACKUPS]` abgesagte oder verschobene Buchungen wieder in
+   ihren Listen stehen können, damit sie das mit den Eltern klären.
+6. Cronjob wieder aktivieren.
+
+Testen Sie einmal im Jahr eine Wiederherstellung auf einer eigenen Datenbank (z. B. einer Kopie mit anderem Präfix),
+und halten Sie das Ergebnis fest.
 
 ## Secrets austauschen {#changing-secrets}
 

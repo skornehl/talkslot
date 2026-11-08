@@ -223,7 +223,10 @@ Vor dem Start:
    einer Schule die Vorschriften Ihres Landes (Schulgesetz, Landesdatenschutzgesetz), die Speicherdauer der
    Webserver-Logs (fragen Sie Ihren Hoster) und die zuständige Aufsichtsbehörde. An einer Schule nennt
    Ihnen die oder der Datenschutzbeauftragte die Vorschriften.
-5. **Auftragsverarbeitungsvertrag** (AVV) mit Ihrem Hoster.
+5. **Auftragsverarbeitungsvertrag** (AVV) mit Ihrem Hoster (und, falls getrennt, Ihrem Mailanbieter), und Ihre
+   **Dokumentation**: Verzeichnis von Verarbeitungstätigkeiten, TOM, DSFA-Prüfung, Abläufe für Datenpannen und
+   Betroffenenanfragen, Informationsblatt für Lehrkräfte. [Unterlagen für Schule und Betreiber]({{ '/de/guide/operator-documents/' | relative_url }})
+   enthält Vorlagen für all das, für beide Betriebsarten.
 6. **Admin-Konten** nur für Personal des Betreibers (an einer Schule: Personal der Schule) oder für
    schriftlich zur Vertraulichkeit verpflichtete Personen: Die Datenschutzerklärung sagt Eltern zu, dass
    außer der Lehrkraft nur solche Personen ihre Buchungen sehen.
