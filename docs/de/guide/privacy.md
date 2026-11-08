@@ -19,6 +19,7 @@ TDDDG. Diese Seite erläutert die Designentscheidungen; sie ist keine Rechtsbera
 | Konten der Lehrkräfte | Datenbank | durch einen Admin; inaktive Konten ohne Runden in Gebrauch 15 Monate nach der letzten Anmeldung, zusammen mit ihren Entwürfen |
 | Zusammenfassungen per E-Mail an Lehrkräfte (standardmäßig die Zahl der Termine und der Link, keine Namen; Uhrzeit und Name nur, wo die Schule sie erlaubt; nie E-Mail-Adressen) | Postfach der Lehrkraft | mit Namen: spätestens zum Ende des Schuljahres (Vorlage der Datenschutzerklärung; bei privatem Betrieb empfiehlt die Vorlage das, es gelten die Regeln der Schule) |
 | Protokoll der Änderungen durch Admins (wer, wann, was; keine Daten von Eltern) | Datenbank | nach 90 Tagen (`audit_log_days`) |
+| Sicherheitsereignisse eines Kontos (Passwort, E-Mail-Adresse, Benutzername, Admin-Rechte, Anmeldelimit; Zeitpunkt, ob ein Admin die Änderung vorgenommen hat; keine IP-Adresse, kein Gerät), nur für den Kontoinhaber sichtbar | Datenbank | nach 30 Tagen (`security_events_days`) und mit dem Konto |
 
 TalkSlot führt **keine** eigenen Zugriffsprotokolle. Für die Logs des Webservers ist der Hoster
 zuständig; fragen Sie nach, wie lange sie aufbewahrt werden, und nennen Sie die Dauer in der
@@ -84,6 +85,11 @@ Datenschutzerklärung.
   wird nicht aufgezeichnet, Buchungen erscheinen nur mit Datum und Uhrzeit. Je nach Bundesland kann ein
   Protokoll von Handlungen der Beschäftigten trotzdem den Personalrat betreffen; die Aufbewahrung lässt
   sich mit `audit_log_days` verkürzen.
+- **Sicherheitsereignisse nur für den Kontoinhaber:** Nach einem Vorfall kann eine Lehrkraft sehen, was mit
+  ihrem Konto geschehen ist (*Mein Profil → Sicherheit*), ohne dass eine Einrichtung zur Überwachung entsteht:
+  keine Anmeldungen, keine IP-Adresse, nichts für Admins sichtbar, fehlgeschlagene Anmeldungen nur als Zahl.
+  Beteiligen Sie vor der Einführung den Personalrat und stimmen Sie die Aufbewahrung ab (standardmäßig 30
+  Tage, `security_events_days`; empfohlen wurden auch 90 Tage).
 - **Anmeldezeiten nur grob:** Der Zeitpunkt der letzten Anmeldung wird gespeichert (um ungenutzte Konten
   aufzuräumen), die Benutzerliste zeigt aber nur *nie*, *in den letzten 12 Monaten* oder *vor über 12
   Monaten*. Admins sehen also nicht, wann Kolleginnen und Kollegen arbeiten. Sicherheitsmails zu

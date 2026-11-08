@@ -118,6 +118,13 @@ können:
   | dieselbe, *Alle Sitzungen wurden beendet* | alle aktiven Admins | jemand hat alle Sitzungen beendet |
   | *Viele fehlgeschlagene Anmeldeversuche bei …* | das Konto | Fremde haben sein Anmeldelimit aufgebraucht; höchstens eine am Tag. Sie kann später eintreffen (mit PHP-FPM oder LiteSpeed sofort, sonst mit dem nächsten Cron-Lauf) und nennt den Zeitpunkt |
   | *Passwort festlegen für …*, bei einem Konto, das sich nie angemeldet hat, *Einladung zu …* | das Konto | ein Admin hat sein Passwort zurückgesetzt (*Link zum Zurücksetzen senden*) oder die Einladung erneut gesendet |
+- **Sicherheitsereignisse** (*Mein Profil → Sicherheit*): Jedes Konto sieht seine eigenen: Änderungen an
+  Passwort, E-Mail-Adresse, Benutzername und Admin-Rechten, ein Zurücksetzen, sein erreichtes Anmeldelimit und
+  die Zahl der fehlgeschlagenen Anmeldungen seit der vorigen. IP-Adressen oder Geräte werden nicht gespeichert,
+  Anmeldungen selbst nicht erfasst. **Das sieht nur der Kontoinhaber**, Admins nicht: Dafür gibt es keine Seite.
+  Admins erhalten nur einen Alarm ohne Namen, wenn das Anmeldelimit bei mehr als 3 Konten innerhalb einer Stunde
+  erreicht wird (höchstens einmal am Tag). Einträge werden nach 30 Tagen gelöscht (`security_events_days`);
+  stimmen Sie die Frist mit dem Personalrat ab.
 - **Passwortlinks** gehen nur per E-Mail hinaus und werden nie angezeigt. Setzt ein Admin ein Passwort
   zurück, erfährt die Person, dass ihr bisheriges Passwort nicht mehr gilt.
 - **Alle Sitzungen beenden** (unten auf der Seite *Benutzer*) meldet alle Konten auf allen Geräten ab, nur

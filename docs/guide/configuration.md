@@ -132,6 +132,7 @@ under Art. 28 GDPR. The servers are located in Germany.*
 | `cleanup_interval_minutes` | `15` | … at most this often (database steps only: summaries and reminders are queued there, not sent) |
 | `summary_evening_hour` | `18` | from this hour, teachers get the summary for the next day and parents the reminder |
 | `audit_log_days` | `90` | entries of the admin log (*Protokoll*) are deleted after this many days |
+| `security_events_days` | `30` | security events of an account (see [Admin guide]({{ '/guide/admin/' | relative_url }}#protection-against-misuse)), which only its holder sees, are deleted after this many days. Agree on the period with the staff council; 90 days are common as well |
 | `cron_alert_hours` | `12` | without a completed cron run for this many hours, admins see a warning on the dashboard and the operator gets an alert mail ([cron monitoring]({{ '/guide/operations/' | relative_url }}#cron-monitoring); `0` = off); deployment variable `CRON_ALERT_HOURS` |
 
 ## Summaries and accounts {#summaries-and-accounts}
@@ -175,6 +176,7 @@ Wi-Fi).
 | `login_user` | 20 per hour | failed logins **per account**, from devices that have not signed in to it before |
 | `login_device` | 20 per hour | failed logins **per known device** (instead of `login_user`) |
 | `login_notice` | 1 per day | e-mails to an account whose `login_user` limit was reached |
+| `login_alarm` | 3 per hour | not a limit: when the `login_user` limit of more accounts than this is reached within the window, all admins get one alarm a day (without names) |
 | `reauth` | 5 per 15 min | wrong passwords when confirming a change of admin rights, an e-mail address or ending all sessions, and when changing the own password (one counter per sign-in, not per IP address) |
 | `invite` | 20 per hour | invalid invitation and password links |
 | `forgot` | 5 per hour | requests under *Passwort vergessen* (forgotten password) |

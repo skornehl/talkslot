@@ -138,6 +138,7 @@ Auftragsverarbeiter nach Art. 28 DSGVO. Die Server stehen in Deutschland.*
 | `cleanup_interval_minutes` | `15` | … höchstens so oft (nur Datenbankschritte: Zusammenfassungen und Erinnerungen werden dort in die Warteschlange gestellt, nicht verschickt) |
 | `summary_evening_hour` | `18` | ab dieser Stunde erhalten Lehrkräfte die Zusammenfassung für den nächsten Tag und Eltern die Erinnerung |
 | `audit_log_days` | `90` | Einträge im *Protokoll* der Admin-Änderungen werden nach so vielen Tagen gelöscht |
+| `security_events_days` | `30` | Sicherheitsereignisse eines Kontos (siehe [Admin-Handbuch]({{ '/de/guide/admin/' | relative_url }})), die nur der Kontoinhaber sieht, werden nach so vielen Tagen gelöscht. Stimmen Sie die Frist mit dem Personalrat ab; auch 90 Tage sind üblich |
 | `cron_alert_hours` | `12` | ohne vollständigen Cron-Lauf seit so vielen Stunden sehen Admins eine Warnung in der Übersicht, und der Betreiber erhält eine Warnmeldung per E-Mail ([Überwachung des Cronjobs]({{ '/de/guide/operations/' | relative_url }}#cron-monitoring); `0` = aus); Deploy-Variable `CRON_ALERT_HOURS` |
 
 ## Zusammenfassungen und Konten {#zusammenfassungen-und-konten}
@@ -183,6 +184,7 @@ womöglich eine Adresse (Mobilfunknetze, Schul-WLAN).
 | `login_user` | 20 pro Stunde | fehlgeschlagene Anmeldungen **pro Konto** von Geräten, die sich dort noch nie angemeldet haben |
 | `login_device` | 20 pro Stunde | fehlgeschlagene Anmeldungen **pro bekanntem Gerät** (statt `login_user`) |
 | `login_notice` | 1 pro Tag | E-Mails an ein Konto, dessen Limit `login_user` erreicht wurde |
+| `login_alarm` | 3 pro Stunde | keine Grenze: Wird das Limit `login_user` bei mehr Konten als dieser Zahl innerhalb des Zeitfensters erreicht, erhalten alle Admins einmal am Tag einen Alarm (ohne Namen) |
 | `reauth` | 5 pro 15 Min. | falsche Passwörter beim Bestätigen einer Änderung von Admin-Rechten oder E-Mail-Adressen, beim Beenden aller Sitzungen und beim Ändern des eigenen Passworts (ein Zähler pro Anmeldung, nicht pro IP-Adresse) |
 | `invite` | 20 pro Stunde | ungültige Einladungs- und Passwortlinks |
 | `forgot` | 5 pro Stunde | Anfragen unter *Passwort vergessen* |

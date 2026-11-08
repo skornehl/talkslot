@@ -107,6 +107,12 @@ A taken-over session or a misused admin account must not be able to take over ot
   | the same, *Alle Sitzungen wurden beendet* (*All sessions have been ended*) | all active admins | somebody ended all sessions |
   | *Viele fehlgeschlagene Anmeldeversuche bei …* (*Many failed sign-in attempts at …*) | the account | strangers used up its sign-in limit; at most one a day. It may arrive later (at once with PHP-FPM or LiteSpeed, otherwise with the next cron run) and gives the time |
   | *Passwort festlegen für …* (*Set password for …*), for an account that never signed in *Einladung zu …* (*Invitation to …*) | the account | an admin reset its password (*Link zum Zurücksetzen senden*) or sent the invitation again |
+- **Security events** (*Mein Profil → Sicherheit*): every account sees its own: changes of the password, the
+  e-mail address, the username and admin rights, a reset, its sign-in limit reached, and the number of failed
+  sign-ins since the previous one. No IP address or device is stored, and sign-ins themselves are not recorded.
+  **Only the account holder sees them**, admins do not: there is no page for it. Admins only get an alarm
+  without names when the sign-in limit of more than 3 accounts is reached within an hour (at most one a day).
+  Entries are deleted after 30 days (`security_events_days`); agree on the period with the staff council.
 - **Password links** are only sent by mail and never shown on screen. A reset by an admin tells the person
   that their previous password no longer works.
 - **Alle Sitzungen beenden** (end all sessions, at the bottom of *Benutzer*) signs out every account on

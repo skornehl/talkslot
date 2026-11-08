@@ -19,6 +19,7 @@ This page explains the design decisions; it is not legal advice.
 | Teacher accounts | database | by an admin; inactive accounts without rounds in use 15 months after the last login, together with their drafts |
 | Summary mails to teachers (by default the number of appointments and the link, no names; time and name only where the school allows them; never e-mail addresses) | teacher's mailbox | with names: by the end of the school year at the latest (privacy template; operated privately the template recommends it, the school's rules apply) |
 | Log of admin changes (who, when, what; no data of parents) | database | after 90 days (`audit_log_days`) |
+| Security events of an account (password, e-mail address, username, admin rights, sign-in limit; time, whether an admin made the change; no IP address or device), visible only to the account holder | database | after 30 days (`security_events_days`), and with the account |
 
 TalkSlot keeps **no** access logs of its own. The web server's logs are the web host's responsibility;
 ask how long they are kept and state it in the privacy policy.
@@ -76,6 +77,10 @@ ask how long they are kept and state it in the privacy policy.
   who among several admins did what. What teachers do in their own rounds is not recorded, and bookings
   appear only as date and time. Depending on your state, a log of staff actions may still be a matter for
   the staff council (*Personalrat*); you can shorten the retention with `audit_log_days`.
+- **Security events only for the account holder:** after an incident a teacher can see what happened to the
+  account (*Mein Profil → Sicherheit*), without a means to monitor the staff: no sign-ins, no IP address, nothing
+  visible to admins, failed sign-ins only as a number. Involve the staff council before introducing it and
+  agree on the retention (30 days by default, `security_events_days`; 90 days were also recommended).
 - **Sign-in times only in coarse steps:** the time of the last sign-in is stored (to tidy up unused
   accounts), but the users list only shows *never*, *within the last 12 months* or *more than 12 months
   ago*, so admins do not see when colleagues work. Security mails about account changes name the account
