@@ -65,7 +65,6 @@ return [
     'z. B. Frau Muster' => 'e.g. Ms Muster',
     'So wird die Person Eltern auf der Buchungsseite und in E-Mails angezeigt.' => 'This is how parents see the person on the booking page and in emails.',
     'Für Zusammenfassungen und neue Startpasswörter.' => 'For summaries and new initial passwords.',
-    'Dient als Benutzername. Die Zugangsdaten werden an diese Adresse geschickt.' => 'Serves as the username. The sign-in details are sent to this address.',
     'Sprache des Verwaltungsbereichs und der E-Mails an diese Person (Einladung, Zusammenfassungen).' => 'Language of the admin area and of the emails to this person (invitation, summaries).',
     'Benutzername (Login)' => 'Username (sign-in)',
     'Rolle' => 'Role',

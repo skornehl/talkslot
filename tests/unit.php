@@ -15,13 +15,18 @@ use App\Slug;
 use App\Token;
 
 // Warnings, notices and deprecations fail the run (expert review P1-14): the app only logs them, so they
-// would pass unnoticed. Places suppressed with @ stay quiet, as in the app. The app's handler stays callable
-// as $appErrorHandler (tests/unit.d/quality.php).
+// would pass unnoticed. Places suppressed with @ stay quiet, as in the app. Each one is also noted in
+// $unitWarnings, which must be empty at the end: app code that catches every Throwable (Mailer, Alert, Outbox …)
+// would otherwise swallow the exception. The app's handler stays callable as $appErrorHandler
+// (tests/unit.d/quality.php).
+$unitWarnings = [];
 $appErrorHandler = set_error_handler(static function (int $type, string $message, string $file, int $line): bool {
     if (!(error_reporting() & $type)) {
         return false;
     }
-    throw new ErrorException($message . ' in ' . str_replace(dirname(__DIR__), '', $file) . ':' . $line, 0, $type, $file, $line);
+    $place = App\ErrorPage::relativePath($file) . ':' . $line;
+    $GLOBALS['unitWarnings'][] = "$message ($place)";
+    throw new ErrorException("$message in $place", 0, $type, $file, $line);
 });
 
 $fail = 0;
@@ -678,6 +683,10 @@ $contact->setValue(null, null);
 foreach (glob(__DIR__ . '/unit.d/*.php') ?: [] as $file) {
     require $file;
 }
+
+echo "PHP warnings\n";
+check('no PHP warning, notice or deprecation during the unit tests, also none that app code caught'
+    . ($unitWarnings ? ': ' . implode('; ', array_unique($unitWarnings)) : ''), $unitWarnings === []);
 
 echo $fail === 0 ? "ALL UNIT TESTS PASSED\n" : "$fail FAILED\n";
 exit($fail === 0 ? 0 : 1);

@@ -15,6 +15,7 @@ app/              application (outside the document root)
   src/Controller  PublicController (parents), AdminController (/admin)
   templates/      HTML templates; pages/*.md are the legal templates
   lang/           parent-facing translations, one file per language
+  lang/admin/en/  English texts of the admin area, one dictionary per topic (the German text is the key)
   vendor/         PHPMailer (bundled, only used for SMTP)
   var/            runtime data: sessions, lock file, error log
   schema.sql      database schema for new installations
@@ -30,12 +31,16 @@ tests/            unit.php, smoke.sh, integration.php, browser.mjs, deploy.sh, c
 
 ```bash
 php tests/unit.php      # unit tests, no database needed; CI runs them on PHP 8.3, 8.4 and 8.5
-tests/smoke.sh          # ~300 end-to-end checks against the Docker setup (dev/reset.sh first)
+tests/smoke.sh          # several hundred end-to-end checks against the Docker setup (dev/reset.sh first)
 php tests/integration.php  # services against the database in a throwaway schema (part of the smoke test)
 node tests/browser.mjs  # the JavaScript in headless Chrome (dev/reset.sh && dev/demo.sh first)
 tests/deploy.sh         # the atomic deployment via lftp file:// under load, switch-back on errors (needs lftp, openssl and the database)
 dev/phpstan.sh          # static analysis with PHPStan (downloads the pinned PHAR into dev/data/)
 ```
+
+`tests/unit.php` includes every file in `tests/unit.d/`, `tests/smoke.sh` every file in `tests/smoke.d/`
+(one file per topic, see the `README.md` there), so that work on different topics does not change the same
+lines.
 
 The smoke test covers login and lockout, account management, data separation between teachers, CSRF,
 honeypot, XSS escaping, SQL injection, 20 parallel bookings on one slot (exactly one succeeds), moving and
@@ -67,16 +72,19 @@ PHP). Dependabot proposes new digests; which versions are tested is changed by h
 ### Measuring instead of guessing
 
 - **Warnings fail the tests.** The app only logs PHP warnings, notices and deprecations (`app/var/php-error.log`)
-  and carries on. `tests/unit.php` turns them into errors; after the smoke test and in every CI job
-  `tests/php-errors.sh` fails for any such line of the app in the error log (lines of test code that provoke
-  them on purpose do not count).
+  and carries on. `tests/unit.php` turns them into errors and at the end also fails for those that app code
+  caught; after the smoke and deployment tests and in every CI job `tests/php-errors.sh` fails for any such line
+  of the app in the error log (lines of test code that provoke them on purpose do not count).
 - **Line coverage.** CI builds the app container with PCOV (`COVERAGE=1 docker compose -f dev/compose.yml up -d
   --build`): `tests/coverage/prepend.php` records the lines of every request and CLI script of the unit, smoke,
   integration, browser and deployment tests, and `tests/coverage/report.php` merges them. The job summary of
   the run shows the coverage per file; for a pull request, changed lines that no test executes are marked in the
-  diff. The run fails if the total drops below `COVERAGE_MIN` in `.github/workflows/tests.yml` (raise it when
-  the coverage rises) or if no test loads a PHP file at all. Locally, after the tests in such a container:
-  `docker compose -f dev/compose.yml exec -w /srv/app app php tests/coverage/report.php`.
+  diff. **A pull request must not lower the coverage:** the run on `main` records its coverage as the commit
+  status `coverage`, and a pull request's run fails if it is more than 0.05 percentage points below it (a few
+  lines depend on timing). Every run also fails below `COVERAGE_MIN` in `.github/workflows/tests.yml` or if no
+  test loads a PHP file at all. Locally, after the tests in such a container:
+  `docker compose -f dev/compose.yml exec -w /srv/app app php tests/coverage/report.php`. The raw data collect in
+  `/tmp/talkslot-coverage` in the container; empty it before a new run, or line numbers of older code mix in.
 - **Static analysis.** `dev/phpstan.sh` runs [PHPStan](https://phpstan.org/) at level 6 (`tests/phpstan.neon`);
   CI does the same. The errors that existed when it was introduced are listed in `tests/phpstan-baseline.neon`;
   every new one fails. Value types of arrays are not required yet. PHPStan is a development tool only: the
@@ -84,13 +92,27 @@ PHP). Dependabot proposes new digests; which versions are tested is changed by h
 - **Integration tests** (`tests/integration.php`) call the services directly against the database, without
   HTTP. Every run creates the tables of `schema.sql` under a random prefix (`it<hex>_`) in the configured
   database and drops them at the end; the data of an installation or a running smoke test stay untouched.
+  `dev/reset.sh` drops tables an interrupted run left behind. The script only runs with `debug` in `config.php`
+  (the Docker environment) or `TALKSLOT_INTEGRATION=1`, never by accident against a live installation.
   `App\Time::setNow()` fixes the clock, so deadlines and deletion periods are tested without moving
-  timestamps in the database (it works in unit tests too).
+  timestamps in the database (it works in unit tests too; `time()`, e.g. for the rate limits, is not affected).
 
 ## Conventions
 
-- **Language:** code, comments, commits and documentation in English. The admin area is German; parent
-  pages use `app/lang/*.php`, and every key must exist in every language (a unit test checks this).
+- **Language:** code, comments, commits and documentation in English (the German guide in `docs/de/` in
+  German). The admin area is German or English per account, the parent pages come in six languages.
+- **Admin texts** are written in German in the code and pass through `__()`: `__('Runde gespeichert.')`
+  returns the German text as it is and, for an English account, the entry of the dictionaries in
+  `app/lang/admin/en/*.php` (one file per topic, all merged; a text needs exactly one entry, as a second
+  one in another file is ignored). Pass the German text as a string literal, so that the unit test finds it;
+  placeholders are filled in both languages: `__('{count} Termine', ['count' => $n])`. `__h()` does the same
+  for HTML and inserts the values unescaped (for links the caller has built and escaped). JavaScript in the
+  admin area uses `L('…')`; its texts belong in `app/lang/admin/en/js.php`, the only dictionary the browser
+  gets. A unit test fails for a text without an English entry, for an entry nobody uses and for different
+  placeholders. Mails to an account follow its language (`AdminI18n::with()`).
+- **Parent texts** pass through `t('key')` with `app/lang/{de,en,pl,ru,tr,uk}.php`; every key must exist in
+  every language (a unit test checks this). Ask native speakers to review new Polish, Russian, Turkish and
+  Ukrainian texts.
 - **Commits:** [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `docs:`, …);
   releases are derived from them.
 - **Database:** only prepared statements; the unit test's SQL audit fails on concatenated variables.
@@ -104,8 +126,8 @@ PHP). Dependabot proposes new digests; which versions are tested is changed by h
   (`'teacher'` for every signed-in account, `'admin'` for admin accounts only). A route without a known role
   is admin-only. GET routes must not change data; the smoke test opens every GET route of the table and
   fails for a placeholder it cannot fill yet (extend the IDs in `tests/smoke.d/security.sh`).
-- **Migrations** (`app/src/Migrations.php`) only add columns with defaults and tables, so that a rollback
-  to an older version keeps working. Raise `LATEST`, add the step, update `schema.sql`.
+- **Migrations** (`app/src/Migrations.php`) are additive, so that a rollback to the previous version of the
+  same major version keeps working; see [Migrations](#migrations) below for the rules.
 - **Legal templates:** after changing `app/templates/pages/*.md`, update `CURRENT_PAGE_HASHES` and move
   the old hashes to `OLD_PAGE_HASHES`, so unedited texts are upgraded automatically. The unit test tells
   you the new hashes. Edited texts need no new hint in `AdminController::legalHints()`: their version
@@ -134,6 +156,122 @@ PHP). Dependabot proposes new digests; which versions are tested is changed by h
   list it so that Dependabot reports new versions and security advisories; Composer is never run. When
   Dependabot raises the version, run `bin/update-vendor.sh` on its branch and commit `app/vendor/`; the unit
   test fails until both match.
+
+## Architecture
+
+### Request flow
+
+Every request that is not a file under `public/` reaches `public/index.php`, which loads `app/bootstrap.php`
+(configuration, autoloader, error handling; `App\Platform` refuses a PHP that is too old) and calls
+`App::run()`:
+
+1. HTTPS redirect (`force_https`) and the security headers.
+2. On an installed system, for every request except the two below:
+   - `Migrations::run()` brings the database up to date (one request at a time, under `GET_LOCK`); unedited
+     legal texts are then replaced by newer templates (see *Legal templates* above).
+   - `Cleanup::maybeRun()` runs the database steps of the clean-up, at most every `cleanup_interval_minutes`
+     (claimed with a compare-and-set on `settings.last_cleanup`; `cleanup_on_request` turns it off).
+   - `CronMonitor::check()` notices a cron job that stopped.
+   - After the response, due mails of the outbox go out (where PHP can finish the response first, e.g.
+     PHP-FPM; see `mail_queue.after_response`).
+
+   A failure in this step sends an alert mail but does not block the page.
+3. A form posted from another site gets 403 before anything is processed.
+4. `POST /cron` with `X-Cron-Token` and `POST /health` with `X-Health-Token` are the web cron and the
+   deployment's health check; they migrate only after checking their key. Without the header these paths
+   are treated as the address of a round (`/<slug>`).
+5. `/admin…` goes to `AdminController::dispatch()` (session, CSRF token, route table with roles),
+   everything else to `PublicController::dispatch()` (language from `?lang=`, the form or the browser).
+
+Controllers render templates with `View::render()`, which hands the variables to the template. Every value
+in the HTML is escaped: with `e()`, by the Markdown renderer, or by `__h()`, which escapes the text (the
+values it inserts must already be escaped).
+
+### Locking order
+
+Writes that concern bookings lock rows in one order: **round → its days → slots → bookings**. Deleting or
+changing a day, a round or an account (`ScheduleService::LOCKS`) and rebuilding the slots of a day
+(`SlotGenerator::sync()`) follow it; an account's deletion first locks the rows of the active admins, so
+that one admin always remains (`AccountSecurity`).
+
+A booking runs in `Db::transaction()`: with a booking limit it locks the round
+(`BookingService::lockForLimit()`), then the slot together with its day in one joined `SELECT … FOR UPDATE`
+(`lockSlot()`), then checks for a booking of the slot. That join is the one place where a slot may be locked
+before its day, so a booking can cross a `sync()` of the same day; InnoDB then ends one of them as a deadlock.
+Bookings expect this: they retry once on a deadlock or lock wait timeout (`retryOnDeadlock()`) and then report
+the slot as taken, and `UNIQUE(slot_id)` is the hard guarantee against double bookings; the teacher's entries
+and moves go through the same methods. Changes to days, rounds and accounts (`ScheduleService`, `sync()`) do not
+retry. For new code: lock the day before its slots, and wrap new writes that use `lockSlot()` in
+`retryOnDeadlock()`. Mails go out after the commit (directly or through the outbox), never inside the
+transaction.
+
+Background work takes named locks instead: migrations and the outbox use `GET_LOCK`; reminders and summaries
+claim their rows with `UPDATE … WHERE reminded_at IS NULL` and `INSERT IGNORE`, so that two runs at the same
+time do not send twice.
+
+### Data lifecycle
+
+The cron job (`bin/cron.php` or `POST /cron`) runs `Cleanup::run()`, queues the summaries and reminders and
+sends the outbox; page requests run the same database steps as a fallback. What is deleted when:
+
+| Data | Deleted |
+| --- | --- |
+| Bookings (name, e-mail address) | at midnight after the day of the appointment; at once when cancelled, and with their day, round or account |
+| Rounds | deactivated after their last day if they were in use, deleted `delete_after_hours` later (per round; unset = never deleted) |
+| Mail queue (references; for a cancellation by the teacher address, name and appointment) | once sent or no longer needed, with its booking or account; at the latest after 48 hours (`Outbox::MAX_AGE_HOURS`) |
+| Rate limits (HMACs of truncated IP addresses, of account names and IDs) | after 24 hours |
+| Summary delivery log | after 60 days |
+| Admin log | after `audit_log_days` (default 90) |
+| Deactivated teacher accounts without rounds in use | after 15 months without login |
+
+New personal data needs its deletion step in `Cleanup::run()` (with a test), a line in this table and in
+the privacy templates of both operator types (operated by the school or privately).
+
+### Migrations
+
+`schema.sql` always describes the latest state: a new installation gets it and `Migrations::LATEST`
+directly. An existing one runs the missing steps of `Migrations::STEPS` on the next request.
+
+- Add a step under the next number, raise `LATEST` and change `schema.sql` in the same commit. A step that
+  has been released is never changed.
+- Steps are **additive and repeatable**: `ADD COLUMN IF NOT EXISTS`, `CREATE TABLE IF NOT EXISTS`,
+  `ADD KEY IF NOT EXISTS`, data updates that give the same result when run again. A new `NOT NULL` column
+  needs a default, as the previous version's `INSERT`s do not name it (step 22 shows how to add a nullable
+  column whose default only new rows get). An interrupted step can then simply run again, and the previous
+  version works with the new schema, because it ignores what it does not know. That is what the one-click
+  rollback relies on: it switches the code, not the database.
+- PHP work of a step (filling in data) goes into `Migrations::steps()` under its number, like steps 7 and
+  10, and must be repeatable as well.
+- A new table goes into `Db::TABLES`, or it does not get the table prefix; no column may be named like a
+  table (unit tests check both).
+- **Not** in a minor version: renaming or dropping columns and tables, changing a column's type or
+  collation, new `UNIQUE` or foreign key constraints on existing columns, `ON DELETE RESTRICT`. They can
+  break the previous version or fail on existing data. They wait for a major version and go in two steps
+  (expand, then contract): add the new column and use it, drop the old one only in a later major version.
+  Step 3 (renaming `admin_users`, dropping columns) dates from before this rule.
+- While the files of an update are uploaded, new code may meet the old schema for a moment. Where that
+  matters (a page that must not fail), let the code fall back to the old behaviour until the step has run,
+  as `RoundAccess::required()` does.
+- The steps use MariaDB syntax (10.6 or newer); MySQL is not supported.
+- Parallel branches: two branches that add a step under the same number conflict in Git, and keeping both
+  blocks when resolving it loses one of them silently (PHP keeps only the last of two equal array keys).
+  Renumber one of them instead, and check `main` and the open branches before taking a number.
+
+## Security fixes (maintainers) {#security-fixes}
+
+Vulnerabilities are reported privately (see [Security]({{ '/guide/security/' | relative_url }}#reporting-a-vulnerability)
+and [`SECURITY.md`](https://github.com/skornehl/talkslot/blob/main/SECURITY.md)), never in a public issue.
+The maintainer handles a report as a GitHub Security Advisory:
+
+1. Confirm the report and assess it in a draft advisory (affected versions, severity).
+2. Fix it in the advisory's **temporary private fork**, not in a public branch or pull request, and run the
+   unit and smoke tests locally (CI does not run there). Nothing about the issue becomes public before the
+   merge.
+3. Merge the fix from the advisory, start *Actions → Release* (`release.yml`) right after it and publish the
+   advisory with the fixed version (request a CVE if the issue is worth one); link it in the release notes.
+   Then update the installations you run.
+
+Only the latest release gets security fixes.
 
 ## Contributing
 

@@ -88,6 +88,7 @@ Die Sessions liegen im gemeinsamen `app/var/`, daher wird durch ein Deployment n
 | `DB_USER`, `DB_PASS` | Secrets | ja | Datenbank |
 | `DB_NAME` | Secret | | Standard ist `DB_USER` |
 | `DB_HOST`, `DB_PORT`, `DB_PREFIX` | Variablen | | Standard `localhost`, `3306`, `tp_` |
+| `DB_SSL_CA` | Variable | | CA-Zertifikat für eine verschlüsselte Datenbankverbindung, ein absoluter Pfad auf dem Webserver ([`db.ssl_ca`]({{ '/de/guide/configuration/' | relative_url }}#database-tls)) |
 | `APP_SECRET` | Secret | ja | mindestens 32 Zeichen; auch der Schlüssel für den [Health-Check](#health-check) |
 | `INSTALL_KEY` | Secret | zur Installation | zusammen mit der Variable `ALLOW_INSTALL=1` |
 | `APP_NAME` | Variable | | Name, der Eltern und in E-Mails angezeigt wird |
@@ -141,7 +142,7 @@ werden. Die Antwort enthält nur einen Status:
 |---|---|---|
 | `ok` | 200 | Datenbank erreichbar, alle Migrationen ausgeführt |
 | `not_installed` | 200 | leere Datenbank: Der Installer ist noch nicht gelaufen (erstes Deployment) |
-| `db_unreachable` | 503 | keine Verbindung: `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASS` prüfen |
+| `db_unreachable` | 503 | keine Verbindung: `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASS` (und `DB_SSL_CA`, falls gesetzt) prüfen |
 | `db_unsupported` | 503 | nicht MariaDB 10.6 oder neuer (MySQL wird nicht unterstützt) |
 | `migration_failed` | 503 | eine Migration ist fehlgeschlagen; Details in der Fehlermeldung per E-Mail und in `app/var/php-error.log` |
 | `schema_outdated` | 503 | die Migrationen sind noch nicht durch, z. B. weil eine andere Anfrage sie gerade ausführt (`Retry-After`) |
