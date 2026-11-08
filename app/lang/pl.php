@@ -24,6 +24,12 @@ return [
     'home.code.submit' => 'Dalej',
     'notfound.title' => 'Nie znaleziono',
     'notfound.text' => 'Ta strona nie istnieje lub rezerwacja nie jest już aktywna.',
+    // Dead ends and the way on (expert review P2-1): code input on "not found", who to ask, why no slot is free
+    'notfound.code' => 'Czy mają Państwo kod z zaproszenia?',
+    'contact' => 'W razie pytań: {contact}',
+    'contact.none' => 'W razie pytań prosimy o kontakt ze szkołą lub operatorem tej strony (zob. {imprint}).',
+    'round.no_slots.full' => 'Wszystkie terminy są już zajęte. Jeśli ktoś odwoła swój termin, znów zwolni się miejsce.',
+    'round.no_slots.closed' => 'Upłynął termin rezerwacji. Nie można już tutaj zarezerwować terminu.',
     'error.title' => 'Wystąpił błąd',
     'error.text' => 'Prosimy spróbować ponownie później.',
     'error.contact' => 'Jeśli błąd będzie się powtarzał, prosimy o kontakt z operatorem tej strony (zob. {imprint}).',

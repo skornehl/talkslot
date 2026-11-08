@@ -7,7 +7,10 @@ description: Die in TalkSlot eingebauten Schutzmaßnahmen und wie Sie eine Siche
 
 Bitte nutzen Sie GitHubs **private vulnerability reporting**
 ([*Security → Report a vulnerability*](https://github.com/skornehl/talkslot/security/advisories/new)),
-keine öffentlichen Issues.
+keine öffentlichen Issues. [`SECURITY.md`](https://github.com/skornehl/talkslot/blob/main/SECURITY.md)
+(englisch) nennt, welche Angaben helfen und wie es weitergeht: Die Korrektur entsteht vertraulich in einem
+GitHub Security Advisory und wird zusammen mit dem Release veröffentlicht, das sie enthält (siehe
+[Sicherheitskorrekturen]({{ '/de/guide/development/' | relative_url }}#sicherheitskorrekturen)).
 
 ## Eingebaute Schutzmaßnahmen
 
