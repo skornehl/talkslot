@@ -329,12 +329,24 @@ final class AdminController
                 $dayData = ['dates' => [''], 'start' => $s['start'], 'end' => $s['end'], 'minutes' => $s['minutes'], 'breaks' => $s['breaks']];
             }
         }
+        $fresh = $data === null || $template !== null;
         $data ??= $round ?? [
             'title' => '', 'slug' => '', 'description' => '', 'location' => '', 'source_lang' => I18n::defaultLanguage(), 'is_active' => 1,
             'booking_deadline_hours' => 24, 'cancel_deadline_hours' => 12,
             'delete_after_hours' => 24, 'random_suffix' => 1,
             'code_required' => 0, 'booking_limit' => 'round', 'remind_parents' => 1, 'user_id' => Auth::id(),
         ];
+        // Rounds cannot go public yet (e.g. open placeholders in the legal texts): say so at the checkbox, and the round
+        // starts unticked – a new one, and one whose activation was just refused – so that it can be saved and prepared
+        // right away and activated later. Admins choose the teacher in the form: only what applies to every teacher.
+        $blocker = null;
+        if (!$round || !$round['is_active']) {
+            $blocker = self::platformBlocker() ?? (Auth::isAdmin() ? null : $this->ownerBlocker((array) Auth::user()));
+        }
+        $refused = $blocker !== null && in_array($blocker . ' ' . self::saveInactiveHint(), $errors, true);
+        if ($blocker !== null && ((!$round && $fresh) || $refused)) {
+            $data['is_active'] = 0;
+        }
         $this->render('admin/round_form', [
             'title' => $round ? __('Runde bearbeiten') : __('Neue Runde'),
             'round' => $round,
@@ -345,6 +357,7 @@ final class AdminController
             'errors' => $errors,
             'templates' => $round ? [] : Db::all('SELECT id, name FROM round_templates ORDER BY name'),
             'template' => $template,
+            'activationBlocked' => $blocker !== null ? $blocker . ' ' . self::saveInactiveHint() : null,
         ]);
     }
 
@@ -415,7 +428,8 @@ final class AdminController
         if (!$owner) {
             $errors[] = __('Bitte eine aktive Lehrkraft für die Runde wählen.');
         } elseif ($publishing && ($hint = $this->publishBlocker($owner)) !== null) {
-            $errors[] = $hint;
+            // A round that is online stays so with its previous teacher; any other can be saved inactive meanwhile
+            $errors[] = $hint . ' ' . ($round && $round['is_active'] ? __('Behalten Sie bis dahin die bisherige Lehrkraft, dann bleibt die Runde aktiv.') : self::saveInactiveHint());
         }
         // New round: create the appointment days right away
         $dayData = null;
@@ -495,7 +509,8 @@ final class AdminController
                 );
                 return [$id, $this->createDays($id, $dayData)];
             });
-            $this->flash('success', __('Runde angelegt: {days} Tag(e), {slots} Termine erzeugt.', ['days' => count($dayData['dates']), 'slots' => $count]));
+            $this->flash('success', __('Runde angelegt: {days} Tag(e), {slots} Termine erzeugt.', ['days' => count($dayData['dates']), 'slots' => $count])
+                . ($data['is_active'] ? '' : ' ' . __('Sie ist noch inaktiv: Eltern können erst buchen, wenn Sie sie hier mit „Aktivieren“ freischalten.')));
             $this->audit(fn () => __('angelegt ({dates})', ['dates' => implode(', ', array_map(static fn ($d) => self::when($d), $dayData['dates']))])
                 . ($data['is_active'] ? ', ' . __('aktiv') : ''), $id);
         }
@@ -1303,6 +1318,12 @@ final class AdminController
 
     // ---------------------------------------------------------------- Profile & password
 
+    /** The way on when a round cannot be activated yet: it can be saved inactive and activated later. */
+    private static function saveInactiveHint(): string
+    {
+        return __('Bis dahin können Sie die Runde ohne Häkchen bei „Aktiv“ speichern und alles vorbereiten; aktivieren Sie sie, sobald das erledigt ist, auf der Seite der Runde mit „Aktivieren“.');
+    }
+
     /**
      * Why a round of this teacher may not be activated (yet), or null.
      * Required: the teacher's display name (parents see it), the operator's details for legal notice and
@@ -1311,6 +1332,12 @@ final class AdminController
      * rounds already active stay online.
      */
     private function publishBlocker(array $owner): ?string
+    {
+        return self::platformBlocker() ?? $this->ownerBlocker($owner);
+    }
+
+    /** The part of publishBlocker() that applies to every teacher: operator details, operator type, legal texts. */
+    private static function platformBlocker(): ?string
     {
         if (!Operator::ready()) {
             return Auth::isAdmin()
@@ -1327,6 +1354,12 @@ final class AdminController
                 ? __('Bevor Runden aktiviert werden können, ersetzen Sie bitte unter „Texte“ die offenen Platzhalter in eckigen Klammern: {texts}.', ['texts' => self::openTexts($open, false)])
                 : __('Runden können erst aktiviert werden, wenn ein Admin die offenen Platzhalter in Impressum bzw. Datenschutzerklärung ausgefüllt hat.');
         }
+        return null;
+    }
+
+    /** The part of publishBlocker() that depends on the teacher: an active account with a display name. */
+    private function ownerBlocker(array $owner): ?string
+    {
         if (!$owner['is_active']) {
             return __('Das Konto dieser Lehrkraft ist deaktiviert – die Runde wäre öffentlich nicht erreichbar. Bitte die Runde einer aktiven Lehrkraft zuordnen oder das Konto wieder aktivieren.');
         }
