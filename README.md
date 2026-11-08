@@ -119,7 +119,8 @@ schools (GDPR/DSGVO, TDDDG) and multilingual families.
 - A cron job that stops is noticed: after 12 hours (configurable) without a completed run, admins see a warning on the
   dashboard and the operator gets an alert mail, daily while it lasts (GitHub disables scheduled workflows
   in public repositories after 60 days without activity).
-- Database migrations run automatically and only ever add columns/tables.
+- Database migrations run automatically and are additive (columns, tables, indexes), so a rollback to the
+  previous version of the same major version keeps working.
 - Table prefix (default `tp_`) for tables and foreign keys, so a database can be shared with other applications
   or a second TalkSlot.
 
@@ -223,7 +224,7 @@ bin/setup-secrets.sh    # asks for host, directories, FTP and DB credentials; ge
 
 This sets the variables `BASE_URL`, `FTP_HOST`, `WEB_DIR`, `APP_DIR`, `DB_HOST` and the secrets
 `FTP_USERNAME`, `FTP_PASSWORD`, `DB_USER`, `DB_PASS`, `DB_NAME`, `APP_SECRET`, `INSTALL_KEY`. Optional
-variables: `APP_NAME`, `HOSTING_DE`, `HOSTING_EN` (web host for the privacy policy), `LANGUAGES` (e.g. `de,en,tr`) and `DEFAULT_LANGUAGE` (e.g. `en`), `ALERT_EMAIL`, `CRON_ALERT_HOURS`, `MAIL_FROM`, `MAIL_FROM_NAME`, `MAIL_REPLY_TO`, `MAIL_TRANSPORT=smtp` with
+variables: `APP_NAME`, `HOSTING_DE`, `HOSTING_EN` (web host for the privacy policy), `LANGUAGES` (e.g. `de,en,tr`) and `DEFAULT_LANGUAGE` (e.g. `en`), `ALERT_EMAIL`, `CRON_ALERT_HOURS`, `DB_SSL_CA` (absolute path of a CA certificate for an encrypted connection to a database on another server), `MAIL_FROM`, `MAIL_FROM_NAME`, `MAIL_REPLY_TO`, `MAIL_TRANSPORT=smtp` with
 `SMTP_HOST`, `SMTP_PORT`, `SMTP_ENCRYPTION` and the secrets `SMTP_USER`, `SMTP_PASS`, `DB_PREFIX`; the
 variable `CONFIG_MODE` sets the permissions of `config.php` on the server (default `600`).
 Without `FTP_HOST` the deploy, cron and switch workflows do nothing.
@@ -249,8 +250,10 @@ all of them. If other users of your server could read the file (ask your web hos
 separated), change the secrets as described in
 [Changing secrets](https://skornehl.github.io/talkslot/guide/operations/#changing-secrets).
 
-The database is not rolled back. That is why migrations (`app/src/Migrations.php`) must only **add**
-columns with defaults and tables, so an older version keeps working with a newer schema.
+The database is not rolled back. That is why migrations (`app/src/Migrations.php`) only **add** columns
+with defaults, tables and indexes, so the previous version of the same major version keeps working with the
+newer schema. Renaming, dropping or changing the type of a column waits for a major version (see
+[Migrations](https://skornehl.github.io/talkslot/guide/development/#migrations)).
 
 ### Deploying from your own repository
 
@@ -365,7 +368,7 @@ values are listed for admins on the dashboard.
 
 ```bash
 php tests/unit.php      # unit tests, no database needed (also run in CI on PHP 8.3–8.5)
-tests/smoke.sh          # ~300 end-to-end checks against the local Docker setup
+tests/smoke.sh          # several hundred end-to-end checks against the local Docker setup
 node tests/browser.mjs  # the JavaScript in headless Chrome (after dev/reset.sh && dev/demo.sh)
 tests/deploy.sh         # atomic deployment via lftp file:// under load, switch-back on errors (needs lftp, openssl and the local DB)
 ```
@@ -387,7 +390,7 @@ app/              application (outside the document root)
   src/            classes (Db, Auth, BookingService, SlotGenerator, Cleanup, Mailer, …)
   src/Controller  public area and admin
   templates/      HTML templates, legal page templates (pages/*.md)
-  lang/           parent-facing translations
+  lang/           parent-facing translations; lang/admin/en/: English texts of the admin area
   data/           list of common passwords (from SecLists, MIT)
   vendor/         PHPMailer (bundled, only for SMTP)
   var/            runtime data: sessions, lock file, error log (no personal data)
@@ -406,7 +409,11 @@ Issues and pull requests are welcome. Please:
 - keep it dependency-free (no framework, no build step) and runnable on shared hosting;
 - add tests (`tests/unit.php` or `tests/smoke.sh`) for behaviour changes;
 - use [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, …);
-- make migrations additive (see *Rollback* above).
+- make migrations additive (see *Rollback* above);
+- report security issues privately, not in an issue (see [SECURITY.md](SECURITY.md)).
+
+The [development guide](https://skornehl.github.io/talkslot/guide/development/) describes the architecture
+(request flow, locking order, data lifecycle), the conventions and the rules for migrations.
 
 ## License
 

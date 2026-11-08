@@ -56,6 +56,28 @@ Abgemeldet wird dadurch niemand; dafür gibt es *Benutzer → Alle Sitzungen bee
 | `db.name` | – | `DB_NAME` (standardmäßig der Benutzername) |
 | `db.user` / `db.pass` | – | `DB_USER` / `DB_PASS` |
 | `db.prefix` | `tp_` | `DB_PREFIX`; Buchstaben, Ziffern und `_`, leer für kein Präfix |
+| `db.ssl_ca` | – | `DB_SSL_CA`; absoluter Pfad eines CA-Zertifikats für eine verschlüsselte Verbindung, siehe unten |
+
+### Verschlüsselte Datenbankverbindung {#database-tls}
+
+Meist nicht nötig: Bei den meisten Shared-Hosting-Angeboten ist `db.host` `localhost` oder ein Name im internen
+Netz des Hosters, und die Verbindung verlässt dieses Netz nicht. Setzen Sie `db.ssl_ca`, wenn die Datenbank
+anderswo läuft und die Verbindung durch ein Netz geht, das Sie nicht kontrollieren, oder wenn Ihr Hoster TLS
+verlangt und Ihnen ein CA-Zertifikat gibt.
+
+`db.ssl_ca` ist der **absolute Pfad auf dem Webserver** zum CA-Zertifikat (einer PEM-Datei), das das Zertifikat
+des Datenbankservers signiert hat: die Datei, die Ihr Hoster nennt, oder das Zertifikatsbündel des Systems (oft
+`/etc/ssl/certs/ca-certificates.crt`), wenn das Zertifikat von einer öffentlichen CA stammt. Eine eigene Datei
+gehört außerhalb der Versionsverzeichnisse, die ein Deployment ersetzt, z. B. ins Home-Verzeichnis des
+Hosting-Kontos; PHP muss sie lesen können. Die Verbindung ist dann verschlüsselt und kommt nur zustande, wenn
+der Server ein Zertifikat dieser CA für genau den Namen in `db.host` vorweist (ein Hostname, keine IP-Adresse,
+es sei denn, das Zertifikat enthält sie).
+
+Passt etwas nicht, antwortet die Seite wie bei jedem anderen Datenbankproblem mit 503, der
+[Health-Check]({{ '/de/guide/deployment/' | relative_url }}#health-check) eines Deployments meldet
+`db_unreachable`, und die Fehler-E-Mail (nur mit `alert_email`: ohne Datenbank gibt es keine Admin-Adresse) nennt
+*Cannot connect to MySQL using SSL* (falsche oder nicht lesbare Datei, Zertifikat für einen anderen Namen) oder
+*MySQL server has gone away* (der Server bietet kein TLS an), gefolgt von einem Hinweis auf `db.ssl_ca`.
 
 **Eine Datenbank teilen.** Jede Tabelle und jeder Fremdschlüssel bekommt das Präfix, sodass eine andere
 Anwendung oder ein zweites TalkSlot (Test- und Live-Seite, zwei Schulen) dieselbe Datenbank mit einem eigenen

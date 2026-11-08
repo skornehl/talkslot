@@ -121,21 +121,70 @@ final class Db
                 $c['name'] ?? ''
             );
             try {
-                self::$pdo = new PDO($dsn, (string) ($c['user'] ?? ''), (string) ($c['pass'] ?? ''), [
-                    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-                    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-                    PDO::ATTR_EMULATE_PREPARES => false,
-                    PDO::ATTR_STRINGIFY_FETCHES => false,
-                    PDO::ATTR_TIMEOUT => 5, // don't hang for minutes if the database goes down
-                ]);
+                self::$pdo = new PDO($dsn, (string) ($c['user'] ?? ''), (string) ($c['pass'] ?? ''), self::options($c));
             } catch (PDOException $e) {
-                self::$connectError = $e;
-                throw $e;
+                self::$connectError = self::explain($e, $c);
+                throw self::$connectError;
             }
             // Strict SQL mode: no silent truncation
             self::$pdo->exec("SET SESSION sql_mode = 'STRICT_ALL_TABLES,NO_ZERO_DATE,NO_ENGINE_SUBSTITUTION'");
         }
         return self::$pdo;
+    }
+
+    /**
+     * Options of the connection. With db.ssl_ca (absolute path of the CA certificate of the database server, a
+     * PEM file) the connection is encrypted with TLS, and the server must show a certificate signed by that CA
+     * for the host name in db.host; otherwise it fails. Without it the connection is not encrypted, which is
+     * fine when the database runs on the same server or in the hoster's internal network.
+     * The file is not checked here: PHP's file functions may not reach it under open_basedir, while the MySQL
+     * driver hands it to OpenSSL directly. A missing or wrong file fails like any other connection error
+     * (503, alert mail, health check "db_unreachable"), with explain()'s hint.
+     * @param array<string, mixed> $db the db section of the configuration
+     * @return array<int, mixed>
+     * @throws PDOException for a relative path (it would depend on the working directory: web and cron differ)
+     */
+    public static function options(array $db): array
+    {
+        $options = [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            PDO::ATTR_EMULATE_PREPARES => false,
+            PDO::ATTR_STRINGIFY_FETCHES => false,
+            PDO::ATTR_TIMEOUT => 5, // don't hang for minutes if the database goes down
+        ];
+        $ca = is_string($db['ssl_ca'] ?? null) ? trim($db['ssl_ca']) : ''; // another type: a warning on the dashboard
+        if ($ca !== '' && !str_starts_with($ca, '/') && !preg_match('~^[A-Za-z]:[\\\\/]~', $ca)) {
+            throw new PDOException('db.ssl_ca must be an absolute path, the path of the CA certificate of the database server');
+        }
+        if ($ca !== '') {
+            $options[self::mysqlAttribute('SSL_CA')] = $ca;
+            $options[self::mysqlAttribute('SSL_VERIFY_SERVER_CERT')] = true;
+        }
+        return $options;
+    }
+
+    /** Pdo\Mysql::ATTR_<name> from PHP 8.4 on; PHP 8.3 only has PDO::MYSQL_ATTR_<name> (deprecated since 8.5). */
+    private static function mysqlAttribute(string $name): int
+    {
+        return (int) constant(class_exists(\Pdo\Mysql::class, false) ? \Pdo\Mysql::class . '::ATTR_' . $name : PDO::class . '::MYSQL_ATTR_' . $name);
+    }
+
+    /**
+     * A failed connection with db.ssl_ca: the driver only says "Cannot connect to MySQL using SSL" (wrong or
+     * unreadable CA file, a certificate for another name) or "MySQL server has gone away" (a server without
+     * TLS). The alert mail then names the setting to check. Without quotes or brackets: ErrorPage::sanitize()
+     * would cut them out of the alert mail and the log.
+     */
+    private static function explain(PDOException $e, array $db): PDOException
+    {
+        $tls = in_array((int) ($e->errorInfo[1] ?? 0), [2002, 2006], true) || preg_match('/\[(2002|2006)\]/', $e->getMessage()) === 1;
+        if (!is_string($db['ssl_ca'] ?? null) || trim($db['ssl_ca']) === '' || !$tls) {
+            return $e; // e.g. a wrong password: the hint would point the wrong way
+        }
+        return new PDOException($e->getMessage() . ' – db.ssl_ca is set: check that PHP can read the file, that it holds the CA that'
+            . ' signed the certificate of the database server, that db.host is the name in that certificate and that the server'
+            . ' offers TLS', 0, $e);
     }
 
     public static function run(string $sql, array $params = []): PDOStatement

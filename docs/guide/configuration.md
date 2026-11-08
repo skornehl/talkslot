@@ -53,6 +53,28 @@ again). Bookings, change links, invitation and password links are random tokens 
 | `db.name` | – | `DB_NAME` (defaults to the user name) |
 | `db.user` / `db.pass` | – | `DB_USER` / `DB_PASS` |
 | `db.prefix` | `tp_` | `DB_PREFIX`; letters, digits and `_`, empty for no prefix |
+| `db.ssl_ca` | – | `DB_SSL_CA`; absolute path of a CA certificate for an encrypted connection, see below |
+
+### Encrypted database connection {#database-tls}
+
+Usually not needed: on most shared hosting `db.host` is `localhost` or a name in the hoster's internal
+network, and the connection does not leave it. Set `db.ssl_ca` when the database runs elsewhere and the
+connection crosses a network you do not control, or when your hoster asks for TLS and gives you a CA
+certificate.
+
+`db.ssl_ca` is the **absolute path, on the web server,** of the CA certificate (a PEM file) that signed the
+database server's certificate: the file your hoster names, or the system's bundle
+(often `/etc/ssl/certs/ca-certificates.crt`) if the certificate comes from a public CA. A file of your own
+belongs outside the version directories, which deployments replace, e.g. in the home directory of the
+hosting account; PHP must be able to read it. The connection is then encrypted, and it only works if the
+server shows a certificate of that CA for exactly the name in `db.host` (a host name, not an IP address,
+unless the certificate names it).
+
+If something does not fit, the site answers 503 as for any other database problem, the
+[health check]({{ '/guide/deployment/' | relative_url }}#health-check) of a deployment reports
+`db_unreachable`, and the alert mail (only with `alert_email`: without the database there is no admin
+address) says *Cannot connect to MySQL using SSL* (wrong or unreadable file, certificate for another name)
+or *MySQL server has gone away* (the server offers no TLS), followed by a hint about `db.ssl_ca`.
 
 **Sharing a database.** Every table and every foreign key gets the prefix, so another application or a second
 TalkSlot (a test and a live site, two schools) can use the same database with a prefix of its own. The installer
