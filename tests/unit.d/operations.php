@@ -371,3 +371,73 @@ foreach (array_merge(glob(dirname(__DIR__, 2) . '/app/src/*.php') ?: [], glob(di
 $p7Db = (string) file_get_contents(dirname(__DIR__, 2) . '/app/src/Db.php');
 check('named locks only through Db::lock(), whose name contains DATABASE() and the prefix' . ($p7Locks ? ' (' . implode(', ', $p7Locks) . ')' : ''),
     !$p7Locks && str_contains($p7Db, "private const LOCK_NAME = \"SHA1(CONCAT(DATABASE(), '.', ?))\";") && str_contains($p7Db, '[self::table($name), max(0, $timeout)]'));
+
+echo "Operations: migrations stay additive and repeatable (expert review P2-5)\n";
+// The rules of docs/guide/development.md#migrations as a check: what a step may do so that the previous version keeps
+// working on the newer schema (one-click rollback) and an interrupted step can simply run again
+$p5Problems = static function (array $statements): array {
+    $problems = [];
+    $added = [];
+    foreach ($statements as $sql) {
+        $code = (string) preg_replace("/'(?:[^'\\\\]|\\\\.)*'/s", "''", $sql); // values do not count
+        if (preg_match('/\b(DROP|RENAME|MODIFY|CHANGE|TRUNCATE)\b|\bCONVERT\s+TO\b|\bON\s+DELETE\s+RESTRICT\b/i', $code, $m)) {
+            $problems[] = strtoupper($m[0]);
+        }
+        if (preg_match('/\bCREATE\s+(UNIQUE\s+)?(TABLE|INDEX)\b(?!\s+IF\s+NOT\s+EXISTS)/i', $code, $m) || preg_match('/\bCREATE\s+UNIQUE\s+INDEX\b/i', $code, $m)) {
+            $problems[] = trim($m[0]) . ' without IF NOT EXISTS, or a unique index on existing columns';
+        }
+        if (!preg_match('/^\s*ALTER\s+TABLE\s+(\w+)\s+(.*)$/is', $code, $alter)) {
+            continue;
+        }
+        $clauses = [''];
+        $depth = 0;
+        foreach (str_split($alter[2]) as $ch) {
+            $depth += $ch === '(' ? 1 : ($ch === ')' ? -1 : 0);
+            if ($ch === ',' && $depth === 0) {
+                $clauses[] = '';
+            } else {
+                $clauses[array_key_last($clauses)] .= $ch;
+            }
+        }
+        foreach (array_map('trim', $clauses) as $clause) {
+            if (preg_match('/^ADD\s+COLUMN\s+IF\s+NOT\s+EXISTS\s+(\w+)\b(.*)$/is', $clause, $k)) {
+                $added[$alter[1]][] = strtolower($k[1]);
+                if (preg_match('/\bNOT\s+NULL\b/i', $k[2]) && !preg_match('/\bDEFAULT\b/i', $k[2])) {
+                    $problems[] = "column $k[1]: NOT NULL without DEFAULT";
+                }
+            } elseif (preg_match('/^ADD\s+(UNIQUE\s+)?(?:KEY|INDEX)\s+IF\s+NOT\s+EXISTS\s+\w+\s*\(([^)]*)\)/is', $clause, $k)) {
+                $columns = array_map(static fn (string $c): string => strtolower(trim((string) preg_replace('/\(\d+\)/', '', $c))), explode(',', $k[2]));
+                if (trim($k[1]) !== '' && array_diff($columns, $added[$alter[1]] ?? [])) {
+                    $problems[] = 'UNIQUE on existing columns: ' . implode(', ', $columns);
+                }
+            } elseif (!preg_match('/^ALTER\s+COLUMN\s+\w+\s+SET\s+DEFAULT\b/i', $clause)) {
+                $problems[] = 'not additive or without IF NOT EXISTS: ' . substr($clause, 0, 60);
+            }
+        }
+    }
+    return $problems;
+};
+$p5Steps = (new ReflectionClassConstant(App\Migrations::class, 'STEPS'))->getValue();
+$p5All = [];
+foreach ($p5Steps as $version => $statements) {
+    if ($problems = $p5Problems($statements)) {
+        $p5All[$version] = $problems;
+    }
+}
+check('migrations: every step is additive and repeatable, except step 3 from before the rule' . (array_diff_key($p5All, [3 => 1]) ? ' (' . json_encode(array_diff_key($p5All, [3 => 1]), JSON_UNESCAPED_UNICODE) . ')' : ''),
+    array_keys($p5All) === [3]);
+$p5Bad = ['ALTER TABLE users DROP COLUMN lang', 'RENAME TABLE users TO people', 'ALTER TABLE users MODIFY lang VARCHAR(9) NULL', 'ALTER TABLE users CHANGE lang language VARCHAR(5) NULL',
+    'ALTER TABLE users ADD COLUMN lang VARCHAR(5) NULL', 'ALTER TABLE users ADD COLUMN IF NOT EXISTS x INT NOT NULL', 'ALTER TABLE users ADD KEY idx_x (lang)',
+    'ALTER TABLE users ADD UNIQUE KEY IF NOT EXISTS uq_x (lang)', 'CREATE TABLE audit (id INT)', 'CREATE UNIQUE INDEX IF NOT EXISTS uq_x ON users (lang)',
+    'ALTER TABLE users ALTER COLUMN lang DROP DEFAULT', 'ALTER TABLE users ADD CONSTRAINT fk_x FOREIGN KEY (lang) REFERENCES pages (lang)', "CREATE TABLE IF NOT EXISTS x (id INT, CONSTRAINT fk_y FOREIGN KEY (id) REFERENCES users (id) ON DELETE RESTRICT)",
+    'ALTER TABLE users CONVERT TO CHARACTER SET utf8mb4', 'TRUNCATE TABLE rate_limits'];
+$p5Good = ["ALTER TABLE users ADD COLUMN IF NOT EXISTS x VARCHAR(5) NOT NULL DEFAULT 'de' AFTER email, ADD COLUMN IF NOT EXISTS y CHAR(64) NULL, ADD UNIQUE KEY IF NOT EXISTS uq_y (y), ADD KEY IF NOT EXISTS idx_x (email(20), x)",
+    'ALTER TABLE users ALTER COLUMN x SET DEFAULT 0', 'CREATE TABLE IF NOT EXISTS t (id INT, UNIQUE KEY u (id), CONSTRAINT fk_t FOREIGN KEY (id) REFERENCES users (id) ON DELETE CASCADE)',
+    'CREATE INDEX IF NOT EXISTS idx_z ON users (email)', "UPDATE settings SET value = 'DROP RENAME' WHERE name = 'x'", "INSERT IGNORE INTO settings (name, value) VALUES ('a', 'b')"];
+$p5Missed = array_filter($p5Bad, static fn (string $sql): bool => $p5Problems([$sql]) === []);
+$p5False = array_filter($p5Good, static fn (string $sql): bool => $p5Problems([$sql]) !== []);
+check('the check of the migrations finds the forbidden forms and accepts the additive ones' . ($p5Missed || $p5False ? ' (' . implode(' | ', array_merge($p5Missed, $p5False)) . ')' : ''), !$p5Missed && !$p5False);
+// Two branches with the same number merge without a conflict, and PHP keeps only the last of two equal array keys
+preg_match_all('/^ {8}(\d+) => \[/m', (string) file_get_contents(dirname(__DIR__, 2) . '/app/src/Migrations.php'), $p5Numbers);
+$p5Numbers = array_map('intval', $p5Numbers[1]);
+check('migrations: numbered without gaps or duplicates up to LATEST', $p5Numbers === range(2, App\Migrations::LATEST) && array_keys($p5Steps) === $p5Numbers);

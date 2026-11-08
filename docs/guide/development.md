@@ -203,6 +203,14 @@ directly. An existing one runs the missing steps of `Migrations::STEPS` on the n
   rollback relies on: it switches the code, not the database.
 - PHP work of a step (filling in data) goes into `Migrations::steps()` under its number, like steps 7 and
   10, and must be repeatable as well.
+- **Checked automatically.** A unit test rejects what a step must not do (every step except 3, from before the
+  rule) and duplicate numbers. `tests/migrations.php` (part of the smoke test) brings the schema of the first
+  release up to date with some data, compares it with a new installation (tables, columns, indexes, foreign keys)
+  and runs every step a second time. `tests/n-1.sh` runs the latest release on the schema of the current code
+  (sign-in, booking, moving, cancelling, health check); CI does this for every push.
+- A step waits at most 10 seconds for a metadata lock (`lock_wait_timeout`, e.g. an open transaction in
+  phpMyAdmin), then gives up; the next request repeats it. If the database is newer than the code (after
+  switching back), admins get one mail and a hint on the dashboard.
 - A new table goes into `Db::TABLES`, or it does not get the table prefix; no column may be named like a
   table (unit tests check both).
 - **Not** in a minor version: renaming or dropping columns and tables, changing a column's type or

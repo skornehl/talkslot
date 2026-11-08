@@ -167,7 +167,8 @@ target version (versions from before it: pages only). The next push to `main` de
 again.
 
 The database is **not** rolled back. That is why migrations only ever add columns (with defaults) and
-tables: an older version keeps working with a newer schema.
+tables: an older version keeps working with a newer schema. While the database is newer than the code, admins
+get one e-mail and a hint on the dashboard. CI tests this on every push with the latest release.
 
 ## Deploying from your own repository
 
