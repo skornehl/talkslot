@@ -1,0 +1,25 @@
+<?php
+// Admin area in English: trash for rounds without bookings (App\RoundTrash)
+return [
+    'Papierkorb' => 'Trash',
+    'Papierkorb ({count})' => 'Trash ({count})',
+    'Der Papierkorb ist leer.' => 'The trash is empty.',
+    'Gelöschte Runden ohne Buchungen bleiben {days} Tage hier und lassen sich mit ihrer Adresse und ihrem Rundencode wiederherstellen. Runden mit Buchungen werden sofort endgültig gelöscht.' => 'Deleted rounds without bookings stay here for {days} days and can be restored with their address and round code. Rounds with bookings are deleted for good at once.',
+    'Die Runde hat keine Buchungen: Sie kommt mit allen Tagen, Pausen und Übersetzungen für {days} Tage in den Papierkorb und lässt sich dort wiederherstellen.' => 'This round has no bookings: it goes to the trash with all days, breaks and translations for {days} days and can be restored from there.',
+    'Runde „{title}“ mit allen Tagen in den Papierkorb legen?' => 'Move round “{title}” with all days to the trash?',
+    'Inzwischen hat sich an dieser Runde etwas geändert (z. B. eine neue Buchung). Bitte prüfen und erneut löschen.' => 'Something about this round has changed in the meantime (e.g. a new booking). Please check and delete it again.',
+    'in den Papierkorb gelegt' => 'moved to the trash',
+    'Runde in den Papierkorb gelegt. Sie kann {days} Tage lang unter „Papierkorb“ auf der Übersicht wiederhergestellt werden.' => 'Round moved to the trash. It can be restored for {days} days under “Trash” on the overview.',
+    'Dieser Eintrag ist nicht mehr im Papierkorb.' => 'This entry is no longer in the trash.',
+    'aus dem Papierkorb wiederhergestellt' => 'restored from the trash',
+    'Runde wiederhergestellt, mit ihrer bisherigen Adresse und ihrem Rundencode.' => 'Round restored, with its previous address and round code.',
+    'Runde wiederhergestellt. Ihre bisherige Adresse war vergeben, deshalb hat sie eine neue: Bitte einen schon verteilten Link prüfen.' => 'Round restored. Its previous address was taken, so it has a new one: please check any link you have already handed out.',
+    'aus dem Papierkorb endgültig gelöscht' => 'deleted for good from the trash',
+    'Runde endgültig gelöscht.' => 'Round deleted for good.',
+    'Tage' => 'Days',
+    'Gelöscht am' => 'Deleted on',
+    'Bleibt bis' => 'Kept until',
+    'Wiederherstellen' => 'Restore',
+    'Endgültig löschen' => 'Delete for good',
+    'Runde „{title}“ endgültig löschen? Das kann nicht rückgängig gemacht werden.' => 'Delete round “{title}” for good? This cannot be undone.',
+];

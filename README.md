@@ -67,7 +67,7 @@ schools (GDPR/DSGVO, TDDDG) and multilingual families.
   changed what (no data of parents, deleted after 90 days).
 - Teachers only see their own rounds (enforced centrally, foreign IDs return 404).
 - Rounds: several days, first/last slot, duration, any number of breaks, live preview; add days later;
-  location (per round, optionally per day); block single slots; duplicate with a new first day; templates
+  location (per round, optionally per day); block single slots; duplicate with a new first day; a 14-day trash for rounds deleted without bookings; templates
   (e.g. "parent-teacher day, 08:00–16:00, 15 minutes"); deadlines for booking and changes; ready-to-copy
   invitation text with a direct link per parent language and the round's rule on multiple bookings.
 - Bookings: overview, edit, move, delete, add manually (with a mail to the parents, ticked as soon as an

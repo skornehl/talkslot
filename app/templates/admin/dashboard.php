@@ -76,3 +76,6 @@
 </table>
 </div>
 <?php endif; ?>
+<?php if (!empty($trashCount)): ?>
+<p data-trash-link><a href="<?= e(url('/admin/trash')) ?>"><?= e(__('Papierkorb ({count})', ['count' => (int) $trashCount])) ?></a></p>
+<?php endif; ?>

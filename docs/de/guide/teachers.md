@@ -149,9 +149,11 @@ Dienstag und Donnerstag), praktisch fürs nächste Halbjahr. Ohne Datum behält 
 Daten; weil sie nie aktiv war, wird sie nicht automatisch gelöscht, und Sie können sie in Ruhe vorbereiten.
 
 **Eine Runde löschen** Sie in einem eigenen Abschnitt am Ende ihrer Seite (*Runde löschen*; *Löschen …*
-bei den Aktionen springt dorthin). Das löscht die Runde mit allen Tagen, Pausen, Übersetzungen und
-Buchungen und lässt sich nicht rückgängig machen. Hat die Runde Buchungen, haken Sie vorher
-*inkl. N Buchung(en)* an: Ohne den Haken wird nichts gelöscht, auch wenn Ihr Browser den
+bei den Aktionen springt dorthin). Eine Runde **ohne Buchungen** kommt für 14 Tage in den **Papierkorb** (am Ende
+der Übersicht, solange etwas darin liegt): Dort können Sie sie mit ihrer Adresse und ihrem Rundencode
+wiederherstellen oder endgültig löschen. Eine Runde **mit Buchungen** wird sofort mit allen Tagen, Pausen,
+Übersetzungen und Buchungen gelöscht, das lässt sich nicht rückgängig machen: Haken Sie vorher
+*inkl. N Buchung(en)* an; ohne den Haken wird nichts gelöscht, auch wenn Ihr Browser den
 Bestätigungsdialog nicht anzeigt. Sollen nur keine neuen Buchungen mehr möglich sein, wählen Sie
 *Stattdessen deaktivieren*: Tage und Buchungen bleiben erhalten, Eltern können weiterhin absagen.
 

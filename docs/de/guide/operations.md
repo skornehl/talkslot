@@ -204,6 +204,7 @@ Buchungen bleiben gültig.
 | Buchungen (Name, E-Mail) eines Tages | ab 0:00 Uhr des Folgetages |
 | Terminrunden | nach ihrem letzten Tag deaktiviert, standardmäßig 24 h später gelöscht (pro Runde einstellbar, leer = nie); nur Runden, die in Gebrauch waren (irgendwann aktiv oder mit einem Eintrag der Lehrkraft); Entwürfe, die nie aktiv waren, bleiben |
 | Rate-Limit-Daten | spätestens nach 24 Stunden |
+| Gelöschte Runden ohne Buchungen (Papierkorb) | nach 14 Tagen |
 | Inaktive Konten von Lehrkräften ohne Runden in Gebrauch | 15 Monate nach dem letzten Login, zusammen mit ihren Entwürfen |
 | *Protokoll* der Admin-Änderungen | nach 90 Tagen (`audit_log_days`) |
 | Einträge der Mail-Warteschlange (ohne Adresse und Inhalt) | sobald die E-Mail verschickt ist; nicht zustellbare nach 48 Stunden |

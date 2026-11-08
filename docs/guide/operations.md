@@ -190,6 +190,7 @@ valid.
 | Bookings (name, e-mail) of a day | from 0:00 of the following day |
 | Rounds | deactivated after their last day, deleted 24 h later by default (per round, empty = never); only rounds that were in use (active at some point or with an entry by the teacher); drafts that were never active stay |
 | Rate-limit data | after 24 hours at the latest |
+| Deleted rounds without bookings (trash) | after 14 days |
 | Inactive teacher accounts without rounds in use | 15 months after the last login, together with their drafts |
 | Admin log (*Protokoll*) | after 90 days (`audit_log_days`) |
 | Mail queue entries (no address or content) | once the mail is sent; mails that could not be sent after 48 hours |

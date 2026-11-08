@@ -123,7 +123,8 @@ teacher or move a round to another teacher (field *Lehrkraft* in the round form)
 for that teacher, parents see their name and summaries go to them. Parents who have already booked get a
 change notice with the new teacher if *Eltern per E-Mail informieren* stays ticked; the message after saving
 names those who could not be mailed. Teachers
-only ever see their own rounds; this is enforced centrally and covered by tests.
+only ever see their own rounds; this is enforced centrally and covered by tests. In the trash (*Papierkorb*)
+admins see the deleted rounds without bookings of all teachers, too.
 
 How rounds work is described in the [Teacher guide]({{ '/guide/teachers/' | relative_url }}).
 
