@@ -27,6 +27,8 @@ final class WhatsNew
                 'text' => __('Ändert ein Update die Vorlage für Impressum oder Datenschutzerklärung, steht unter „Texte“ beim Text „Vorlage geändert“. Beim Bearbeiten sehen Sie die geänderten Abschnitte und können sie mit „Abschnitte aus der Vorlage übernehmen“ einfügen. Ihre eigenen Änderungen werden nie automatisch überschrieben.')],
             ['key' => '2026-11-05b', 'admin' => false, 'link' => '/admin/profile',
                 'text' => __('Unter „Mein Profil“ können Sie eine eigene Antwortadresse für Eltern angeben, z. B. Ihre dienstliche Adresse. Antworten der Eltern auf E-Mails zu ihrem Termin gehen dann dorthin statt an Ihre E-Mail-Adresse.')],
+            ['key' => '2026-11-05b2', 'admin' => false, 'link' => '/admin/profile',
+                'text' => __('Unter „Mein Profil“ können Sie einen Kontakt für Eltern bei Fragen angeben, z. B. das Sekretariat. Eltern sehen ihn, wenn sie nicht weiterkommen, etwa wenn alle Termine vergeben sind.')],
             ['key' => '2026-11-05c', 'admin' => true, 'link' => '/admin/start',
                 'text' => __('„Bereit für den Start?“ zeigt auf einer Seite, ob Impressum und Datenschutzerklärung, E-Mail-Versand, Cronjob und Server bereit sind.')],
         ];

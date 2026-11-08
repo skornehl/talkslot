@@ -31,7 +31,7 @@ final class Readiness
         if (Operator::type() === 'school') {
             $items[] = self::dpo($open);
         }
-        return [...$items, self::mail(), self::cron(), self::server(), self::rights()];
+        return [...$items, self::contact(), self::mail(), self::cron(), self::server(), self::rights()];
     }
 
     /**
@@ -96,6 +96,16 @@ final class Readiness
                 ? __('In der Datenschutzerklärung ({languages}) fehlen noch die Kontaktdaten der bzw. des Datenschutzbeauftragten der Schule. Die Schule oder der Schulträger nennt sie Ihnen.', ['languages' => strtoupper(implode(', ', array_column($missing, 'lang')))])
                 : __('In der Datenschutzerklärung eingetragen.'),
             [], $missing ? url('/admin/page/privacy/' . $missing[array_key_first($missing)]['lang']) : null, __('Datenschutzerklärung bearbeiten'));
+    }
+
+    /** Optional, but without it parents who are stuck are only referred to the legal notice (ParentContact). */
+    private static function contact(): array
+    {
+        $general = ParentContact::general();
+        return self::item('contact', $general !== '' ? self::DONE : self::CHECK, __('Kontakt für Eltern bei Fragen'),
+            $general !== '' ? __('Hinterlegt: {contact}', ['contact' => $general])
+                : __('Noch kein allgemeiner Kontakt hinterlegt. Eltern, die nicht weiterkommen, werden dann nur auf das Impressum verwiesen, außer bei Lehrkräften mit eigenem Kontakt im Profil.'),
+            [], url('/admin/texts') . '#parent-contact', __('Zu den Texten'));
     }
 
     /**

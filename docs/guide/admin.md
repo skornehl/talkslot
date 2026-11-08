@@ -37,7 +37,7 @@ itself, otherwise the private person, association or independent provider whose 
 **Ready to start?** (*Bereit für den Start?*, linked below the heading of *Alle Runden* and at the top of
 *Texte*) shows all of this on one page, each item as *Erledigt* (done), *Bitte prüfen* (please check) or *Noch
 offen* (still to do), with the way to fix it: imprint and privacy policy, the school's data protection officer
-(only when operated by the school), mail delivery, cron job, server and configuration, and the permissions of
+(only when operated by the school), the contact for parents, mail delivery, cron job, server and configuration, and the permissions of
 the configuration file. Mail delivery counts as done once an invited account has signed in: its invitation
 arrived. Until the first round has been active, *Alle Runden* shows this checklist instead of the separate
 warnings on these items; after that, the warnings appear as before.

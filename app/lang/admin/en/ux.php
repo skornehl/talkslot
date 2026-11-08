@@ -28,6 +28,11 @@ return [
     'Bereit für den Start?' => 'Ready to start?',
     'Erledigt' => 'Done',
     'Bitte prüfen' => 'Please check',
+    'Hinterlegt: {contact}' => 'Entered: {contact}',
+    'Noch kein allgemeiner Kontakt hinterlegt. Eltern, die nicht weiterkommen, werden dann nur auf das Impressum verwiesen, außer bei Lehrkräften mit eigenem Kontakt im Profil.'
+        => 'No general contact entered yet. Parents who are stuck are then only referred to the imprint, except for teachers with a contact of their own in their profile.',
+    'Unter „Mein Profil“ können Sie einen Kontakt für Eltern bei Fragen angeben, z. B. das Sekretariat. Eltern sehen ihn, wenn sie nicht weiterkommen, etwa wenn alle Termine vergeben sind.'
+        => 'Under “My profile” you can enter a contact for parents with questions, e.g. the school office. Parents see it when they are stuck, for example when all time slots are taken.',
     'Noch offen' => 'Still to do',
     '{done} von {total} Punkten erledigt.' => '{done} of {total} items done.',
     'Alle Punkte mit Anleitung ansehen' => 'See all items with instructions',

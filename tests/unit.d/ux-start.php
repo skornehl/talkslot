@@ -53,5 +53,5 @@ $rsSorted = $rsKeys;
 sort($rsSorted, SORT_STRING);
 check('what\'s new: keys are dates with a letter, unique, oldest first; every note has a text',
     $rsKeys && $rsKeys === $rsSorted && count(array_unique($rsKeys)) === count($rsKeys) && App\WhatsNew::latest() === end($rsKeys)
-    && !array_filter($rsKeys, static fn (string $k): bool => preg_match('/^\d{4}-\d\d-\d\d[a-z]$/', $k) !== 1)
+    && !array_filter($rsKeys, static fn (string $k): bool => preg_match('/^\d{4}-\d\d-\d\d[a-z]\d?$/', $k) !== 1)
     && !array_filter(App\WhatsNew::entries(), static fn (array $e): bool => trim($e['text']) === '' || !is_bool($e['admin'])));
