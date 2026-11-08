@@ -252,7 +252,7 @@ final class Outbox
         }
         if ($row['booking_id'] === null) {
             return match ((string) $row['kind']) {
-                'login_notice' => Auth::deliverLockoutNotice((int) $row['user_id']),
+                'login_notice' => Auth::deliverLockoutNotice((int) $row['user_id'], (string) $row['created_at']),
                 'login_alarm' => Auth::deliverLoginAlarm((int) $row['user_id']),
                 default => Summaries::deliver((string) $row['kind'], (int) $row['user_id'], (string) $row['ref']),
             };

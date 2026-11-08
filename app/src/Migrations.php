@@ -180,8 +180,13 @@ final class Migrations
                 ADD COLUMN IF NOT EXISTS reply_to VARCHAR(254) NULL AFTER email',
             'ALTER TABLE users ALTER COLUMN summary_names SET DEFAULT 0',
         ],
+        // 23: parent_contact: how parents can reach the account with questions (shown on the parents' pages,
+        //     ParentContact); NULL = the contact the admins set for all (setting parent_contact) or none
+        23 => [
+            'ALTER TABLE users ADD COLUMN IF NOT EXISTS parent_contact VARCHAR(300) NULL AFTER reply_to',
+        ],
         // 25: security events of an account, for the account holder only (expert review P2-9): password,
-        //     address, username, admin rights, sign-in limit; no IP. 23 and 24 belong to other changes.
+        //     address, username, admin rights, sign-in limit; no IP. 24 belongs to another change.
         25 => [
             "CREATE TABLE IF NOT EXISTS security_events (
                 id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, user_id INT UNSIGNED NOT NULL, event VARCHAR(30) NOT NULL,

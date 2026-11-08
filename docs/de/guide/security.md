@@ -7,7 +7,10 @@ description: Die in TalkSlot eingebauten Schutzmaßnahmen und wie Sie eine Siche
 
 Bitte nutzen Sie GitHubs **private vulnerability reporting**
 ([*Security → Report a vulnerability*](https://github.com/skornehl/talkslot/security/advisories/new)),
-keine öffentlichen Issues.
+keine öffentlichen Issues. [`SECURITY.md`](https://github.com/skornehl/talkslot/blob/main/SECURITY.md)
+(englisch) nennt, welche Angaben helfen und wie es weitergeht: Die Korrektur entsteht vertraulich in einem
+GitHub Security Advisory und wird zusammen mit dem Release veröffentlicht, das sie enthält (siehe
+[Sicherheitskorrekturen]({{ '/de/guide/development/' | relative_url }}#sicherheitskorrekturen)).
 
 ## Eingebaute Schutzmaßnahmen
 
@@ -70,15 +73,16 @@ keine öffentlichen Issues.
   pro Gerät, Fremde können Lehrkräfte also nicht von ihren eigenen Geräten aussperren. Ist das Limit des
   Kontos erreicht, geht eine E-Mail an die Adresse des Kontos (höchstens eine am Tag) mit dem Ausweg: ein
   bekanntes Gerät oder *Passwort vergessen?*. Die E-Mail geht nach der Antwort hinaus (aus der
-  Warteschlange: mit PHP-FPM direkt danach, sonst mit dem Cronjob), damit die Dauer einer abgelehnten
-  Anmeldung nicht verrät, ob es das Konto gibt.
+  Warteschlange: mit PHP-FPM oder LiteSpeed direkt danach, sonst mit dem Cronjob) und nennt den Zeitpunkt,
+  damit die Dauer einer abgelehnten Anmeldung nicht verrät, ob es das Konto gibt.
 - Bekannte Geräte lassen sich widerrufen: Das Cookie ist mit dem Sitzungszähler des Kontos und dem aller
   Konten signiert. Ein neues Passwort (selbst oder über einen Link festgelegt) und ein Zurücksetzen durch
   einen Admin machen alle Geräte des Kontos wieder unbekannt, *Alle Sitzungen beenden* die aller Konten,
   ein neues `APP_SECRET` jedes Cookie. Der Browser, in dem das neue Passwort festgelegt oder alle Sitzungen
   beendet wurden, erhält ein neues Cookie. Ein Browser behält höchstens 20 solcher Cookies (die ältesten
-  zuerst weg): Auf einem gemeinsamen PC im Lehrerzimmer würde ein Cookie pro Konto die Anfrage sonst über
-  die Grenze des Servers von etwa 8 KB wachsen lassen, und die Anmeldeseite scheiterte mit HTTP 400.
+  werden zuerst entfernt): Auf einem gemeinsamen PC im Lehrerzimmer würde ein Cookie pro Konto die Anfrage
+  sonst über die Grenze des Servers von etwa 8 KB wachsen lassen, und die Anmeldeseite würde mit HTTP 400
+  scheitern.
 - Passwörter: 12 Zeichen bis 72 Byte (die Grenze von bcrypt) und nicht leicht zu erraten: kein häufiges
   Passwort aus einer lokalen Liste (`app/data/common-passwords.txt`, es wird nichts nach außen gesendet),
   auch nicht als Wort mit Ziffern oder Zeichen davor oder dahinter (`Sommer2024!!!!`), keine Wiederholungen
@@ -144,14 +148,15 @@ Sicherheitsmail über eine Änderung, die niemand gemacht hat, oder Einträge im
 erklären kann:
 
 1. **Alle Sitzungen beenden:** *Benutzer → Alle Sitzungen beenden* (mit Ihrem Passwort). Alle Konten müssen
-   sich neu anmelden; ein neues App-Secret allein würde niemanden abmelden.
+   sich neu anmelden (alle bekannten Geräte gelten als neu, Konten über dem Anmeldelimit brauchen also
+   *Passwort vergessen?*); ein neues App-Secret allein würde niemanden abmelden.
 2. **Konten prüfen:** unter *Benutzer* unbekannte Admins und geänderte E-Mail-Adressen, im *Protokoll* die
    letzten Änderungen. Unbekannte Konten deaktivieren, nicht benötigte Admin-Rechte entziehen.
 3. **Neue Passwörter:** das eigene Passwort ändern; für betroffene Konten *Link zum Zurücksetzen senden*
    (das bisherige Passwort gilt dann sofort nicht mehr).
 4. **Zugang zum Server:** Wenn Hosting, Datenbank, FTP oder GitHub betroffen sein könnten, diese Passwörter
-   und `APP_SECRET` ändern. Das Secret signiert nur Kurzlebiges (offene Formulare, Freischaltung per
-   Rundencode, Schlüssel der Rate-Limits); die persönlichen Links der Eltern sind bewusst als reiner
+   und `APP_SECRET` ändern. Das Secret signiert Kurzlebiges (offene Formulare, Freischaltung per
+   Rundencode, Schlüssel der Rate-Limits) und die Geräte-Cookies, die damit ungültig werden; die persönlichen Links der Eltern sind bewusst als reiner
    SHA-256-Hash gespeichert und funktionieren weiter.
 5. **Spuren sichern:** die Einträge im *Protokoll* (werden nach `audit_log_days` gelöscht, Standard 90
    Tage), die Sicherheitsmails und `app/var/php-error.log` sichern und beim Webhoster die Zugriffslogs

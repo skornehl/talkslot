@@ -139,7 +139,8 @@ check "all sessions ended: other admin and other device logged out, the own sess
 check "all sessions ended: notice to all admins, entry in the log" 'AS_TEXT "to:as-admin-$AS@example.org $NOTE" | has "Alle Sitzungen wurden beendet" && curl -s -b "$J" "$B/admin/log" | has "Alle Sitzungen beendet"'
 AS_LOGIN "$JZ" "as-admin-$AS@example.org" Sicher-Passwort-123
 check "signing in again after that works" '[ "$(AS_CODE "$JZ")" = 200 ]'
-check "all sessions ended: the browser that ended them gets a new known-device cookie (the others are revoked, see below)" '[ -s "$AS_DEV" ] && [ -n "$AS_N1" ] && [ "$AS_N1" != "$AS_N0" ]'
+check "all sessions ended: the browser that ended them gets a new known-device cookie (checked below: valid, the others revoked)" '[ -s "$AS_DEV" ] && [ -n "$AS_N1" ] && [ "$AS_N1" != "$AS_N0" ]'
+AS_NEW=$(mktemp); grep 'tp_device_' "$J" > "$AS_NEW"
 rm -f "$JT"
 T=$(curl -s -b "$J" "$B/admin/users" | csrf)
 
@@ -433,7 +434,7 @@ S_FULL login_user "$(S_HM "login:#$AID")"
 SJ3=$(mktemp); S_DEVICE "$SJ2" "$SJ3"; SJ4=$(mktemp)
 C1=$(S_LOGIN "$SJ4" "$USER" "$PASS"); C2=$(S_LOGIN "$SJ3" "$USER" "$PASS")
 check "account limit used up: unknown device refused, known device signs in" '[ "$C1 $C2" = "401 303" ]'
-check "… a known device from before \"Alle Sitzungen beenden\" no longer counts (P0-4b: revoked with the sessions)" '[ "$(S_LOGIN "$AS_DEV" "$USER" "$PASS")" = 401 ]'
+check "… a known device from before \"Alle Sitzungen beenden\" no longer counts, the cookie given to the browser that ended them does (P0-4b)" '[ -s "$AS_DEV" ] && [ "$(S_LOGIN "$AS_DEV" "$USER" "$PASS")" = 401 ] && [ -s "$AS_NEW" ] && [ "$(S_LOGIN "$AS_NEW" "$USER" "$PASS")" = 303 ]'
 SJ5=$(mktemp); S_DEVICE "$SJ3" "$SJ5"
 check "… and gets the cookie renewed (new random number)" '[ -n "$(S_NONCE "$SJ5")" ] && [ "$(S_NONCE "$SJ5")" != "$(S_NONCE "$SJ2")" ]'
 awk -F'\t' 'BEGIN { OFS = "\t" } /tp_device_/ { split($7, v, "."); $7 = v[1] "." v[2] "." sprintf("%064d", 0) } { print }' "$SJ5" > "$SJ4"
@@ -464,7 +465,7 @@ SQ=$(DBQ "SELECT COUNT(*) FROM tp_mail_outbox WHERE kind = 'login_notice' AND us
 $DC exec -T app php /srv/app/bin/cron.php > /dev/null
 check "account limit used up: the owner gets one e-mail (not one per attempt), queued during the attempt, sent after it" '[ "$C1 $C2" = "401 401" ] && [ "$SQ" = 1 ] && [ "$SN" = "$N0" ] && [ "$(S_MAILS "to:$SU")" = "$((N0 + 1))" ] && [ "$(DBQ "SELECT COUNT(*) FROM tp_mail_outbox WHERE kind = \"login_notice\"")" = 0 ]'
 SM=$(S_MAILTEXT "to:$SU subject:Anmeldeversuche")
-check "… which explains the lockout and the way out" 'echo "$SM" | has "Hallo Frau Geraet," && echo "$SM" | has "(mehr als 20)" && echo "$SM" | has "bis zu 60 Minuten" && echo "$SM" | has "„Passwort vergessen?“"'
+check "… which explains the lockout and the way out, with the time (it may go out later)" 'echo "$SM" | has "Hallo Frau Geraet," && echo "$SM" | has "am $(date +%d.%m.%Y) um " && echo "$SM" | has "(mehr als 20)" && echo "$SM" | has "bis zu 60 Minuten" && echo "$SM" | has "„Passwort vergessen?“"'
 SJ8=$(mktemp); S_DEVICE "$SJ6" "$SJ8"
 check "… and the browser that set the password through the link signs in anyway" '[ "$(S_LOGIN "$SJ8" "$SU" "Gartenzaun-Wolke-Tisch-5")" = 303 ]'
 # P0-4b: an own new password revokes the account's known devices, this browser gets a cookie of the new epoch
@@ -487,4 +488,4 @@ T=$(curl -s -b "$J" "$B/admin/users" | csrf)
 curl -s -o /dev/null -b "$J" -d "csrf=$T&confirm=1" "$B/admin/users/$SUID/delete"
 check "cleaned up: test account deleted" '[ -z "$(DBQ "SELECT id FROM tp_users WHERE username = \"$SU\"")" ]'
 S_CLEAR
-rm -f "$SJ1" "$SJ2" "$SJ3" "$SJ4" "$SJ5" "$SJ6" "$SJ7" "$SJ8" "$SJ9" "$SJ10" "$AS_DEV"
+rm -f "$SJ1" "$SJ2" "$SJ3" "$SJ4" "$SJ5" "$SJ6" "$SJ7" "$SJ8" "$SJ9" "$SJ10" "$AS_DEV" "$AS_NEW"

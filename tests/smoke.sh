@@ -841,7 +841,7 @@ check "cancellation without confirmation → notice" 'curl -s --data-urlencode "
 check "moving without slot → notice" 'curl -s --data-urlencode "csrf=$MEC" -d "action=move&slot_id=0" "$B$TKE" | has "Bitte wählen Sie einen Termin"'
 check "change via invalid link → 404" '[ "$(curl -s -o /dev/null -w "%{http_code}" --data-urlencode "csrf=$MEC" -d "action=cancel&confirm=1" "$B/b/$(head -c 43 /dev/zero | tr "\0" A)")" = 404 ]'
 UE2=$(curl -s -d "code=$CE" "$B/")
-check "protected round without free slots: notice, language switch keeps access" 'echo "$UE2" | has "Zurzeit sind keine freien Termine verfügbar" && echo "$UE2" | has "<input type=\"hidden\" name=\"step\" value=\"switch\">" && curl -s -d "step=switch&lang=en" --data-urlencode "access=$(echo "$UE2" | grep -o "name=\"access\" value=\"[^\"]*\"" | head -1 | sed "s/.*value=\"//;s/\"$//")" "$B/$SE" | has "There are currently no free appointments"'
+check "protected round without free slots: notice (all taken), language switch keeps access" 'echo "$UE2" | has "Alle Termine sind vergeben." && echo "$UE2" | has "<input type=\"hidden\" name=\"step\" value=\"switch\">" && curl -s -d "step=switch&lang=en" --data-urlencode "access=$(echo "$UE2" | grep -o "name=\"access\" value=\"[^\"]*\"" | head -1 | sed "s/.*value=\"//;s/\"$//")" "$B/$SE" | has "All time slots have been taken."'
 DBQ "UPDATE tp_rounds SET cancel_deadline_hours = 720 WHERE id = $RE"
 check "change deadline passed: notice, cancellation rejected" 'curl -s "$B$TKE" | has "nur bis 720 Stunden vor dem Termin möglich" && curl -s --data-urlencode "csrf=$MEC" -d "action=cancel&confirm=1" "$B$TKE" | has "nur bis 720 Stunden vor dem Termin möglich" && curl -s -o /dev/null -w "%{http_code}" "$B$TKE" | grep -q 200'
 

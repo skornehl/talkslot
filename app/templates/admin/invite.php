@@ -8,7 +8,7 @@ $langQuery = ['lang' => in_array($_GET['lang'] ?? null, App\AdminI18n::LANGUAGES
   <form method="post" action="<?= e(url('/admin/invite/' . $token, $langQuery)) ?>" class="card form-grid">
     <input type="hidden" name="csrf" value="<?= e($csrf) ?>">
     <input type="text" name="username" value="<?= e($user['username']) ?>" autocomplete="username" hidden>
-    <div class="field"><label for="new_password"><?= e(__('Neues Passwort (mind. 12 Zeichen)')) ?></label><input type="password" id="new_password" name="new_password" required minlength="12" autocomplete="new-password" autofocus aria-describedby="password-hint"><p class="hint" id="password-hint"><?= e(__('Mindestens 12 Zeichen. Nicht erlaubt sind häufig verwendete Passwörter, Wiederholungen und Tastenfolgen sowie Ihr Benutzername, Ihre E-Mail-Adresse oder der Name der Anwendung. Gut geeignet sind z. B. drei oder vier zufällige Wörter.')) ?></p></div>
+    <div class="field"><label for="new_password"><?= e(__('Neues Passwort (mind. 12 Zeichen)')) ?></label><input type="password" id="new_password" name="new_password" required minlength="12" autocomplete="new-password" autofocus aria-describedby="password-hint"><?php require __DIR__ . '/_password_hint.php'; ?></div>
     <div class="field"><label for="new_password2"><?= e(__('Passwort wiederholen')) ?></label><input type="password" id="new_password2" name="new_password2" required minlength="12" autocomplete="new-password"></div>
     <button type="submit" class="button button-primary"><?= e(__('Passwort speichern')) ?></button>
   </form>

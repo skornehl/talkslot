@@ -26,8 +26,13 @@ itself, otherwise the private person, association or independent provider whose 
    activated. Details in [Privacy and legal]({{ '/guide/privacy/' | relative_url }}).
 4. **Mail check:** *Texte → E-Mail-Versand* shows the transport and sender. Make a test booking with your
    own e-mail address and check that the confirmation arrives (and is not marked as spam).
-5. **Templates** (*Vorlagen*, optional): set up the usual formats once, e.g. your parent-teacher day.
-6. **Invite teachers** and, if you like, further admins (*Benutzer*).
+5. **Contact for parents** (*Texte → Kontakt für Eltern bei Fragen*, optional): for example the school
+   office with its phone number and hours. Parents see it when they are stuck: on the "not found" page, on
+   rounds with a round code before the code is entered, after a wrong code on the start page, and on the
+   rounds of teachers who have not given a contact of their own in their profile. It is not translated, so
+   keep it short and without abbreviations. Without any contact, these places refer parents to the imprint.
+6. **Templates** (*Vorlagen*, optional): set up the usual formats once, e.g. your parent-teacher day.
+7. **Invite teachers** and, if you like, further admins (*Benutzer*).
 
 If the dashboard warns that the configuration can be read by every user of the server, set the
 permissions of the files it lists to `600` or pass the warning on to whoever runs the server: they contain
@@ -48,7 +53,9 @@ other than MariaDB 10.6 or newer; see
 Under *Benutzer* (users) → *+ Neuer Benutzer* (new user) enter **name and e-mail address** and choose the
 **role** (*Rolle*): *Lehrkraft* (teacher, manages their own rounds) or *Admin*. The person
 receives an **invitation mail** with a link to set their own password (single use, valid for 48 hours by
-default). No password is ever sent by mail. The username is the e-mail address. If the mail cannot be
+default). No password is ever sent by mail. The username is the e-mail address, unless you enter one of
+its own under *Benutzername (Login)* (*Username (sign-in)*): that is harder to guess, as parents see the e-mail
+address when they reply to a mail; the invitation names it. If the mail cannot be
 sent, you only see a hint, not the link (with it you could set the password of somebody else's account):
 check the mail delivery (*Texte → E-Mail-Versand*) and send the invitation again.
 
@@ -89,21 +96,23 @@ A taken-over session or a misused admin account must not be able to take over ot
   (password links go there; this applies to your own address too). After 5 wrong entries in 15 minutes
   (wrong current passwords when changing your own password count too) the confirmation is refused for a
   while; signing out and in again starts afresh.
-- **Security mails** (please do not filter them away: they are often the only way to notice misuse):
+- **Security mails** (please do not filter them away: they are often the only way to notice misuse), in the
+  language of the recipient:
 
-  | Mail | Goes to | When |
+  | Mail (German, English) | Goes to | When |
   |---|---|---|
-  | *Ihr Passwort wurde geändert* / *festgelegt* | the account | its password was changed, or set through an invitation or reset link |
-  | *Ihr Benutzername wurde geändert* and the like | the previous address | an admin changed the e-mail address or the username |
-  | *Sicherheitshinweis: Änderung im Verwaltungsbereich* | all active admins (you included) and the person concerned | an admin was invited, admin rights were given or taken away, an admin account was deactivated, reactivated or deleted |
-  | the same, *Alle Sitzungen wurden beendet* | all active admins | somebody ended all sessions |
-  | *Viele fehlgeschlagene Anmeldeversuche* | the account | strangers used up its sign-in limit; at most one a day, sent after the response from the mail queue |
-  | the reset link | the account | an admin reset its password (*Link zum Zurücksetzen senden*) |
+  | *Ihr Passwort wurde geändert* / *festgelegt* (*Your password has been changed* / *set*) | the account | its password was changed in the profile, or set through an invitation or reset link |
+  | *Ihre E-Mail-Adresse wurde geändert*, *Ihr Benutzername wurde geändert* (*Your email address has been changed*, *Your username has been changed*) | the previous address | the person (in *Mein Profil*) or an admin changed it |
+  | *Sicherheitshinweis: Änderung im Verwaltungsbereich von …* (*Security notice: change in the admin area of …*) | all active admins (you included) and the person concerned; an invited admin gets the invitation instead | an admin was invited, admin rights were given or taken away, an admin account was deactivated, reactivated or deleted |
+  | the same, *Alle Sitzungen wurden beendet* (*All sessions have been ended*) | all active admins | somebody ended all sessions |
+  | *Viele fehlgeschlagene Anmeldeversuche bei …* (*Many failed sign-in attempts at …*) | the account | strangers used up its sign-in limit; at most one a day. It may arrive later (at once with PHP-FPM or LiteSpeed, otherwise with the next cron run) and gives the time |
+  | *Passwort festlegen für …* (*Set password for …*), for an account that never signed in *Einladung zu …* (*Invitation to …*) | the account | an admin reset its password (*Link zum Zurücksetzen senden*) or sent the invitation again |
 - **Password links** are only sent by mail and never shown on screen. A reset by an admin tells the person
   that their previous password no longer works.
 - **Alle Sitzungen beenden** (end all sessions, at the bottom of *Benutzer*) signs out every account on
   every device except your current session, e.g. after a lost device or a suspected break-in. It needs
-  your password, and all admins get a mail. What else to do in such a case is described under
+  your password, and all admins get a mail. All known devices count as new afterwards: anyone whose sign-in
+  limit strangers have used up then needs *Passwort vergessen?*. What else to do in such a case is described under
   [Security]({{ '/guide/security/' | relative_url }}#if-you-suspect-misuse).
 
 ### When somebody leaves

@@ -20,7 +20,9 @@ namespace App;
  * One cookie per account (name derived from the account ID), only sent to /admin/login, HttpOnly,
  * SameSite=Strict, Secure under HTTPS, valid for DAYS days and renewed with every login. At most MAX_PER_BROWSER
  * per browser: on a shared PC (staff room) one per account would otherwise grow the Cookie header beyond the
- * server's limit (about 8 KB, then every request to the login page fails); the oldest go first. Nothing about
+ * server's limit (about 8 KB, then every request to the login page fails); the oldest go first. Removed when
+ * signing in, the only request that brings them all (the path): a password set elsewhere can add one more until
+ * then. Nothing about
  * it is stored on the server; failed attempts with it are counted like other rate limits (HMAC hash,
  * deleted after 24 hours at the latest). Strictly necessary for the login the user asked for, so no
  * consent is needed (§ 25 (2) no. 2 TDDDG).
@@ -48,7 +50,10 @@ final class TrustedDevice
         $others = [];
         foreach ($_COOKIE as $key => $value) {
             if (is_string($key) && str_starts_with($key, self::PREFIX) && $key !== $name) {
-                $others[$key] = is_string($value) && preg_match('/^[A-Za-z0-9_-]{22}\.(\d{1,12})\./', $value, $m) ? (int) $m[1] : 0;
+                // The time is not signed here (the account of another cookie is unknown): one outside what a
+                // valid cookie can have counts as oldest, so that planted ones cannot push out the real ones
+                $issued = is_string($value) && preg_match('/^[A-Za-z0-9_-]{22}\.(\d{1,12})\./', $value, $m) ? (int) $m[1] : 0;
+                $others[$key] = $issued >= time() - self::DAYS * 86400 && $issued <= time() + 300 ? $issued : 0;
             }
         }
         asort($others); // oldest (and unreadable ones) first

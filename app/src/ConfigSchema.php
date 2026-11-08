@@ -37,6 +37,7 @@ final class ConfigSchema
         'db.user' => ['string', ''],
         'db.pass' => ['string', ''],
         'db.prefix' => ['prefix', ''],
+        'db.ssl_ca' => ['string', ''],
         'languages' => ['languages', ['de']],
         'default_language' => ['language', ''],
         'alert_email' => ['email', ''],

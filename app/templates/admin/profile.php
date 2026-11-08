@@ -1,4 +1,4 @@
-<?php /** @var array $user @var array $data @var array $errors @var array $security own security events, previous sign-in, failed attempts since */ use App\Csrf; ?>
+<?php /** @var array $user @var array $data @var array $errors @var string $generalContact the contact for parents set for all ('' = none) @var array $security own security events, previous sign-in, failed attempts since */ use App\Csrf; ?>
 <h1><?= e(__('Mein Profil')) ?></h1>
 <?php require __DIR__ . '/_errors.php'; ?>
 
@@ -28,6 +28,12 @@
     <div class="field">
       <label for="current_password_email"><?= e(__('Aktuelles Passwort')) ?> <span class="muted small"><?= e(__('(nur nötig, wenn Sie eine der beiden Adressen ändern)')) ?></span></label>
       <input type="password" id="current_password_email" name="current_password" autocomplete="current-password">
+    </div>
+    <div class="field">
+      <label for="parent_contact"><?= e(__('Kontakt für Eltern bei Fragen')) ?> <span class="muted small"><?= e(__('(optional)')) ?></span></label>
+      <input type="text" id="parent_contact" name="parent_contact" maxlength="<?= App\ParentContact::MAX_LENGTH ?>" value="<?= e($data['parent_contact'] ?? '') ?>" placeholder="<?= e(__('z. B. Sekretariat, Telefon 01234 5678, montags bis freitags 8 bis 12 Uhr')) ?>" aria-describedby="pc-hint">
+      <p class="hint" id="pc-hint"><?= e(__('Eltern sehen diesen Text auf der Buchungsseite Ihrer Runden und bei ihrem Termin, z. B. wenn alle Termine vergeben sind. Jeder mit dem Link kann ihn lesen, bitte keine private Telefonnummer. Er wird nicht übersetzt.')) ?>
+        <?= e(($generalContact ?? '') !== '' ? __('Ohne Eintrag sehen Eltern den allgemeinen Kontakt: {contact}', ['contact' => $generalContact]) : __('Ohne Eintrag sehen Eltern keinen Kontakt.')) ?></p>
     </div>
     <div class="field">
       <label for="lang">Sprache / Language</label>
