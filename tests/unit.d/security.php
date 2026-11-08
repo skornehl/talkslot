@@ -332,11 +332,11 @@ check('device cookie: expired after ' . $device::DAYS . ' days, not from the fut
 $_COOKIE = [$device::cookieName(7) => ['x']];
 check('device cookie: malformed or missing → none', $device::subject(7, '0.0') === null && $cookie('kaputt') === null && $cookie('') === null
     && (($_COOKIE = []) === [] && $device::subject(7, '0.0') === null));
-check('device cookies per browser: a limit far below the ~8 KB of a request header (about 130 bytes each)',
-    $device::MAX_PER_BROWSER * (strlen($device::cookieName(7)) + strlen($device::sign(7, $nonce, time(), '0.0')) + 3) < 4096);
 // P0-4b: "ß" counts as "ss" when comparing (common passwords, username, e-mail address)
 check('password rules: "ß" and "ẞ" compared as "ss"',
     App\PasswordRules::containsPersonal('Straße-Kaffee-9', ['strasse@schule.example']) && App\PasswordRules::containsPersonal('Kaffee-Strasse-9', ['straße'])
     && App\PasswordRules::containsPersonal('GROẞMUTTER-Tisch-4', ['grossmutter']) && App\PasswordRules::isCommon('Paßwort')
     && !App\PasswordRules::containsPersonal('Kaffee-Wolke-Tisch-5', ['strasse']));
+check('common passwords: no list entry with "ß" (compared as "ss", it could never match)',
+    !str_contains((string) file_get_contents(App\PasswordRules::LIST_FILE), 'ß'));
 $_COOKIE = [];

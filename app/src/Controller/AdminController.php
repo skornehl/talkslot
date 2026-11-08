@@ -1563,6 +1563,10 @@ final class AdminController
                 $this->userForm($id, [__('Es muss mindestens ein aktives Admin-Konto geben.')], $data);
                 return;
             }
+            // Deactivated: its sessions and known devices do not come back with a reactivation
+            if (!$data['is_active'] && $user['is_active']) {
+                Auth::endOtherSessions((int) $id, false);
+            }
             // A closure, so that the log gets its own language (see audit())
             $changes = static fn (): array => array_filter([
                 $data['role'] !== $user['role'] ? __('Rolle jetzt {role}', ['role' => self::roleLabel($data['role'])]) : '',
@@ -1668,7 +1672,7 @@ final class AdminController
         // Whoever can use the link may sign in on this device even while strangers have used up the
         // account's login limit ("forgot password" would not help against a lockout otherwise). The new
         // password revoked the other devices (new epoch), this one gets a cookie of the new epoch
-        TrustedDevice::remember((int) $user['id'], Auth::deviceEpoch(Db::one('SELECT session_epoch FROM users WHERE id = ?', [$user['id']]) ?? []));
+        TrustedDevice::remember((int) $user['id'], Auth::deviceEpochOf((int) $user['id']));
         Auth::startSession(true);
         $this->flash('success', __('Ihr Passwort ist gespeichert. Bitte melden Sie sich jetzt an.'));
         $_SESSION['login_user'] = $user['username']; // not in the URL (access logs)

@@ -251,7 +251,7 @@ final class Outbox
             return isset($data['day_date'], $data['start_time']) && ScheduleService::upcoming($data) ? Notifier::teacherCancelled($data) : null;
         }
         if ($row['booking_id'] === null) {
-            return $row['kind'] === 'login_notice' ? Auth::deliverLockoutNotice((int) $row['user_id'])
+            return $row['kind'] === 'login_notice' ? Auth::deliverLockoutNotice((int) $row['user_id'], (string) $row['created_at'])
                 : Summaries::deliver((string) $row['kind'], (int) $row['user_id'], (string) $row['ref']);
         }
         $b = BookingService::findById((int) $row['booking_id']);

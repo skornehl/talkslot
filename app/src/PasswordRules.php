@@ -9,7 +9,8 @@ namespace App;
  *   listed word with digits or symbols before or after it ("Sommer2024!!!!", "P@ssw0rd-2024");
  * - repetitions and runs ("aaaa…", "passwortpasswort", "123456789012", "qwertzuiop12", "1q2w3e4r5t6z");
  * - personal values: username, e-mail address (and the words of its local part) and the app name.
- * All comparisons ignore case and treat "ß" as "ss" ("Paßwort" is "passwort", "Straße…" contains "strasse").
+ * All comparisons ignore case; those with the list and the personal values treat "ß" as "ss" ("Paßwort" is
+ * "passwort", "Straße…" contains "strasse").
  */
 final class PasswordRules
 {

@@ -63,8 +63,9 @@ not public issues.
   sign-in). With it, only the IP limit and a limit of 20 failed attempts per device apply, so strangers
   cannot lock teachers out of their own devices. When the account limit is reached, the owner gets an
   e-mail (at most one a day) explaining the way out: a known device, or *Passwort vergessen?*. The mail
-  goes out after the response (from the mail queue: on PHP-FPM right after it, otherwise with the cron
-  job), so the time a refused sign-in takes does not tell whether the account exists.
+  goes out after the response (from the mail queue: with PHP-FPM or LiteSpeed right after it, otherwise with
+  the cron job) and gives the time, so the time a refused sign-in takes does not tell whether the account
+  exists.
 - Known devices can be revoked: the cookie is signed with the account's session counter and the one of
   all accounts. A new password (set by the person or through a link) and a reset by an admin make all
   devices of the account unknown again, *Alle Sitzungen beenden* those of all accounts, a new `APP_SECRET`
@@ -129,14 +130,15 @@ For example a lost device that was signed in, an admin account nobody knows, a s
 change nobody made, or entries in *Protokoll* (log) nobody can explain:
 
 1. **End all sessions:** *Benutzer → Alle Sitzungen beenden* (with your password). Every account has to sign
-   in again; changing the app secret alone would not sign anybody out.
+   in again (all known devices count as new, so accounts whose limit strangers have used up need *Passwort
+   vergessen?*); changing the app secret alone would not sign anybody out.
 2. **Check the accounts:** under *Benutzer*, unknown admins, changed e-mail addresses and recent changes in
    *Protokoll*. Deactivate unknown accounts, take away admin rights that are not needed.
 3. **New passwords:** change your own password; for affected accounts use *Link zum Zurücksetzen senden*
    (their previous password stops working immediately).
 4. **Access to the server:** if hosting, database, FTP or GitHub may be affected, change those passwords
-   and `APP_SECRET`. The secret only signs short-lived things (open forms, round-code access, rate-limit
-   keys); the parents' personal links are stored as plain SHA-256 hashes on purpose and keep working.
+   and `APP_SECRET`. The secret signs short-lived things (open forms, round-code access, rate-limit keys)
+   and the known-device cookies, which become invalid; the parents' personal links are stored as plain SHA-256 hashes on purpose and keep working.
 5. **Keep the evidence:** save the entries of *Protokoll* (deleted after `audit_log_days`, default 90
    days), the security mails and `app/var/php-error.log`, and ask your web host for its access logs.
 6. **Report:** if personal data may have been seen by unauthorised people, the operator (usually the

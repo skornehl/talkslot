@@ -99,21 +99,23 @@ können:
   Adresse). Nach 5 falschen Eingaben in 15 Minuten (falsche aktuelle Passwörter beim Ändern des eigenen
   Passworts zählen mit) wird die Bestätigung eine Weile abgelehnt; nach Ab- und erneutem Anmelden geht es
   sofort wieder.
-- **Sicherheitsmails** (bitte nicht wegfiltern: Oft sind sie der einzige Weg, einen Missbrauch zu bemerken):
+- **Sicherheitsmails** (bitte nicht wegfiltern: Oft sind sie der einzige Weg, einen Missbrauch zu bemerken),
+  in der Sprache der Empfänger:
 
   | E-Mail | An | Wann |
   |---|---|---|
-  | *Ihr Passwort wurde geändert* / *festgelegt* | das Konto | sein Passwort wurde geändert oder über einen Einladungs- bzw. Zurücksetzungslink festgelegt |
-  | *Ihr Benutzername wurde geändert* u. Ä. | die bisherige Adresse | ein Admin hat die E-Mail-Adresse oder den Benutzernamen geändert |
-  | *Sicherheitshinweis: Änderung im Verwaltungsbereich* | alle aktiven Admins (auch Sie) und die betroffene Person | ein Admin wurde eingeladen, Admin-Rechte wurden vergeben oder entzogen, ein Admin-Konto wurde deaktiviert, wieder aktiviert oder gelöscht |
+  | *Ihr Passwort wurde geändert* / *festgelegt* | das Konto | sein Passwort wurde im Profil geändert oder über einen Einladungs- bzw. Zurücksetzungslink festgelegt |
+  | *Ihre E-Mail-Adresse wurde geändert*, *Ihr Benutzername wurde geändert* | die bisherige Adresse | die Person selbst (in *Mein Profil*) oder ein Admin hat sie geändert |
+  | *Sicherheitshinweis: Änderung im Verwaltungsbereich von …* | alle aktiven Admins (auch Sie) und die betroffene Person; ein eingeladener Admin erhält stattdessen die Einladung | ein Admin wurde eingeladen, Admin-Rechte wurden vergeben oder entzogen, ein Admin-Konto wurde deaktiviert, wieder aktiviert oder gelöscht |
   | dieselbe, *Alle Sitzungen wurden beendet* | alle aktiven Admins | jemand hat alle Sitzungen beendet |
-  | *Viele fehlgeschlagene Anmeldeversuche* | das Konto | Fremde haben sein Anmeldelimit aufgebraucht; höchstens eine am Tag, nach der Antwort aus der Warteschlange gesendet |
-  | der Link zum Zurücksetzen | das Konto | ein Admin hat sein Passwort zurückgesetzt (*Link zum Zurücksetzen senden*) |
+  | *Viele fehlgeschlagene Anmeldeversuche bei …* | das Konto | Fremde haben sein Anmeldelimit aufgebraucht; höchstens eine am Tag. Sie kann später eintreffen (mit PHP-FPM oder LiteSpeed sofort, sonst mit dem nächsten Cron-Lauf) und nennt den Zeitpunkt |
+  | *Passwort festlegen für …*, bei einem Konto, das sich nie angemeldet hat, *Einladung zu …* | das Konto | ein Admin hat sein Passwort zurückgesetzt (*Link zum Zurücksetzen senden*) oder die Einladung erneut gesendet |
 - **Passwortlinks** gehen nur per E-Mail hinaus und werden nie angezeigt. Setzt ein Admin ein Passwort
   zurück, erfährt die Person, dass ihr bisheriges Passwort nicht mehr gilt.
 - **Alle Sitzungen beenden** (unten auf der Seite *Benutzer*) meldet alle Konten auf allen Geräten ab, nur
   Ihre aktuelle Sitzung bleibt bestehen, z. B. nach einem verlorenen Gerät oder bei Verdacht auf einen
-  Einbruch. Es braucht Ihr Passwort, und alle Admins erhalten eine E-Mail. Was in so einem Fall außerdem zu
+  Einbruch. Es braucht Ihr Passwort, und alle Admins erhalten eine E-Mail. Alle bekannten Geräte gelten
+  danach als neu: Wer dann durch Fremde über dem Anmeldelimit ist, braucht *Passwort vergessen?*. Was in so einem Fall außerdem zu
   tun ist, steht unter [Sicherheit]({{ '/de/guide/security/' | relative_url }}#bei-verdacht-auf-missbrauch).
 
 ### Wenn jemand die Schule verlässt

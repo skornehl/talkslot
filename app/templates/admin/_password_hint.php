@@ -1,0 +1,2 @@
+<?php /* Hint at the fields for a new password (aria-describedby="password-hint"): the rules of Auth::passwordPolicy() */ ?>
+<p class="hint" id="password-hint"><?= e(__('Bitte vermeiden Sie häufig verwendete Passwörter (auch mit angehängten Ziffern), Wiederholungen und Tastenfolgen sowie Ihren Benutzernamen, Ihre E-Mail-Adresse und den Namen der Anwendung. Gut geeignet sind z. B. drei oder vier zufällige Wörter.')) ?></p>
