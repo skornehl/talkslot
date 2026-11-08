@@ -167,7 +167,10 @@ English text (then the German one) of the web host; German and English need thei
   `languages`.
 - **The German version is authoritative**, so a translation has to say the same. When the German privacy
   policy is saved after a complete translation (or English text), admins see that this version was saved
-  before the German one and should be checked; saving it again (also unchanged) confirms it. The note
+  before the German one and should be checked; saving it again (also unchanged) confirms it. If the German
+  text says more than the template, complete translations that are still the template are listed until your
+  changes are carried over. An empty German privacy policy blocks activating rounds as long as German is
+  offered. The note
   "German version authoritative" does not make a wrong translation right: the operator remains responsible
   for each language.
 - **Existing installations** get the translations of their operator type on the first request after the

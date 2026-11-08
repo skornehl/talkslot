@@ -180,10 +180,25 @@ check "German text saved after the Polish translation: the admins are asked to c
 pv_save pl "$(curl -s -b "$J" "$B/admin/page/privacy/pl" | pv_textarea)"
 check "… saved again: the note is gone" '! curl -s -b "$J" "$B/admin" | grep -qF "Die deutsche Datenschutzerklärung wurde geändert"'
 
-# A page without a text in any fallback language (English, German): parents would get none, no round can be activated
-DBQ "INSERT INTO tp_pages (page_key, lang, content, updated_at) SELECT 'pv-backup', lang, content, updated_at FROM tp_pages WHERE page_key = 'privacy' AND lang IN ('de', 'en'); UPDATE tp_pages SET content = '' WHERE page_key = 'privacy' AND lang IN ('de', 'en')"
+pv_save de "$(curl -s -b "$J" "$B/admin/page/privacy/de" | pv_textarea)"
+check "German text saved unchanged: not newer, no note on the translations" '[ "$(DBQ "SELECT updated_at FROM tp_pages WHERE page_key = \"privacy\" AND lang = \"de\"")" = "$PV_DE_AT" ] && ! curl -s -b "$J" "$B/admin" | grep -qF "Die deutsche Datenschutzerklärung wurde geändert"'
+# The German text says more than the template, the translations are still the template: however recently they were saved
+PV_OWN="\n\nUnser eigener Absatz zur Terminvergabe."
+DBQ "UPDATE tp_pages SET content = CONCAT(content, '$PV_OWN') WHERE page_key = 'privacy' AND lang = 'de'"
+check "German text beyond the template, complete translations still the template: admins are asked to carry the changes over" 'curl -s -b "$J" "$B/admin" | grep -qF "Ihre deutsche Datenschutzerklärung weicht von der Vorlage ab. Diese Fassungen sind noch die Vorlage mit Ihren Angaben: EN, PL. Maßgeblich"'
+DBQ "UPDATE tp_pages SET content = CONCAT(content, '$PV_OWN') WHERE page_key = 'privacy' AND lang = 'pl'"
+check "… a translation with the changes is no longer listed" 'curl -s -b "$J" "$B/admin" | grep -qF "Diese Fassungen sind noch die Vorlage mit Ihren Angaben: EN. Maßgeblich"'
+DBQ "UPDATE tp_pages SET content = REPLACE(content, '$PV_OWN', '') WHERE page_key = 'privacy' AND lang IN ('de', 'pl')"
+check "… German text back to the template: no note" '! curl -s -b "$J" "$B/admin" | grep -qF "weicht von der Vorlage ab. Diese Fassungen"'
+
+# A page without a text in any fallback language (English, German): parents would get none, no round can be activated.
+# The German text alone empty: every translation refers to a version that does not exist
+DBQ "INSERT INTO tp_pages (page_key, lang, content, updated_at) SELECT 'pv-backup', lang, content, updated_at FROM tp_pages WHERE page_key = 'privacy' AND lang IN ('de', 'en'); UPDATE tp_pages SET content = '' WHERE page_key = 'privacy' AND lang = 'de'"
 DBQ "UPDATE tp_rounds SET is_active = 0 WHERE id = $PV_R"
-PV_X=$(curl -s -L -b "$J" --data-urlencode "csrf=$PV_T" -d "title=Datenschutz+Fristen&is_active=1&booking_limit=none&booking_deadline_hours=24&cancel_deadline_hours=12&location=Raum+A+112&user_id=$(DBQ "SELECT user_id FROM tp_rounds WHERE id = $PV_R")" "$B/admin/round/$PV_R/edit")
+pv_activate() { curl -s -L -b "$J" --data-urlencode "csrf=$PV_T" -d "title=Datenschutz+Fristen&is_active=1&booking_limit=none&booking_deadline_hours=24&cancel_deadline_hours=12&location=Raum+A+112&user_id=$(DBQ "SELECT user_id FROM tp_rounds WHERE id = $PV_R")" "$B/admin/round/$PV_R/edit"; }
+check "German privacy policy empty, English filled in: noted, and a round cannot be activated" 'curl -s -b "$J" "$B/admin" | grep -qF "Die deutsche Datenschutzerklärung ist leer." && pv_activate | grep -qF "hinterlegen Sie bitte unter „Texte“ die deutsche Datenschutzerklärung: Auf sie verweisen" && [ "$(DBQ "SELECT is_active FROM tp_rounds WHERE id = $PV_R")" = 0 ]'
+DBQ "UPDATE tp_pages SET content = '' WHERE page_key = 'privacy' AND lang = 'en'"
+PV_X=$(pv_activate)
 check "privacy policy empty in English and German: noted, and a round cannot be activated" 'curl -s -b "$J" "$B/admin" | grep -qF "Für Datenschutzerklärung gibt es in keiner dieser Sprachen einen Text: EN, DE." && echo "$PV_X" | grep -qF "hinterlegen Sie bitte unter „Texte“ Datenschutzerklärung in mindestens einer dieser Sprachen: EN, DE." && [ "$(DBQ "SELECT is_active FROM tp_rounds WHERE id = $PV_R")" = 0 ]'
 DBQ "UPDATE tp_pages p JOIN tp_pages b ON b.page_key = 'pv-backup' AND b.lang = p.lang SET p.content = b.content WHERE p.page_key = 'privacy'; DELETE FROM tp_pages WHERE page_key = 'pv-backup'"
 check "… restored: no note" '! curl -s -b "$J" "$B/admin" | grep -qF "in keiner dieser Sprachen einen Text"'

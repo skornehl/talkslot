@@ -185,7 +185,9 @@ Englisch brauchen einen eigenen.
 - **Maßgeblich ist die deutsche Fassung**, eine Übersetzung muss also dasselbe sagen. Wird die deutsche
   Datenschutzerklärung nach einer vollständigen Übersetzung (oder dem englischen Text) gespeichert, sehen
   Admins, dass diese Fassung vor der deutschen gespeichert wurde und zu prüfen ist; erneutes Speichern (auch
-  unverändert) bestätigt sie. Der Hinweis „maßgeblich ist die deutsche Fassung“ macht eine falsche Übersetzung
+  unverändert) bestätigt sie. Sagt der deutsche Text mehr als die Vorlage, werden vollständige Übersetzungen,
+  die noch die Vorlage sind, genannt, bis Ihre Änderungen dort stehen. Eine leere deutsche
+  Datenschutzerklärung verhindert die Aktivierung von Runden, solange Deutsch angeboten wird. Der Hinweis „maßgeblich ist die deutsche Fassung“ macht eine falsche Übersetzung
   nicht richtig: Der Betreiber bleibt für jede Sprache verantwortlich.
 - **Bestehende Installationen** erhalten die Übersetzungen ihrer Betriebsart beim ersten Aufruf nach dem
   Update, sofern es in der Sprache noch keinen Text gibt (oder nur eine unveränderte Vorlage); bearbeitete

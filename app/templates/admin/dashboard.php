@@ -13,7 +13,7 @@
 <?php elseif ($typeMissing ?? false): ?>
   <div class="alert alert-warning" role="status"><p><?= e(__('Die Admins müssen noch wählen, ob die Terminvergabe von der Schule oder privat betrieben wird. Bis dahin lassen sich keine Runden aktivieren; bereits aktive Runden bleiben erreichbar.')) ?></p></div>
 <?php elseif ($textsOpen ?? false): ?>
-  <div class="alert alert-warning" role="status"><p><?= e(__('Impressum bzw. Datenschutzerklärung enthalten noch offene Platzhalter (Aufgabe der Admins). Bis sie ausgefüllt sind, lassen sich keine Runden aktivieren; bereits aktive Runden bleiben erreichbar.')) ?></p></div>
+  <div class="alert alert-warning" role="status"><p><?= e(__('Impressum bzw. Datenschutzerklärung sind noch nicht vollständig (Aufgabe der Admins). Bis dahin lassen sich keine Runden aktivieren; bereits aktive Runden bleiben erreichbar.')) ?></p></div>
 <?php endif; ?>
 <?php if ($cron ?? null): $cronGuide = App\Version::PROJECT_URL . (App\AdminI18n::lang() === 'de' ? 'de/' : '') . 'guide/operations/#cron-monitoring'; ?>
   <div class="alert alert-warning" role="status"><p><?= e($cron['state'] === 'late'

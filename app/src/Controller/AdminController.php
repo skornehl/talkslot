@@ -297,7 +297,7 @@ final class AdminController
             )) : 0,
             'operatorMissing' => !Operator::ready(),
             'typeMissing' => !Auth::isAdmin() && Operator::ready() && Operator::type() === null,
-            'textsOpen' => !Auth::isAdmin() && Operator::ready() && (LegalTexts::splitOpen(LegalTexts::open())[0] !== [] || LegalTexts::missing() !== []),
+            'textsOpen' => !Auth::isAdmin() && Operator::ready() && (LegalTexts::splitOpen(LegalTexts::open())[0] !== [] || LegalTexts::missing() !== [] || LegalTexts::germanEmpty()),
             'legalHints' => Auth::isAdmin() ? array_merge(self::operatorHints(), self::legalHints(LegalTexts::outdated())) : [],
             // Offboarding: active accounts nobody has signed in to for a long time (only the number)
             'unusedAccounts' => Auth::isAdmin() ? (int) Db::value(
@@ -329,12 +329,24 @@ final class AdminController
                 $dayData = ['dates' => [''], 'start' => $s['start'], 'end' => $s['end'], 'minutes' => $s['minutes'], 'breaks' => $s['breaks']];
             }
         }
+        $fresh = $data === null || $template !== null;
         $data ??= $round ?? [
             'title' => '', 'slug' => '', 'description' => '', 'location' => '', 'source_lang' => I18n::defaultLanguage(), 'is_active' => 1,
             'booking_deadline_hours' => 24, 'cancel_deadline_hours' => 12,
             'delete_after_hours' => 24, 'random_suffix' => 1,
             'code_required' => 0, 'booking_limit' => 'round', 'remind_parents' => 1, 'user_id' => Auth::id(),
         ];
+        // Rounds cannot go public yet (e.g. open placeholders in the legal texts): say so at the checkbox, and the round
+        // starts unticked – a new one, and one whose activation was just refused – so that it can be saved and prepared
+        // right away and activated later. Admins choose the teacher in the form: only what applies to every teacher.
+        $blocker = null;
+        if (!$round || !$round['is_active']) {
+            $blocker = self::platformBlocker() ?? (Auth::isAdmin() ? null : $this->ownerBlocker((array) Auth::user()));
+        }
+        $refused = $blocker !== null && in_array($blocker . ' ' . self::saveInactiveHint(), $errors, true);
+        if ($blocker !== null && ((!$round && $fresh) || $refused)) {
+            $data['is_active'] = 0;
+        }
         $this->render('admin/round_form', [
             'title' => $round ? __('Runde bearbeiten') : __('Neue Runde'),
             'round' => $round,
@@ -345,6 +357,7 @@ final class AdminController
             'errors' => $errors,
             'templates' => $round ? [] : Db::all('SELECT id, name FROM round_templates ORDER BY name'),
             'template' => $template,
+            'activationBlocked' => $blocker !== null ? $blocker . ' ' . self::saveInactiveHint() : null,
         ]);
     }
 
@@ -415,7 +428,8 @@ final class AdminController
         if (!$owner) {
             $errors[] = __('Bitte eine aktive Lehrkraft für die Runde wählen.');
         } elseif ($publishing && ($hint = $this->publishBlocker($owner)) !== null) {
-            $errors[] = $hint;
+            // A round that is online stays so with its previous teacher; any other can be saved inactive meanwhile
+            $errors[] = $hint . ' ' . ($round && $round['is_active'] ? __('Behalten Sie bis dahin die bisherige Lehrkraft, dann bleibt die Runde aktiv.') : self::saveInactiveHint());
         }
         // New round: create the appointment days right away
         $dayData = null;
@@ -495,7 +509,8 @@ final class AdminController
                 );
                 return [$id, $this->createDays($id, $dayData)];
             });
-            $this->flash('success', __('Runde angelegt: {days} Tag(e), {slots} Termine erzeugt.', ['days' => count($dayData['dates']), 'slots' => $count]));
+            $this->flash('success', __('Runde angelegt: {days} Tag(e), {slots} Termine erzeugt.', ['days' => count($dayData['dates']), 'slots' => $count])
+                . ($data['is_active'] ? '' : ' ' . __('Sie ist noch inaktiv: Eltern können erst buchen, wenn Sie sie hier mit „Aktivieren“ freischalten.')));
             $this->audit(fn () => __('angelegt ({dates})', ['dates' => implode(', ', array_map(static fn ($d) => self::when($d), $dayData['dates']))])
                 . ($data['is_active'] ? ', ' . __('aktiv') : ''), $id);
         }
@@ -1299,6 +1314,12 @@ final class AdminController
 
     // ---------------------------------------------------------------- Profile & password
 
+    /** The way on when a round cannot be activated yet: it can be saved inactive and activated later. */
+    private static function saveInactiveHint(): string
+    {
+        return __('Bis dahin können Sie die Runde ohne Häkchen bei „Aktiv“ speichern und alles vorbereiten; aktivieren Sie sie, sobald das erledigt ist, auf der Seite der Runde mit „Aktivieren“.');
+    }
+
     /**
      * Why a round of this teacher may not be activated (yet), or null.
      * Required: the teacher's display name (parents see it), the operator's details for legal notice and
@@ -1307,6 +1328,12 @@ final class AdminController
      * rounds already active stay online.
      */
     private function publishBlocker(array $owner): ?string
+    {
+        return self::platformBlocker() ?? $this->ownerBlocker($owner);
+    }
+
+    /** The part of publishBlocker() that applies to every teacher: operator details, operator type, legal texts. */
+    private static function platformBlocker(): ?string
     {
         if (!Operator::ready()) {
             return Auth::isAdmin()
@@ -1331,6 +1358,17 @@ final class AdminController
                 ? __('Bevor Runden aktiviert werden können, hinterlegen Sie bitte unter „Texte“ {texts} in mindestens einer dieser Sprachen: {languages}.', ['texts' => self::missingTexts($missing), 'languages' => strtoupper(implode(', ', LegalTexts::fallbackLanguages()))])
                 : __('Runden können erst aktiviert werden, wenn ein Admin Impressum und Datenschutzerklärung hinterlegt hat.');
         }
+        if (LegalTexts::germanEmpty()) {
+            return Auth::isAdmin()
+                ? __('Bevor Runden aktiviert werden können, hinterlegen Sie bitte unter „Texte“ die deutsche Datenschutzerklärung: Auf sie verweisen alle Übersetzungen als maßgebliche Fassung.')
+                : __('Runden können erst aktiviert werden, wenn ein Admin Impressum und Datenschutzerklärung hinterlegt hat.');
+        }
+        return null;
+    }
+
+    /** The part of publishBlocker() that depends on the teacher: an active account with a display name. */
+    private function ownerBlocker(array $owner): ?string
+    {
         if (!$owner['is_active']) {
             return __('Das Konto dieser Lehrkraft ist deaktiviert – die Runde wäre öffentlich nicht erreichbar. Bitte die Runde einer aktiven Lehrkraft zuordnen oder das Konto wieder aktivieren.');
         }
@@ -1954,8 +1992,16 @@ final class AdminController
         if (($missing = LegalTexts::missing()) !== []) {
             $hints[] = __('Für {texts} gibt es in keiner dieser Sprachen einen Text: {languages}. Eltern bekommen dann keinen, und es lassen sich keine Runden aktivieren.', ['texts' => self::missingTexts($missing), 'languages' => strtoupper(implode(', ', LegalTexts::fallbackLanguages()))]);
         }
-        if (($behind = LegalTexts::behindGerman()) !== []) {
-            // The German text is the authoritative version: a change there may be missing in the other languages
+        if (LegalTexts::germanEmpty()) {
+            $hints[] = __('Die deutsche Datenschutzerklärung ist leer. Auf sie verweisen alle Übersetzungen als maßgebliche Fassung; bis sie hinterlegt ist, lassen sich keine Runden aktivieren.');
+        }
+        // The German text is the authoritative version: what it says beyond the template, or a change made there since,
+        // may be missing in the other languages
+        $edited = LegalTexts::behindEditedGerman();
+        if ($edited !== []) {
+            $hints[] = __('Ihre deutsche Datenschutzerklärung weicht von der Vorlage ab. Diese Fassungen sind noch die Vorlage mit Ihren Angaben: {languages}. Maßgeblich ist die deutsche Fassung – bitte übertragen Sie Ihre Änderungen dorthin.', ['languages' => strtoupper(implode(', ', $edited))]);
+        }
+        if (($behind = array_values(array_diff(LegalTexts::behindGerman(), $edited))) !== []) {
             $hints[] = __('Die deutsche Datenschutzerklärung wurde geändert, nachdem diese Fassungen zuletzt gespeichert wurden: {languages}. Maßgeblich ist die deutsche Fassung – bitte prüfen Sie, ob sie dieselben Angaben enthalten, und speichern Sie sie danach (auch unverändert).', ['languages' => strtoupper(implode(', ', $behind))]);
         }
         return $hints;
@@ -2135,10 +2181,14 @@ final class AdminController
     {
         $this->assertLang($lang);
         $content = str_replace("\r\n", "\n", Http::postRaw('content'));
+        // The German text is the authoritative version (LegalTexts::behindGerman()): saved unchanged, it is not newer
+        // than the translations. Saving a translation always counts, that is how admins confirm it.
+        $was = $lang === 'de' ? Db::one('SELECT content, updated_at FROM pages WHERE page_key = ? AND lang = ?', [$key, $lang]) : null;
+        $at = $was !== null && rtrim((string) $was['content']) === rtrim($content) ? (string) $was['updated_at'] : Time::nowSql();
         Db::run(
             'INSERT INTO pages (page_key, lang, content, updated_at) VALUES (?, ?, ?, ?)
              ON DUPLICATE KEY UPDATE content = ?, updated_at = ?',
-            [$key, $lang, $content, Time::nowSql(), $content, Time::nowSql()]
+            [$key, $lang, $content, $at, $content, $at]
         );
         // Version marker (LegalTexts::base()): the template the form was loaded from or the admin reconciled the
         // text with ("base", an operator type) if it is still the one the form showed ("base_hash"), else the

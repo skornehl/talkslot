@@ -23,6 +23,10 @@ return [
         'user' => '',
         'pass' => '',
         'prefix' => 'tp_',  // prefix for all tables, in case the database is shared ('' = none)
+        // Only for a database on another server: absolute path of the CA certificate (PEM) that signed the
+        // database server's certificate. The connection is then encrypted, and the certificate must be for the
+        // name in 'host'. '' = unencrypted (fine for localhost or the hoster's internal network)
+        'ssl_ca' => '',
     ],
 
     'languages' => ['de', 'en', 'pl', 'ru', 'uk', 'tr'],   // order = display order; new language: create app/lang/<code>.php

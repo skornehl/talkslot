@@ -136,4 +136,4 @@ $dashboardTeacher = static fn (bool $typeMissing): string => App\View::capture('
     'profileHints' => [], 'legalHints' => [], 'operatorMissing' => false, 'typeMissing' => $typeMissing, 'textsOpen' => true, 'configExposed' => [], 'unusedAccounts' => 0, 'mailsLate' => null]);
 check('teachers: notice that the admins still have to choose the operator type (before the one on open placeholders)',
     str_contains($dashboardTeacher(true), 'Die Admins müssen noch wählen, ob die Terminvergabe von der Schule oder privat betrieben wird.')
-    && !str_contains($dashboardTeacher(false), 'Die Admins müssen noch wählen') && str_contains($dashboardTeacher(false), 'offene Platzhalter (Aufgabe der Admins)'));
+    && !str_contains($dashboardTeacher(false), 'Die Admins müssen noch wählen') && str_contains($dashboardTeacher(false), 'noch nicht vollständig (Aufgabe der Admins)'));

@@ -59,4 +59,12 @@ return [
     'Die deutsche Datenschutzerklärung wurde geändert, nachdem diese Fassungen zuletzt gespeichert wurden: {languages}. Maßgeblich ist die deutsche Fassung – bitte prüfen Sie, ob sie dieselben Angaben enthalten, und speichern Sie sie danach (auch unverändert).'
         => 'The German privacy policy was changed after these versions were last saved: {languages}. The German version is authoritative – please check that they contain the same details and save them afterwards (also unchanged).',
     'und' => 'and',
+    'Bevor Runden aktiviert werden können, hinterlegen Sie bitte unter „Texte“ die deutsche Datenschutzerklärung: Auf sie verweisen alle Übersetzungen als maßgebliche Fassung.'
+        => 'Before rounds can be activated, please enter the German privacy policy under “Texts”: all translations refer to it as the authoritative version.',
+    'Die deutsche Datenschutzerklärung ist leer. Auf sie verweisen alle Übersetzungen als maßgebliche Fassung; bis sie hinterlegt ist, lassen sich keine Runden aktivieren.'
+        => 'The German privacy policy is empty. All translations refer to it as the authoritative version; until it is entered, no round can be activated.',
+    'Ihre deutsche Datenschutzerklärung weicht von der Vorlage ab. Diese Fassungen sind noch die Vorlage mit Ihren Angaben: {languages}. Maßgeblich ist die deutsche Fassung – bitte übertragen Sie Ihre Änderungen dorthin.'
+        => 'Your German privacy policy differs from the template. These versions are still the template with your details: {languages}. The German version is authoritative – please carry your changes over to them.',
+    'Impressum bzw. Datenschutzerklärung sind noch nicht vollständig (Aufgabe der Admins). Bis dahin lassen sich keine Runden aktivieren; bereits aktive Runden bleiben erreichbar.'
+        => 'The legal notice or privacy policy is not complete yet (a task for the admins). Until then no round can be activated; rounds that are already active stay online.',
 ];

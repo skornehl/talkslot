@@ -735,6 +735,41 @@ final class LegalTexts
         return array_map('strval', $behind);
     }
 
+    /**
+     * Languages whose privacy policy parents get (see behindGerman()) and that are still the template of the operator
+     * type with its placeholders filled in, while the German text, the authoritative version, says more than its
+     * template: the school's own changes are missing there, however recently the translation was saved. A
+     * translation the admins have adapted is not listed.
+     * @return list<string>
+     */
+    public static function behindEditedGerman(): array
+    {
+        $type = Operator::type();
+        $stored = self::stored()['privacy'] ?? [];
+        $template = $type !== null ? self::template('privacy', $type, 'de') : null;
+        $de = $stored['de'] ?? '';
+        if ($template === null || trim($de) === '' || self::fills($de, $template)) {
+            return [];
+        }
+        $listed = array_keys(array_filter($stored, static function (string $text, int|string $lang) use ($type): bool {
+            $own = self::template('privacy', (string) $type, (string) $lang);
+            return $lang !== 'de' && $own !== null && trim($text) !== '' && self::fills($text, $own)
+                && self::placeholders(self::render($text, (string) $lang, '')) === [];
+        }, ARRAY_FILTER_USE_BOTH));
+        sort($listed);
+        return array_map('strval', $listed);
+    }
+
+    /**
+     * Whether the German privacy policy is empty although German is offered and parents have another text
+     * (missing() covers none at all): the translations refer to it as the authoritative version.
+     */
+    public static function germanEmpty(): bool
+    {
+        return in_array('de', I18n::languages(), true) && trim(self::stored()['privacy']['de'] ?? '') === ''
+            && !in_array('privacy', self::missing(), true);
+    }
+
     /** @return array<string, array<string, string>> stored texts of the offered languages: page key => language => text */
     public static function stored(): array
     {

@@ -43,7 +43,11 @@ the German ones, with the English label in brackets.
   notice by mail.
 - **Random part in the address** (recommended) so the round cannot be found by guessing, and optionally
   **round code required** (*Nur mit Rundencode*).
-- **Active**: parents can book. Inactive rounds take no bookings, but parents can still cancel.
+- **Active**: parents can book. Inactive rounds take no bookings, but parents can still cancel. While no
+  round can be activated yet (for example because the admins still have to fill in the placeholders of the
+  legal texts), the form says why below the checkbox and a new round starts inactive. Save it like that,
+  prepare everything, and activate it on the round page (*Aktivieren*) once the notice on the overview is
+  gone.
 
 ![New round form]({{ '/assets/img/admin-round-form.webp' | relative_url }})
 
