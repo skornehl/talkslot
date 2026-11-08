@@ -44,7 +44,10 @@ Englisch umstellen.
 - **Zufallsanteil in der Adresse** (empfohlen), damit die Runde nicht durch Ausprobieren gefunden wird,
   und optional *Nur mit Rundencode*.
 - **Aktiv**: Eltern können buchen. Inaktive Runden nehmen keine Buchungen an, Eltern können aber weiterhin
-  absagen.
+  absagen. Solange sich noch keine Runde aktivieren lässt (z. B. weil die Admins noch Platzhalter in den
+  Rechtstexten ausfüllen müssen), sagt das Formular unter dem Häkchen, warum, und eine neue Runde ist
+  zunächst inaktiv. Speichern Sie sie so, bereiten Sie alles vor und aktivieren Sie sie auf der Seite der
+  Runde (*Aktivieren*), sobald der Hinweis auf der Übersicht verschwunden ist.
 
 ![Formular für eine neue Runde]({{ '/assets/img/admin-round-form.webp' | relative_url }})
 
@@ -212,6 +215,15 @@ dass ihre Antworten an die Lehrkraft gehen. Erlaubt die Schule nur ihre eigenen 
 (`allowed_account_domains`), müssen beide bei ihrer Domain liegen. Eine Antwortadresse von vor dieser
 Regel wird dann nicht verwendet (die Antworten gehen an Ihre E-Mail-Adresse, wenn diese bei der Domain der
 Schule liegt), und die Übersicht bittet Sie, sie zu ändern.
+
+### Kontakt für Eltern
+
+Unter *Mein Profil → Kontakt für Eltern bei Fragen* geben Sie an, wie Eltern Sie erreichen, z. B. Ihre
+dienstliche E-Mail-Adresse oder das Sekretariat mit Telefonnummer und Zeiten. Er steht auf der Buchungsseite
+Ihrer Runden und auf der Seite gebuchter Termine, wo Eltern ihn am ehesten brauchen: wenn alle Termine
+vergeben sind oder die Frist für Änderungen abgelaufen ist. Bleibt das Feld leer, sehen Eltern den Kontakt,
+den die Admins für alle hinterlegt haben, falls es einen gibt. Eltern sehen ihn so, wie Sie ihn schreiben
+(nicht übersetzt); bitte keine privaten Telefonnummern.
 
 ### Links aus den E-Mails
 

@@ -94,6 +94,11 @@ $config['admin_language'] = $adminLanguage;
 $config['base_url'] = rtrim($env('BASE_URL'), '/');
 $config['secret'] = $env('APP_SECRET');
 $config['install_key'] = $allowInstall ? $env('INSTALL_KEY') : '';
+$sslCa = $env('DB_SSL_CA');
+if ($sslCa !== '' && $sslCa[0] !== '/') {
+    fwrite(STDERR, "DB_SSL_CA must be an absolute path on the web server, e.g. /home/<account>/db-ca.pem\n");
+    exit(1);
+}
 $config['db'] = [
     'host' => $env('DB_HOST', 'localhost'),
     'port' => (int) $env('DB_PORT', '3306'),
@@ -102,6 +107,8 @@ $config['db'] = [
     'pass' => $env('DB_PASS'),
     // Table prefix (variable DB_PREFIX, default tp_; set empty = no prefix)
     'prefix' => $prefix,
+    // CA certificate of a database on another server, an absolute path on the web server (DB_SSL_CA; empty = no TLS)
+    'ssl_ca' => $sslCa,
 ];
 $config['alert_email'] = $env('ALERT_EMAIL');
 // Names in the summaries for teachers only where the school allows them (SUMMARY_NAMES=1)

@@ -41,7 +41,11 @@ the German ones, with the English label in brackets.
   notice by mail.
 - **Random part in the address** (recommended) so the round cannot be found by guessing, and optionally
   **round code required** (*Nur mit Rundencode*).
-- **Active**: parents can book. Inactive rounds take no bookings, but parents can still cancel.
+- **Active**: parents can book. Inactive rounds take no bookings, but parents can still cancel. While no
+  round can be activated yet (for example because the admins still have to fill in the placeholders of the
+  legal texts), the form says why below the checkbox and a new round starts inactive. Save it like that,
+  prepare everything, and activate it on the round page (*Aktivieren*) once the notice on the overview is
+  gone.
 
 ![New round form]({{ '/assets/img/admin-round-form.webp' | relative_url }})
 
@@ -199,6 +203,15 @@ the e-mail address. Use an address that you read yourself: the mails tell parent
 the teacher. If the school allows only its own addresses (`allowed_account_domains`), both have to be at its
 domain. A reply address from before that rule is then not used (the replies go to your e-mail address, if
 that is at the school's domain), and the overview asks you to change it.
+
+### Contact for parents
+
+Under *Mein Profil → Kontakt für Eltern bei Fragen* (*Contact for parents with questions*) you can say how
+parents reach you, for example your work e-mail address or the school office with its phone number and
+hours. It is shown on the booking page of your rounds and on the page of booked appointments, where parents
+need it most when all slots are taken or the deadline for changes has passed. Left empty, parents see the
+contact the admins set for all, if any. Parents see it as you write it (not translated); please no private
+phone numbers.
 
 ### Links from the mails
 
