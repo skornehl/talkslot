@@ -127,6 +127,24 @@ Datenschutzerklärung.
   werden; sie informieren (Art. 13). Das Pflicht-Häkchen bestätigt daher, dass man die Hinweise *gelesen*
   hat, und die Hinweise stellen klar, dass es sich nicht um eine Einwilligung handelt.
 
+## Auskunftsersuchen {#requests-for-access}
+
+Eltern können fragen, was über sie gespeichert ist (Art. 15 DSGVO). Ein Admin beantwortet das unter
+*Protokoll → Auskunft zu einer E-Mail-Adresse*: Geben Sie genau die Adresse ein und bestätigen Sie, dass Sie ein
+Auskunftsersuchen bearbeiten. Die Seite zeigt über alle Lehrkräfte hinweg die Buchungen mit dieser Adresse
+(Termin, Runde, Lehrkraft, Name wie gebucht, Sprache, wann und von wem eingetragen, Stand von Erinnerung und
+Zustellung) und Absage-E-Mails, die noch auf den Versand warten. Groß- und Kleinschreibung spielen keine Rolle;
+Teile einer Adresse werden nicht gesucht, und die Suche ist ein abgeschicktes Formular, die Adresse steht also in
+keiner URL.
+
+Jede Suche wird im [Protokoll]({{ '/de/guide/admin/' | relative_url }}#protokoll) vermerkt: wer gesucht hat, wann
+und wie viele Einträge gefunden wurden, nicht die Adresse. Nur Admins können sie nutzen.
+
+Nicht enthalten sind bereits verschickte E-Mails (Postfächer der Lehrkräfte, Zusammenfassungen, der Mailserver),
+Sicherungen und die Protokolle des Webhosters; eine Buchung ohne E-Mail-Adresse lässt sich so nicht finden, dafür
+kann die Lehrkraft in der Buchungsliste der Runde nachsehen. Da Buchungen um Mitternacht nach dem Termin gelöscht
+werden, lautet die Antwort oft, dass nichts mehr gespeichert ist.
+
 ## Vorlagen für die Rechtstexte
 
 Vorlagen für Impressum und Datenschutzerklärung auf Deutsch und Englisch werden bei der Installation in

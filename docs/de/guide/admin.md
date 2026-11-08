@@ -169,6 +169,10 @@ Was Lehrkräfte in ihren eigenen Runden tun, erfasst das Protokoll **nicht**, un
 Eltern: Eine Buchung erscheint nur mit Datum und Uhrzeit (z. B. „Buchung 12.11.2026 14:00 gelöscht“).
 Einträge werden nach 90 Tagen gelöscht (einstellbar, `audit_log_days`). Nur Admins sehen das Protokoll.
 
+Von der Protokoll-Seite aus beantwortet *Auskunft zu einer E-Mail-Adresse* ein Auskunftsersuchen von Eltern: siehe
+[Auskunftsersuchen]({{ '/de/guide/privacy/' | relative_url }}#requests-for-access). Jede Suche wird protokolliert,
+ohne die Adresse.
+
 ## Rechtstexte
 
 Unter *Texte* stehen *Impressum* und Datenschutzerklärung (*Datenschutz*) je Sprache. Sie

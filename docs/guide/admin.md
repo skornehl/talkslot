@@ -153,6 +153,10 @@ The log does **not** record what teachers do in their own rounds, and it never c
 a booking appears only as date and time (e.g. "Buchung 12.11.2026 14:00 gelöscht"). Entries are deleted
 after 90 days (configurable, `audit_log_days`). Only admins can see the log.
 
+From the log page, *Auskunft zu einer E-Mail-Adresse* answers a parent's request for access: see
+[Requests for access]({{ '/guide/privacy/' | relative_url }}#requests-for-access). Each search is logged, without
+the address.
+
 ## Legal texts
 
 *Texte* lists imprint (*Impressum*) and privacy policy (*Datenschutz*) per language. They are written in
