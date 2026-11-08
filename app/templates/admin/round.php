@@ -138,15 +138,15 @@ $deletionText = $deletion ? __('{date}, {time} Uhr', ['date' => fmt_date($deleti
 
 <?php if (!$days) { require __DIR__ . '/_add_day.php'; } ?>
 
-<?php foreach ($days as $day): $did = (int) $day['id']; ?>
+<?php foreach ($days as $day): $did = (int) $day['id']; $dayName = fmt_date($day['day_date']); /* the date (and time, name) for buttons that read alike in a list: screen readers go through them one by one */ ?>
 <section class="card day-card" id="day-<?= $did ?>">
   <div class="page-head">
     <h2><?= e(fmt_date($day['day_date'])) ?></h2>
     <p class="muted"><?= e(__('{time} Uhr', ['time' => fmt_range($day['start_time'], $day['end_time'])])) ?> · <?= e(__('{minutes} Min. pro Termin', ['minutes' => (int) $day['slot_minutes']])) ?><?php if (trim((string) ($day['location'] ?? '')) !== ''): ?> · <?= __h('Ort: {location}', ['location' => '<strong>' . e(trim((string) $day['location'])) . '</strong>']) ?><?php endif; ?></p>
   </div>
   <div class="actions">
-    <a class="button button-small" href="<?= e(url('/admin/day/' . $did . '/edit')) ?>"><?= e(__('Tag bearbeiten')) ?></a>
-    <a class="button button-small" href="<?= e(url('/admin/round/' . $rid . '/print', ['day' => $did])) ?>" target="_blank" rel="noopener"><?= e(__('Tag drucken')) ?></a>
+    <a class="button button-small" href="<?= e(url('/admin/day/' . $did . '/edit')) ?>" aria-label="<?= e(__('Tag bearbeiten') . ': ' . $dayName) ?>"><?= e(__('Tag bearbeiten')) ?></a>
+    <a class="button button-small" href="<?= e(url('/admin/round/' . $rid . '/print', ['day' => $did])) ?>" target="_blank" rel="noopener" aria-label="<?= e(__('Tag drucken') . ': ' . $dayName) ?>"><?= e(__('Tag drucken')) ?></a>
     <?php $dayBookings = count(array_filter($day['slots'], static fn ($s) => $s['booking_id'] !== null)); ?>
     <?php $question = $dayBookings ? __('Diesen Tag mit allen Slots und {count} Buchung(en) löschen?', ['count' => $dayBookings]) : __('Diesen Tag mit allen Slots löschen?'); ?>
     <form method="post" action="<?= e(url('/admin/day/' . $did . '/delete')) ?>" class="inline-delete" data-confirm="<?= e($question . $cancelNote($day['parents'])) ?>" data-confirm-off="<?= e($question . $offNote($day['parents'])) ?>"><?= $csrf ?>
@@ -154,7 +154,7 @@ $deletionText = $deletion ? __('{date}, {time} Uhr', ['date' => fmt_date($deleti
         <label class="small"><input type="checkbox" name="confirm" value="1" required> <?= e(__('inkl. {count} Buchung(en)', ['count' => $dayBookings])) ?></label>
       <?php endif; ?>
       <?= $notifyBox($day['parents']) ?>
-      <button type="submit" class="button button-small button-danger"><?= e(__('Tag löschen')) ?></button></form>
+      <button type="submit" class="button button-small button-danger" aria-label="<?= e(__('Tag löschen') . ': ' . $dayName) ?>"><?= e(__('Tag löschen')) ?></button></form>
   </div>
 
   <h3><?= e(__('Pausen')) ?></h3>
@@ -163,7 +163,7 @@ $deletionText = $deletion ? __('{date}, {time} Uhr', ['date' => fmt_date($deleti
     <?php foreach ($day['breaks'] as $br): ?>
     <li><?= e(fmt_range($br['start_time'], $br['end_time'])) ?> <?= $br['label'] ? '· ' . e($br['label']) : '' ?>
       <form method="post" action="<?= e(url('/admin/break/' . (int) $br['id'] . '/delete')) ?>" class="inline"><?= $csrf ?>
-        <button type="submit" class="button-link"><?= e(__('entfernen')) ?></button></form></li>
+        <button type="submit" class="button-link" aria-label="<?= e(__('Pause entfernen: {day}, {time}', ['day' => $dayName, 'time' => fmt_range($br['start_time'], $br['end_time'])])) ?>"><?= e(__('entfernen')) ?></button></form></li>
     <?php endforeach; ?>
   </ul>
   <?php else: ?><p class="muted small"><?= e(__('Keine Pausen.')) ?></p><?php endif; ?>
@@ -179,9 +179,9 @@ $deletionText = $deletion ? __('{date}, {time} Uhr', ['date' => fmt_date($deleti
   <table class="table slots-table">
     <thead><tr><th scope="col"><?= e(__('Zeit')) ?></th><th scope="col"><?= e(__('Eintrag')) ?></th><th scope="col"><?= e(__('Gebucht am')) ?></th><th scope="col"><span class="visually-hidden"><?= e(__('Aktionen')) ?></span></th></tr></thead>
     <tbody>
-    <?php foreach ($day['slots'] as $s): $sid = (int) $s['id']; ?>
+    <?php foreach ($day['slots'] as $s): $sid = (int) $s['id']; $slotName = $dayName . ', ' . fmt_range($s['start_time'], $s['end_time']) . ($s['booking_id'] ? ' ' . $s['name'] : ''); ?>
       <tr id="slot-<?= $sid ?>" class="<?= $s['booking_id'] ? 'is-booked' : ($s['is_blocked'] ? 'is-blocked' : 'is-free') ?><?= $s['is_conflict'] ? ' is-conflict' : '' ?>">
-        <td class="nowrap"><?= $s['is_conflict'] ? '<span title="' . e(__('Konflikt')) . '">⚠ </span>' : '' ?><?= e(fmt_range($s['start_time'], $s['end_time'])) ?></td>
+        <td class="nowrap"><?= e(fmt_range($s['start_time'], $s['end_time'])) ?><?= $s['is_conflict'] ? ' <span class="badge badge-warning" data-conflict><span aria-hidden="true">⚠ </span>' . e(__('Konflikt')) . '</span>' : '' ?></td>
         <td>
           <?php if ($s['booking_id']): ?>
             <strong><?= e($s['name']) ?></strong><?php if ($s['email']): ?><br><span class="small"><?= e($s['email']) ?></span><?php endif; ?>
@@ -193,7 +193,7 @@ $deletionText = $deletion ? __('{date}, {time} Uhr', ['date' => fmt_date($deleti
         <td class="small nowrap"><?= $s['booking_id'] ? e(date('d.m.Y H:i', strtotime($s['booked_at']))) : '' ?></td>
         <td class="row-actions">
           <?php if ($s['booking_id']): ?>
-            <a class="button button-small" href="<?= e(url('/admin/booking/' . (int) $s['booking_id'] . '/edit')) ?>"><?= e(__('Bearbeiten')) ?></a>
+            <a class="button button-small" href="<?= e(url('/admin/booking/' . (int) $s['booking_id'] . '/edit')) ?>" aria-label="<?= e(__('Bearbeiten') . ': ' . $slotName) ?>"><?= e(__('Bearbeiten')) ?></a>
             <?php
             $question = __('Eintrag von „{name}“ löschen? Der Slot wird wieder frei.', ['name' => $s['name']]);
             $note = match (true) {
@@ -205,11 +205,11 @@ $deletionText = $deletion ? __('{date}, {time} Uhr', ['date' => fmt_date($deleti
             ?>
             <form method="post" action="<?= e(url('/admin/booking/' . (int) $s['booking_id'] . '/delete')) ?>" class="inline-delete" data-confirm="<?= e($question . $note) ?>"<?= $s['mailable'] ? ' data-confirm-off="' . e($question . $notNotified) . '"' : '' ?>><?= $csrf ?>
               <?= $notifyBox(['mailable' => (int) $s['mailable']]) ?>
-              <button type="submit" class="button button-small button-danger"><?= e(__('Löschen')) ?></button></form>
+              <button type="submit" class="button button-small button-danger" aria-label="<?= e(__('Löschen') . ': ' . $slotName) ?>"><?= e(__('Löschen')) ?></button></form>
           <?php else: ?>
-            <a class="button button-small" href="<?= e(url('/admin/slot/' . $sid . '/book')) ?>"><?= e(__('Eintragen')) ?></a>
+            <a class="button button-small" href="<?= e(url('/admin/slot/' . $sid . '/book')) ?>" aria-label="<?= e(__('Eintragen') . ': ' . $slotName) ?>"><?= e(__('Eintragen')) ?></a>
             <form method="post" action="<?= e(url('/admin/slot/' . $sid . '/block')) ?>" class="inline"><?= $csrf ?>
-              <button type="submit" class="button button-small"><?= e($s['is_blocked'] ? __('Freigeben') : __('Sperren')) ?></button></form>
+              <button type="submit" class="button button-small" aria-label="<?= e(($s['is_blocked'] ? __('Freigeben') : __('Sperren')) . ': ' . $slotName) ?>"><?= e($s['is_blocked'] ? __('Freigeben') : __('Sperren')) ?></button></form>
           <?php endif; ?>
         </td>
       </tr>

@@ -186,6 +186,15 @@ var L = (function () {
 
   // Copy link (admin, and the parents' appointment page with texts in the page language; there the
   // button is hidden until JavaScript runs)
+  // "Kopiert" only changes the text of the button: screen readers hear it from a status region
+  var copyStatus = null;
+  if (document.querySelector('[data-copy]')) {
+    copyStatus = document.createElement('div');
+    copyStatus.setAttribute('role', 'status');
+    copyStatus.className = 'visually-hidden';
+    copyStatus.setAttribute('data-copy-status', '');
+    document.body.appendChild(copyStatus);
+  }
   Array.prototype.forEach.call(document.querySelectorAll('[data-copy]'), function (btn) {
     var original = btn.textContent;
     var copied = btn.getAttribute('data-copy-done') || L('Kopiert ✓');
@@ -195,7 +204,8 @@ var L = (function () {
       var text = btn.getAttribute('data-copy');
       var done = function () {
         btn.textContent = copied;
-        setTimeout(function () { btn.textContent = original; }, 2000);
+        copyStatus.textContent = copied;
+        setTimeout(function () { btn.textContent = original; copyStatus.textContent = ''; }, 2000);
       };
       if (navigator.clipboard && window.isSecureContext) {
         navigator.clipboard.writeText(text).then(done, function () { window.prompt(ask, text); });
