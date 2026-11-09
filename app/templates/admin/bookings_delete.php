@@ -46,7 +46,7 @@ $range = ['date' => fmt_date($day['day_date']), 'from' => $time($from), 'to' => 
           <td class="nowrap"><label for="booking-<?= $bid ?>" id="time-<?= $bid ?>"><?= e(fmt_range($b['start_time'], $b['end_time'])) ?></label></td>
           <td><strong id="name-<?= $bid ?>"><?= e($b['name']) ?></strong><?php if ((string) $b['email'] !== ''): ?><br><span class="small"><?= e($b['email']) ?></span><?php endif; ?>
             <?php if ($b['source'] === 'admin'): ?> <span class="badge"><?= e(__('selbst eingetragen')) ?></span><?php endif; ?></td>
-          <td class="small nowrap"><?= e(date('d.m.Y H:i', (int) strtotime((string) $b['created_at']))) ?></td>
+          <td class="small nowrap"><?= e(fmt_datetime((string) $b['created_at'])) ?></td>
         </tr>
       <?php endforeach; ?>
       </tbody>

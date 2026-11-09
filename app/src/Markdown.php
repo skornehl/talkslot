@@ -37,16 +37,16 @@ final class Markdown
             $trim = trim($line);
             if ($trim === '') {
                 $flush();
-            } elseif (preg_match('/^(#{1,3})\s+(.*)$/', $trim, $m)) {
+            } elseif (preg_match('/^(#{1,3})\s+(.*)\z/', $trim, $m)) {
                 $flush();
                 $level = strlen($m[1]) + 1; // # → h2 (h1 is the page title)
                 $html[] = "<h{$level}>" . self::inline($m[2]) . "</h{$level}>";
-            } elseif (preg_match('/^[-*]\s+(.*)$/', $trim, $m)) {
+            } elseif (preg_match('/^[-*]\s+(.*)\z/', $trim, $m)) {
                 if ($para || $quote) {
                     $flush();
                 }
                 $list[] = $m[1];
-            } elseif (preg_match('/^>\s?(.*)$/', $trim, $m)) {
+            } elseif (preg_match('/^>\s?(.*)\z/', $trim, $m)) {
                 if ($para || $list) {
                     $flush();
                 }

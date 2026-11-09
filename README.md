@@ -20,8 +20,9 @@ schools (GDPR/DSGVO, TDDDG) and multilingual families.
 - **For the operator:** PHP 8.3+ and MariaDB, no framework, no Composer, no Node, no external CDNs.
   Optional zero-downtime deployment via GitHub Actions and FTPS, including one-click rollback.
 
-> The admin area and mails to teachers are in German or English (per account). Parent-facing pages and
-> mails are translated into six languages (translations should be reviewed by native speakers).
+> The admin area and mails to teachers are in German or English (per account). Parent-facing pages, mails
+> and the privacy policy templates are translated into six languages (translations should be reviewed by
+> native speakers; for the privacy policy the German version is authoritative).
 
 ## Contents
 
@@ -44,8 +45,11 @@ schools (GDPR/DSGVO, TDDDG) and multilingual families.
 - Round page under a readable URL (e.g. `/parents-evening-2026-k7f3x9q2`) or via an 8-character round code
   (`K7MP-3QXA`) on the start page, handy for paper invitations. Typos like `0`/`O`, dashes, case and Cyrillic
   look-alikes are tolerated.
-- Only free slots are shown, grouped by day. Required: name and acknowledging the privacy notice; e-mail is
-  optional.
+- Only free slots are shown, grouped by day. Only a name is required, e-mail is optional, and there is
+  nothing to tick for the privacy notice: right above the button the form shows who is responsible, the
+  purpose and the deletion with a link to the full notice (the rest folded away), and the chosen slot with
+  date, time and location. The round page names the booking deadline and the deadline for changes; the
+  confirmation page and mails give the date and time until which the booking can be changed online.
 - Personal link to **move or cancel**; confirmation and change mails contain an `.ics` file that updates the
   same calendar entry when the booking is moved (titled with the round and the teacher), cancellations one
   that removes it. The confirmation page offers *Copy link*, *Add to
@@ -64,7 +68,8 @@ schools (GDPR/DSGVO, TDDDG) and multilingual families.
 - Admins (one or more): invite teachers and further admins by e-mail (one-time link, no passwords in
   mails), change roles, deactivate, reset or delete accounts, see and edit all rounds, create rounds for a
   teacher, maintain templates and the details for the legal pages. A log (*Protokoll*) shows which admin
-  changed what (no names or e-mail addresses of parents, bookings with their date only; deleted after 90 days).
+  changed what (no names or e-mail addresses of parents, bookings with their date only; deleted after 90 days); from
+  there, a logged search finds the data for a parent's request for access (Art. 15 GDPR) by one exact email address.
 - Teachers only see their own rounds (enforced centrally, foreign IDs return 404).
 - Rounds: several days, first/last slot, duration, any number of breaks, live preview; add days later;
   location (per round, optionally per day); block single slots; duplicate with a new first day; a 14-day trash for rounds deleted without bookings; templates
@@ -89,6 +94,9 @@ schools (GDPR/DSGVO, TDDDG) and multilingual families.
   turned off per round; entries made by the teacher only after the parents got a confirmation).
 - A mail the mail server refused is retried from a **mail queue** and marked *E-Mail nicht zugestellt*
   in the booking list; admins see mails that wait too long.
+- Privacy policy templates in all six parent languages, imprint templates in German and English; a
+  translation whose placeholders are still open is not shown (parents get the English text with a notice in
+  their language) and does not block activating rounds. Every mail to parents links the privacy policy.
 - Imprint and privacy policy per language, editable (simple Markdown), with templates per operator type:
   *operated by the school* (public body, Art. 6(1)(e) GDPR, the school's data protection officer) or
   *operated privately* (Art. 6(1)(b)/(f) GDPR, legal notice of a private, non-commercial service). Unedited
@@ -121,7 +129,8 @@ schools (GDPR/DSGVO, TDDDG) and multilingual families.
   in public repositories after 60 days without activity).
 - Database migrations run automatically and are additive (columns, tables, indexes), so a rollback to the
   previous version of the same major version keeps working.
-- Table prefix (default `tp_`), so a database can be shared with other applications.
+- Table prefix (default `tp_`) for tables and foreign keys, so a database can be shared with other applications
+  or a second TalkSlot.
 
 ## Requirements
 
@@ -295,7 +304,7 @@ All options are documented in [`config/config.sample.php`](config/config.sample.
 | `default_language` | `de` | language shown until the visitor picks one; must be in `languages` (variable `DEFAULT_LANGUAGE`) |
 | `timezone` | `Europe/Berlin` | |
 | `alert_email` | – | recipient of error alerts (else the admin's address) |
-| `hosting` | – | web host per language, replaces `[[HOSTER]]` in the privacy policy |
+| `hosting` | – | web host per language, replaces `[[HOSTER]]` in the privacy policy (translations without their own entry take the English one) |
 | `access_link_hours` | `48` | validity of invitation/reset links |
 | `summary_evening_hour` | `18` | time of the evening summary |
 | `summary_names` | `false` | the school allows names in the summaries (each account chooses, new ones start without; variable `SUMMARY_NAMES`) |
@@ -311,7 +320,9 @@ values are listed for admins on the dashboard.
 **Adding a language:** copy `app/lang/en.php` to e.g. `app/lang/it.php`, translate it, add the code to
 `languages` and a flag `public/assets/flags/it.svg` (admin translation form). Optionally add the legal templates
 `app/templates/pages/{imprint,imprint-private,privacy,privacy-private}.it.md` (with their hashes in
-`Migrations::CURRENT_PAGE_HASHES`); otherwise the legal pages fall back to English.
+`Migrations::CURRENT_PAGE_HASHES`); otherwise the legal pages fall back to English. Set `'plural'` in the
+language file to the plural rule of the language (`one`, `pl`, `east-slavic` or `none`) and give the forms of
+`'hours'` it needs.
 
 ## Security
 
@@ -360,7 +371,8 @@ values are listed for admins on the dashboard.
   translation for booking lists; parent pages stay translatable.
 - Browser storage only on explicit request (§ 25 TDDDG): "remember my appointment" is an unticked checkbox;
   the light/dark choice stores only `light`/`dark`.
-- The mandatory checkbox is worded as *acknowledgement* of the privacy notice, not as consent (Art. 13 GDPR).
+- No checkbox for the privacy notice: Art. 13 GDPR asks to inform, not to confirm. The form gives the
+  information in two levels (Art. 12), the full notice exists in every parent language.
 - Automatic deletion as described above; summary mails to teachers contain no names unless the school
   allows them, and never parent e-mail addresses. Teachers can give their own reply address for parents.
 - The mail queue holds references only; a cancellation by the teacher keeps just what that one mail needs

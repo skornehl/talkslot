@@ -26,7 +26,8 @@ final class Readiness
      */
     public static function checks(array $legalHints): array
     {
-        $open = LegalTexts::open();
+        // What keeps rounds from being activated: open placeholders in a translation do not (LegalTexts::splitOpen())
+        $open = LegalTexts::splitOpen(LegalTexts::open())[0];
         $items = [self::legal($legalHints, $open)];
         if (Operator::type() === 'school') {
             $items[] = self::dpo($open);
@@ -77,7 +78,7 @@ final class Readiness
      */
     private static function legal(array $hints, array $open): array
     {
-        $blocked = !Operator::ready() || Operator::type() === null || $open !== [];
+        $blocked = !Operator::ready() || Operator::type() === null || $open !== [] || LegalTexts::missing() !== [] || LegalTexts::germanEmpty();
         return self::item('legal', $blocked ? self::TODO : ($hints ? self::CHECK : self::DONE), __('Impressum und Datenschutzerklärung'),
             match (true) {
                 $blocked => __('Hier fehlt noch etwas (siehe unten). Bis dahin lassen sich keine Runden aktivieren.'),
