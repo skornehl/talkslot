@@ -1,6 +1,7 @@
-# Lint and unit tests on all supported PHP versions (without a database), plus the end-to-end
-# tests (tests/smoke.sh), browser tests (tests/browser.mjs) and the deployment test (tests/deploy.sh)
-# against the Docker environment from dev/.
+# Lint and unit tests on all supported PHP versions (without a database), static analysis (PHPStan), plus the
+# end-to-end tests (tests/smoke.sh with tests/integration.php), browser tests (tests/browser.mjs) and the
+# deployment test (tests/deploy.sh) against the Docker environment from dev/, with line coverage. Every run
+# fails on PHP warnings, notices and deprecations of the app (tests/php-errors.sh).
 name: Tests
 
 on:
@@ -13,6 +14,7 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     strategy:
       matrix:
         php: ['8.3', '8.4', '8.5']
@@ -34,10 +36,16 @@ jobs:
       - name: Lint & unit tests (PHP ${{ matrix.php }})
         run: |
           cp dev/config.dev.php config/config.php
+          rc=0
           docker run --rm -v "$PWD:/app" -w /app "php:${{ matrix.php }}-cli" sh -c '
             set -e
             find . -name "*.php" -not -path "./app/vendor/*" -print0 | xargs -0 -n1 php -l > /dev/null
-            php tests/unit.php'
+            php tests/unit.php' > unit.log 2>&1 || rc=$?
+          cat unit.log
+          [ "$rc" = 0 ]
+          # PHP's own messages, e.g. a deprecation while compiling the bootstrap, before the test's error handler
+          if grep -E '^(PHP )?(Deprecated|Warning|Notice|Fatal error): ' unit.log; then exit 1; fi
+          tests/php-errors.sh # also from the PHP processes the unit tests start
 
       # A web host or a cron job on an older PHP must get the explanation of App\Platform, not a syntax error or a
       # blank page: the entry points and what they load before the check parse on PHP 7.4 (once is enough)
@@ -53,9 +61,10 @@ jobs:
             done
           done
 
-  e2e:
-    name: End-to-end and browser tests
+  static-analysis:
+    name: Static analysis (PHPStan)
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Fetch code
         env:
@@ -69,11 +78,45 @@ jobs:
           git checkout -q --detach "FETCH_HEAD^{commit}"
           git log -1 --format='Checked out: %h %s'
 
+      # The pinned PHAR with its checksum (dev/phpstan.sh), level and baseline in tests/phpstan.neon
+      - name: PHPStan
+        run: PHPSTAN_DOCKER=1 dev/phpstan.sh
+
+  e2e:
+    name: End-to-end and browser tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      statuses: write # the coverage of main as the commit status "coverage" (step "Line coverage")
+    env:
+      COVERAGE: '1' # dev/compose.yml: PCOV in the app container, see tests/coverage/
+      COVERAGE_MIN: '96.5' # the floor of every run (measured: 96.99 % in November 2026); pull requests are compared with main
+    steps:
+      # Two commits deep: for a pull request, HEAD^1 is the target branch (the changed lines in the coverage)
+      - name: Fetch code
+        env:
+          REPO: ${{ github.repository }}
+          REF: ${{ github.sha }}
+          TOKEN: ${{ github.token }}
+        run: |
+          git init -q . && git remote add origin "https://github.com/$REPO.git"
+          AUTH="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$TOKEN" | base64 -w0)"
+          git -c http.extraheader="$AUTH" fetch -q --depth=2 origin "$REF"
+          git checkout -q --detach "FETCH_HEAD^{commit}"
+          git log -1 --format='Checked out: %h %s'
+
       - name: Start the Docker environment
         run: |
           cp dev/config.dev.php config/config.php
           docker compose -f dev/compose.yml up -d --build --wait --quiet-pull
           for i in $(seq 1 60); do [ "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/)" != 000 ] && break; sleep 1; done
+
+      - name: Unit tests in the app container (for the coverage)
+        run: |
+          docker compose -f dev/compose.yml exec -T -w /srv/app app php tests/unit.php > unit.log 2>&1 || { grep -v '✓' unit.log; exit 1; }
+          tail -1 unit.log
+          if grep -E '^(PHP )?(Deprecated|Warning|Notice|Fatal error): ' unit.log; then exit 1; fi
 
       - name: Smoke tests
         run: dev/reset.sh && tests/smoke.sh
@@ -101,6 +144,37 @@ jobs:
           docker compose -f dev/compose.yml exec -T -e DEBIAN_FRONTEND=noninteractive app sh -c 'apt-get update -qq && apt-get install -y -qq lftp > /dev/null'
           docker compose -f dev/compose.yml exec -T -w /srv/app app tests/deploy.sh
 
+      - name: No PHP warnings, notices or deprecations in the error log
+        run: tests/php-errors.sh
+
+      # Coverage of all the tests above, in the job summary. Every run fails below COVERAGE_MIN or for a file no test
+      # loads. A pull request must not lower the coverage: it is compared with that of its target commit on main
+      # (commit status "coverage", which the run on main sets below), and the changed lines that no test executes
+      # are marked as annotations.
+      - name: Line coverage
+        env:
+          EVENT: ${{ github.event_name }}
+          REF: ${{ github.ref }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ARGS=(--min="$COVERAGE_MIN" --github --markdown=/srv/app/app/var/coverage.md --total=/srv/app/app/var/coverage.total)
+          : > "$RUNNER_TEMP/changes.diff"
+          if [ "$EVENT" = pull_request ]; then
+            git diff HEAD^1 HEAD > "$RUNNER_TEMP/changes.diff" # a missing target commit fails the step here
+            ARGS+=(--diff=-)
+            BASE=$(gh api "repos/$GITHUB_REPOSITORY/commits/$(git rev-parse HEAD^1)/statuses" \
+              -q '[.[] | select(.context == "coverage")][0].description // ""' | grep -oE '^[0-9]+\.[0-9]+' || true)
+            if [ -n "$BASE" ]; then ARGS+=(--baseline="$BASE"); else echo "::notice::No coverage recorded for the target commit yet: only the minimum applies."; fi
+          fi
+          rc=0
+          docker compose -f dev/compose.yml exec -T -w /srv/app app php tests/coverage/report.php "${ARGS[@]}" < "$RUNNER_TEMP/changes.diff" || rc=$?
+          if [ -f app/var/coverage.md ]; then cat app/var/coverage.md >> "$GITHUB_STEP_SUMMARY"; fi
+          if [ "$EVENT" = push ] && [ "$REF" = refs/heads/main ] && [ "$rc" = 0 ] && [ -f app/var/coverage.total ]; then
+            gh api -X POST "repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" -f state=success -f context=coverage \
+              -f description="$(cat app/var/coverage.total) % line coverage" > /dev/null
+          fi
+          exit $rc
+
       - name: Server log
         if: failure()
         run: docker compose -f dev/compose.yml logs --tail 200 app
@@ -110,6 +184,7 @@ jobs:
   mariadb-min:
     name: Smoke tests on MariaDB 10.6
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     env:
       MARIADB_VERSION: '10.6' # dev/compose.yml
     steps:

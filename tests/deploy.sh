@@ -156,6 +156,12 @@ echo 20261102-140000-v1.9.4 > "$BASE/current"
 ok 'prune deletes every version except the active one (code and assets), the site keeps running' 'dep prune > /dev/null 2>&1 && [ "$(ls "$BASE/releases")" = 20261102-140000-v1.9.4 ] && [ "$(ls "$WEB/v")" = 20261102-140000-v1.9.4 ] && [ "$(code /admin/login)" = 200 ]'
 ok 'prune with only the active version: nothing to do' 'dep prune 2>&1 | grep -q "Only the active version is left: 20261102-140000-v1.9.4"'
 
+# The deployed versions log into the shared app/var of the test server, which the clean-up deletes: no PHP warning,
+# notice or deprecation of the app there either (expert review P1-14; the broken versions log [Error] lines, which
+# do not count)
+DEP_ERRORS=$("$REPO/tests/php-errors.sh" "$BASE/app/var/php-error.log")
+ok "no PHP warning, notice or deprecation in the log of the deployed versions" '[ -z "$DEP_ERRORS" ]' || printf '%s\n' "$DEP_ERRORS" | sed 's/^/      /'
+
 echo
 [ $FAIL = 0 ] && echo "Deploy test: all ok" || echo "Deploy test: $FAIL failed"
 exit $FAIL
