@@ -193,6 +193,10 @@ zuordnen ließe; Runde, Lehrkraft und Datum können trotzdem auf eine Familie de
 nur Admins.
 Einträge werden nach 90 Tagen gelöscht (einstellbar, `audit_log_days`). Nur Admins sehen das Protokoll.
 
+Von der Protokoll-Seite aus findet *Auskunft zu einer E-Mail-Adresse* die Daten für eine Auskunftsanfrage von Eltern:
+siehe [Auskunftsanfragen]({{ '/de/guide/privacy/' | relative_url }}#requests-for-access). Auch diese Suchen stehen im
+Protokoll, ohne die Adresse.
+
 ## Rechtstexte
 
 Unter *Texte* stehen *Impressum* und Datenschutzerklärung (*Datenschutz*) je Sprache. Sie
