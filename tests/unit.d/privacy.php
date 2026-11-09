@@ -511,7 +511,7 @@ check('deadline for changes across the change of daylight saving time: the same 
 check('date and time', fmt_deadline(new DateTimeImmutable('2026-11-10 15:45')) === 'Dienstag, 10.11.2026, 15:45 Uhr'
     && App\I18n::with('en', static fn (): string => fmt_deadline(new DateTimeImmutable('2026-11-10 09:05'))) === 'Tuesday, 10 November 2026, 09:05');
 $pvManage = static fn (bool $canChange, array $booking = [], ?bool $canMove = null): string => App\View::capture('public/manage', [
-    'booking' => $booking + ['id' => 5, 'round_id' => 7, 'title' => 'Elternsprechtag 7b', 'teacher_name' => 'Frau Berger', 'name' => 'Max Muster', 'location' => ''] + $pvBooking,
+    'booking' => $booking + ['id' => 5, 'round_id' => 7, 'title' => 'Elternsprechtag 7b', 'teacher_name' => 'Frau Berger', 'name' => 'Max Muster', 'interpreter_lang' => null, 'location' => ''] + $pvBooking,
     'token' => str_repeat('Tk', 21) . 'x', 'canChange' => $canChange, 'canMove' => $canMove ?? $canChange, 'days' => [], 'csrf' => '1.abc',
     'done' => 'booked', 'mailed' => false, 'mailQueued' => false, 'mailLimited' => false, 'remember' => false, 'errors' => [], 'open' => '', 'mailTo' => '',
 ]);

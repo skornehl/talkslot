@@ -192,7 +192,7 @@ echo "Admin: parents are notified of changes, or told that they are not\n";
 $entryForm = static fn (?array $booking, array $old): string => App\View::capture('admin/booking_form', [
     'title' => 'Eintrag', 'round' => ['id' => 1, 'title' => 'Elternsprechtag'], 'booking' => $booking, 'moveOptions' => [], 'errors' => [],
     'slot' => ['id' => 5, 'day_date' => '2030-01-07', 'start_time' => '14:00:00', 'end_time' => '14:15:00'],
-    'old' => $old + ['name' => 'Max', 'email' => '', 'lang' => 'de', 'send_mail' => true, 'move_to' => ''],
+    'old' => $old + ['name' => 'Max', 'email' => '', 'interpreter_lang' => '', 'lang' => 'de', 'send_mail' => true, 'move_to' => ''],
 ]);
 $mailBox = static fn (string $html): string => preg_match('/<input type="checkbox" id="send_mail"[^>]*>/', $html, $m) ? $m[0] : '';
 check('entry form: mail option tied to the e-mail field, ticked by default',
@@ -227,7 +227,7 @@ check('English: the hints are translated',
 
 echo "Appointment page: keeping the link (copy, calendar, share, mail), siblings on one device\n";
 $mToken = str_repeat('Tk', 21) . 'x';
-$mBooking = ['id' => 5, 'round_id' => 7, 'title' => 'Elternsprechtag 7b', 'teacher_name' => 'Frau Berger', 'name' => 'Max Muster', 'location' => '',
+$mBooking = ['id' => 5, 'round_id' => 7, 'title' => 'Elternsprechtag 7b', 'teacher_name' => 'Frau Berger', 'name' => 'Max Muster', 'interpreter_lang' => null, 'location' => '',
     'day_date' => '2030-01-07', 'start_time' => '14:00:00', 'end_time' => '14:15:00', 'cancel_deadline_hours' => 24];
 $manage = static fn (array $vars = []): string => App\View::capture('public/manage', $vars + [
     'booking' => $mBooking, 'token' => $mToken, 'canChange' => true, 'canMove' => true, 'days' => [], 'csrf' => '1.abc',
