@@ -61,8 +61,9 @@ Datenschutzerklärung.
   eine Bestätigung oder Änderungsmitteilung bei den Eltern angekommen ist, denn diese E-Mail informiert über
   den Eintrag und die Datenschutzhinweise. Ein späteres Einschalten betrifft frühere Buchungen nicht.
 - **Wunsch nach Dolmetschung statt der Sprache der Seite:** Welche Sprache Eltern auf der Seite nutzen, sagt wenig
-  darüber, ob sie eine Dolmetschung brauchen, und könnte auf ihre Herkunft schließen lassen; Lehrkräfte sehen sie
-  deshalb nicht. Stattdessen kann eine Runde fragen (standardmäßig aus): Wer eine Dolmetschung wünscht, trägt die
+  darüber, ob sie eine Dolmetschung brauchen, und könnte auf ihre Herkunft schließen lassen; sie steht deshalb
+  nicht in der Terminliste oder im Ausdruck und dient nie als Hinweis auf eine Dolmetschung (Lehrkräfte sehen sie
+  nur als Sprache für E-Mails beim Bearbeiten einer Buchung und bei einer Auskunft). Stattdessen kann eine Runde fragen (standardmäßig aus): Wer eine Dolmetschung wünscht, trägt die
   Sprache selbst in ein freiwilliges Feld ein. Die Angabe dient nur der Vorbereitung des Gesprächs: Lehrkraft und
   Admins sehen sie in der Terminliste, im Ausdruck und in der Auskunftssuche, die Eltern auf der Seite ihres Termins.
   Sie steht in keiner E-Mail und keiner Zusammenfassung und wird mit der Buchung gelöscht. Die Datenschutzvorlagen

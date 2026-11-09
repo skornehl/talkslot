@@ -199,7 +199,7 @@ final class BookingService
     }
 
     /**
-     * The teacher edits name, address and language of a booking. A new address counts as unknown, as for a new
+     * The teacher edits name, address, mail language and request for an interpreter of a booking. A new address counts as unknown, as for a new
      * entry by the teacher (source "admin"): it gets change notices, cancellations and reminders only once a
      * confirmation or change notice from the entry reached it (mailResult()), which counts against the limit
      * of such mails per account. Otherwise an account could replace the addresses of its bookings and send

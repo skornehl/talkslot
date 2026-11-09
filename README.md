@@ -363,7 +363,7 @@ language file to the plural rule of the language (`one`, `pl`, `east-slavic` or 
 
 ## Privacy by design
 
-- Data minimisation: a free-text name and an optional e-mail address, nothing else.
+- Data minimisation: a free-text name and an optional e-mail address; in rounds that ask for it, the language of a request for an interpreter. Nothing else about parents.
 - **No cookies on parent pages** (language via `?lang=`, stateless CSRF), so no cookie banner is needed.
   The admin area uses a session cookie and a known-device cookie, both strictly necessary for signing in.
   The browser language only offers a link to that language; the page never switches by itself.

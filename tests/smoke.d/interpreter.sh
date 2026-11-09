@@ -19,7 +19,8 @@ in_book "$IN_S0" "Familie Ungefragt $IN_N" "" "Arabisch" >/dev/null
 check "a round that does not ask: a language sent anyway is not stored" '[ "$(in_lang "Familie Ungefragt $IN_N")" = NULL ]'
 check "round page: nothing about an interpreter while it is off" '! curl -s -b "$J" "$B/admin/round/$IN_R0" | has "Fragt nach Dolmetschung"'
 IN_SL0=($(curl -s -b "$J" "$B/admin/round/$IN_R0" | grep -o '/admin/slot/[0-9]*/book' | grep -o '[0-9]\+'))
-check "entry by the teacher in such a round: no field" '! curl -s -b "$J" "$B/admin/slot/${IN_SL0[0]}/book" | has "name=\"interpreter_lang\""'
+IN_F0=$(curl -s -b "$J" "$B/admin/slot/${IN_SL0[0]}/book")
+check "entry by the teacher in such a round: the form, without the field" 'echo "$IN_F0" | has "name=\"name\"" && ! echo "$IN_F0" | has "name=\"interpreter_lang\""'
 
 # Asked: the parents
 IN_R=$(in_new "Dolmetschung+$IN_N"); IN_S=$(slugof "$IN_R")
@@ -34,7 +35,7 @@ IN_X=$(in_book "$IN_S" "Familie Link $IN_N" "" "https://example.org/x")
 check "a link: message, nothing booked" 'echo "$IN_X" | has "keine Links" && [ "$(in_rows "Familie Link $IN_N")" = 0 ]'
 IN_X=$(in_book "$IN_S" "Familie Sprachwechsel $IN_N" "" "Arabisch" 1 "switch_lang=en")
 check "switching the language keeps the input, books nothing, field in the new language" \
-  'echo "$IN_X" | has "value=\"Arabisch\"" && echo "$IN_X" | has "Interpreter requested for the meeting" && [ "$(in_rows "Familie Sprachwechsel $IN_N")" = 0 ]'
+  'echo "$IN_X" | has "value=\"Arabisch\"" && echo "$IN_X" | has "Would you like an interpreter" && [ "$(in_rows "Familie Sprachwechsel $IN_N")" = 0 ]'
 IN_X=$(in_book "$IN_S" "Familie Dolmetsch $IN_N" "$IN_MAIL" "  Arabisch ")
 IN_U=$(echo "$IN_X" | tail -1 | cut -d' ' -f2)
 check "booked with the language, cleaned" '[[ "$(echo "$IN_X" | tail -1)" == 303* ]] && [ "$(in_lang "Familie Dolmetsch $IN_N")" = Arabisch ]'

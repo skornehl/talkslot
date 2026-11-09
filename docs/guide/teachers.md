@@ -48,9 +48,9 @@ the German ones, with the English label in brackets.
   notice by mail.
 - **Interpreter** (*Eltern fragen, ob sie eine Dolmetschung wünschen*, off by default): the booking form gets an
   optional field in which parents enter the language if they would like an interpreter for the meeting. You
-  see it with the booking in the list and on the printout, as *Dolmetschung gewünscht: …*; it appears in no
+  see it with the booking in the list and on the printout, as *Dolmetschung gewünscht: …* (*Interpreter requested: …*); it appears in no
   mail or summary and is deleted with the booking. It is a request: organise the interpreter yourself, or tell
-  the parents if that is not possible. You can enter or change it in the booking, and it stays visible if you
+  the parents if that is not possible. Check the list in good time, there is no notification. You can enter or change it in the booking, and it stays visible if you
   turn the question off later. A copy of the round, a template and the trash keep the setting.
 - **Random part in the address** (recommended) so the round cannot be found by guessing, and optionally
   **round code required** (*Nur mit Rundencode*).

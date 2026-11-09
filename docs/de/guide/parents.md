@@ -25,7 +25,8 @@ Benutzerkonto brauchen Sie nicht.
    werden, sagt die Seite das, und sie kommt automatisch nach (mit einem eigenen persönlichen Link; der Link
    auf der Seite bleibt gültig). Fragt die Lehrkraft in dieser Runde danach, können Sie außerdem die **Sprache
    für eine Dolmetschung** eintragen. Lassen Sie das Feld leer, wenn Sie keine brauchen. Es ist ein Wunsch an die
-   Lehrkraft, noch keine Zusage.
+   Lehrkraft, noch keine Zusage. Ändern oder zurückziehen können Sie ihn über die Lehrkraft oder indem Sie absagen
+   und neu buchen.
 5. **Prüfen und buchen.** Direkt über dem Button sehen Sie den gewählten Termin mit Datum, Uhrzeit und Ort
    und das Wichtigste zum Datenschutz: wer verantwortlich ist, wofür Ihre Angaben genutzt und wann sie
    gelöscht werden. *Mehr zum Datenschutz* zeigt den Rest, ein Link öffnet die vollständigen

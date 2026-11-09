@@ -213,20 +213,20 @@ final class Migrations
         // Unchanged since v1.5.0: the legal notice of a "private, non-commercial service"
         'imprint-private.de' => '036e210b629357dfbf768868e3a5f249c888d3052f301170703b196336058f43',
         'imprint-private.en' => 'f15521ceaa18e97c98190e448cc95eb6130c4cf571164b09819bb40dd7af22c8',
-        'privacy.de' => '0e1505ba988ffc60d1556650a45fd5076f40acb9be5e1419cf0847d0ed2ceacc',
-        'privacy.en' => '5a84059107d04543b26db5235f5d505e29aafcefb96a964a13be599da5d87880',
-        'privacy-private.de' => '2d0833173dcd0204a0c26b3333bc2e0de539683dd5c587c14e740b691e0e3c00',
-        'privacy-private.en' => '412eb157db87768b17d4c9eb47de37d454ee99edb19d00861f0cea84374efb75',
+        'privacy.de' => '13021e58a8fbab1cd3943d848b39342e311fe7f74c916a97867113b713702b91',
+        'privacy.en' => 'bc92b82ad52bbc09d6cd0e02915c7bdda0ae04f474cde2b1d0fcbb1c0ea04100',
+        'privacy-private.de' => 'c9ced83684c9f6c92b3bd8ff59e66d68c268ebdd33c314566c78a8f0c5070142',
+        'privacy-private.en' => '15bad516b1ada6e2b6ca6b52b66a8623c51dcf596420f0e7fdadbffc8e5e1075',
         // Translations of the privacy policy for the other parent languages (German placeholders, the German
         // version is authoritative); the legal notice has none, it falls back to English
-        'privacy.pl' => '00b1cb199acfe27bce201b4c4ddab3016b10b92baa3155582807af9f92021fb7',
-        'privacy.ru' => '8604612cf3dbdb6a09a488aee049c8e6cf305cff39dd32eca247f414c9cc56ea',
-        'privacy.tr' => '81a89754883664ca7e7bb7a1a9c33275932ff5f2ce7585433aca84421f3d8607',
-        'privacy.uk' => '3cdbf5ea568c46eafcdda8fc7760d5deb9c7a66b5ca0d55a6bb43cebca3d7bd3',
-        'privacy-private.pl' => '679a705238489ec93f673b1d7b78c64fff8675f99ca186b569703c62ac09d659',
-        'privacy-private.ru' => '070f79cc5d972e4f998532b257099a82bcb08b861609402cc55425643060f84c',
-        'privacy-private.tr' => 'c723c9d06fee1716635d2b08d00fccddb52af69621e71b0f51130938d6cbaaed',
-        'privacy-private.uk' => '211dff89eb29be85fd04a5ff9f078cfd25798b2b870775ff53e4f168aaeb9a84',
+        'privacy.pl' => 'de8fd0dd046532cefd57d28a8a8468f7f2a7876b327e6f5fcbc971464225ea21',
+        'privacy.ru' => '2ef72bdb39cfce5f4125837d2f250166a4d95babf2ca9eacc471091104417c46',
+        'privacy.tr' => '20eda96c2387fb8955f038b5b54bf8da9de9b78ff16ba5be8003ad71fe52f24a',
+        'privacy.uk' => 'd18997f80a7ba3d61a40ffb72230daccdd19d937c9141f2b2e21b15c956bcd05',
+        'privacy-private.pl' => 'fa947f61811a5a1aa6292c2256f9f4ce3f5ec30b6e11139b00492f9217dd2a14',
+        'privacy-private.ru' => 'cfe56ea04ead50f6fcf12a4815af6ca7e438bbac094011450160276196100501',
+        'privacy-private.tr' => 'f6b7f2e48e1b5d22871b3f36a6ef77781a1f803cfeef753356e63283c272718c',
+        'privacy-private.uk' => 'c802462f6a90b732be3ef0f9124ce1c003a3b0a3dd7ff066010e3a9db241a175',
     ];
 
     /**

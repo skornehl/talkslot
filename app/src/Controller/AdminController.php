@@ -1277,7 +1277,7 @@ final class AdminController
             return;
         }
         try {
-            [$id, $token] = BookingService::adminBook($round, $slotId, PublicController::cleanName($old['name']), $old['email'] ?: null, $old['lang'], PublicController::cleanLanguage($old['interpreter_lang']));
+            [$id, $token] = BookingService::adminBook($round, $slotId, PublicController::cleanName($old['name']), $old['email'] ?: null, $old['lang'], interpreterLang: PublicController::cleanLanguage($old['interpreter_lang']));
         } catch (BookingException) {
             $this->flash('error', __('Dieser Slot ist bereits belegt.'));
             Http::redirect('/admin/round/' . $round['id'], [], 'slot-' . $slotId);
@@ -1340,7 +1340,7 @@ final class AdminController
                 return;
             }
         }
-        $newAddress = BookingService::update($id, PublicController::cleanName($old['name']), $old['email'] ?: null, $old['lang'], PublicController::cleanLanguage($old['interpreter_lang']));
+        $newAddress = BookingService::update($id, PublicController::cleanName($old['name']), $old['email'] ?: null, $old['lang'], interpreterLang: PublicController::cleanLanguage($old['interpreter_lang']));
         $target = $moved ? BookingService::findById($id) : null;
         $this->audit(fn () => match (true) {
             $target === null => __('Buchung am {date} geändert', ['date' => self::when($booking['day_date'])]),
@@ -1411,7 +1411,7 @@ final class AdminController
         }
     }
 
-    /** @return array{name:string,email:string,lang:string,send_mail:bool} */
+    /** @return array{name:string,email:string,interpreter_lang:string,lang:string,send_mail:bool} */
     private function bookingInput(): array
     {
         $lang = Http::post('lang');

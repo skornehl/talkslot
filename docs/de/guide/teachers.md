@@ -53,7 +53,7 @@ Englisch umstellen.
   bekommt ein freiwilliges Feld, in das Eltern die Sprache eintragen, wenn sie für das Gespräch eine Dolmetschung
   wünschen. Sie sehen die Angabe bei der Buchung in der Liste und im Ausdruck (*Dolmetschung gewünscht: …*); sie
   steht in keiner E-Mail und keiner Zusammenfassung und wird mit der Buchung gelöscht. Es ist ein Wunsch: Die
-  Dolmetschung organisieren Sie selbst, oder Sie sagen den Eltern, wenn das nicht möglich ist. In der Buchung können
+  Dolmetschung organisieren Sie selbst, oder Sie sagen den Eltern, wenn das nicht möglich ist. Prüfen Sie die Liste rechtzeitig, eine Benachrichtigung gibt es nicht. In der Buchung können
   Sie die Angabe eintragen oder ändern, und sie bleibt sichtbar, wenn Sie die Frage später ausschalten. Kopie der
   Runde, Vorlage und Papierkorb behalten die Einstellung.
 - **Zufallsanteil in der Adresse** (empfohlen), damit die Runde nicht durch Ausprobieren gefunden wird,
