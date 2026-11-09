@@ -308,7 +308,7 @@ final class BookingService
     {
         $hours = (int) $booking['cancel_deadline_hours'];
         return match (true) {
-            self::canChange($booking) => t($canMove ? 'manage.deadline' : 'manage.deadline_cancel', ['when' => fmt_datetime(self::changeDeadline($booking))]),
+            self::canChange($booking) => t($canMove ? 'manage.deadline' : 'manage.deadline_cancel', ['when' => fmt_deadline(self::changeDeadline($booking))]),
             $hours === 0 => t('manage.locked_started'),
             default => t('manage.locked', ['hours' => fmt_hours($hours)]),
         };
