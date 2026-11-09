@@ -135,9 +135,25 @@ Datenschutzerklärung.
   Eintrag.
 - **Buchungsbeschränkungen** vergleichen nur mit Buchungen derselben Runde und nutzen Daten, die ohnehin
   gespeichert sind. Die Ablehnung verrät nicht, wann oder von wem ein Termin gebucht wurde.
-- **Kenntnisnahme statt Einwilligung:** Die Datenschutzhinweise müssen nach der DSGVO nicht „akzeptiert“
-  werden; sie informieren (Art. 13). Das Pflicht-Häkchen bestätigt daher, dass man die Hinweise *gelesen*
-  hat, und die Hinweise stellen klar, dass es sich nicht um eine Einwilligung handelt.
+- **Informieren statt ankreuzen:** Nach der DSGVO informieren die Datenschutzhinweise (Art. 13); niemand
+  muss sie akzeptieren oder bestätigen, und ein Pflicht-Häkchen würde nur für eine Einwilligung gehalten und
+  Buchungen mit einer Fehlermeldung aufhalten. Das Buchungsformular hat deshalb keins. Direkt über dem Button
+  steht die Information in zwei Ebenen (Art. 12): wer verantwortlich ist (die erste Zeile der Angaben des
+  Betreibers), der Zweck (keine Weitergabe an Dritte zu anderen Zwecken) und die Löschung, dazu ein Link auf
+  die vollständige Datenschutzerklärung, der die Rechte nennt (Auskunft, Löschung, Widerspruch, Beschwerde;
+  auf das Widerspruchsrecht ist nach Art. 21 Abs. 4 DSGVO spätestens bei der ersten Kommunikation
+  hinzuweisen); ein eingeklapptes *Mehr zum Datenschutz* ergänzt die gespeicherten Daten, die
+  Zusammenfassungen an die Lehrkraft (Namen nur, wenn das für die Schule freigegeben ist), die
+  Rechtsgrundlage der Betriebsart (Art. 6 Abs. 1 lit. e bzw. b DSGVO; ohne gewählte Betriebsart keine) und
+  die Rechte einschließlich der Beschwerde. Die Datenschutzerklärung sagt, dass die
+  Buchung keine Einwilligung braucht; nur „auf diesem Gerät merken“ braucht eine.
+- **Fristen und gewählter Termin vor dem Buchen:** Die Rundenseite nennt den Buchungsschluss und die
+  Änderungsfrist der Runde (in Stunden; eine Frist von 0 wird nicht erwähnt), und die Zeile über dem Button
+  zeigt den gewählten Termin mit Datum, Uhrzeit und Ort (von JavaScript eingesetzt und von Screenreadern
+  vorgelesen; nach einem Fehler auch ohne JavaScript). Die Seite des Termins sowie die Bestätigungs-,
+  Änderungs- und Erinnerungs-E-Mails nennen Datum und Uhrzeit, bis zu denen sich der Termin online ändern
+  oder absagen lässt, oder sagen, dass das nicht mehr geht. Die Fußzeile jeder E-Mail an Eltern verlinkt die
+  Datenschutzerklärung in ihrer Sprache.
 
 ## Auskunftsanfragen {#requests-for-access}
 
@@ -166,12 +182,57 @@ wird, löschen Sie sie in der Buchungsliste der Runde.
 
 ## Vorlagen für die Rechtstexte
 
-Vorlagen für Impressum und Datenschutzerklärung auf Deutsch und Englisch werden bei der Installation in
+Vorlagen für das Impressum auf Deutsch und Englisch und für die Datenschutzerklärung in allen sechs
+Elternsprachen (Deutsch, Englisch, Polnisch, Russisch, Ukrainisch, Türkisch) werden bei der Installation in
 die Datenbank kopiert und können von Admins unter *Texte* bearbeitet werden. Die Vorlage für die
 Datenschutzerklärung deckt die nach Art. 13 DSGVO erforderlichen Informationen ab: Verantwortlicher,
 Datenschutzbeauftragte, Zwecke, Rechtsgrundlagen, Empfänger, Drittländer, Speicherdauer, Betroffenenrechte
 einschließlich des Widerspruchsrechts, Beschwerderecht bei einer Aufsichtsbehörde, ob die Bereitstellung
 der Daten erforderlich ist, sowie automatisierte Entscheidungsfindung.
+
+### Die Datenschutzerklärung in den Sprachen der Eltern
+
+Art. 12 Abs. 1 DSGVO verlangt die Information in klarer und einfacher Sprache, und die Leitlinien des EDSA
+zur Transparenz (WP260 rev.01, Rn. 13) ergänzen, dass Informationen für Menschen anderer Sprachen in deren
+Sprache übersetzt werden sollen. TalkSlot spricht Eltern in sechs Sprachen an. Die Übersetzungen folgen den deutschen Vorlagen beider
+Betriebsarten Abschnitt für Abschnitt und beginnen mit dem Hinweis, dass die deutsche Fassung maßgeblich ist
+(ebenso die englische). Sie haben **dieselben Platzhalter wie die deutsche Vorlage, auf Deutsch**: Admins
+tragen dort die Angaben ein, die sie auch in den deutschen Text eingesetzt haben. Kurze Angaben wie Namen,
+Anschriften und Vorschriften lassen sich unverändert übernehmen; einen Satz wie die Speicherdauer der
+Webserver-Logs schreiben Sie am besten in der Sprache des Textes. `[[HOSTER]]` nimmt `hosting.<Sprache>`, wenn
+die Konfiguration das enthält, sonst den englischen (danach den deutschen) Text zum Hoster; Deutsch und
+Englisch brauchen einen eigenen.
+
+- **Welchen Text Eltern bekommen:** den in ihrer Sprache, wenn er vollständig ist, also nicht leer und ohne
+  offene Platzhalter; sonst den englischen, danach den deutschen (die maßgebliche Fassung), danach den der
+  Standardsprache (diese wie bisher so, wie sie sind, auch mit offenen Platzhaltern: Diese verhindern ja die
+  Aktivierung von Runden). Englisch und Deutsch nur, wenn sie angeboten werden (`languages`): Einen Text in
+  einer nicht angebotenen Sprache bekommen Eltern nie, weil Admins ihn weder sehen noch bearbeiten können.
+  Gibt es in keiner dieser Sprachen einen Text für eine Seite, lässt sich keine Runde aktivieren. Die Seite
+  sagt dann in der Sprache der Eltern, dass es den Text in ihrer Sprache nicht gibt, und kennzeichnet den Text
+  und den Namen seiner Sprache mit `lang` (Screenreader). Das Impressum hat keine Übersetzungen und nimmt immer
+  diesen Weg.
+- **Offene Platzhalter in einer Übersetzung verhindern keine Aktivierung:** Bis sie ausgefüllt sind,
+  bekommen Eltern in dieser Sprache den englischen (bzw. deutschen) Text mit einem Hinweis, wie vor den
+  Übersetzungen. Das ist eine Lücke, keine Lösung: **Füllen Sie die Übersetzungen aus, bevor Sie Eltern in
+  diesen Sprachen einladen.** Admins sehen im Dashboard und unter *Texte* den Hinweis *Übersetzungen noch
+  nicht vollständig* mit den betroffenen Texten. Eine geleerte Übersetzung stellt den früheren Zustand wieder
+  her (der englische Text, kein Hinweis); wer Eltern in einer Sprache gar nicht mehr ansprechen will, nimmt sie
+  aus `languages`.
+- **Maßgeblich ist die deutsche Fassung**, eine Übersetzung muss also dasselbe sagen. Wird die deutsche
+  Datenschutzerklärung nach einer vollständigen Übersetzung (oder dem englischen Text) gespeichert, sehen
+  Admins, dass diese Fassung vor der deutschen gespeichert wurde und zu prüfen ist; erneutes Speichern (auch
+  unverändert) bestätigt sie. Sagt der deutsche Text mehr als die Vorlage, werden vollständige Übersetzungen,
+  die noch die Vorlage sind, genannt, bis Ihre Änderungen dort stehen. Eine leere deutsche
+  Datenschutzerklärung verhindert die Aktivierung von Runden, solange Deutsch angeboten wird. Der Hinweis „maßgeblich ist die deutsche Fassung“ macht eine falsche Übersetzung
+  nicht richtig: Der Betreiber bleibt für jede Sprache verantwortlich.
+- **Bestehende Installationen** erhalten die Übersetzungen ihrer Betriebsart beim ersten Aufruf nach dem
+  Update, sofern es in der Sprache noch keinen Text gibt (oder nur eine unveränderte Vorlage); bearbeitete
+  Texte bleiben. Bis die Admins die Platzhalter ausgefüllt haben, zeigen sie wie bisher den englischen Text.
+- Die Übersetzungen sind sorgfältig erstellt, **sollten aber von Muttersprachlerinnen und Muttersprachlern**
+  geprüft werden, am besten mit juristischem Hintergrund, bevor Sie sich darauf verlassen. Jede Änderung an den
+  deutschen Vorlagen muss in allen sechs Sprachen und beiden Betriebsarten nachgezogen werden (siehe
+  [Entwicklung]({{ '/de/guide/development/' | relative_url }})).
 
 ### Von der Schule oder privat betrieben
 
@@ -205,6 +266,12 @@ erst beim Speichern. Hinweise gleichen die Texte mit der Betriebsart ab:
   ohne Datenschutzbeauftragte, Absagen „jederzeit“) oder sich auf Art. 6 Abs. 1 lit. b oder f DSGVO stützt.
 - **Privat betrieben:** ein Hinweis, wenn ein Text die Vorlage für Schulen enthält (Art. 6 Abs. 1 lit. e
   DSGVO, Schulgesetz, Datenschutzbeauftragte der Schule) oder noch sagt, Eltern könnten „jederzeit“ absagen.
+- **Beide Betriebsarten:** ein Hinweis, wenn eine Datenschutzerklärung noch das Pflicht-Häkchen im
+  Buchungsformular erwähnt, das es nicht mehr gibt.
+
+Die Hinweise erkennen auch die Übersetzungen, die die DSGVO als „6(1)(e)“ bzw. auf Polnisch als „art. 6 ust. 1
+lit. e RODO“ zitieren. Bei Installationen aus der Zeit vor der Betriebsart zählen nur die deutschen und
+englischen Texte, weil es damals keine Übersetzungen gab.
 
 **Installationen aus der Zeit vor der Betriebsart** erhalten sie beim ersten Aufruf nach dem Update:
 
@@ -250,11 +317,13 @@ Vor dem Start:
      auf eine Privatperson zugeschnitten: Ein Verein oder freier Träger ergänzt die vertretungsberechtigte
      Person und, falls vorhanden, den Registereintrag (§ 5 DDG).
 2. **Verantwortlicher:** Füllen Sie *Texte → Angaben für Impressum und Datenschutz* aus. Diese
-   Angaben ersetzen `[[VERANTWORTLICHE]]`; ohne sie ist keine Runde öffentlich.
+   Angaben ersetzen `[[VERANTWORTLICHE]]`; ohne sie ist keine Runde öffentlich. Ihre erste Zeile nennt auch
+   die Datenschutzinformation im Buchungsformular als Verantwortlichen.
 3. **Hoster:** Setzen Sie `hosting` in der Konfiguration (bzw. `HOSTING_DE`/`HOSTING_EN` beim Deployment).
    Der Wert ersetzt `[[HOSTER]]`. Ist er nicht gesetzt, zeigt die Seite die Platzhalter
    `[HOSTER MIT ANSCHRIFT]` und `[LAND]` (englisch `[WEB HOST WITH ADDRESS]`, `[COUNTRY]`), und Admins
-   erhalten einen Hinweis.
+   erhalten einen Hinweis. Die Übersetzungen nutzen den englischen Text, sofern Sie keinen eigenen je
+   Sprache ergänzen (z. B. `hosting.pl`).
 4. **Verbleibende Platzhalter** in eckigen Klammern, in jeder Sprache, für die es einen Text gibt: die oder
    der Datenschutzbeauftragte (Kontaktdaten; bei privatem Betrieb die Prüfung, ob jemand benannt ist), bei
    einer Schule die Vorschriften Ihres Landes (Schulgesetz, Landesdatenschutzgesetz), die Speicherdauer der
@@ -279,7 +348,8 @@ TalkSlot prüft Impressum und Datenschutzerklärung aller angebotenen Sprachen s
 also mit eingesetzten Angaben zur verantwortlichen Stelle und zum Hoster, in beiden Betriebsarten. Ein
 offener Platzhalter ist Text in eckigen Klammern ohne Kleinbuchstaben und mit mindestens vier Zeichen, etwa
 `[LAND]`. Ein Markdown-Link wie `[PDF](https://…)` oder Text in gemischter Schreibung wie `[Hinweis]` zählt
-nicht. Solange einer übrig ist:
+nicht. Solange einer im englischen Text oder in dem der Standardsprache übrig ist (den Texten, die Eltern
+bekommen, wenn es keinen in ihrer Sprache gibt):
 
 - **Keine Runde lässt sich aktivieren:** weder eine neue aktive Runde noch über *Aktivieren* noch durch
   Zuordnen einer aktiven Runde zu einer anderen Lehrkraft. Die Meldung nennt die betroffenen Texte.
@@ -288,6 +358,9 @@ nicht. Solange einer übrig ist:
 - **Bereits aktive Runden bleiben erreichbar**, und Eltern können ihre Änderungslinks weiter nutzen. Eine
   bestehende Installation geht nach einem Update also nicht offline: Das Dashboard kündigt die offenen
   Platzhalter an, und erst die nächste Aktivierung wartet darauf.
+
+Offene Platzhalter in den anderen Sprachen (den Übersetzungen der Datenschutzerklärung) halten nichts auf:
+Eltern in dieser Sprache bekommen den englischen Text mit einem Hinweis, bis sie ausgefüllt sind (siehe oben).
 
 Bei einem Update werden nie bearbeitete Texte durch die neuen Vorlagen der Betriebsart ersetzt (siehe
 [Betrieb]({{ '/de/guide/operations/' | relative_url }})), einschließlich neuer Platzhalter.

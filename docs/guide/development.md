@@ -22,7 +22,7 @@ app/              application (outside the document root)
 bin/              cron.php, install.php, build.sh, deploy.sh, build-config.php, …
 config/           config.sample.php → config.php (not in Git)
 public/           document root: index.php (front controller), install.php, .htaccess, assets/
-dev/              Docker environment, reset.sh, demo.sh
+dev/              Docker environment, reset.sh, demo.sh, cs.sh
 docs/             this website (GitHub Pages, Jekyll)
 tests/            unit.php, smoke.sh, integration.php, browser.mjs, deploy.sh, coverage/, phpstan.neon
 ```
@@ -105,9 +105,16 @@ and checks that PHP 7.4 and 8.2 get the message of `App\Platform` instead of a s
   placeholders. Mails to an account follow its language (`AdminI18n::with()`).
 - **Parent texts** pass through `t('key')` with `app/lang/{de,en,pl,ru,tr,uk}.php`; every key must exist in
   every language (a unit test checks this). Ask native speakers to review new Polish, Russian, Turkish and
-  Ukrainian texts.
+  Ukrainian texts, and say so in the pull request. Numbers with a unit go through `I18n::plural()`
+  (`fmt_hours()`): each language file names its plural rule (`'plural'`: `one`, `pl`, `east-slavic` or `none`)
+  and gives as many forms of `'hours'` as the rule needs.
 - **Commits:** [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `docs:`, …);
   releases are derived from them.
+- **Coding standard:** PSR-12 for `app/src`, `bin`, `public` and `config` (the exceptions are in
+  `.php-cs-fixer.dist.php`). `dev/cs.sh` checks it with a pinned PHP-CS-Fixer, `dev/cs.sh --fix` applies it; CI
+  runs the check in the workflow *Coding standard*.
+- **Regular expressions:** routes and checks of a whole value end with `\z`, not `$`, which also matches before
+  a final line break (a unit test checks the routes).
 - **Database:** only prepared statements; the unit test's SQL audit fails on concatenated variables.
 - **Table prefix:** SQL names the tables plainly and `Db::prefix()` adds the prefix. A new table goes into
   `Db::TABLES`, a foreign key is called `fk_…` (it gets the prefix too; to drop one, look its name up with
@@ -126,7 +133,10 @@ and checks that PHP 7.4 and 8.2 get the message of `App\Platform` instead of a s
 - **Migrations** (`app/src/Migrations.php`) are additive, so that a rollback to the previous version of the
   same major version keeps working; see [Migrations](#migrations) below for the rules.
 - **Legal templates:** after changing `app/templates/pages/*.md`, update `CURRENT_PAGE_HASHES` and move
-  the old hashes to `OLD_PAGE_HASHES`, so unedited texts are upgraded automatically. The unit test tells
+  the old hashes to `OLD_PAGE_HASHES`, so unedited texts are upgraded automatically. The privacy policy exists in all
+  six parent languages for both operator types (`privacy*.{de,en,pl,ru,uk,tr}.md`): a change to the German
+  template goes into all twelve files, with the same sections and the German placeholders in the translations
+  (a unit test compares them); mark changed translations for a native-speaker review. The unit test tells
   you the new hashes. Edited texts need no new hint in `AdminController::legalHints()`: their version
   markers show admins the changed sections by themselves (`LegalTexts::outdated()`). Keep sections under
   first-level headings (`# 5. …`) and put each paragraph or list item on one line, so the comparison works
@@ -249,7 +259,9 @@ directly. An existing one runs the missing steps of `Migrations::STEPS` on the n
   Step 3 (renaming `admin_users`, dropping columns) dates from before this rule.
 - While the files of an update are uploaded, new code may meet the old schema for a moment. Where that
   matters (a page that must not fail), let the code fall back to the old behaviour until the step has run,
-  as `RoundAccess::required()` does.
+  as `RoundAccess::required()` does. Such a fallback names the migration it bridges and can go with the next
+  major version only if the [upgrade path]({{ '/guide/operations/' | relative_url }}#updates) no longer starts
+  below that migration: 2.0 is planned to require v1.3.0 (migration 13).
 - The steps use MariaDB syntax (10.6 or newer); MySQL is not supported.
 - Parallel branches: two branches that add a step under the same number conflict in Git, and keeping both
   blocks when resolving it loses one of them silently (PHP keeps only the last of two equal array keys).

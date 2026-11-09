@@ -11,7 +11,7 @@
   <tbody>
   <?php foreach ($rows as $r): ?>
     <tr>
-      <td class="small nowrap"><?= e(date('d.m.Y H:i', (int) strtotime($r['created_at']))) ?></td>
+      <td class="small nowrap"><?= e(fmt_datetime($r['created_at'])) ?></td>
       <td><?= e($r['actor']) ?><?= $r['user_id'] === null && $r['actor'] !== App\Audit::SYSTEM ? ' <span class="small muted">' . e(__('(gelöscht)')) . '</span>' : '' ?></td>
       <td><?= e($r['message']) ?></td>
     </tr>

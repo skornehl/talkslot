@@ -302,6 +302,24 @@ var L = (function () {
     });
   });
 
+  // The chosen appointment above the booking button: text from the chosen slot (data-when), announced by
+  // screen readers (aria-live). Empty while nothing is chosen; without JavaScript only after an error.
+  Array.prototype.forEach.call(document.querySelectorAll('[data-slot-summary]'), function (out) {
+    var form = out.closest('form');
+    if (!form) { return; }
+    function show() {
+      var chosen = form.querySelector('input[name="slot_id"]:checked');
+      var when = chosen ? chosen.getAttribute('data-when') : '';
+      var text = when ? out.getAttribute('data-slot-summary').split('{when}').join(when) : '';
+      // Only a change is written (and announced): after an error the server already shows the same text
+      if (out.textContent !== text) { out.textContent = text; }
+    }
+    form.addEventListener('change', function (ev) {
+      if (ev.target && ev.target.name === 'slot_id') { show(); }
+    });
+    show(); // e.g. a slot the browser kept checked after "Back"
+  });
+
   // Translation in the teacher's browser (Translator API in Chrome/Edge on desktop).
   // Title and description are translated on the teacher's own device with a local model,
   // no text goes to a translation service; the result is sent to the own server per

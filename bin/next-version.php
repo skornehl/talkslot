@@ -17,7 +17,7 @@ $git = static function (string $args): string {
 };
 // Re-run on an already released commit: same version
 foreach (explode("\n", $git("tag --points-at HEAD --list 'v[0-9]*' --sort=-v:refname")) as $tag) {
-    if (preg_match('/^v\d+\.\d+\.\d+$/', $tag)) {
+    if (preg_match('/^v\d+\.\d+\.\d+\z/', $tag)) {
         echo $tag, "\n";
         exit(0);
     }
