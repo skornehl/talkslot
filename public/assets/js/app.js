@@ -125,30 +125,18 @@ var L = (function () {
     save(without(load(), forget.getAttribute('data-forget-url')));
   }
 
-  // Round page: show the own appointments instead of the slot list. "Book another appointment" shows the
-  // form again without deleting anything; after an error or a language switch the form stays open.
-  var round = document.querySelector('[data-round-id]');
-  var box = document.getElementById('remembered');
-  var area = document.getElementById('booking-area');
-  if (round && box && area) {
-    var roundId = round.getAttribute('data-round-id');
-    var entries = load()[roundId] || [];
+  // Fills a box with one item per remembered appointment. Removing one moves the focus to the next; onEmpty
+  // runs when the last one is gone.
+  function fillEntries(box, entries, prefix, onEmpty) {
     var list = box.querySelector('[data-remembered-list]');
     var item = box.querySelector('[data-remembered-item]');
-    var another = box.querySelector('[data-remembered-another]');
-    var showForm = function () {
-      area.hidden = false;
-      another.hidden = true;
-      var first = area.querySelector('input:not([type=hidden]), button');
-      if (first) { first.focus(); }
-    };
     entries.forEach(function (entry, i) {
       var li = item.content.firstElementChild.cloneNode(true);
       var label = li.querySelector('[data-remembered-label]');
       var link = li.querySelector('[data-remembered-link]');
       var drop = li.querySelector('[data-remembered-forget]');
       label.textContent = entry.l || '';
-      label.id = 'remembered-' + i;
+      label.id = prefix + i;
       if (OWN_LINK.test(entry.u)) {
         link.setAttribute('href', entry.u);
         link.setAttribute('aria-describedby', label.id);
@@ -163,11 +151,51 @@ var L = (function () {
           list.querySelector('[data-remembered-forget]').focus();
         } else {
           box.hidden = true;
-          showForm();
+          onEmpty();
         }
       });
       list.appendChild(li);
     });
+  }
+
+  // Start page and code prompt: all appointments remembered on this device, the next one first. Only what the
+  // browser holds; a round's code prompt leaves out that round (its own box shows it).
+  var mine = document.querySelector('[data-my-appointments]');
+  if (mine) {
+    var except = mine.getAttribute('data-except-round');
+    var saved = load();
+    var all = [];
+    Object.keys(saved).forEach(function (id) {
+      if (id !== except) { all = all.concat(saved[id]); }
+    });
+    all.sort(function (a, b) {
+      var x = String(a.d || '9999') + String(a.l || '');
+      var y = String(b.d || '9999') + String(b.l || '');
+      return x < y ? -1 : (x > y ? 1 : 0);
+    });
+    fillEntries(mine, all, 'mine-', function () {
+      var code = document.getElementById('code');
+      if (code && code.offsetParent) { code.focus(); }
+    });
+    if (all.length) { mine.hidden = false; }
+  }
+
+  // Round page: show the own appointments instead of the slot list. "Book another appointment" shows the
+  // form again without deleting anything; after an error or a language switch the form stays open.
+  var round = document.querySelector('[data-round-id]');
+  var box = document.getElementById('remembered');
+  var area = document.getElementById('booking-area');
+  if (round && box && area) {
+    var roundId = round.getAttribute('data-round-id');
+    var entries = load()[roundId] || [];
+    var another = box.querySelector('[data-remembered-another]');
+    var showForm = function () {
+      area.hidden = false;
+      another.hidden = true;
+      var first = area.querySelector('input:not([type=hidden]), button');
+      if (first) { first.focus(); }
+    };
+    fillEntries(box, entries, 'remembered-', showForm);
     if (entries.length) {
       box.hidden = false;
       if (!document.getElementById('form-errors') && !area.hasAttribute('data-keep-open')) {

@@ -54,6 +54,7 @@ return [
     'round.remembered.forget' => 'Usuń zapisany termin z tego urządzenia',
     'round.remembered.forget_hint' => 'Usuwa to tylko zapis na tym urządzeniu. Termin pozostaje zarezerwowany.',
     'round.remembered.another' => 'Zarezerwuj kolejny termin (np. dla rodzeństwa)',
+    'home.mine.title' => 'Moje terminy na tym urządzeniu',
 
     'form.required' => 'pole obowiązkowe',
     'form.name' => 'Imię i nazwisko dziecka',

@@ -54,6 +54,7 @@ return [
     'round.remembered.forget' => 'Kayıtlı randevuyu bu cihazdan sil',
     'round.remembered.forget_hint' => 'Bu yalnızca bu cihazdaki kaydı siler. Randevunuz geçerliliğini korur.',
     'round.remembered.another' => 'Başka bir randevu al (ör. kardeş için)',
+    'home.mine.title' => 'Bu cihazdaki randevularım',
 
     'form.required' => 'zorunlu alan',
     'form.name' => 'Çocuğun adı ve soyadı',
