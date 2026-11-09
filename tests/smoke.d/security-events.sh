@@ -68,6 +68,19 @@ $DC exec -T app php /srv/app/bin/cron.php > /dev/null
 AT2=$($DC exec -T app php -r '$r = json_decode(file_get_contents("http://mail:8025/api/v1/search?query=" . rawurlencode("to:lehrer@example.org subject:\"viele fehlgeschlagene Anmeldungen\"")), true); echo json_decode(file_get_contents("http://mail:8025/api/v1/message/" . $r["messages"][0]["ID"]), true)["Text"];')
 check "… the alarm names the number, not the accounts, and goes out once a day" 'echo "$AT2" | grep -q "bei mehr als 3 Konten das Limit pro Konto erreicht" && ! echo "$AT2" | grep -q "limit[0-9]-$SE" && [ "$(SE_ALARM)" = 0 ] && DBQ "DELETE FROM tp_rate_limits WHERE bucket = \"login_notice\"" && SE_LOGIN "$SEJ3" "limit1-$SE@example.org" "nochmal-falsch-9" > /dev/null && $DC exec -T app php /srv/app/bin/cron.php > /dev/null && [ "$(SE_ALARM)" = 0 ]'
 
+# In-process (script on stdin for the coverage run): an account without an address still gets the entry, no mail;
+# the alarm for an account that is gone or no admin is dropped
+DBQ "INSERT INTO tp_users (username, password_hash, role, display_name, is_active, created_at) VALUES ('ohne-$SE', '$SEH', 'teacher', 'Ohne Adresse', 1, NOW())"
+SEN=$(DBQ "SELECT id FROM tp_users WHERE username = 'ohne-$SE'")
+SD=$($DC exec -T app php -- "$SEN" <<'PHP'
+<?php
+require '/srv/app/app/bootstrap.php';
+echo json_encode([App\Auth::deliverLockoutNotice((int) $argv[1], '2026-01-01 10:00:00'), App\Auth::deliverLoginAlarm(0), App\Auth::deliverLoginAlarm((int) $argv[1])]);
+PHP
+)
+check "an account without an address: the entry, no mail; the alarm only for active admins ($SD)" '[ "$SD" = "[null,null,null]" ] && [ "$(SE_EVENTS "$SEN")" = "login_limit:0" ]'
+DBQ "DELETE FROM tp_users WHERE id = $SEN"
+
 # Retention: deleted after security_events_days (default 30), with the account
 DBQ "UPDATE tp_security_events SET created_at = NOW() - INTERVAL 31 DAY WHERE user_id = $SEU AND event = 'password_changed'"
 SC=$($DC exec -T app php /srv/app/bin/cron.php -v)

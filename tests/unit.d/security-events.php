@@ -8,6 +8,7 @@ check('security events: a text for each event, in German and English', count($se
         || App\AdminI18n::with('en', static fn (): string => App\SecurityEvents::label($e, false)) === App\SecurityEvents::label($e, false)));
 check('… "by an admin" only when an admin made the change', str_ends_with(App\SecurityEvents::label(App\SecurityEvents::EMAIL_CHANGED, true), '(durch einen Admin)')
     && !str_contains(App\SecurityEvents::label(App\SecurityEvents::EMAIL_CHANGED, false), 'Admin'));
+check('… an unknown name (e.g. after a rollback) is shown as it is', App\SecurityEvents::label('etwas_neues', false) === 'etwas_neues');
 check('… the names fit the column', max(array_map('strlen', $seEvents)) <= 30);
 preg_match('/CREATE TABLE IF NOT EXISTS security_events \((.*?)\) ENGINE/s', (string) file_get_contents(APP_ROOT . '/app/schema.sql'), $seTable);
 $seColumns = array_values(array_filter(array_map(static fn (string $l): string => (string) strtok(trim($l), ' '), explode("\n", trim($seTable[1] ?? ''))), static fn (string $c): bool => !in_array($c, ['KEY', 'CONSTRAINT', ''], true)));
