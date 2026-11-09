@@ -145,7 +145,8 @@ after 12 hours by default.
 
 TalkSlot writes its own log to `app/var/php-error.log`; PHP's own logging is switched off because its
 messages may contain input. Values in quotes and brackets and e-mail addresses are removed before
-writing. The log is rotated at 5 MB (one previous file `php-error.log.1`).
+writing. The log is rotated at 5 MB (one previous file `php-error.log.1`). PHP warnings are also sent as an
+error mail; notices and deprecations (`PHP Notice`, `PHP Deprecated`, e.g. after a PHP update) are only logged.
 
 ## Backups {#backups}
 
