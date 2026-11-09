@@ -80,7 +80,8 @@ or *MySQL server has gone away* (the server offers no TLS), followed by a hint a
 TalkSlot (a test and a live site, two schools) can use the same database with a prefix of its own. The installer
 refuses table or foreign key names that are already taken, and if it fails half-way it drops the tables it
 created, so it can simply be run again. Older installations kept their foreign key names without the prefix
-(`fk_…`); next to one of them, a second installation needs a prefix that is not empty.
+(`fk_…`); next to one of them, a second installation needs a prefix that is not empty. If an older version
+stopped half-way in a shared database, delete the tables with that prefix first.
 
 ## Languages
 

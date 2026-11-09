@@ -9,6 +9,9 @@ final class Installer
     /** The schema the installation creates; tests point it to a file of their own */
     public static string $schemaFile = APP_ROOT . '/app/schema.sql';
 
+    /** What became of the tables of a failed installation: null = none created, true = dropped again, false = still there */
+    private static ?bool $droppedAfterFailure = null;
+
     public static function lockFile(): string
     {
         return DATA_ROOT . '/app/var/installed.lock';
@@ -54,7 +57,7 @@ final class Installer
         }
         // Names of foreign keys are unique per database: an installation from before the prefixed names (fk_…)
         if ($names = self::conflictingConstraints()) {
-            return [__('Die Datenbank enthält bereits Fremdschlüssel mit gleichem Namen ({names}), vermutlich von einer älteren TalkSlot-Installation in derselben Datenbank. Bitte tragen Sie in config.php ein anderes Tabellenpräfix (db.prefix) ein oder verwenden Sie eine eigene Datenbank. Es wurde nichts verändert.', ['names' => implode(', ', $names)])];
+            return [__('Die Datenbank enthält bereits Fremdschlüssel mit gleichem Namen ({names}), vermutlich von einer älteren TalkSlot-Installation in derselben Datenbank. Bitte wählen Sie ein anderes Tabellenpräfix (db.prefix in config.php, beim Deployment über GitHub die Variable DB_PREFIX) oder verwenden Sie eine eigene Datenbank. Es wurde nichts verändert.', ['names' => implode(', ', $names)])];
         }
         return [];
     }
@@ -69,7 +72,7 @@ final class Installer
     {
         preg_match_all('/\bCONSTRAINT\s+(\w+)/i', implode("\n", array_map(Db::prefix(...), self::statements())), $m);
         $taken = array_map(static fn (mixed $n): string => strtolower((string) $n), array_column(Db::all(
-            "SELECT CONSTRAINT_NAME FROM information_schema.TABLE_CONSTRAINTS WHERE CONSTRAINT_SCHEMA = DATABASE() AND CONSTRAINT_TYPE = 'FOREIGN KEY'"
+            "SELECT CONSTRAINT_NAME FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA = DATABASE() AND CONSTRAINT_TYPE = 'FOREIGN KEY'"
         ), 'CONSTRAINT_NAME'));
         return array_values(array_filter($m[1], static fn (string $n): bool => in_array(strtolower($n), $taken, true)));
     }
@@ -173,30 +176,44 @@ final class Installer
         if (($error = self::validateType($operatorType)) !== null) {
             throw new \InvalidArgumentException($error);
         }
-        if ($conflicts = self::conflicts()) {
-            throw new \RuntimeException($conflicts[0]);
+        // One installer at a time (web and command line): dropping the tables after a failure is only safe if this
+        // run created them. The web installer holds the same lock already; GET_LOCK can be taken twice in a session.
+        if (!Db::lock('install', 10)) {
+            throw new \RuntimeException(__('Die Installation läuft bereits oder ist abgeschlossen.'));
         }
-        // DDL cannot be rolled back: if anything fails, the tables of this run are dropped again (none of them
-        // existed before, see above), so the installation can simply be repeated (expert review P2-7)
-        $now = Time::nowSql();
         try {
-            foreach (self::statements() as $stmt) {
-                Db::execRaw($stmt);
+            self::$droppedAfterFailure = null;
+            if ($conflicts = self::conflicts()) {
+                throw new \RuntimeException($conflicts[0]);
             }
-            Db::run(
-                "INSERT INTO users (username, password_hash, role, display_name, email, created_at) VALUES (?, ?, 'admin', ?, ?, ?)",
-                [$username, password_hash($password, PASSWORD_DEFAULT), $displayName !== '' ? $displayName : $username, $email !== '' ? $email : null, $now]
-            );
-            self::storePages($operatorType);
-            Operator::saveType($operatorType);
-            Settings::set('last_cleanup', '0');
-            Settings::set('schema_version', (string) Migrations::LATEST);
-            Settings::set('pages_version', Migrations::pagesVersion());
-        } catch (\Throwable $e) {
-            self::dropOurTables();
-            throw $e;
+            // DDL cannot be rolled back: if anything fails, the tables of this run are dropped again (none of them
+            // existed before, see above), so the installation can simply be repeated (expert review P2-7)
+            $now = Time::nowSql();
+            try {
+                foreach (self::statements() as $stmt) {
+                    Db::execRaw($stmt);
+                }
+                Db::run(
+                    "INSERT INTO users (username, password_hash, role, display_name, email, created_at) VALUES (?, ?, 'admin', ?, ?, ?)",
+                    [$username, password_hash($password, PASSWORD_DEFAULT), $displayName !== '' ? $displayName : $username, $email !== '' ? $email : null, $now]
+                );
+                self::storePages($operatorType);
+                Operator::saveType($operatorType);
+                Settings::set('last_cleanup', '0');
+                Settings::set('schema_version', (string) Migrations::LATEST);
+                Settings::set('pages_version', Migrations::pagesVersion());
+            } catch (\Throwable $e) {
+                self::dropAfterFailure();
+                throw $e;
+            }
+            @file_put_contents(self::lockFile(), 'installed ' . $now . "\n");
+        } finally {
+            try {
+                Db::unlock('install');
+            } catch (\PDOException) {
+                // the connection is gone, and the lock with it: the error that led here is the one to report
+            }
         }
-        @file_put_contents(self::lockFile(), 'installed ' . $now . "\n");
     }
 
     /**
@@ -210,15 +227,36 @@ final class Installer
             return null;
         } catch (\Throwable $e) {
             ErrorPage::log($e);
-            return __('Die Installation ist fehlgeschlagen ({reason}). Die dabei angelegten Tabellen wurden wieder entfernt; Sie können es nach der Behebung erneut versuchen.', ['reason' => ErrorPage::sanitize($e->getMessage())]);
+            // The text of the database often holds an apostrophe, where sanitize() cuts it off: the numbers stay
+            $reason = ($e instanceof \PDOException && isset($e->errorInfo[1]) ? 'MariaDB ' . $e->errorInfo[1] . (preg_match('/errno: (\d+)/', $e->getMessage(), $m) === 1 ? '/' . $m[1] : '') . ': ' : '')
+                . ErrorPage::sanitize($e->getMessage());
+            return match (self::$droppedAfterFailure) {
+                null => __('Die Installation ist fehlgeschlagen ({reason}). Es wurde nichts verändert.', ['reason' => $reason]),
+                true => __('Die Installation ist fehlgeschlagen ({reason}). Die dabei angelegten Tabellen wurden wieder entfernt; Sie können es nach der Behebung erneut versuchen.', ['reason' => $reason]),
+                false => __('Die Installation ist fehlgeschlagen ({reason}). Die dabei angelegten Tabellen ließen sich nicht entfernen; bitte löschen Sie sie, bevor Sie es erneut versuchen (siehe Fehlerprotokoll).', ['reason' => $reason]),
+            };
+        }
+    }
+
+    /** After a failed installation: its tables go, and a failure here must not hide the cause of the first one. */
+    private static function dropAfterFailure(): void
+    {
+        try {
+            self::dropOurTables();
+            self::$droppedAfterFailure = true;
+        } catch (\Throwable $e) {
+            self::$droppedAfterFailure = false;
+            ErrorPage::log($e);
         }
     }
 
     /** Drops the tables of this installation that exist (after a failed installation, see install()). */
     private static function dropOurTables(): void
     {
+        // Compared without regard to case (as conflictingTables()), dropped exactly as the server names them: a prefix
+        // may hold capitals, and with lower_case_table_names = 0 a lowered name would silently miss the table
         $ours = array_map(static fn (string $t): string => strtolower(Db::table($t)), Db::TABLES);
-        $existing = array_values(array_intersect(array_map('strtolower', Db::pdo()->query('SHOW TABLES')->fetchAll(\PDO::FETCH_COLUMN)), $ours));
+        $existing = array_values(array_filter(Db::pdo()->query('SHOW TABLES')->fetchAll(\PDO::FETCH_COLUMN), static fn (string $t): bool => in_array(strtolower($t), $ours, true)));
         if ($existing) {
             Db::pdo()->exec('SET FOREIGN_KEY_CHECKS = 0');
             try {

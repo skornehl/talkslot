@@ -84,7 +84,8 @@ Anwendung oder ein zweites TalkSlot (Test- und Live-Seite, zwei Schulen) dieselb
 Präfix nutzen kann. Der Installer lehnt Tabellen- oder Fremdschlüsselnamen ab, die schon vergeben sind, und löscht
 nach einem Abbruch mitten in der Installation die angelegten Tabellen wieder, sodass er einfach erneut laufen
 kann. Ältere Installationen haben ihre Fremdschlüssel ohne Präfix angelegt (`fk_…`); neben einer solchen braucht
-eine zweite Installation ein Präfix, das nicht leer ist.
+eine zweite Installation ein Präfix, das nicht leer ist. Ist eine ältere Version in einer geteilten Datenbank
+mitten in der Installation abgebrochen, löschen Sie zuerst die Tabellen mit diesem Präfix.
 
 ## Sprachen {#languages}
 

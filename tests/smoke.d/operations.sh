@@ -301,7 +301,9 @@ OP_DROP() { # OP_DROP <prefix>: the tables of a test installation (LIKE with an 
   local t; t=$(DBQ "SELECT GROUP_CONCAT(table_name) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name LIKE '$(printf '%s' "$1" | sed 's/_/\\\\_/g')%'")
   [ -z "$t" ] || [ "$t" = NULL ] || DBQ "SET FOREIGN_KEY_CHECKS = 0; DROP TABLE $t; SET FOREIGN_KEY_CHECKS = 1"
 }
-for p in tp2_ tp4_; do OP_DROP "$p"; done
+for p in tp2_ tp4_ tp5_; do OP_DROP "$p"; done
+DBQ "DROP TABLE IF EXISTS op_legacy"
+OP_FKS=$(grep -c 'CONSTRAINT fk_' "$ROOT/app/schema.sql")
 OP_SCRIPT="$ROOT/tests/.op-prefix.php"
 cat > "$OP_SCRIPT" <<'PHP'
 <?php
@@ -330,6 +332,13 @@ switch ($argv[1]) {
         echo 'fk=', App\Db::foreignKey('rounds', 'user_id'), "\n";
         echo 'admins=', App\Db::value("SELECT GROUP_CONCAT(username) FROM users WHERE role = 'admin'"), "\n";
         echo 'again=', $try(static fn () => App\Installer::install('noch', 'Sehr-Sicheres-Zweit-Pw1', '', '', 'school')), "\n";
+        // A foreign key under the old name (fk_…, directly through PDO) is found and dropped all the same
+        App\Db::pdo()->exec('ALTER TABLE tp2_mail_outbox DROP FOREIGN KEY tp2_fk_outbox_user');
+        App\Db::pdo()->exec('ALTER TABLE tp2_mail_outbox ADD CONSTRAINT fk_outbox_user FOREIGN KEY (user_id) REFERENCES tp2_users (id) ON DELETE CASCADE');
+        echo 'old=', App\Db::foreignKey('mail_outbox', 'user_id'), '|';
+        App\Db::dropForeignKey('mail_outbox', 'user_id');
+        App\Db::dropForeignKey('mail_outbox', 'user_id'); // no foreign key any more: nothing happens
+        echo App\Db::foreignKey('mail_outbox', 'user_id') ?? 'none', "\n";
         $as('tp_');
         echo 'first=', App\Db::foreignKey('rounds', 'user_id'), '|', App\Db::value("SELECT GROUP_CONCAT(username) FROM users WHERE role = 'admin'"), "\n";
         break;
@@ -340,11 +349,12 @@ switch ($argv[1]) {
         echo 'conflicts=', implode(',', App\Installer::conflictingConstraints()), "\n";
         echo 'web=', implode(' ', App\Installer::conflicts()), "\n";
         echo 'result=', $try(static fn () => App\Installer::install('ohnepraefix', 'Sehr-Sicheres-Zweit-Pw1', '', '', 'school')), "\n";
+        echo 'try=', App\Installer::tryInstall('ohnepraefix', 'Sehr-Sicheres-Zweit-Pw1', '', '', 'school') ?? 'installed', "\n";
         echo 'tables=', implode(',', App\Installer::conflictingTables()), "\n";
         App\Db::pdo()->exec('DROP TABLE op_legacy');
         break;
     case 'failed': // a statement fails half-way: the tables created up to then are dropped again
-        $as('tp4_');
+        $as('Tp4_'); // capitals: dropped exactly as the server names them
         $schema = tempnam(sys_get_temp_dir(), 'schema');
         $statements = explode(';', (string) preg_replace('/^\s*--.*$/m', '', (string) file_get_contents(APP_ROOT . '/app/schema.sql')));
         array_splice($statements, 4, 0, ["\nCREATE TABLE rounds_broken (id INT REFERENCES nowhere"]);
@@ -352,6 +362,16 @@ switch ($argv[1]) {
         App\Installer::$schemaFile = $schema;
         echo 'result=', App\Installer::tryInstall('kaputt', 'Sehr-Sicheres-Zweit-Pw1', '', '', 'school') ?? 'installed', "\n";
         echo 'tables=', implode(',', App\Installer::conflictingTables()), "\n";
+        unlink($schema);
+        break;
+    case 'killed': // the connection is lost half-way: the tables cannot be dropped, and the message says so
+        $as('tp5_');
+        $schema = tempnam(sys_get_temp_dir(), 'schema');
+        $statements = explode(';', (string) preg_replace('/^\s*--.*$/m', '', (string) file_get_contents(APP_ROOT . '/app/schema.sql')));
+        array_splice($statements, 2, 0, ["\nKILL " . App\Db::value('SELECT CONNECTION_ID()')]);
+        file_put_contents($schema, implode(';', $statements));
+        App\Installer::$schemaFile = $schema;
+        echo 'result=', App\Installer::tryInstall('kaputt', 'Sehr-Sicheres-Zweit-Pw1', '', '', 'school') ?? 'installed', "\n";
         unlink($schema);
         break;
     case 'lock': // lock names per database and prefix (GET_LOCK names count for the whole server)
@@ -365,20 +385,24 @@ switch ($argv[1]) {
 PHP
 OP_PX=$($DC exec -T app php /srv/app/tests/.op-prefix.php second)
 check "second installation (prefix tp2_): own tables, foreign keys with the prefix, the first one untouched" \
-  'echo "$OP_PX" | grep -qx "result=installed" && echo "$OP_PX" | grep -qx "fk=tp2_fk_rounds_user" && echo "$OP_PX" | grep -qx "admins=zweitschule" && [ "$(echo "$OP_PX" | grep "^fks=" | tr "," "\n" | grep -c "^fks=tp2_fk_\|^tp2_fk_")" = 10 ] && echo "$OP_PX" | grep -qx "first=tp_fk_rounds_user|$USER" && curl -s -b "$J" "$B/admin" | grep -q "data-csrf\|name=\"csrf\""' \
+  'echo "$OP_PX" | grep -qx "result=installed" && echo "$OP_PX" | grep -qx "fk=tp2_fk_rounds_user" && echo "$OP_PX" | grep -qx "admins=zweitschule" && [ "$(echo "$OP_PX" | grep "^fks=" | tr "," "\n" | grep -c "^fks=tp2_fk_\|^tp2_fk_")" = "$OP_FKS" ] && echo "$OP_PX" | grep -qx "old=fk_outbox_user|none" && echo "$OP_PX" | grep -qx "first=tp_fk_rounds_user|$USER" && curl -s -b "$J" "$B/admin" | grep -q "data-csrf\|name=\"csrf\""' \
   || echo "$OP_PX" | sed 's/^/    /'
 check "the same prefix once more: refused because of its tables, nothing changed" \
   'echo "$OP_PX" | grep -q "^again=Die Datenbank enthält bereits Tabellen mit gleichem Namen (tp2_users" && [ "$(DBQ "SELECT COUNT(*) FROM tp2_users")" = 1 ]'
 OP_DROP tp2_
 OP_PX=$($DC exec -T app php /srv/app/tests/.op-prefix.php legacy)
 check "a foreign key name of an older installation (fk_rounds_user) stops an installation without a prefix before it creates anything" \
-  'echo "$OP_PX" | grep -qx "conflicts=fk_rounds_user" && echo "$OP_PX" | grep -q "^web=Die Datenbank enthält bereits Fremdschlüssel mit gleichem Namen (fk_rounds_user), vermutlich von einer älteren TalkSlot-Installation" && echo "$OP_PX" | grep -q "^result=Die Datenbank enthält bereits Fremdschlüssel mit gleichem Namen (fk_rounds_user)" && echo "$OP_PX" | grep -qx "tables="' \
+  'echo "$OP_PX" | grep -qx "conflicts=fk_rounds_user" && echo "$OP_PX" | grep -q "^web=Die Datenbank enthält bereits Fremdschlüssel mit gleichem Namen (fk_rounds_user), vermutlich von einer älteren TalkSlot-Installation" && echo "$OP_PX" | grep -q "^result=Die Datenbank enthält bereits Fremdschlüssel mit gleichem Namen (fk_rounds_user)" && echo "$OP_PX" | grep -q "^try=Die Installation ist fehlgeschlagen (.*Es wurde nichts verändert" && echo "$OP_PX" | grep -qx "tables="' \
   || echo "$OP_PX" | sed 's/^/    /'
 OP_PX=$($DC exec -T app php /srv/app/tests/.op-prefix.php failed)
 check "installation failing half-way: the tables it created are dropped again, so it can be repeated" \
-  'echo "$OP_PX" | grep -q "^result=Die Installation ist fehlgeschlagen (SQLSTATE\[42000\]: Syntax error" && echo "$OP_PX" | grep -q "Die dabei angelegten Tabellen wurden wieder entfernt" && echo "$OP_PX" | grep -qx "tables=" && [ -z "$(DBQ "SHOW TABLES LIKE '"'"'tp4\_%'"'"'")" ]' \
+  'echo "$OP_PX" | grep -q "^result=Die Installation ist fehlgeschlagen (MariaDB 1064: SQLSTATE\[42000\]: Syntax error" && echo "$OP_PX" | grep -q "Die dabei angelegten Tabellen wurden wieder entfernt" && echo "$OP_PX" | grep -qx "tables=" && [ "$(DBQ "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND LOWER(table_name) LIKE '"'"'tp4\\_%'"'"'")" = 0 ]' \
   || echo "$OP_PX" | sed 's/^/    /'
+OP_PX=$($DC exec -T app php /srv/app/tests/.op-prefix.php killed)
+check "connection lost half-way: the message says the tables are still there instead of claiming they were removed" \
+  'echo "$OP_PX" | grep -q "^result=Die Installation ist fehlgeschlagen (.*Die dabei angelegten Tabellen ließen sich nicht entfernen"' || echo "$OP_PX" | sed 's/^/    /'
+OP_DROP tp5_
 OP_PX=$($DC exec -T app php /srv/app/tests/.op-prefix.php lock)
 check "locks: the name contains the database and the prefix, not only tp_migrate" '[ "$OP_PX" = "lock=yes|0|1|1" ]' || echo "    $OP_PX"
 rm -f "$OP_SCRIPT"
-for p in tp2_ tp4_; do OP_DROP "$p"; done
+for p in tp2_ tp4_ tp5_; do OP_DROP "$p"; done
