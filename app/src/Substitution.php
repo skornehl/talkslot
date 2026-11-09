@@ -23,6 +23,12 @@ final class Substitution
         $_SESSION['substitutions'][$roundId] = $ownerId;
     }
 
+    /** The round went to another teacher: taking it over again is needed, even if it comes back to this one. */
+    public static function end(int $roundId): void
+    {
+        unset($_SESSION['substitutions'][$roundId]);
+    }
+
     /** Ends all takeovers of this sign-in (own new password, all sessions ended). */
     public static function clear(): void
     {

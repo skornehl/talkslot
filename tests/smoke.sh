@@ -861,7 +861,7 @@ OUT=$($DC exec -T app php /srv/app/bin/cron.php -v)
 FM=$($DC exec -T app php -r '$r=json_decode(file_get_contents("http://mail:8025/api/v1/search?query=subject:%22Buchungsschluss:%20Fristtest%22"),true); echo json_decode(file_get_contents("http://mail:8025/api/v1/message/".($r["messages"][0]["ID"] ?? "x")),true)["Text"] ?? "";')
 check "summary at the booking deadline: the number of appointments and the free slots, no name" 'echo "$OUT" | grep -qE "summaries_deadline +[1-9]" && echo "$FM" | has "  1 Termin um 10:00" && ! echo "$FM" | has "Frist Kind" && echo "$FM" | has "(1 Termin blieb frei)"'
 check "summary at the booking deadline only once" '$DC exec -T app php /srv/app/bin/cron.php -v | grep -qE "summaries_deadline +0"'
-check "delete account with all rounds" 'curl -s -L -b "$J" -d "csrf=$T&confirm=1" "$B/admin/users/$U3/delete" | has "mit allen Runden und Buchungen gelöscht" && [ -z "$(DBQ "SELECT id FROM tp_rounds WHERE id=$RA")" ]'
+check "delete account with all rounds" 'curl -s -L -b "$J" -d "csrf=$T&confirm=1" --data-urlencode "current_password=$PASS" "$B/admin/users/$U3/delete" | has "mit allen Runden und Buchungen gelöscht" && [ -z "$(DBQ "SELECT id FROM tp_rounds WHERE id=$RA")" ]'
 
 echo "Security (audit)"
 T=$(curl -s -b "$J" "$B/admin" | csrf)
