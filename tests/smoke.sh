@@ -64,7 +64,7 @@ check "POST without CSRF is rejected" '[ "$code" = 303 ] && ! curl -s -b "$J" "$
 NF=$(curl -s -b "$J" "$B/admin/round/new")
 check "new round: no empty break rows, only the template for '+ add break'" '[ "$(echo "$NF" | grep -c "name=\"break_start\[\]\"")" = 1 ] && echo "$NF" | grep -q "<template data-break-template>"'
 EB=$(curl -s -b "$J" --data-urlencode "csrf=$T" -d "title=Pausenfehler&booking_deadline_hours=0&cancel_deadline_hours=0&day_dates%5B%5D=$(date -d '+3 day' +%F)&start_time=14:00&end_time=16:00&slot_minutes=15&break_start%5B%5D=15:00&break_end%5B%5D=&break_label%5B%5D=" "$B/admin/round/new")
-check "invalid break: message, no additional empty row" 'echo "$EB" | grep -q "Pause 1: Bitte Start- und Endzeit" && [ "$(echo "$EB" | grep -c "name=\"break_start\[\]\"")" = 1 ]'
+check "invalid break: message, the row stays as entered, no additional empty one" 'echo "$EB" | grep -q "Pause 1: Bitte Start- und Endzeit" && [ "$(echo "$EB" | grep -c "name=\"break_start\[\]\"")" = 2 ] && echo "$EB" | grep -q "name=\"break_start\[\]\" value=\"15:00\""'
 EB=$(curl -s -b "$J" --data-urlencode "csrf=$T" -d "title=Pausenfehler&booking_deadline_hours=0&cancel_deadline_hours=0&day_dates%5B%5D=&start_time=14:00&end_time=16:00&slot_minutes=15&break_start%5B%5D=15:00&break_end%5B%5D=15:30&break_label%5B%5D=Kaffee" "$B/admin/round/new")
 check "entered break is kept after an error" 'echo "$EB" | grep -q "value=\"Kaffee\"" && [ "$(echo "$EB" | grep -c "name=\"break_start\[\]\"")" = 2 ]'
 
