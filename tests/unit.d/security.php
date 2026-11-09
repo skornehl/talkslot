@@ -59,7 +59,7 @@ check('admin events: granted, taken away, deactivated, reactivated; none for tea
 
 // Users list: sign-ins only in coarse steps, no login times of colleagues
 $row = ['id' => 2, 'username' => 'anna', 'display_name' => 'Anna', 'email' => 'anna@example.org', 'role' => 'teacher', 'is_active' => 1,
-    'must_change_password' => 0, 'access_token_expires_at' => null, 'never_signed_in' => 0, 'long_inactive' => 0, 'round_count' => 1];
+    'must_change_password' => 0, 'access_token_expires_at' => null, 'never_signed_in' => 0, 'invite_open' => 0, 'long_inactive' => 0, 'round_count' => 1];
 $page = App\AdminI18n::with('de', static fn () => App\View::capture('admin/users', ['me' => 1, 'users' => [
     $row, ['id' => 3, 'long_inactive' => 1] + $row, ['id' => 4, 'never_signed_in' => 1, 'long_inactive' => null] + $row,
 ]]));
