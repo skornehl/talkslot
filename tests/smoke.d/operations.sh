@@ -451,16 +451,18 @@ OP_NOUQ="ALTER TABLE tp_round_days DROP KEY uq_days_round_date, DROP CONSTRAINT 
 OP_HAS() { DBQ "SELECT COUNT(DISTINCT index_name) FROM information_schema.statistics WHERE table_schema = DATABASE() AND index_name IN ('uq_days_round_date','idx_days_date','idx_rounds_expired','idx_summaries_sent')"; }
 OP_CK() { DBQ "SELECT COUNT(*) FROM information_schema.check_constraints WHERE constraint_schema = DATABASE() AND constraint_name IN ('ck_days_times','ck_rounds_limit')"; }
 OP_T1=$(date +%s)
-DBQ "$OP_NOUQ; INSERT INTO tp_round_days (round_id, day_date, start_time, end_time, slot_minutes) SELECT round_id, day_date, start_time, end_time, slot_minutes FROM tp_round_days WHERE id = $OP_DAY; UPDATE tp_settings SET value = '25' WHERE name = 'schema_version'"
+OP_LIMIT=$(DBQ "SELECT booking_limit FROM tp_rounds WHERE id = $OPR")
+DBQ "$OP_NOUQ; INSERT INTO tp_round_days (round_id, day_date, start_time, end_time, slot_minutes) SELECT round_id, day_date, start_time, end_time, slot_minutes FROM tp_round_days WHERE id = $OP_DAY; INSERT INTO tp_round_days (round_id, day_date, start_time, end_time, slot_minutes) SELECT round_id, '2031-02-02', end_time, start_time, slot_minutes FROM tp_round_days WHERE id = $OP_DAY; UPDATE tp_rounds SET booking_limit = 'alle' WHERE id = $OPR; UPDATE tp_settings SET value = '25' WHERE name = 'schema_version'"
 curl -s -o /dev/null "$B/"
 OP_V=$(OP_SETTING schema_version); OP_H1=$(OP_HAS); OP_C1=$(OP_CK)
 OP_RULES='$q = urlencode("to:betrieb@example.org subject:\"Datenbank: Regel nicht gesetzt\""); $u = "http://mail:8025/api/v1/search?query=$q";'
 OP_AL=$(ALERTS "$OP_RULES"' echo json_decode(file_get_contents($u), true)["messages_count"] ?? "?";')
-check "migration 26 with two entries for one date: everything else set, no unique key, one report ($OP_H1 indexes, $OP_AL)" '[ "$OP_V" = "$OP_LATEST" ] && [ "$OP_H1" = 3 ] && [ "$OP_C1" = 2 ] && [ "$OP_AL" = 1 ]'
+OP_ALB=$(ALERTS "$OP_RULES"' $m = json_decode(file_get_contents($u), true)["messages"][0]["ID"] ?? ""; echo json_decode(file_get_contents("http://mail:8025/api/v1/message/$m"), true)["Text"] ?? "";')
+check "migration 26 on rows that break all three rules: the indexes set, no rule, one report naming the round ($OP_H1 indexes, $OP_AL)" '[ "$OP_V" = "$OP_LATEST" ] && [ "$OP_H1" = 3 ] && [ "$OP_C1" = 0 ] && [ "$OP_AL" = 1 ] && [ "$(echo "$OP_ALB" | grep -c "Runden: $OPR$")" = 3 ]'
 $DC exec -T app php /srv/app/bin/cron.php > /dev/null
 OP_H2=$(OP_HAS); OP_AL2=$(ALERTS "$OP_RULES"' echo json_decode(file_get_contents($u), true)["messages_count"] ?? "?";')
 check "the rows still break it: the cron job leaves it out, without another report ($OP_H2 indexes, $OP_AL2)" '[ "$OP_H2" = 3 ] && [ "$OP_AL2" = 1 ] && [ "$(OP_SETTING schema_rules_skipped)" = 1 ]'
-DBQ "DELETE FROM tp_round_days WHERE round_id = $OPR AND id <> $OP_DAY"
+DBQ "DELETE FROM tp_round_days WHERE round_id = $OPR AND id <> $OP_DAY; UPDATE tp_rounds SET booking_limit = '$OP_LIMIT' WHERE id = $OPR"
 $DC exec -T app php /srv/app/bin/cron.php > /dev/null
 check "the rows in order: the next cron job sets it and stops asking, without changing the schema version" '[ "$(OP_HAS)" = 4 ] && [ "$(OP_CK)" = 2 ] && [ "$(OP_SETTING schema_version)" = "$OP_LATEST" ] && [ "$(OP_SETTING schema_rules_skipped)" = 0 ]'
 ALERTS "$OP_RULES"' file_get_contents($u, false, stream_context_create(["http" => ["method" => "DELETE"]]));
