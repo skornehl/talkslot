@@ -229,7 +229,7 @@ $deletionText = $deletion ? __('{date}, {time} Uhr', ['date' => fmt_date($deleti
   <?php if ($roundBookings): ?>
   <p><?= __h('Löscht die Runde {bold}. Das kann nicht rückgängig gemacht werden.', ['bold' => '<strong>' . e(__('mit allen Tagen, Pausen, Übersetzungen und Buchungen')) . '</strong>']) ?></p>
   <?php else: ?>
-  <p data-trash-note><?= e(__('Die Runde hat keine Buchungen: Sie kommt mit allen Tagen, Pausen und Übersetzungen für {days} Tage in den Papierkorb und lässt sich dort wiederherstellen.', ['days' => App\RoundTrash::KEEP_DAYS])) ?></p>
+  <p data-trash-note><?= e(__('Die Runde hat keine Buchungen: Sie kommt mit allen Tagen, Pausen und Übersetzungen für {days} Tage in den Papierkorb und lässt sich dort wiederherstellen (Link „Papierkorb“ auf der Übersicht).', ['days' => App\RoundTrash::KEEP_DAYS])) ?></p>
   <?php endif; ?>
   <?php if ($round['is_active']): ?>
   <p class="small"><?= e(__('Sollen nur keine neuen Buchungen mehr möglich sein? Dann die Runde stattdessen deaktivieren: Tage und Buchungen bleiben erhalten, Eltern können über ihren Link weiterhin absagen.')) ?></p>

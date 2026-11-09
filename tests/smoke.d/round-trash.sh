@@ -5,12 +5,12 @@ RT_R=$(mkround "Papierkorb+$RT_N" none); RT_S=$(slugof "$RT_R"); RT_C=$(DBQ "SEL
 # Something of everything that must come back: a blocked slot, a break, a translation
 RT_D=$(DBQ "SELECT id FROM tp_round_days WHERE round_id = $RT_R ORDER BY id LIMIT 1")
 RT_SL=$(DBQ "SELECT id FROM tp_slots WHERE day_id = $RT_D ORDER BY start_time LIMIT 1")
-RT_ST=$(DBQ "SELECT start_time FROM tp_slots WHERE id = $RT_SL")
 DBQ "UPDATE tp_slots SET is_blocked = 1 WHERE id = $RT_SL; INSERT INTO tp_day_breaks (day_id, start_time, end_time, label) VALUES ($RT_D, '09:30:00', '09:45:00', 'Pause $RT_N'); INSERT INTO tp_round_translations (round_id, lang, title, description, source_hash, is_manual, updated_at) VALUES ($RT_R, 'en', 'Trash test', NULL, 'x', 1, NOW())"
-RT_SLOTS=$(DBQ "SELECT COUNT(*) FROM tp_slots WHERE day_id = $RT_D")
+RT_SLOTS=$(DBQ "SELECT COUNT(*) FROM tp_slots s JOIN tp_round_days d ON d.id = s.day_id WHERE d.round_id = $RT_R")
+DBQ "UPDATE tp_rounds SET expired_at = '2026-01-01 00:00:00' WHERE id = $RT_R"
 RT_DAYS=$(DBQ "SELECT COUNT(*) FROM tp_round_days WHERE round_id = $RT_R")
 RT_P=$(curl -s -b "$J" "$B/admin/round/$RT_R")
-check "round page: a round without bookings says it goes to the trash" 'echo "$RT_P" | marker trash-note 2>/dev/null || echo "$RT_P" | has "data-trash-note"'
+check "round page: a round without bookings says it goes to the trash" 'echo "$RT_P" | has "data-trash-note"'
 curl -s -o /dev/null -b "$J" -d "csrf=$T" "$B/admin/round/$RT_R/delete"
 RT_E=$(DBQ "SELECT id FROM tp_round_trash WHERE title = 'Papierkorb $RT_N'")
 check "deleted without bookings: gone from the rounds and public pages, entry in the trash, in the log" \
@@ -26,8 +26,8 @@ check "another teacher: not in their trash, restoring refused (404), entry stays
   '! curl -s -b "$RT_J" "$B/admin/trash" | has "Papierkorb $RT_N" && [ "$(curl -s -o /dev/null -w "%{http_code}" -b "$RT_J" -d "csrf=$RT_T" "$B/admin/trash/$RT_E/restore")" = 404 ] && [ -n "$(DBQ "SELECT id FROM tp_round_trash WHERE id = $RT_E")" ]'
 RT_L=$(curl -s -o /dev/null -w '%{redirect_url}' -b "$J" -d "csrf=$T" "$B/admin/trash/$RT_E/restore")
 RT_N2=${RT_L##*/}
-check "restored: address and code as before, days, slots, blocked slot, break and translation back, entry gone" \
-  '[ "$(DBQ "SELECT slug FROM tp_rounds WHERE id = $RT_N2")" = "$RT_S" ] && [ "$(DBQ "SELECT code FROM tp_rounds WHERE id = $RT_N2")" = "$RT_C" ] && [ "$(DBQ "SELECT COUNT(*) FROM tp_round_days WHERE round_id = $RT_N2")" = "$RT_DAYS" ] && [ "$(DBQ "SELECT COUNT(*) FROM tp_slots s JOIN tp_round_days d ON d.id = s.day_id WHERE d.round_id = $RT_N2")" -ge "$RT_SLOTS" ] && [ "$(DBQ "SELECT s.is_blocked FROM tp_slots s JOIN tp_round_days d ON d.id = s.day_id WHERE d.round_id = $RT_N2 ORDER BY d.day_date, s.start_time LIMIT 1")" = 1 ] && [ "$(DBQ "SELECT COUNT(*) FROM tp_day_breaks b JOIN tp_round_days d ON d.id = b.day_id WHERE d.round_id = $RT_N2 AND b.label = \"Pause $RT_N\"")" = 1 ] && [ "$(DBQ "SELECT title FROM tp_round_translations WHERE round_id = $RT_N2 AND lang = \"en\"")" = "Trash test" ] && [ -z "$(DBQ "SELECT id FROM tp_round_trash WHERE id = $RT_E")" ] && [ "$(curl -s -o /dev/null -w "%{http_code}" "$B/$RT_S")" = 200 ]'
+check "restored: address and code as before, days, slots, blocked slot, break and translation back, expiry cleared, entry gone" \
+  '[ "$(DBQ "SELECT slug FROM tp_rounds WHERE id = $RT_N2")" = "$RT_S" ] && [ "$(DBQ "SELECT code FROM tp_rounds WHERE id = $RT_N2")" = "$RT_C" ] && [ "$(DBQ "SELECT COUNT(*) FROM tp_round_days WHERE round_id = $RT_N2")" = "$RT_DAYS" ] && [ "$(DBQ "SELECT COUNT(*) FROM tp_slots s JOIN tp_round_days d ON d.id = s.day_id WHERE d.round_id = $RT_N2")" = "$RT_SLOTS" ] && [ "$(DBQ "SELECT s.is_blocked FROM tp_slots s JOIN tp_round_days d ON d.id = s.day_id WHERE d.round_id = $RT_N2 ORDER BY d.day_date, s.start_time LIMIT 1")" = 1 ] && [ "$(DBQ "SELECT COUNT(*) FROM tp_day_breaks b JOIN tp_round_days d ON d.id = b.day_id WHERE d.round_id = $RT_N2 AND b.label = \"Pause $RT_N\"")" = 1 ] && [ "$(DBQ "SELECT title FROM tp_round_translations WHERE round_id = $RT_N2 AND lang = \"en\"")" = "Trash test" ] && [ -z "$(DBQ "SELECT id FROM tp_round_trash WHERE id = $RT_E")" ] && [ "$(DBQ "SELECT expired_at IS NULL FROM tp_rounds WHERE id = $RT_N2")" = 1 ] && [ "$(DBQ "SELECT is_active FROM tp_rounds WHERE id = $RT_N2")" = 1 ] && [ "$(curl -s -o /dev/null -w "%{http_code}" "$B/$RT_S")" = 200 ]'
 # Taken meanwhile: the address changes, and the teacher is told
 curl -s -o /dev/null -b "$J" -d "csrf=$T" "$B/admin/round/$RT_N2/delete"
 RT_E=$(DBQ "SELECT id FROM tp_round_trash WHERE title = 'Papierkorb $RT_N'")
@@ -40,7 +40,25 @@ curl -s -o /dev/null -b "$J" -d "csrf=$T&confirm=1" "$B/admin/round/$RT_O/delete
 curl -s -o /dev/null -b "$J" -d "csrf=$T" "$B/admin/round/$RT_N3/delete"
 RT_E=$(DBQ "SELECT id FROM tp_round_trash WHERE title = 'Papierkorb $RT_N'")
 curl -s -o /dev/null -b "$J" -d "csrf=$T" "$B/admin/trash/$RT_E/delete"
-check "deleted for good from the trash, in the log; the other test round is in the trash too" '[ -z "$(DBQ "SELECT id FROM tp_round_trash WHERE id = $RT_E")" ] && [ -n "$(DBQ "SELECT id FROM tp_audit_log WHERE message LIKE \"%aus dem Papierkorb endgültig gelöscht%\"")" ]'
+check "deleted for good from the trash, in the log" '[ -z "$(DBQ "SELECT id FROM tp_round_trash WHERE id = $RT_E")" ] && [ -n "$(DBQ "SELECT id FROM tp_audit_log WHERE message LIKE \"%aus dem Papierkorb endgültig gelöscht%\"")" ]'
+# An inactive round stays inactive; an active one only comes back active if it may be published
+RT_I=$(mkround "Inaktiv+$RT_N" none); DBQ "UPDATE tp_rounds SET is_active = 0 WHERE id = $RT_I"
+curl -s -o /dev/null -b "$J" -d "csrf=$T" "$B/admin/round/$RT_I/delete"
+RT_IE=$(DBQ "SELECT id FROM tp_round_trash WHERE title = 'Inaktiv $RT_N'")
+curl -s -o /dev/null -b "$J" -d "csrf=$T" "$B/admin/trash/$RT_IE/restore"
+RT_IR=$(DBQ "SELECT id FROM tp_rounds WHERE title = 'Inaktiv $RT_N'")
+check "an inactive round stays inactive" '[ -n "$RT_IR" ] && [ "$(DBQ "SELECT is_active FROM tp_rounds WHERE id = $RT_IR")" = 0 ]'
+DBQ "UPDATE tp_rounds SET is_active = 1 WHERE id = $RT_IR"
+curl -s -o /dev/null -b "$J" -d "csrf=$T" "$B/admin/round/$RT_IR/delete"
+RT_IE=$(DBQ "SELECT id FROM tp_round_trash WHERE title = 'Inaktiv $RT_N'")
+RT_DN=$(DBQ "SELECT display_name FROM tp_users WHERE username = '$USER'")
+DBQ "UPDATE tp_users SET display_name = '' WHERE username = '$USER'"
+RT_X=$(curl -s -L -b "$J" -d "csrf=$T" "$B/admin/trash/$RT_IE/restore")
+DBQ "UPDATE tp_users SET display_name = '$RT_DN' WHERE username = '$USER'"
+RT_IR=$(DBQ "SELECT id FROM tp_rounds WHERE title = 'Inaktiv $RT_N'")
+check "an active round whose activation is blocked by now comes back deactivated, and says so" '[ -n "$RT_IR" ] && [ "$(DBQ "SELECT is_active FROM tp_rounds WHERE id = $RT_IR")" = 0 ] && echo "$RT_X" | has "Die Runde bleibt deaktiviert"'
+curl -s -o /dev/null -b "$J" -d "csrf=$T" "$B/admin/round/$RT_IR/delete"
+DBQ "DELETE FROM tp_round_trash WHERE title = 'Inaktiv $RT_N'"
 # A round with a booking is not a case for the trash; the booking goes with the box ticked, as before
 RT_B=$(mkround "Gebucht+$RT_N" none); RT_BS=$(slugof "$RT_B")
 book "$RT_BS" "Familie Papierkorb" "" >/dev/null

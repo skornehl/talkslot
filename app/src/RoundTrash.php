@@ -55,27 +55,37 @@ final class RoundTrash
     }
 
     /**
-     * Puts a round back: inactive rounds stay inactive, active ones are active again. The address and the round
-     * code stay if nobody has taken them meanwhile.
-     * @return ?array{id: int, same_address: bool} null: the entry is gone (restored or deleted in another tab)
+     * Puts a round back: inactive rounds stay inactive, active ones are active again unless $mayBeActive is false
+     * (what the activation requires is missing by now, AdminController::publishBlocker()). The address and the
+     * round code stay if nobody has taken them meanwhile. expired_at is cleared: Cleanup would otherwise delete
+     * a round that expired before it went to the trash at its next run, for good; it expires again from now on.
+     * @return ?array{id: int, same_address: bool, deactivated: bool} null: the entry is gone (restored or deleted in
+     *   another tab)
      */
-    public static function restore(int $id): ?array
+    public static function restore(int $id, bool $mayBeActive = true): ?array
     {
-        return Db::transaction(static function () use ($id): ?array {
+        return Db::transaction(static function () use ($id, $mayBeActive): ?array {
             $entry = Db::one('SELECT data FROM round_trash WHERE id = ? FOR UPDATE', [$id]);
             if ($entry === null) {
                 return null;
             }
             $data = json_decode((string) $entry['data'], true, 512, JSON_THROW_ON_ERROR);
             $round = $data['round'];
-            $slug = Slug::unique((string) $round['slug']);
-            $round['slug'] = $slug;
+            $original = $round;
+            $round['slug'] = Slug::unique((string) $round['slug']);
             if ((string) ($round['code'] ?? '') === '' || Db::value('SELECT id FROM rounds WHERE code = ?', [$round['code']]) !== null) {
                 $round['code'] = RoundCode::unique();
             }
+            $deactivated = !$mayBeActive && !empty($round['is_active']);
+            if ($deactivated) {
+                $round['is_active'] = 0;
+            }
+            $round['expired_at'] = null;
+            // Only what the copy has: a column added by a later version keeps its default
+            $columns = array_values(array_filter(self::ROUND_COLUMNS, static fn (string $c): bool => array_key_exists($c, $round)));
             $newId = Db::insert(
-                'INSERT INTO rounds (' . implode(', ', self::ROUND_COLUMNS) . ') VALUES (' . implode(', ', array_fill(0, count(self::ROUND_COLUMNS), '?')) . ')',
-                array_map(static fn (string $column): mixed => $round[$column] ?? null, self::ROUND_COLUMNS)
+                'INSERT INTO rounds (' . implode(', ', $columns) . ') VALUES (' . implode(', ', array_fill(0, count($columns), '?')) . ')',
+                array_map(static fn (string $column): mixed => $round[$column], $columns)
             );
             foreach ($data['days'] as $day) {
                 $dayId = Db::insert(
@@ -96,7 +106,7 @@ final class RoundTrash
                 );
             }
             Db::run('DELETE FROM round_trash WHERE id = ?', [$id]);
-            return ['id' => $newId, 'same_address' => $slug === (string) $data['round']['slug']];
+            return ['id' => $newId, 'same_address' => $round['slug'] === $original['slug'] && $round['code'] === $original['code'], 'deactivated' => $deactivated];
         });
     }
 
@@ -118,16 +128,13 @@ final class RoundTrash
     public static function entries(?int $userId): array
     {
         $rows = Db::all(
-            "SELECT t.id, t.user_id, t.title, t.data, t.deleted_at, COALESCE(NULLIF(u.display_name, ''), u.username) AS owner
+            "SELECT t.id, t.user_id, t.title, t.deleted_at, JSON_LENGTH(t.data, '$.days') AS day_count, COALESCE(NULLIF(u.display_name, ''), u.username) AS owner
                FROM round_trash t JOIN users u ON u.id = t.user_id
               WHERE (? = 0 OR t.user_id = ?) ORDER BY t.deleted_at DESC, t.id DESC",
             [(int) $userId, (int) $userId]
         );
         foreach ($rows as &$row) {
-            $data = json_decode((string) $row['data'], true);
-            $row['day_count'] = count((array) ($data['days'] ?? []));
             $row['until'] = self::until((string) $row['deleted_at']);
-            unset($row['data']);
         }
         return $rows;
     }

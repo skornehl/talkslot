@@ -142,9 +142,9 @@ the next term. Without a date the copy keeps the old dates; as it was never acti
 automatically, so you can prepare it at your own pace.
 
 **Delete a round** in its own section at the end of the round page (*Runde löschen*; *Löschen …* among the
-actions jumps there). A round **without bookings** goes to the **trash** (*Papierkorb*, at the end of the
-overview while something is in it) for 14 days: there you can restore it with its address and round code, or
-delete it for good. A round **with bookings** is deleted at once with all its days, breaks, translations and
+actions jumps there). A round **without bookings** goes to the **trash** (*Papierkorb*, a button at the
+top of the overview while something is in it) for 14 days: there you can restore it, or delete it permanently.
+Its address and round code usually stay the same, and a round that was active can be booked again at once. A round **with bookings** is deleted at once with all its days, breaks, translations and
 bookings, which cannot be undone: tick *inkl. N Buchung(en)* (incl. N bookings) first; without the tick nothing
 is deleted, even if your browser does not show the confirmation dialog. If you only want
 to stop new bookings, choose *Stattdessen deaktivieren* (deactivate instead): days and bookings are kept,

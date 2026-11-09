@@ -814,11 +814,11 @@ final class AdminController
                 Http::redirect('/admin/round/' . $id, [], 'delete-round');
             }
             $this->audit(fn () => __('in den Papierkorb gelegt'), $label);
-            $this->flash('success', __('Runde in den Papierkorb gelegt. Sie kann {days} Tage lang unter „Papierkorb“ auf der Übersicht wiederhergestellt werden.', ['days' => RoundTrash::KEEP_DAYS]));
+            $this->flash('success', __('Runde in den Papierkorb gelegt. Sie lässt sich {days} Tage lang wiederherstellen (Link „Papierkorb“ oben auf dieser Seite).', ['days' => RoundTrash::KEEP_DAYS]));
             Http::redirect('/admin');
         }
         $parents = ScheduleService::cancelRound($id, Http::post('notify') === '1');
-        $this->audit(fn () => ($booked ? __('gelöscht (mit {count} Buchung(en))', ['count' => $booked]) : __('gelöscht')) . self::parentsAudit($parents), $label);
+        $this->audit(fn () => __('gelöscht (mit {count} Buchung(en))', ['count' => $booked]) . self::parentsAudit($parents), $label);
         $this->flash('success', __('Runde mit allen Tagen und Buchungen gelöscht.'));
         $this->parentsFlash($parents);
         Http::redirect('/admin');
@@ -841,16 +841,21 @@ final class AdminController
 
     private function trashRestore(int $id): void
     {
-        $this->trashEntry($id);
-        $restored = RoundTrash::restore($id);
+        $entry = $this->trashEntry($id);
+        // As when activating: a round only goes public if what that requires is (still) there
+        $blocker = $this->publishBlocker($this->userById((int) $entry['user_id']));
+        $restored = RoundTrash::restore($id, $blocker === null);
         if ($restored === null) {
             $this->flash('error', __('Dieser Eintrag ist nicht mehr im Papierkorb.'));
             Http::redirect('/admin/trash');
         }
         $this->audit(fn () => __('aus dem Papierkorb wiederhergestellt'), $restored['id']);
         $this->flash('success', $restored['same_address']
-            ? __('Runde wiederhergestellt, mit ihrer bisherigen Adresse und ihrem Rundencode.')
-            : __('Runde wiederhergestellt. Ihre bisherige Adresse war vergeben, deshalb hat sie eine neue: Bitte einen schon verteilten Link prüfen.'));
+            ? __('Runde wiederhergestellt, mit ihrer bisherigen Adresse und ihrem Rundencode. War sie aktiv, ist sie wieder buchbar.')
+            : __('Runde wiederhergestellt. Ihre bisherige Adresse oder ihr Rundencode war vergeben, deshalb hat sie neue: Schon verteilte Links oder Codes führen nicht mehr zu dieser Runde, bitte geben Sie die neuen weiter.'));
+        if ($restored['deactivated']) {
+            $this->flash('error', __('Die Runde bleibt deaktiviert: {hint}', ['hint' => (string) $blocker]));
+        }
         Http::redirect('/admin/round/' . $restored['id']);
     }
 
