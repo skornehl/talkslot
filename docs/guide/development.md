@@ -24,7 +24,7 @@ config/           config.sample.php → config.php (not in Git)
 public/           document root: index.php (front controller), install.php, .htaccess, assets/
 dev/              Docker environment, reset.sh, demo.sh, cs.sh
 docs/             this website (GitHub Pages, Jekyll)
-tests/            unit.php, smoke.sh, browser.mjs, deploy.sh
+tests/            unit.php, smoke.sh, integration.php, browser.mjs, deploy.sh, coverage/, phpstan.neon
 ```
 
 ## Tests
@@ -32,8 +32,10 @@ tests/            unit.php, smoke.sh, browser.mjs, deploy.sh
 ```bash
 php tests/unit.php      # unit tests, no database needed; CI runs them on PHP 8.3, 8.4 and 8.5
 tests/smoke.sh          # several hundred end-to-end checks against the Docker setup (dev/reset.sh first)
+php tests/integration.php  # services against the database in a throwaway schema (part of the smoke test)
 node tests/browser.mjs  # the JavaScript in headless Chrome (dev/reset.sh && dev/demo.sh first)
 tests/deploy.sh         # the atomic deployment via lftp file:// under load, switch-back on errors (needs lftp, openssl and the database)
+dev/phpstan.sh          # static analysis with PHPStan (downloads the pinned PHAR into dev/data/)
 ```
 
 `tests/unit.php` includes every file in `tests/unit.d/`, `tests/smoke.sh` every file in `tests/smoke.d/`
@@ -59,6 +61,34 @@ security headers on error pages, refused cross-site form posts) are in `tests/un
 CI runs the unit tests on every push, and the smoke, browser and deployment tests against the Docker environment.
 It also runs the smoke tests against MariaDB 10.6, the minimum (`MARIADB_VERSION=10.6` for `dev/compose.yml`),
 and checks that PHP 7.4 and 8.2 get the message of `App\Platform` instead of a syntax error.
+
+### Measuring instead of guessing
+
+- **Warnings fail the tests.** The app only logs PHP warnings, notices and deprecations (`app/var/php-error.log`)
+  and carries on. `tests/unit.php` turns them into errors and at the end also fails for those that app code
+  caught; after the smoke and deployment tests and in every CI job `tests/php-errors.sh` fails for any such line
+  of the app in the error log (lines of test code that provoke them on purpose do not count).
+- **Line coverage.** CI builds the app container with PCOV (`COVERAGE=1 docker compose -f dev/compose.yml up -d
+  --build`): `tests/coverage/prepend.php` records the lines of every request and CLI script of the unit, smoke,
+  integration, browser and deployment tests, and `tests/coverage/report.php` merges them. The job summary of
+  the run shows the coverage per file; for a pull request, changed lines that no test executes are marked in the
+  diff. **A pull request must not lower the coverage:** the run on `main` records its coverage as the commit
+  status `coverage`, and a pull request's run fails if it is more than 0.05 percentage points below it (a few
+  lines depend on timing). Every run also fails below `COVERAGE_MIN` in `.github/workflows/tests.yml` or if no
+  test loads a PHP file at all. Locally, after the tests in such a container:
+  `docker compose -f dev/compose.yml exec -w /srv/app app php tests/coverage/report.php`. The raw data collect in
+  `/tmp/talkslot-coverage` in the container; empty it before a new run, or line numbers of older code mix in.
+- **Static analysis.** `dev/phpstan.sh` runs [PHPStan](https://phpstan.org/) at level 6 (`tests/phpstan.neon`);
+  CI does the same. The errors that existed when it was introduced are listed in `tests/phpstan-baseline.neon`;
+  every new one fails. Value types of arrays are not required yet. PHPStan is a development tool only: the
+  script downloads a pinned version and checks its checksum, the app and its build never contain it.
+- **Integration tests** (`tests/integration.php`) call the services directly against the database, without
+  HTTP. Every run creates the tables of `schema.sql` under a random prefix (`it<hex>_`) in the configured
+  database and drops them at the end; the data of an installation or a running smoke test stay untouched.
+  `dev/reset.sh` drops tables an interrupted run left behind. The script only runs with `debug` in `config.php`
+  (the Docker environment) or `TALKSLOT_INTEGRATION=1`, never by accident against a live installation.
+  `App\Time::setNow()` fixes the clock, so deadlines and deletion periods are tested without moving
+  timestamps in the database (it works in unit tests too; `time()`, e.g. for the rate limits, is not affected).
 
 ## Conventions
 
@@ -90,6 +120,12 @@ and checks that PHP 7.4 and 8.2 get the message of `App\Platform` instead of a s
   `Db::TABLES`, a foreign key is called `fk_…` (it gets the prefix too; to drop one, look its name up with
   `Db::foreignKey()`, as older installations have it without the prefix), no alias is named like a table, and a
   named lock goes through `Db::lock()`. Unit tests check all four.
+- **Regular expressions on text** use the `u` modifier wherever bytes and characters differ: a non-ASCII
+  character in the pattern, `\R`, `\h`, `\v`, `\X`, `\p{…}`, `\x{…}`. Without it they split UTF-8 characters
+  (Polish, Russian, Ukrainian names and mails). A unit test checks every pattern in the code.
+- **Smoke checks** test HTTP status codes, the database or a stable marker in the template (`data-…`, helper
+  `marker` in `tests/smoke.sh`) rather than the wording of a page, which changes. This matters most for checks
+  that something is *not* shown: after a rewording they would pass without testing anything.
 - **Admin routes:** add a route to `AdminController::ROUTES` with the role it needs as the fourth element
   (`'teacher'` for every signed-in account, `'admin'` for admin accounts only). A route without a known role
   is admin-only. GET routes must not change data; the smoke test opens every GET route of the table and
