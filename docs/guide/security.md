@@ -138,6 +138,44 @@ change nobody made, or entries in *Protokoll* (log) nobody can explain:
    (Art. 33 GDPR), and inform the people concerned if the risk is high (Art. 34 GDPR). Involve your data
    protection officer.
 
+## Threat model {#threat-model}
+
+Who can do what, where the trust boundaries are, and which risks are accepted on purpose. Operators can use it
+for their documentation (see [documents for the operator]({{ '/guide/operator-documents/' | relative_url }})).
+
+| Role | Trust | Can |
+|---|---|---|
+| Parents | none, anonymous | book through the round link or code, see and change their own booking with its personal link |
+| Teachers | signed in, trusted with their own rounds | see and change the bookings of their own rounds, enter bookings |
+| Admins | trusted with all data of the installation | accounts and roles, all rounds, legal texts, the log |
+| Operator with server access (FTP, database, GitHub secrets) | fully trusted | everything, including the secrets in `config.php` |
+| Web host, mail provider | processors, bound by contract | the stored data, the files, the mails in transit |
+| Attackers | – | everything on the internet can reach the forms, the sign-in and guess links and codes; others on the same network or the same shared server |
+
+**Trust boundaries**
+1. **Browser ↔ web server (HTTPS):** every input is untrusted: CSRF tokens, rate limits, validation,
+   escaped output, security headers.
+2. **Web server ↔ database:** prepared statements only; the credentials are in `config.php` (mode 600 with the
+   automatic deployment; set it yourself on a manual installation).
+3. **Web server ↔ mail server:** SMTP with TLS if `mail.transport` is `smtp`, otherwise the host's `mail()`; once sent, mails are beyond TalkSlot's control (mailboxes of
+   parents and teachers).
+4. **Deployment:** GitHub Actions builds `config.php` from secrets and uploads it via FTPS; whoever controls
+   the repository and its secrets controls the installation.
+5. **Shared hosting:** other customers of the host are separated by the host (file permissions, PHP user);
+   the dashboard warns when `config.php` is readable by others.
+
+**Accepted residual risks**
+- **The personal link in the URL path** (`/b/<token>`): it can end up in the web server's access logs, the
+  browser history and forwarded mails. Mitigated by `Referrer-Policy: no-referrer`, storing only its hash and
+  a short log retention at the host; moving it out of the path would break booking without JavaScript.
+- **The round code in plain text:** teachers have to pass it on; it only keeps strangers away from the list
+  of slots.
+- **No second factor** for accounts (see below).
+- **Rate limits per shortened IP address** can hit shared networks such as school Wi-Fi (see below).
+- **Mails are encrypted in transit only**, not end to end.
+- **Admins see all bookings:** they are trusted and bound to confidentiality; the log shows what they change.
+- **Summary mails and printed lists** are outside TalkSlot once they reach the teacher.
+
 ## Known limitations
 
 - Rate limits work per shortened IP address. Somebody in the same network (e.g. school Wi-Fi) who keeps
