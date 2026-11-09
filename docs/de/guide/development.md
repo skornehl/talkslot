@@ -104,6 +104,11 @@ Syntaxfehlers.
   Termin, den Eltern gebucht oder die Lehrkraft eingetragen hat; in deutschen Texten kein „Slot“. Eltern lesen keine
   Fachbegriffe wie „localStorage“; der Datenschutztext heißt für sie *Datenschutzhinweise* (*Datenschutz* als kurzer
   Link im Fußbereich).
+- **Formularfehler:** Ein Fehler, der zu einem Feld gehört, steht unter der id dieses Feldes
+  (`$errors['title'] = …`), jeder andere unter einem numerischen Schlüssel. Die Fehlerliste verlinkt dann auf das
+  Feld; im Template markiert `field_attrs($errors, 'title', 'title-hint')` die Eingabe, und
+  `field_error($errors, 'title')` setzt die Meldung daneben. Zu einem Schlüssel gehört ein Element mit dieser id auf
+  der Seite, das fokussierbar sein muss, wenn es kein Formularfeld ist.
 - **Admin-Texte** stehen im Code auf Deutsch und laufen durch `__()`: `__('Runde gespeichert.')` gibt den
   deutschen Text unverändert zurück und für ein englisches Konto den Eintrag aus den Wörterbüchern in
   `app/lang/admin/en/*.php` (eine Datei pro Thema, alle zusammengeführt; ein Text braucht genau einen
