@@ -132,7 +132,7 @@ function fmt_slot(string $date, string $start, string $end): string
 }
 
 /** Date and time, e.g. "Dienstag, 10.11.2026, 15:45 Uhr" (deadlines). */
-function fmt_datetime(DateTimeImmutable $d): string
+function fmt_deadline(DateTimeImmutable $d): string
 {
     return fmt_date($d->format('Y-m-d')) . ', ' . $d->format('H:i') . t('time_suffix');
 }
