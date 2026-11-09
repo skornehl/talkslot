@@ -15,7 +15,7 @@ NP=$(curl -s "$B/$NRS")
 check "booking form is sent only once (data-once): a second click cannot end on \"taken\" instead of the link" '[ -n "$NRS" ] && echo "$NP" | has "id=\"booking-form\" novalidate data-once>"'
 N1=$(book "$NRS" "Outbox Eltern" "$(n_addr 1)"); N1L=${N1#* }; N1L=${N1L%%\?*}
 N1M=$(curl -s "$N1L")
-check "appointment page: moving, cancelling and the confirmation mail are sent only once, the calendar file as often as wanted" '[ "$(echo "$N1M" | grep -c "<form method=\"post\" action=\"[^\"]*\" data-once>")" = 3 ] && echo "$N1M" | has "class=\"inline\" data-calendar>"'
+check "appointment page: moving, cancelling and the confirmation mail are sent only once, the calendar file as often as wanted" '[ "$(echo "$N1M" | grep -c "<form method=\"post\" action=\"[^\"]*\"\( novalidate\)\{0,1\} data-once>")" = 3 ] && echo "$N1M" | has "class=\"inline\" data-calendar>"'
 check "parents booked: confirmation sent at once, booking may be reminded (round reminds), confirmation noted" '[[ "$N1" == 303* ]] && [[ "$N1" == *"mail=1"* ]] && [ "$(n_mails "$(n_addr 1)")" = 1 ] && [ "$(DBQ "SELECT CONCAT(remind_ok, notified_at IS NOT NULL, mail_failed_at IS NULL) FROM tp_bookings WHERE name=\"Outbox Eltern\"")" = 111 ]'
 # Entries by the teacher, without a mail: no reminder until the parents got a confirmation
 NSL=($(curl -s -b "$J" "$B/admin/round/$NR" | grep -o '/admin/slot/[0-9]*/book'))
