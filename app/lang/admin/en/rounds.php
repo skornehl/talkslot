@@ -214,7 +214,7 @@ return [
 
     // Log (audit.php)
     'Protokoll' => 'Log',
-    'Änderungen durch Admins: wer wann welche Runde, welches Konto oder welchen Text geändert hat. Änderungen von Lehrkräften an ihren eigenen Runden werden nicht erfasst, Daten von Eltern (Namen, E-Mail-Adressen) nie. Einträge werden nach {days} Tagen gelöscht.' => 'Changes made by admins: who changed which round, account or text, and when. Changes made by teachers to their own rounds are not recorded, data of parents (names, email addresses) never. Entries are deleted after {days} days.',
+    'Änderungen durch Admins: wer wann welche Runde, welches Konto oder welchen Text geändert hat. Änderungen von Lehrkräften an ihren eigenen Runden werden nicht erfasst, Daten von Eltern (Namen, E-Mail-Adressen) nie. Auch Suchen zu Auskunftsanfragen stehen hier, ohne die Adresse. Einträge werden nach {days} Tagen gelöscht.' => 'Changes made by admins: who changed which round, account or text, and when. Changes made by teachers to their own rounds are not recorded, data of parents (names, email addresses) never. Entries are deleted after {days} days.',
     'Keine weiteren Einträge.' => 'No further entries.',
     'Noch keine Einträge.' => 'No entries yet.',
     'Zeitpunkt' => 'Time',

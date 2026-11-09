@@ -5,7 +5,8 @@ namespace App;
 
 /**
  * Log of the changes made by admin accounts: who changed what and when. With several admins this
- * makes it traceable who e.g. moved a round to another teacher or changed a role.
+ * makes it traceable who e.g. moved a round to another teacher or changed a role. Searches for a request for
+ * access are entered as well (who, when, how many results; AccessRequest).
  *
  * Only actions of admins are recorded, not those of teachers in their own rounds (no monitoring
  * of the teaching staff), plus changes the application makes itself on an update (system()).

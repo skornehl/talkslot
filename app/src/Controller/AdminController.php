@@ -96,8 +96,8 @@ final class AdminController
         ['GET', '#^/page/(imprint|privacy)/([a-z]{2})$#', 'pageForm', 'admin'],
         ['POST', '#^/page/(imprint|privacy)/([a-z]{2})$#', 'pageSave', 'admin'],
         ['GET', '#^/log$#', 'auditLog', 'admin'],
-        ['GET', '#^/access-request\z#', 'accessRequestForm', 'admin'],
-        ['POST', '#^/access-request\z#', 'accessRequestSearch', 'admin'],
+        ['GET', '#^/access-request$#', 'accessRequestForm', 'admin'],
+        ['POST', '#^/access-request$#', 'accessRequestSearch', 'admin'],
         ['GET', '#^/templates$#', 'templates', 'admin'],
         ['GET', '#^/templates/new$#', 'templateForm', 'admin'],
         ['POST', '#^/templates/new$#', 'templateSave', 'admin'],
@@ -2377,9 +2377,9 @@ final class AdminController
      */
     private function accessRequestSearch(): void
     {
-        $email = mb_substr(Http::post('email'), 0, 254);
+        $email = Email::normalize(Http::post('email')); // stored form, also for a domain with umlauts
         $errors = [];
-        if (!is_valid_email($email)) {
+        if ($email === null) {
             $errors[] = __('Die E-Mail-Adresse ist ungültig.');
         }
         if (Http::post('purpose') !== '1') {
@@ -2387,7 +2387,7 @@ final class AdminController
         }
         if ($errors) {
             http_response_code(422);
-            $this->render('admin/access_request', ['title' => __('Auskunft zu einer E-Mail-Adresse'), 'email' => $email, 'result' => null, 'errors' => $errors]);
+            $this->render('admin/access_request', ['title' => __('Auskunft zu einer E-Mail-Adresse'), 'email' => mb_substr(Http::post('email'), 0, 254), 'result' => null, 'errors' => $errors]);
             return;
         }
         $result = AccessRequest::find($email);
