@@ -94,6 +94,9 @@ and checks that PHP 7.4 and 8.2 get the message of `App\Platform` instead of a s
 
 - **Language:** code, comments, commits and documentation in English (the German guide in `docs/de/` in
   German). The admin area is German or English per account, the parent pages come in six languages.
+- **Words in the interface:** a *Termin* is a time slot (English: slot), a *Buchung* is a slot that parents
+  booked or the teacher entered (*eintragen*); no "Slot" in German texts. Parents read no technical terms such as
+  "localStorage"; the privacy text is *Datenschutzhinweise* for them (*Datenschutz* as the short link in the footer).
 - **Admin texts** are written in German in the code and pass through `__()`: `__('Runde gespeichert.')`
   returns the German text as it is and, for an English account, the entry of the dictionaries in
   `app/lang/admin/en/*.php` (one file per topic, all merged; a text needs exactly one entry, as a second
