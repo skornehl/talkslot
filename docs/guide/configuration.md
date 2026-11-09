@@ -142,6 +142,7 @@ deliver to such addresses.
 | Option | Meaning | Deployment |
 |---|---|---|
 | `hosting.de` / `hosting.en` | your web host, replaces `[[HOSTER]]` in the privacy policy | `HOSTING_DE` / `HOSTING_EN` |
+| `hosting.pl`, `hosting.ru`, … | optional: the same in the language of a translated privacy policy; without it the translation takes `hosting.en` (then `hosting.de`) | – |
 
 Example for `hosting.en`: *Example Hosting GmbH, Musterweg 1, 12345 Musterstadt, Germany, as processor
 under Art. 28 GDPR. The servers are located in Germany.*

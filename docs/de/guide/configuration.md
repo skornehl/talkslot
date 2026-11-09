@@ -149,6 +149,7 @@ wenige Mailserver können an solche Adressen zustellen.
 | Option | Bedeutung | Deployment |
 |---|---|---|
 | `hosting.de` / `hosting.en` | Ihr Hoster, ersetzt `[[HOSTER]]` in der Datenschutzerklärung | `HOSTING_DE` / `HOSTING_EN` |
+| `hosting.pl`, `hosting.ru`, … | optional: dasselbe in der Sprache einer übersetzten Datenschutzerklärung; ohne Eintrag nimmt die Übersetzung `hosting.en` (danach `hosting.de`) | – |
 
 Beispiel für `hosting.de`: *Beispiel Hosting GmbH, Musterweg 1, 12345 Musterstadt, als
 Auftragsverarbeiter nach Art. 28 DSGVO. Die Server stehen in Deutschland.*

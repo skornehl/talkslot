@@ -11,7 +11,7 @@ if (PHP_SAPI !== 'cli') {
 $target = $argv[1] ?? '';
 $version = trim((string) getenv('VERSION'));
 $commit = trim((string) getenv('COMMIT'));
-if ($target === '' || $version === '' || !preg_match('/^[0-9a-f]{7,40}$/', $commit)) {
+if ($target === '' || $version === '' || !preg_match('/^[0-9a-f]{7,40}\z/', $commit)) {
     fwrite(STDERR, "Usage: VERSION=… COMMIT=<sha> php bin/build-version.php <target file>\n");
     exit(1);
 }

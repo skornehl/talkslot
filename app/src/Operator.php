@@ -53,7 +53,8 @@ final class Operator
         if (self::$contact === null) {
             $value = Settings::get(self::SETTING);
             if ($value === null) {
-                // Not migrated yet (migration 13 runs on the next request): still in the admin's profile
+                // Not migrated yet (migration 13 runs on the next request): still in the admin's profile. Goes
+                // with 2.0, which requires v1.3.0 or newer (upgrade path, docs/guide/operations.md)
                 $admin = self::admin();
                 $value = $admin && $admin['is_active'] ? (string) ($admin['controller_contact'] ?? '') : '';
             }
