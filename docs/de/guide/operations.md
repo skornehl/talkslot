@@ -168,51 +168,66 @@ Die Tabellen mit Daten von Eltern sind `bookings` und `mail_outbox`; `audit_log`
 nicht gebraucht. Mit Tabellenpräfix (`db.prefix`, z. B. `tp_`) beginnt jeder Tabellenname damit; bei einer
 gemeinsam genutzten Datenbank exportieren Sie nur die Tabellen mit Ihrem Präfix.
 
-**Mit Shell** (Benutzer und Passwort in `~/.my.cnf` unter `[client]`, damit sie weder in der Befehlszeile noch in der
-Shell-Historie erscheinen; `DB` = Datenbank, `P` = Tabellenpräfix):
+**Mit Shell** (Benutzer und Passwort in `~/.my.cnf` unter `[client]`, Dateirechte 600, damit sie weder in der
+Befehlszeile noch in der Shell-Historie erscheinen; `DB` = Datenbank, `P` = Tabellenpräfix):
 
 ```bash
+umask 077 # die Dumps kann nur Ihr Benutzer lesen
+OPTS="--single-transaction --default-character-set=utf8mb4 --skip-add-locks"
 TABLES=$(mysql -N -e "SHOW TABLES" "$DB" | grep "^${P}")
 # Voll-Backup
-mysqldump --single-transaction --default-character-set=utf8mb4 "$DB" $TABLES > talkslot-full-$(date +%F).sql
+mysqldump $OPTS "$DB" $TABLES > talkslot-full-$(date +%F).sql
 # Konfigurations-Backup: Struktur aller Tabellen, Daten ohne Buchungen, Mail-Warteschlange, Protokoll und Rate-Limits
 CONF=talkslot-config-$(date +%F).sql
-mysqldump --single-transaction --default-character-set=utf8mb4 --no-data "$DB" $TABLES > "$CONF"
-mysqldump --single-transaction --default-character-set=utf8mb4 --no-create-info "$DB" \
+mysqldump $OPTS --no-data "$DB" $TABLES > "$CONF"
+mysqldump $OPTS --no-create-info "$DB" \
   $(echo "$TABLES" | grep -vE "^${P}(bookings|mail_outbox|audit_log|rate_limits)$") >> "$CONF"
 ```
 
-**Ohne Shell** (phpMyAdmin oder das Werkzeug des Hosters): *Exportieren → Angepasst*, nur die Tabellen mit Ihrem
-Präfix wählen, Zeichensatz `utf8mb4`; beim Konfigurations-Backup die vier Tabellen oben nur mit ihrer Struktur
-exportieren. Viele Hoster führen zusätzlich eigene Backups: Fragen Sie nach der Dauer und rechnen Sie diese Frist mit.
+`--skip-add-locks` sorgt dafür, dass die Wiederherstellung auch mit den
+[Mindestrechten]({{ '/de/guide/operator-documents/' | relative_url }}#database-privileges) funktioniert.
 
-Verschlüsseln Sie die Dateien (z. B. `gpg -c` oder ein verschlüsseltes Archiv) und bewahren Sie sie getrennt vom
-Webserver auf.
+**Ohne Shell** (phpMyAdmin oder das Werkzeug des Hosters): *Exportieren → Angepasst*, nur die Tabellen mit Ihrem
+Präfix wählen, Zeichensatz `utf-8`, *DROP TABLE hinzufügen* ankreuzen; beim Konfigurations-Backup die vier Tabellen
+oben nur mit ihrer Struktur exportieren. Viele Hoster führen zusätzlich eigene Backups: Fragen Sie nach der Dauer und
+rechnen Sie diese Frist mit.
+
+Verschlüsseln Sie die Dateien (z. B. `gpg -c`), löschen Sie das unverschlüsselte Original und bewahren Sie das Backup
+getrennt vom Webserver auf.
 
 ### Wiederherstellen
 
-Stellen Sie nur her, was Sie brauchen: Einen verlorenen Text oder eine Runde können Sie oft neu eintragen. Ein
-Voll-Backup holt Buchungen zurück, die inzwischen abgesagt oder verschoben wurden, und dafür gingen Erinnerungen und
-Zusammenfassungen hinaus.
+Eine Wiederherstellung ersetzt die enthaltenen Tabellen. **Auch ein Konfigurations-Backup löscht die aktuellen
+Buchungen** (Links funktionieren nicht mehr, Termine sind wieder frei), und Konten und Passwörter gehen auf den Stand
+des Backups zurück. Ein Voll-Backup holt Buchungen zurück, die inzwischen abgesagt oder verschoben wurden. Stellen Sie
+also nur her, was Sie brauchen: Einen verlorenen Text oder eine Runde können Sie oft neu eintragen. TalkSlot hat keinen
+Wartungsmodus: Jeder Seitenaufruf startet Migrationen, Bereinigung und Mail-Warteschlange, daher der erste Schritt.
 
-1. **Cronjob anhalten** (Workflow *Cron* oder den externen Cron-Dienst), damit zwischendurch nichts verschickt wird.
-2. **Backup einspielen** (`mysql … < datei.sql` oder *Importieren* in phpMyAdmin).
-3. **E-Mails aus der Zeit des Backups zurückhalten**, vor dem ersten Aufruf:
+1. **Allen Mailversand stoppen.** Setzen Sie `mail.transport` in der `config.php` der aktiven Version auf `none` (beim
+   Deployment: Variable `MAIL_TRANSPORT`), und halten Sie den Cronjob an (Workflow *Cron*, externer Cron-Dienst oder
+   Crontab des Servers).
+2. **Backup entschlüsseln und einspielen** (`mysql "$DB" < datei.sql` oder *Importieren* in phpMyAdmin, dort
+   *Fremdschlüsselüberprüfung aktivieren* abwählen).
+3. **Erinnerungen zurückhalten** (in der Shell oder im Reiter *SQL* von phpMyAdmin, mit Ihrem Präfix statt `tp_`):
    ```sql
    DELETE FROM tp_mail_outbox;
    UPDATE tp_bookings SET reminded_at = NOW() WHERE reminded_at IS NULL;
    ```
-   (mit Ihrem Präfix statt `tp_`). Eltern wiederhergestellter Buchungen bekommen dann keine Erinnerung; ihre Links
-   funktionieren weiter.
+   Eltern wiederhergestellter Buchungen bekommen dann keine Erinnerung; ihre Links funktionieren weiter. Ein Backup,
+   das älter als die Mail-Warteschlange ist, hat keine Tabelle `mail_outbox`: Lassen Sie die erste Anweisung weg.
 4. **Admin-Bereich einmal öffnen:** Stammt das Backup von einer älteren Version, laufen die Datenbank-Migrationen
-   automatisch. Dann die Bereinigung starten (`php bin/cron.php` oder den Cronjob wieder aktivieren): Buchungen
-   vergangener Tage werden gelöscht.
-5. **Lehrkräfte informieren**, dass nach `[ZEITPUNKT DES BACKUPS]` abgesagte oder verschobene Buchungen wieder in
-   ihren Listen stehen können, damit sie das mit den Eltern klären.
-6. Cronjob wieder aktivieren.
+   automatisch. Dann die Bereinigung starten (`php bin/cron.php`; beim atomaren Deployment
+   `php releases/$(cat current)/bin/cron.php`, oder den Web-Cron auslösen): Buchungen vergangener Tage werden gelöscht,
+   und Zusammenfassungen für seit dem Backup abgeschlossene Tage gehen ins Leere, solange `mail.transport` auf `none` steht.
+5. **Nachholen, was seit `[ZEITPUNKT DES BACKUPS]` geschehen ist:** Löschen Sie erneut, was seitdem gelöscht wurde
+   (abgesagte Buchungen, Löschanträge von Eltern); prüfen Sie die Konten unter *Benutzer*. Informieren Sie die
+   Lehrkräfte: Nach einem Voll-Backup können abgesagte oder verschobene Buchungen wieder in ihren Listen stehen, nach
+   einem Konfigurations-Backup sind die Buchungen weg, und Eltern müssen neu buchen.
+6. **Mailversand wieder einschalten:** `mail.transport` zurücksetzen und den Cronjob wieder aktivieren. Die
+   Cron-Überwachung kann einmal melden, dass der Lauf ausblieb.
 
-Testen Sie einmal im Jahr eine Wiederherstellung auf einer eigenen Datenbank (z. B. einer Kopie mit anderem Präfix),
-und halten Sie das Ergebnis fest.
+Testen Sie einmal im Jahr eine Wiederherstellung auf einer eigenen, leeren Datenbank, nie auf der laufenden (ein Dump
+nennt seine Tabellen und ersetzt sie), und halten Sie das Ergebnis fest.
 
 ## Secrets austauschen {#changing-secrets}
 

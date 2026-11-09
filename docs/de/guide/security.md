@@ -172,9 +172,9 @@ ihre Dokumentation nutzen (siehe [Unterlagen für Schule und Betreiber]({{ '/de/
 **Vertrauensgrenzen**
 1. **Browser ↔ Webserver (HTTPS):** Jede Eingabe ist nicht vertrauenswürdig: CSRF-Token, Rate-Limits, Prüfung,
    maskierte Ausgabe, Sicherheits-Header.
-2. **Webserver ↔ Datenbank:** nur Prepared Statements; die Zugangsdaten stehen in `config.php` (nur für den
-   Eigentümer lesbar).
-3. **Webserver ↔ Mailserver:** SMTP mit TLS; versendete E-Mails liegen außerhalb von TalkSlot (Postfächer von Eltern
+2. **Webserver ↔ Datenbank:** nur Prepared Statements; die Zugangsdaten stehen in `config.php` (beim automatischen
+   Deployment Rechte 600; bei manueller Installation setzen Sie sie selbst).
+3. **Webserver ↔ Mailserver:** SMTP mit TLS, wenn `mail.transport` auf `smtp` steht, sonst `mail()` des Hosters; versendete E-Mails liegen außerhalb von TalkSlot (Postfächer von Eltern
    und Lehrkräften).
 4. **Deployment:** GitHub Actions baut `config.php` aus Secrets und lädt sie per FTPS hoch; wer das Repository und
    seine Secrets kontrolliert, kontrolliert die Installation.

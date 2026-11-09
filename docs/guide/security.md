@@ -155,9 +155,9 @@ for their documentation (see [documents for the operator]({{ '/guide/operator-do
 **Trust boundaries**
 1. **Browser ↔ web server (HTTPS):** every input is untrusted: CSRF tokens, rate limits, validation,
    escaped output, security headers.
-2. **Web server ↔ database:** prepared statements only; the credentials are in `config.php` (readable only by
-   the owner).
-3. **Web server ↔ mail server:** SMTP with TLS; once sent, mails are beyond TalkSlot's control (mailboxes of
+2. **Web server ↔ database:** prepared statements only; the credentials are in `config.php` (mode 600 with the
+   automatic deployment; set it yourself on a manual installation).
+3. **Web server ↔ mail server:** SMTP with TLS if `mail.transport` is `smtp`, otherwise the host's `mail()`; once sent, mails are beyond TalkSlot's control (mailboxes of
    parents and teachers).
 4. **Deployment:** GitHub Actions builds `config.php` from secrets and uploads it via FTPS; whoever controls
    the repository and its secrets controls the installation.
