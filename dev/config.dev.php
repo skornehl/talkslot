@@ -11,7 +11,10 @@ $c['mail']['transport'] = 'smtp';
 $c['mail']['from_address'] = 'termine@example.org';
 $c['alert_email'] = 'betrieb@example.org'; // error reports end up in Mailpit
 $c['mail']['smtp'] = ['host' => 'mail', 'port' => 1025, 'encryption' => 'none', 'user' => '', 'pass' => ''];
-$c['rate_limits'] = ['attempt' => [1000, 3600], 'booking' => [1000, 3600], 'manage' => [1000, 3600], 'login' => [10, 900]];
+$c['rate_limits'] = ['attempt' => [1000, 3600], 'booking' => [1000, 3600], 'manage' => [1000, 3600], 'login' => [10, 900],
+    // the tests book and mail a lot from one address; tests/smoke.d/abuse.sh fills these counters itself
+    'round' => [1000, 3600], 'burst' => [1000, 300], 'move_ip' => [1000, 3600], 'recipient' => [1000, 3600], 'recipient_day' => [1000, 86400]];
+$c['mail_alert_hourly'] = 100000;
 $c['csrf_min_age_seconds'] = 0;
 $c['summary_evening_hour'] = 0; // tests: daily summary at any time
 $c['cron_alert_hours'] = 3; // tests: the cron monitoring with hours that are quick to simulate

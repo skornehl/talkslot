@@ -221,6 +221,16 @@ final class BookingService
         return $newAddress;
     }
 
+    /**
+     * The booking keeps no address: its confirmation was held back because the address got too many mails
+     * (Abuse), so no reminder or change notice goes there later either.
+     */
+    public static function forgetEmail(int $bookingId): void
+    {
+        Db::run('UPDATE bookings SET email = NULL, remind_ok = 0 WHERE id = ?', [$bookingId]);
+        Db::run('DELETE FROM mail_outbox WHERE booking_id = ?', [$bookingId]);
+    }
+
     public static function findByToken(#[\SensitiveParameter] string $plain): ?array
     {
         if (!Token::isWellFormed($plain)) {
