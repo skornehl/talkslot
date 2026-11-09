@@ -23,6 +23,8 @@ final class Db
     /** Connection error of this request: don't wait for the timeout again on every query. */
     private static ?PDOException $connectError = null;
     private static ?string $tableRegex = null;
+    /** Name of a lock in SQL (lock()): at most 64 characters, the same for every version of the app */
+    private const LOCK_NAME = "SHA1(CONCAT(DATABASE(), '.', ?))";
 
     public static function tablePrefix(): string
     {
@@ -40,8 +42,13 @@ final class Db
     }
 
     /**
-     * Replaces table names in the SQL with the prefixed names. Matches whole words only,
-     * i.e. "rounds", but not "r.round_id" or "fk_rounds_user".
+     * Replaces table names in the SQL with the prefixed names, and gives foreign keys ("CONSTRAINT fk_…") the
+     * prefix too: unlike index names they must be unique in the whole database, so a second installation in the
+     * same database needs names of its own (expert review P2-7; installations from before keep theirs, see
+     * foreignKey()). Only where a foreign key is defined: "DROP CONSTRAINT fk_x" names one that exists.
+     * Whole words only, i.e. "rounds", but not "r.round_id" or "fk_rounds_user" on its own.
+     * Nothing inside quotes ('…', "…", `…`) or comments changes, so values and LIKE patterns stay as they are.
+     * An alias named like a table would be rewritten; tests/unit.d/operations.php forbids them.
      */
     public static function prefix(string $sql): string
     {
@@ -49,8 +56,53 @@ final class Db
         if ($prefix === '') {
             return $sql;
         }
-        self::$tableRegex ??= '/(?<![\w.`\'"])(' . implode('|', self::TABLES) . ')(?![\w`\'"])/';
-        return (string) preg_replace(self::$tableRegex, $prefix . '$1', $sql);
+        self::$tableRegex ??= '/(?<skip>\'(?:[^\'\\\\]|\\\\.)*+\'|"(?:[^"\\\\]|\\\\.)*+"|`[^`]*+`|--(?=\s|$)[^\n]*+|#[^\n]*+|\/\*(?!!|M!).*?\*\/)'
+            . '|(?<fk>\b(?i:CONSTRAINT)\s+)(?=fk_\w+\s+(?i:FOREIGN)\b)'
+            . '|(?<![\w.])(?<table>' . implode('|', self::TABLES) . ')(?!\w)/s';
+        return (string) preg_replace_callback(self::$tableRegex, static fn (array $m): string => match (true) {
+            ($m['skip'] ?? '') !== '' => $m['skip'],
+            ($m['fk'] ?? '') !== '' => $m['fk'] . $prefix,
+            default => $prefix . $m['table'],
+        }, $sql);
+    }
+
+    /**
+     * The name of the foreign key on a column of one of our tables, or null: from information_schema, as it
+     * depends on when the table was created (with the prefix, or fk_… from before; expert review P2-7). A
+     * migration that replaces a foreign key uses dropForeignKey() instead of writing the name down.
+     */
+    public static function foreignKey(string $table, string $column): ?string
+    {
+        $name = self::value(
+            'SELECT CONSTRAINT_NAME FROM information_schema.KEY_COLUMN_USAGE
+              WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ? AND REFERENCED_TABLE_NAME IS NOT NULL LIMIT 1',
+            [self::table($table), $column]
+        );
+        return is_string($name) ? $name : null;
+    }
+
+    /** Drops the foreign key on a column of one of our tables, under whatever name it has; none: nothing happens. */
+    public static function dropForeignKey(string $table, string $column): void
+    {
+        $name = self::foreignKey($table, $column);
+        if ($name !== null) {
+            self::pdo()->exec('ALTER TABLE `' . self::table($table) . '` DROP FOREIGN KEY `' . $name . '`');
+        }
+    }
+
+    /**
+     * A named lock of this installation (GET_LOCK): lock names count for the whole database server, i.e. for
+     * every database of the web host's customers, so the name includes the database and the table prefix
+     * (expert review P2-7). true = acquired within $timeout seconds; release it with unlock().
+     */
+    public static function lock(string $name, int $timeout): bool
+    {
+        return (int) self::value('SELECT GET_LOCK(' . self::LOCK_NAME . ', ?)', [self::table($name), max(0, $timeout)]) === 1;
+    }
+
+    public static function unlock(string $name): void
+    {
+        self::value('SELECT RELEASE_LOCK(' . self::LOCK_NAME . ')', [self::table($name)]);
     }
 
     /** Execute SQL without parameters (DDL in installer and migrations) */

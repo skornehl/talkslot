@@ -122,7 +122,8 @@ schools (GDPR/DSGVO, TDDDG) and multilingual families.
   in public repositories after 60 days without activity).
 - Database migrations run automatically and are additive (columns, tables, indexes), so a rollback to the
   previous version of the same major version keeps working.
-- Table prefix (default `tp_`), so a database can be shared with other applications.
+- Table prefix (default `tp_`) for tables and foreign keys, so a database can be shared with other applications
+  or a second TalkSlot.
 
 ## Requirements
 
