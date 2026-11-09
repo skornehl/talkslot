@@ -39,7 +39,7 @@ check "template: the deletion period in days, stored in hours like the rounds" \
 ur_post -o /dev/null "$B/admin/templates/$URT/delete"
 
 # "Tag bearbeiten" with the fields of a new day: breaks, preview, input kept after an error
-book "$URS" "Erika Muster" "" 2 > /dev/null
+book "$URS" "Erika Muster $URUN" "" 2 > /dev/null
 URDAY=$(DBQ "SELECT id FROM tp_round_days WHERE round_id=$URID AND day_date='$URD1'")
 ur_day() { ur_post -d "day_date=$URD1&start_time=10:00&end_time=11:00&slot_minutes=30&$1" "$B/admin/day/$URDAY/edit"; }
 ur_slots() { DBQ "SELECT COUNT(*) FROM tp_slots WHERE day_id=$URDAY"; }
@@ -55,7 +55,7 @@ ur_day "x=1" > /dev/null
 check "day form from before the update (no breaks in it): the breaks stay" '[ "$(ur_breaks)" = 1 ]'
 check "log: a change of the breaks is named" 'curl -s -b "$J" "$B/admin/log" | has "Pausen jetzt: 10:00–10:30"'
 ur_day "breaks_field=1&break_start%5B%5D=10:30&break_end%5B%5D=11:00" > /dev/null
-check "break over the booked slot: marked as a conflict, the booking stays" '[ "$(ur_conflicts)" = 1 ] && [ "$(DBQ "SELECT COUNT(*) FROM tp_bookings WHERE name=\"Erika Muster\"")" = 1 ]'
+check "break over the booked slot: marked as a conflict, the booking stays" '[ "$(ur_conflicts)" = 1 ] && [ "$(DBQ "SELECT COUNT(*) FROM tp_bookings WHERE name=\"Erika Muster $URUN\"")" = 1 ]'
 ur_day "breaks_field=1" > /dev/null
 check "all breaks removed: the conflict fits again" '[ "$(ur_breaks)" = 0 ] && [ "$(ur_conflicts)" = 0 ] && [ "$(ur_slots)" = 2 ]'
 URE=$(ur_post -d "day_date=$URD1&start_time=09:00&end_time=11:00&slot_minutes=30&breaks_field=1&break_start%5B%5D=12:00&break_end%5B%5D=11:00&location=Raum+7" "$B/admin/day/$URDAY/edit")

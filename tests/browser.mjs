@@ -278,8 +278,11 @@ try {
   await setField('start_time', startBefore);
   await setField('end_time', endBefore);
   await setField('slot_minutes', '30');
-  const stillFit = booked.split(',').filter((b) => { const [h, m] = b.split(':').map(Number); const from = (Number(startBefore.slice(0, 2)) * 60 + Number(startBefore.slice(3, 5))); return ((h * 60 + m) - from) % 30 === 0; }).length;
-  check('a longer duration: only bookings whose start no longer fits count', stillFit === count ? await js(`document.querySelector('[data-slot-conflicts]').hidden`) : await js(`document.querySelector('[data-slot-conflicts]').textContent.startsWith('${count - stillFit} gebuchte(r)')`));
+  const previewStarts = (await js(`document.querySelector('[data-slot-preview]').textContent`)).match(/\d\d:\d\d(?=–)/g) || [];
+  const lost = booked.split(',').filter((b) => !previewStarts.includes(b)).length;
+  check('a longer duration: only bookings whose start is no longer in the schedule count', lost < count && (lost === 0
+    ? await js(`document.querySelector('[data-slot-conflicts]').hidden`)
+    : await js(`document.querySelector('[data-slot-conflicts]').textContent.startsWith('${lost} gebuchte(r)')`)), `${lost} of ${count}`);
 
   section('Admin: "Duplizieren …" opens the form with the date');
   await goto(roundPath);
