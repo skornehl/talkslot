@@ -31,9 +31,13 @@ check "restored: address and code as before, days, slots, blocked slot, break an
 # Taken meanwhile: the address changes, and the teacher is told
 curl -s -o /dev/null -b "$J" -d "csrf=$T" "$B/admin/round/$RT_N2/delete"
 RT_E=$(DBQ "SELECT id FROM tp_round_trash WHERE title = 'Papierkorb $RT_N'")
+# An entry from before the rules of migration 26: a date twice, an impossible day
+DBQ "UPDATE tp_round_trash SET data = JSON_ARRAY_APPEND(data, '\$.days', JSON_EXTRACT(data, '\$.days[0]'), '\$.days', JSON_SET(JSON_EXTRACT(data, '\$.days[0]'), '\$.day_date', '2031-01-01', '\$.end_time', '00:00:00')) WHERE id = $RT_E"
 RT_O=$(mkround "Besetzt+$RT_N" none)
 DBQ "UPDATE tp_rounds SET slug = '$RT_S', code = '$RT_C' WHERE id = $RT_O"
 RT_X=$(curl -s -L -b "$J" -d "csrf=$T" "$B/admin/trash/$RT_E/restore")
+check "an entry from before the rules of the database comes back: a date entered twice once, an impossible day not at all" \
+  '[ "$(DBQ "SELECT COUNT(*) FROM tp_round_days d JOIN tp_rounds r ON r.id = d.round_id WHERE r.title = \"Papierkorb $RT_N\"")" = "$RT_DAYS" ] && [ -z "$(DBQ "SELECT id FROM tp_round_trash WHERE id = $RT_E")" ]'
 RT_N3=$(DBQ "SELECT id FROM tp_rounds WHERE title = 'Papierkorb $RT_N'")
 check "address and code taken meanwhile: new ones, and the message says so" '[ -n "$RT_N3" ] && [ "$(DBQ "SELECT slug FROM tp_rounds WHERE id = $RT_N3")" != "$RT_S" ] && [ "$(DBQ "SELECT code FROM tp_rounds WHERE id = $RT_N3")" != "$RT_C" ] && echo "$RT_X" | has "Ihre bisherige Adresse oder ihr Rundencode war vergeben"'
 curl -s -o /dev/null -b "$J" -d "csrf=$T&confirm=1" "$B/admin/round/$RT_O/delete"

@@ -204,15 +204,17 @@ changing a day, a round or an account (`ScheduleService::LOCKS`) and rebuilding 
 (`SlotGenerator::sync()`) follow it; an account's deletion first locks the rows of the active admins, so
 that one admin always remains (`AccountSecurity`).
 
-A booking runs in `Db::transaction()`: with a booking limit it locks the round
-(`BookingService::lockForLimit()`), then the slot together with its day in one joined `SELECT … FOR UPDATE`
-(`lockSlot()`), then checks for a booking of the slot. That join is the one place where a slot may be locked
-before its day, so a booking can cross a `sync()` of the same day; InnoDB then ends one of them as a deadlock.
-Bookings expect this: they retry once on a deadlock or lock wait timeout (`retryOnDeadlock()`) and then report
-the slot as taken, and `UNIQUE(slot_id)` is the hard guarantee against double bookings; the teacher's entries
-and moves go through the same methods. Changes to days, rounds and accounts (`ScheduleService`, `sync()`) do not
-retry. For new code: lock the day before its slots, and wrap new writes that use `lockSlot()` in
-`retryOnDeadlock()`. Mails go out after the commit (directly or through the outbox), never inside the
+A booking runs in `Db::transaction()`: with a booking limit it locks the round and reads it anew
+(`BookingService::lockForLimit()`), then its day, then the slot (`lockSlot()`), then checks for a booking of the
+slot. Every path locks in this order: round, day, slots, bookings. The day of the slot is read before the
+transaction, because a plain read inside it would start its snapshot before the locks. A transaction that loses a
+row lock (deadlock, lock wait timeout, a row changed since the snapshot) is repeated once from the start (`Db::retrying()`, never inside an open transaction);
+bookings then report the slot as taken, and `UNIQUE(slot_id)` is the hard guarantee against double bookings. The
+changes of `ScheduleService`, `sync()` and `keepingAnAdmin()` go through the same wrapper. A row lock is waited for
+at most 5 seconds. For new code: lock in this order, and wrap new transactions in `Db::retrying()`.
+Rules the form checks (one date per round, unique names) are also constraints in the database: a request that
+slips past the check gets the form with a message (`Db::isDuplicate()`), not an error page.
+Mails go out after the commit (directly or through the outbox), never inside the
 transaction.
 
 Background work takes named locks instead: migrations and the outbox use `GET_LOCK`; reminders and summaries
@@ -267,7 +269,9 @@ directly. An existing one runs the missing steps of `Migrations::STEPS` on the n
   collation, new `UNIQUE` or foreign key constraints on existing columns, `ON DELETE RESTRICT`. They can
   break the previous version or fail on existing data. They wait for a major version and go in two steps
   (expand, then contract): add the new column and use it, drop the old one only in a later major version.
-  Step 3 (renaming `admin_users`, dropping columns) dates from before this rule.
+  Step 3 (renaming `admin_users`, dropping columns) dates from before this rule. Step 26 sets `UNIQUE` and `CHECK` on
+  existing columns as a deliberate exception: only where the rows allow it (otherwise it names the rounds to the operator, and a later cron run adds the rule once they are in order), and the
+  previous version already refuses such rows in its forms.
 - While the files of an update are uploaded, new code may meet the old schema for a moment. Where that
   matters (a page that must not fail), let the code fall back to the old behaviour until the step has run,
   as `RoundAccess::required()` does. Such a fallback names the migration it bridges and can go with the next

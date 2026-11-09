@@ -464,3 +464,58 @@ check('the check of the migrations finds the forbidden forms and accepts the add
 preg_match_all('/^ {8}(\d+) => \[/m', (string) file_get_contents(dirname(__DIR__, 2) . '/app/src/Migrations.php'), $p5Numbers);
 $p5Numbers = array_map('intval', $p5Numbers[1]);
 check('migrations: numbered without gaps or duplicates up to LATEST', $p5Numbers === range(2, App\Migrations::LATEST) && array_keys($p5Steps) === $p5Numbers);
+echo "Operations: rules in the database, repeating lost transactions (expert review P2-6)\n";
+$p6Error = static function (int $code): PDOException {
+    $e = new PDOException('x');
+    $e->errorInfo = ['HY000', $code, 'x'];
+    return $e;
+};
+$p6Run = static function (array $codes) use ($p6Error): array {
+    $calls = 0;
+    try {
+        $out = App\Db::retrying(static function () use (&$calls, $codes, $p6Error): string {
+            $code = $codes[$calls++] ?? 0;
+            if ($code !== 0) {
+                throw $p6Error($code);
+            }
+            return 'done';
+        });
+    } catch (PDOException $e) {
+        $out = (int) $e->errorInfo[1];
+    }
+    return [$out, $calls];
+};
+check('Db::retrying(): a lost row lock (1213, 1205, 1020) is repeated once, other errors at once go on, a second loss goes on',
+    $p6Run([1213]) === ['done', 2] && $p6Run([1205]) === ['done', 2] && $p6Run([1020]) === ['done', 2]
+    && $p6Run([1062]) === [1062, 1] && $p6Run([1213, 1213]) === [1213, 2] && $p6Run([]) === ['done', 1]);
+$p6Pdo = new ReflectionProperty(App\Db::class, 'pdo');
+$p6Was = $p6Pdo->getValue();
+$p6Pdo->setValue(null, new class () extends PDO {
+    public function __construct()
+    {
+    }
+
+    public function inTransaction(): bool
+    {
+        return true;
+    }
+});
+$p6Nested = $p6Run([1213]);
+$p6Pdo->setValue(null, $p6Was);
+check('Db::retrying(): inside an open transaction nothing is repeated (a deadlock has rolled back all of it)', $p6Nested === [1213, 1]);
+$p6Taken = new ReflectionMethod(App\Controller\AdminController::class, 'takenByAnother');
+$p6Admin = (new ReflectionClass(App\Controller\AdminController::class))->newInstanceWithoutConstructor();
+$p6Other = false;
+try {
+    $p6Taken->invoke($p6Admin, $p6Error(1062));
+    $p6Taken->invoke($p6Admin, $p6Error(1205));
+} catch (PDOException $e) {
+    $p6Other = (int) $e->errorInfo[1] === 1205;
+}
+check('forms: a duplicate key is the message of the form, any other database error goes on', $p6Other);
+check('Db::isRetryable(): only PDO errors with those codes', App\Db::isRetryable($p6Error(1020)) && !App\Db::isRetryable($p6Error(1062)) && !App\Db::isRetryable(new RuntimeException('x')));
+$p6Schema = (string) file_get_contents(dirname(__DIR__, 2) . '/app/schema.sql');
+$p6Code = (string) file_get_contents(dirname(__DIR__, 2) . '/app/src/Migrations.php');
+$p6Names = ['idx_days_date', 'uq_days_round_date', 'ck_days_times', 'idx_rounds_expired', 'ck_rounds_limit', 'idx_summaries_sent'];
+check('schema.sql and migration 26 name the same indexes and rules', array_filter($p6Names, static fn (string $n): bool => !str_contains($p6Schema, $n) || !str_contains($p6Code, $n)) === []);
+check('no LOWER() on accounts: the collation compares without regard to case', !preg_match('/LOWER\((?:email|username)\)/', (string) file_get_contents(dirname(__DIR__, 2) . '/app/src/Controller/AdminController.php')));

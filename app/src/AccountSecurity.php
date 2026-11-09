@@ -64,14 +64,14 @@ final class AccountSecurity
      */
     public static function keepingAnAdmin(int $userId, bool $remainsAdmin, \Closure $change): bool
     {
-        return (bool) Db::transaction(static function () use ($userId, $remainsAdmin, $change): bool {
+        return (bool) Db::retrying(static fn (): bool => Db::transaction(static function () use ($userId, $remainsAdmin, $change): bool {
             $admins = array_map('intval', array_column(Db::all("SELECT id FROM users WHERE role = 'admin' AND is_active = 1 FOR UPDATE"), 'id'));
             if (!$remainsAdmin && array_diff($admins, [$userId]) === []) {
                 return false;
             }
             $change();
             return true;
-        });
+        }));
     }
 
     /** Password changed (profile) or set (invitation/password link): to the account holder. */
