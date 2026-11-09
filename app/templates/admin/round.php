@@ -171,7 +171,7 @@ $deletionText = $deletion ? __('{date}, {time} Uhr', ['date' => fmt_date($deleti
     <label><?= e(__('Von')) ?> <input type="text" inputmode="numeric" pattern="[0-9]{1,2}([:.][0-9]{2})?|[0-9]{3,4}" maxlength="5" placeholder="HH:MM" autocomplete="off" class="time-input" data-time name="start_time" required></label>
     <label><?= e(__('Bis')) ?> <input type="text" inputmode="numeric" pattern="[0-9]{1,2}([:.][0-9]{2})?|[0-9]{3,4}" maxlength="5" placeholder="HH:MM" autocomplete="off" class="time-input" data-time name="end_time" required></label>
     <label><?= e(__('Bezeichnung')) ?> <input type="text" name="label" maxlength="100" placeholder="<?= e(__('z. B. Mittagspause')) ?>"></label>
-    <button type="submit" class="button button-small"><?= e(__('Pause hinzufügen')) ?></button>
+    <button type="submit" class="button button-small" aria-label="<?= e(__('Pause hinzufügen') . ': ' . $dayName) ?>"><?= e(__('Pause hinzufügen')) ?></button>
   </form>
 
   <h3><?= e(__('Termine')) ?></h3>
@@ -181,7 +181,7 @@ $deletionText = $deletion ? __('{date}, {time} Uhr', ['date' => fmt_date($deleti
     <tbody>
     <?php foreach ($day['slots'] as $s): $sid = (int) $s['id']; $slotName = $dayName . ', ' . fmt_range($s['start_time'], $s['end_time']) . ($s['booking_id'] ? ', ' . $s['name'] : ''); ?>
       <tr id="slot-<?= $sid ?>" class="<?= $s['booking_id'] ? 'is-booked' : ($s['is_blocked'] ? 'is-blocked' : 'is-free') ?><?= $s['is_conflict'] ? ' is-conflict' : '' ?>">
-        <td class="nowrap"><?= e(fmt_range($s['start_time'], $s['end_time'])) ?><?= $s['is_conflict'] ? ' <span class="badge badge-warning" data-conflict><span aria-hidden="true">⚠ </span>' . e(__('Konflikt')) . '</span>' : '' ?></td>
+        <td><span class="nowrap"><?= e(fmt_range($s['start_time'], $s['end_time'])) ?></span><?= $s['is_conflict'] ? ' <span class="badge badge-warning" data-conflict><span aria-hidden="true">⚠ </span>' . e(__('Konflikt')) . '</span>' : '' ?></td>
         <td>
           <?php if ($s['booking_id']): ?>
             <strong><?= e($s['name']) ?></strong><?php if ($s['email']): ?><br><span class="small"><?= e($s['email']) ?></span><?php endif; ?>

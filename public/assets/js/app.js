@@ -200,6 +200,7 @@ var L = (function () {
     var original = btn.textContent;
     var copied = btn.getAttribute('data-copy-done') || L('Kopiert ✓');
     var ask = btn.getAttribute('data-copy-prompt') || L('Link kopieren:');
+    var restore = null;
     btn.hidden = false;
     btn.addEventListener('click', function () {
       var text = btn.getAttribute('data-copy');
@@ -207,10 +208,11 @@ var L = (function () {
         btn.textContent = copied;
         // Emptied first, so that a second copy within the two seconds is announced as well
         copyStatus.textContent = '';
-        window.setTimeout(function () { copyStatus.textContent = copied; }, 50);
+        window.setTimeout(function () { copyStatus.textContent = copied.replace(/\s*✓$/, ''); }, 50);
         window.clearTimeout(copyClear);
         copyClear = window.setTimeout(function () { copyStatus.textContent = ''; }, 2000);
-        setTimeout(function () { btn.textContent = original; }, 2000);
+        window.clearTimeout(restore);
+        restore = window.setTimeout(function () { btn.textContent = original; }, 2000);
       };
       if (navigator.clipboard && window.isSecureContext) {
         navigator.clipboard.writeText(text).then(done, function () { window.prompt(ask, text); });

@@ -238,7 +238,7 @@ erreichbar. Hinweise im Dashboard und unter *Texte* nennen die offenen Platzhalt
 wenn einem Text ein Platzhalter fehlt, er veraltet ist oder nicht zur Betriebsart passt (z. B. die
 Rechtsgrundlagen der Vorlage für Schulen bei privatem Betrieb).
 
-Öffentliche Schulen müssen in der Regel auch eine **Erklärung zur Barrierefreiheit** veröffentlichen: siehe die
+Öffentliche Schulen müssen je nach Bundesland auch eine **Erklärung zur Barrierefreiheit** veröffentlichen: siehe die
 [Vorlage]({{ '/de/guide/accessibility-statement/' | relative_url }}).
 
 ## Benachrichtigungen

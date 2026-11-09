@@ -121,6 +121,8 @@ code { font-family: var(--mono); font-size: .9em; background: var(--neutral-soft
 :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
 /* The header is dark in both themes */
 .site-header :focus-visible { outline-color: #f0a500; }
+/* The skip link lies over the dark header: the ring on its own light surface */
+.skip-link:focus-visible { outline-offset: -3px; }
 
 .wrap { width: 100%; max-width: 46rem; margin: 0 auto; padding-inline: 1rem; }
 .wrap-wide { max-width: 72rem; }
@@ -185,8 +187,8 @@ code { font-family: var(--mono); font-size: .9em; background: var(--neutral-soft
 .hint-indent { margin: -.35rem 0 1rem 2.1rem; }
 .nowrap { white-space: nowrap; }
 .badge { display: inline-block; font-size: .75rem; font-weight: 600; padding: .1rem .45rem; border-radius: 99px; background: var(--primary-soft); color: var(--primary); vertical-align: middle; }
-.badge-warning { background: var(--warning-soft); color: var(--warning); }
-.site-header .badge { background: rgba(255,255,255,.2); color: #fff; }
+.badge-warning { background: var(--warning-soft); color: var(--warning); border: 1px solid var(--warning-border); }
+.site-header .badge { background: rgba(255,255,255,.15); color: #fff; }
 .status { display: inline-block; font-size: .85rem; font-weight: 600; padding: .15rem .6rem; border-radius: 99px; }
 .status-on { background: var(--success-soft); color: var(--success); }
 .status-off { background: var(--status-off); color: var(--muted); }
