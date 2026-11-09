@@ -59,7 +59,8 @@ in person, the teacher contacts you directly.
 - **Remember on this device:** an optional checkbox saves the link to your appointment, its label and its
   date in your browser, so you see it when you open the round again. Each booking gets its own entry. Nothing
   is sent to the server. You can delete an entry any time (your appointment stays booked); after a
-  cancellation and after the day of the appointment it disappears by itself.
+  cancellation and after the day of the appointment it disappears by itself. The start page and the page that asks for the code of a protected round list all appointments saved on this device (*My appointments on this device*), the next one
+  first, so that you can reach them without their links.
 - **Stuck?** If a link does not work, the page offers the code input of the start page right away. If no
   slot is free, the page says why: all slots are taken, or the booking deadline has passed. Where the
   teacher or the school has given a contact for questions (for example the school office with its phone
