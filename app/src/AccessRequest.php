@@ -18,13 +18,12 @@ namespace App;
  */
 final class AccessRequest
 {
-    /** @return array{bookings: list<array<string, mixed>>, cancellations: list<array<string, mixed>>} */
+    /**
+     * @param string $email the address in its stored form (Email::normalize())
+     * @return array{bookings: list<array<string, mixed>>, cancellations: list<array<string, mixed>>}
+     */
     public static function find(string $email): array
     {
-        $email = trim($email);
-        if ($email === '') {
-            return ['bookings' => [], 'cancellations' => []];
-        }
         $bookings = Db::all(BookingService::DETAIL_SQL . ' WHERE b.email = ? ORDER BY d.day_date, s.start_time, b.id', [$email]);
         // The cancellation of a booking the teacher deleted keeps the address in its payload until it is sent
         $cancellations = [];
