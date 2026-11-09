@@ -237,7 +237,12 @@ $unpinned = [];
 foreach (['dev/Dockerfile', 'dev/php-cli.Dockerfile'] as $file) {
     $stages = [];
     foreach (preg_split('/\n/', (string) file_get_contents("$root/$file")) ?: [] as $i => $l) {
-        if (preg_match('/^FROM\s+(\S+)(?:\s+AS\s+(\S+))?\s*$/i', $l, $f)) {
+        if (preg_match('/^FROM\s/i', $l)) {
+            $f = [];
+            if (!preg_match('/^FROM\s+(?:--platform=\S+\s+)?(\S+)(?:\s+AS\s+(\S+))?\s*$/i', $l, $f)) {
+                $unpinned[] = "$file:" . ($i + 1);
+                continue;
+            }
             $stage = (bool) preg_match('/^([a-z0-9-]+)-\$\{[A-Z_]+\}$/', $f[1], $sm) && array_filter($stages, static fn ($s) => str_starts_with($s, $sm[1] . '-'));
             if (!$stage && !preg_match('/^[a-z0-9.\/-]+:[A-Za-z0-9._-]+@sha256:[0-9a-f]{64}$/', $f[1])) {
                 $unpinned[] = "$file:" . ($i + 1);

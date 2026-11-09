@@ -28,7 +28,7 @@ tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
 
 echo "PHPMailer $version ($commit)"
-curl -fsSL "https://github.com/PHPMailer/PHPMailer/archive/$commit.tar.gz" | tar -xz -C "$tmp" --strip-components=1
+curl -fsSL --retry 3 "https://github.com/PHPMailer/PHPMailer/archive/$commit.tar.gz" | tar -xz -C "$tmp" --strip-components=1
 
 dest=app/vendor/phpmailer
 files=(src/PHPMailer.php src/SMTP.php src/Exception.php LICENSE VERSION)

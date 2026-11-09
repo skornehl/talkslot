@@ -3,7 +3,7 @@
 #   version, run bin/update-vendor.sh on the pull request branch and commit app/vendor/; the unit tests and the
 #   CI job "Static analysis" fail until both match.
 # - docker: the images of the test environment and of CI, pinned by digest in dev/Dockerfile and
-#   dev/php-cli.Dockerfile. Only new digests of the same version: which PHP and MariaDB versions are tested
+#   dev/php-cli.Dockerfile. For PHP and MariaDB only new digests of the same version: which versions are tested
 #   (the minimum and the current one) is decided by hand.
 # - github-actions: actions in .github/workflows/, should any be used (pinned by commit SHA with the version as
 #   a comment); the workflows currently fetch the code with git and need none.

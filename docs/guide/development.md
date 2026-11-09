@@ -67,7 +67,8 @@ deploys only after all of this has passed ([deploy gate]({{ '/guide/deployment/'
 
 The images are pinned by digest: the test environment in `dev/Dockerfile`, the PHP command line of CI in
 `dev/php-cli.Dockerfile` (`dev/php.sh 8.3 php tests/unit.php` runs the unit tests on PHP 8.3 without a local
-PHP). Dependabot proposes new digests; which versions are tested is changed by hand in these files.
+PHP). Dependabot proposes new digests; which versions are tested is changed by hand in these files. To switch
+versions locally, recreate the database: `docker compose -f dev/compose.yml down -v`, then `up -d --build`.
 
 ### Measuring instead of guessing
 

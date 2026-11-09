@@ -2,7 +2,7 @@
 # once the workflow "Tests" has passed on exactly that commit (deploy gate, expert review P1-6): a push whose
 # smoke, browser or deployment tests fail never goes live. Runs only if the variable FTP_HOST is set – so not
 # in forks without setup. Setup: README, section "Deployment with GitHub Actions" (bin/setup-secrets.sh).
-# "Run workflow" (workflow_dispatch) deploys the current main at once, without waiting for the tests.
+# "Run workflow" (workflow_dispatch) deploys the current main at once, even if its tests failed (lint and unit tests still run).
 #
 # Also usable as a reusable workflow: a separate repo containing only configuration (variables,
 # secrets) calls it with a pinned TalkSlot version (`uses: …/deploy.yml@<commit> # v1.9.0`) and gets exactly
@@ -42,8 +42,8 @@ on:
         description: Optional, normally empty. Defaults to the repository of this workflow
         type: string
         default: ''
-    # Declared so that a caller can pass them one by one instead of `secrets: inherit`; none is required
-    # (secrets of the environment "production" are read there directly)
+    # Declared so that a caller can pass them one by one instead of `secrets: inherit`; none is required. Secrets
+    # in the environment "production" must be listed by name as well, or passed with `secrets: inherit`.
     secrets:
       APP_SECRET: { required: false }
       INSTALL_KEY: { required: false }
@@ -56,10 +56,6 @@ on:
       FTP_PASSWORD: { required: false }
       TALKSLOT_TOKEN: { required: false, description: Only for a private TalkSlot repository }
 
-concurrency:
-  group: deploy # shared with "Switch version": never two switches at the same time
-  cancel-in-progress: false
-
 permissions:
   contents: read
 
@@ -70,6 +66,9 @@ jobs:
       vars.FTP_HOST != '' && (github.event_name != 'workflow_run' || (github.event.workflow_run.conclusion == 'success'
       && github.event.workflow_run.event == 'push' && github.event.workflow_run.head_repository.full_name == github.repository))
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      stale: ${{ steps.newest.outputs.stale }}
     steps:
       # The same commit as the job "deploy" (see there)
       - name: Fetch code
@@ -84,6 +83,21 @@ jobs:
           git checkout -q --detach "FETCH_HEAD^{commit}"
           git log -1 --format='Checked out: %h %s'
 
+      # Tests of an older commit that finish late: the job "deploy" does not even queue, so it cannot push out a
+      # newer commit that is waiting for its turn
+      - name: Still the newest commit of main?
+        id: newest
+        if: github.event_name == 'workflow_run'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          HEAD="$(gh api "repos/$GITHUB_REPOSITORY/commits/main" -q .sha)"
+          if [ -n "$HEAD" ] && [ "$HEAD" != "$SHA" ]; then
+            echo "stale=1" >> "$GITHUB_OUTPUT"
+            echo "::notice::main has moved on to ${HEAD:0:7}; its tests decide."
+          fi
+
       - name: Lint (PHP 8.3 and 8.5) & unit tests
         run: |
           cp dev/config.dev.php config/config.php
@@ -97,8 +111,14 @@ jobs:
 
   deploy:
     needs: verify
-    if: github.ref == 'refs/heads/main' # the build with the secrets only for main (verify has checked the rest)
+    if: github.ref == 'refs/heads/main' && needs.verify.outputs.stale != '1' # the build with the secrets only for main
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # At job level, so that a run that deploys nothing (failed tests, the main branch of a fork) cannot replace a
+    # waiting deployment; the group is shared with "Switch version": never two switches at the same time
+    concurrency:
+      group: deploy
+      cancel-in-progress: false
     # Secrets preferably in the environment "production", restricted to main (Settings → Environments)
     environment: production
     env:

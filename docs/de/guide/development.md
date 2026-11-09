@@ -69,7 +69,8 @@ Push auf `main` wird erst ausgespielt, wenn all das bestanden ist
 Die Images sind per Digest festgelegt: die Testumgebung in `dev/Dockerfile`, die PHP-Kommandozeile der CI in
 `dev/php-cli.Dockerfile` (`dev/php.sh 8.3 php tests/unit.php` führt die Unit-Tests ohne lokales PHP auf PHP 8.3
 aus). Neue Digests schlägt Dependabot vor; welche Versionen getestet werden, ändern Sie von Hand in diesen
-Dateien.
+Dateien. Um lokal die Versionen zu wechseln, legen Sie die Datenbank neu an:
+`docker compose -f dev/compose.yml down -v`, dann `up -d --build`.
 
 ### Messen statt schätzen
 

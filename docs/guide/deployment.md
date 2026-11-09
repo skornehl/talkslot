@@ -61,7 +61,7 @@ Sessions live in the shared `app/var/`, so nobody is logged out by a deployment.
 - **A push to `main`** deploys only after the workflow *Tests* has passed on that commit (`deploy.yml` starts
   on `workflow_run`). If `main` has moved on in the meantime, the newer commit deploys once its own tests have
   passed; if they fail, the site stays on the version that is live.
-- **Run workflow** (*Actions → Deploy*) deploys the current `main` at once, without waiting for the tests, for
+- **Run workflow** (*Actions → Deploy*) deploys the current `main` at once, even if its tests failed, for
   example after changing a secret. Lint and unit tests still run first.
 - **Releases** (*Actions → Release*) are only created for a commit on which *Tests* has passed, so a
   [configuration-only repository](#deploying-from-your-own-repository) that deploys a release gets tested
@@ -200,8 +200,10 @@ reusable workflows with a pinned TalkSlot version. Updating means changing the v
 Pin the version by the **commit SHA of the release**, with the version as a comment: a tag can be moved, a
 commit cannot. Look it up with `git ls-remote https://github.com/skornehl/talkslot refs/tags/v1.9.0`.
 Pass the secrets the workflow needs **one by one** instead of `secrets: inherit`, so it gets no others.
-Secrets in the environment `production` are read there directly. TalkSlot versions released after
-5 November 2026 accept this; with an older version keep `secrets: inherit`.
+Secrets in the environment `production` have to be listed here as well. This works with versions whose
+`deploy.yml` lists `secrets:` under `workflow_call`; with an older version keep `secrets: inherit`. If the
+TalkSlot repository is private, add `TALKSLOT_TOKEN` as a repository secret (not in the environment: the job that
+checks the code has none) and pass it too.
 
 {% raw %}
 ```yaml

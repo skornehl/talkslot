@@ -285,7 +285,7 @@ jobs:
 
 Pin the release by its commit SHA with the version as a comment (a tag can be moved; look the commit up with
 `git ls-remote https://github.com/skornehl/talkslot refs/tags/v1.9.0`), and pass the secrets one by one
-instead of `secrets: inherit` (versions released after 5 November 2026; older ones need `secrets: inherit`).
+instead of `secrets: inherit` (versions whose `deploy.yml` lists `secrets:` under `workflow_call`; older ones need `secrets: inherit`).
 Releases are only created for commits whose tests passed.
 Variables and secrets are the same as above and live in your repository (or its `production`
 environment). The rollback workflow works the same way (`switch.yml`, input `target`). The workflows fetch the

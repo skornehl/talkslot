@@ -63,7 +63,7 @@ Die Sessions liegen im gemeinsamen `app/var/`, daher wird durch ein Deployment n
 - **Ein Push auf `main`** wird erst ausgespielt, wenn der Workflow *Tests* für diesen Commit bestanden ist
   (`deploy.yml` startet per `workflow_run`). Ist `main` inzwischen weiter, wird der neuere Commit ausgespielt,
   sobald seine eigenen Tests bestanden sind; scheitern sie, bleibt die Seite auf der Version, die gerade läuft.
-- **Run workflow** (*Actions → Deploy*) spielt das aktuelle `main` sofort aus, ohne auf die Tests zu warten,
+- **Run workflow** (*Actions → Deploy*) spielt das aktuelle `main` sofort aus, auch wenn seine Tests fehlgeschlagen sind,
   etwa nach dem Ändern eines Secrets. Lint und Unit-Tests laufen trotzdem vorher.
 - **Releases** (*Actions → Release*) entstehen nur für einen Commit, für den *Tests* bestanden ist. Ein
   [Repository nur mit Konfiguration](#deploying-from-your-own-repository), das ein Release ausspielt, bekommt
@@ -212,8 +212,10 @@ Legen Sie die Version über den **Commit-SHA des Releases** fest, mit der Versio
 sich verschieben, ein Commit nicht. Sie finden ihn mit
 `git ls-remote https://github.com/skornehl/talkslot refs/tags/v1.9.0`. Übergeben Sie die Secrets, die der
 Workflow braucht, **einzeln** statt mit `secrets: inherit`, damit er keine anderen bekommt. Secrets im
-Environment `production` liest er dort direkt. TalkSlot-Versionen, die nach dem 5. November 2026
-veröffentlicht wurden, nehmen das an; bei einer älteren Version bleiben Sie bei `secrets: inherit`.
+Environment `production` müssen ebenfalls hier stehen. Das geht mit Versionen, deren `deploy.yml` unter
+`workflow_call` einen Abschnitt `secrets:` hat; bei einer älteren Version bleiben Sie bei `secrets: inherit`. Ist
+das TalkSlot-Repository privat, legen Sie `TALKSLOT_TOKEN` als Repository-Secret an (nicht im Environment: Der Job,
+der den Code prüft, hat keines) und übergeben Sie es ebenfalls.
 
 {% raw %}
 ```yaml

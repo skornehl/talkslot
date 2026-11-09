@@ -205,8 +205,12 @@ jobs:
           printf '%s\n' '<?php' '// dev/config.dev.php with the transport "mail" (CI job "Minimum platform")' \
             '$c = require __DIR__ . "/../dev/config.dev.php";' '$c["mail"]["transport"] = "mail";' 'return $c;' > config/config.php
           docker compose -f dev/compose.yml up -d --build --wait --quiet-pull
-          docker compose -f dev/compose.yml exec -T app php -r 'echo "PHP ", PHP_VERSION, ", mail() via ", ini_get("sendmail_path"), "\n";'
-          docker compose -f dev/compose.yml exec -T db mariadb -uapp -papp-dev-only -Ne 'SELECT VERSION()'
+          # What this job claims to test, not only printed: otherwise a lost setting leaves it green on the current platform
+          docker compose -f dev/compose.yml exec -T app php -r 'echo "PHP ", PHP_VERSION, ", mail() via ", ini_get("sendmail_path"), "\n";
+            exit(str_starts_with(PHP_VERSION, "8.3.") && ini_get("sendmail_path") !== "" && (require "/srv/app/config/config.php")["mail"]["transport"] === "mail" ? 0 : 1);'
+          V="$(docker compose -f dev/compose.yml exec -T db mariadb -uapp -papp-dev-only -Ne 'SELECT VERSION()')"
+          echo "MariaDB $V"
+          case "$V" in 10.6.*) ;; *) exit 1 ;; esac
           for i in $(seq 1 60); do [ "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/)" != 000 ] && break; sleep 1; done
 
       - name: Smoke tests
