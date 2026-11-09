@@ -263,6 +263,7 @@ final class Auth
         if (session_status() === PHP_SESSION_ACTIVE) {
             session_regenerate_id(true);
             $_SESSION['global_epoch'] = self::globalEpoch();
+            Substitution::clear();
         }
     }
 
@@ -345,6 +346,7 @@ final class Auth
             [password_hash($newPassword, PASSWORD_DEFAULT), $userId]
         );
         session_regenerate_id(true);
+        Substitution::clear();
         self::endOtherSessions($userId, true);
         session_write_close(); // the account's other tabs do not wait for the mail server
         try {

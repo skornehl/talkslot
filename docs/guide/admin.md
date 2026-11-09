@@ -134,10 +134,13 @@ only ever see their own rounds; this is enforced centrally and covered by tests.
 **Names and e-mail addresses of parents in another teacher's round** stay hidden: such a round shows *gebucht*
 (booked), without the print view or the actions on bookings. If you stand in for the teacher, choose
 ***Vertretung übernehmen*** (take over as substitute) on the round page and confirm with your password. You then
-see the parents' data of this round and can edit its bookings until you sign out; a new sign-in has to take over
-again. The teacher gets an e-mail, and the log says who took over which round. Deleting a day or a round with
-bookings needs this too, as you then have to know whom to inform. If you change a round without taking it over,
-the message after saving gives only the number of parents to inform and asks you to tell the teacher.
+see the parents' data of this round and can edit its bookings until this sign-in ends; a new sign-in or a new
+teacher of the round means taking over again. The teacher gets an e-mail (if there is no address, the message says
+so and you tell them yourself), and the log says who took over which round. Handing a round with bookings to
+another teacher, and deleting a day or a round with upcoming appointments, need this too; a round that is over can
+be cleaned up without it. If you change a round without taking it over, the message after saving gives only the
+number of parents to inform. Deleting an account with upcoming bookings asks for your password, as the message
+afterwards names their parents (nobody else can tell them any more).
 
 How rounds work is described in the [Teacher guide]({{ '/guide/teachers/' | relative_url }}).
 

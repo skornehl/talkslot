@@ -149,11 +149,14 @@ ihre eigenen Runden; das wird zentral durchgesetzt und ist durch Tests abgesiche
 **Namen und E-Mail-Adressen von Eltern in den Runden anderer Lehrkräfte** bleiben ausgeblendet: Dort steht
 *gebucht*, ohne Druckansicht und ohne die Aktionen an den Buchungen. Vertreten Sie die Lehrkraft, wählen Sie auf
 der Seite der Runde ***Vertretung übernehmen*** und bestätigen Sie mit Ihrem Passwort. Dann sehen Sie die Daten
-der Eltern dieser Runde und können ihre Buchungen bearbeiten, bis Sie sich abmelden; nach einer neuen Anmeldung
-ist das erneut nötig. Die Lehrkraft erhält eine E-Mail, und im Protokoll steht, wer welche Runde übernommen hat.
-Auch das Löschen eines Tages oder einer Runde mit Buchungen setzt das voraus, weil Sie danach wissen müssen, wen
-Sie informieren. Ändern Sie eine Runde, ohne sie zu übernehmen, nennt die Meldung nach dem Speichern nur die Zahl
-der zu informierenden Eltern und bittet Sie, der Lehrkraft Bescheid zu sagen.
+der Eltern dieser Runde und können ihre Buchungen bearbeiten, bis diese Anmeldung endet; nach einer neuen
+Anmeldung oder wenn die Runde eine neue Lehrkraft hat, ist das erneut nötig. Die Lehrkraft erhält eine E-Mail (ist
+keine Adresse hinterlegt, sagt die Meldung das, und Sie informieren sie selbst), und im Protokoll steht, wer welche
+Runde übernommen hat. Auch das Übergeben einer Runde mit Buchungen an eine andere Lehrkraft und das Löschen eines
+Tages oder einer Runde mit anstehenden Terminen setzen das voraus; eine vergangene Runde lässt sich ohne Vertretung
+aufräumen. Ändern Sie eine Runde, ohne sie zu übernehmen, nennt die Meldung nach dem Speichern nur die Zahl der zu
+informierenden Eltern. Das Löschen eines Kontos mit anstehenden Buchungen fragt nach Ihrem Passwort, weil die
+Meldung danach deren Eltern nennt (sonst kann sie niemand mehr informieren).
 
 Wie Runden funktionieren, steht in der [Anleitung für Lehrkräfte]({{ '/de/guide/teachers/' | relative_url }}).
 

@@ -149,7 +149,7 @@ the current details, if these changed since their last mail. Saving an entry wit
 mitteilen* also sends the current details without a change (at most 30 mails per hour from your account).
 
 **If an admin stands in for you**, they can see the parents' names and addresses of a round only after choosing
-*Vertretung übernehmen* for it; you get an e-mail then, and the log records it. Otherwise admins see how your
+*Vertretung übernehmen* (take over as substitute) for it; you get an e-mail then, and the log records it. Otherwise admins see how your
 rounds are booked, not who booked.
 
 Further actions on the round: edit, deactivate, **print view / PDF** (*Druckansicht / PDF*), and

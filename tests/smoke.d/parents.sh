@@ -188,7 +188,7 @@ curl -s -o /dev/null -b "$J" -d "csrf=$T&name=Hinweis+Konto&lang=de" "$B$(curl -
 # The mails name the teacher: handing a round with bookings over is a change the parents are not told about
 check "round with a booking handed to another teacher: parents NOT notified" 'curl -s -L -b "$J" --data-urlencode "csrf=$T" -d "title=Hinweis+Konto&user_id=$PU&booking_deadline_hours=0&cancel_deadline_hours=0" "$B/admin/round/$RK/edit" | has "Die Eltern von 1 Buchung(en) wurden NICHT automatisch benachrichtigt – bitte selbst informieren. Eltern mit E-Mail-Adresse erhalten die neuen Daten" && [ "$(DBQ "SELECT user_id FROM tp_rounds WHERE id=$RK")" = "$PU" ]'
 check "account with bookings: delete dialog says parents are NOT notified" 'curl -s -b "$J" "$B/admin/users/$PU/edit" | oneline | has "mit allen Runden und Buchungen endgültig löschen?~~Die Eltern von 1 Buchung(en) werden NICHT automatisch benachrichtigt – bitte selbst informieren.\""'
-check "account deleted: parents NOT notified" 'curl -s -L -b "$J" -d "csrf=$T&confirm=1" "$B/admin/users/$PU/delete" | has "Die Eltern von 1 Buchung(en) wurden NICHT automatisch benachrichtigt" && [ -z "$(DBQ "SELECT id FROM tp_users WHERE id=$PU")" ]'
+check "account deleted: parents NOT notified" 'curl -s -L -b "$J" -d "csrf=$T&confirm=1" --data-urlencode "current_password=$PASS" "$B/admin/users/$PU/delete" | has "Die Eltern von 1 Buchung(en) wurden NICHT automatisch benachrichtigt" && [ -z "$(DBQ "SELECT id FROM tp_users WHERE id=$PU")" ]'
 
 echo "Appointment page: keeping the link (copy, calendar file, confirmation by mail)"
 # Booking without an e-mail address, remembered on this device; own round, removed again at the end

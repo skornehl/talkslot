@@ -3,9 +3,12 @@
 // mail need the database: tests/smoke.d/substitution.sh
 echo "Substitution and structured log\n";
 $_SESSION = [];
-$suBefore = App\Substitution::active(7);
-App\Substitution::start(7);
-check('substitution: per round, in the session of this sign-in', !$suBefore && App\Substitution::active(7) && !App\Substitution::active(8) && array_keys($_SESSION) === ['substitutions']);
+$suBefore = App\Substitution::active(7, 3);
+App\Substitution::start(7, 3);
+check('substitution: per round and its teacher, in the session of this sign-in', !$suBefore && App\Substitution::active(7, 3) && !App\Substitution::active(8, 3)
+    && !App\Substitution::active(7, 4) && array_keys($_SESSION) === ['substitutions']);
+App\Substitution::clear();
+check('… ends with the own new password or when all sessions are ended', !App\Substitution::active(7, 3));
 $_SESSION = [];
 check('log params: only the allowed keys with plain values, as JSON; nothing left: none',
     App\Audit::params(['count' => 4, 'date' => '2026-11-12', 'name' => 'Erika Muster', 'email' => 'e@example.org']) === '{"count":4,"date":"2026-11-12"}'

@@ -504,7 +504,9 @@ check "admin's edit form preselects the round's teacher" 'curl -s -b "$J" "$B/ad
 curl -s -o /dev/null -b "$J" --data-urlencode "csrf=$TA" -d "title=Vom+Admin+bearbeitet&is_active=1&booking_deadline_hours=0&cancel_deadline_hours=0" "$B/admin/round/$R4/edit"
 check "saving without teacher field keeps the round with the teacher" '[ "$($DC exec -T db mariadb -uapp -papp-dev-only talkslot -Ne "SELECT user_id FROM tp_rounds WHERE id=$R4")" = "$U2" ]'
 check "navigation: admin 'Alle Runden', teacher 'Meine Runden'" 'curl -s -b "$J" "$B/admin" | grep -q ">Alle Runden<" && curl -s -c "$J2" -b "$J2" "$B/admin" | grep -q ">Meine Runden<"'
-# Admin works in the teacher's round: day, print view, create booking (mail with the teacher's Reply-To) and delete it
+# Admin works in the teacher's round after taking it over (tests/smoke.d/substitution.sh): day, print view, create
+# booking (mail with the teacher's Reply-To) and delete it
+curl -s -o /dev/null -b "$J" --data-urlencode "csrf=$TA" --data-urlencode "current_password=$PASS" "$B/admin/round/$R4/substitute"
 D4=$(curl -s -b "$J" "$B/admin/round/$R4" | grep -o '/admin/day/[0-9]*/edit' | head -1)
 check "admin: day and print view of a teacher's round" '[ -n "$D4" ] && [ "$(curl -s -o /dev/null -w "%{http_code}" -b "$J" "$B$D4")" = 200 ] && [ "$(curl -s -o /dev/null -w "%{http_code}" -b "$J" "$B/admin/round/$R4/print")" = 200 ]'
 SL4=$(curl -s -b "$J" "$B/admin/round/$R4" | grep -o '/admin/slot/[0-9]*/book' | head -1)

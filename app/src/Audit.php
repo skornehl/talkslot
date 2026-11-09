@@ -19,7 +19,7 @@ namespace App;
 final class Audit
 {
     /** What the params of an entry may hold: numbers and dates of the change, nothing about parents. */
-    public const PARAM_KEYS = ['count', 'date'];
+    public const PARAM_KEYS = ['count', 'date', 'mailed'];
 
     public static function log(string $message, ?string $action = null, ?int $roundId = null, array $params = []): void
     {

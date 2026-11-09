@@ -65,7 +65,7 @@ together with the release that contains it (see
   and its cookie is never replaced. It does so once: the address it opens carries `reopened=1`, and a
   browser that still holds the cookie back then gets the login page instead of a loop.
 - Admins see the parents' names and addresses in another teacher's round only after *Vertretung übernehmen*
-  (with their password, logged, the teacher is told by e-mail, for one sign-in), which limits what a taken-over
+  (take over as substitute; with their password, logged, the teacher is told by e-mail, for one sign-in), which limits what a taken-over
   admin session can read at once.
 - Changing or resetting a password ends all other sessions of the account. *Alle Sitzungen beenden* (end
   all sessions, under *Benutzer*) ends the sessions of all accounts (a global counter in the settings).
