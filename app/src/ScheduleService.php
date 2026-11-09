@@ -133,10 +133,15 @@ final class ScheduleService
         });
     }
 
-    /** Recalculates the slots of a day, e.g. after a break was added or removed. */
-    public static function resyncDay(int $dayId, bool $notify): ScheduleChange
+    /** Recalculates the slots of a day after $write (a break added or removed), in one transaction. */
+    public static function resyncDay(int $dayId, bool $notify, ?\Closure $write = null): ScheduleChange
     {
-        return self::change('day', $dayId, $notify, static fn (): int => SlotGenerator::sync($dayId));
+        return self::change('day', $dayId, $notify, static function () use ($dayId, $write): int {
+            if ($write !== null) {
+                $write();
+            }
+            return SlotGenerator::sync($dayId);
+        });
     }
 
     /** Runs $update on the round (e.g. a new location or teacher) and tells the parents whose appointment changed. */
@@ -170,7 +175,7 @@ final class ScheduleService
      */
     private static function delete(string $scope, int $id, bool $notify, \Closure $delete): ScheduleChange
     {
-        return Db::transaction(static function () use ($scope, $id, $notify, $delete): ScheduleChange {
+        return Db::retrying(static fn (): ScheduleChange => Db::transaction(static function () use ($scope, $id, $notify, $delete): ScheduleChange {
             // The rows have no foreign key to the booking: they outlive the deletion
             $change = self::tell(self::concerned($scope, $id, true), $notify, static function (array $b) use ($scope): bool {
                 $soon = $b['day_date'] . ' ' . $b['start_time'] <= Time::now()->modify('+' . self::SOON_HOURS . ' hours')->format('Y-m-d H:i:s');
@@ -180,7 +185,7 @@ final class ScheduleService
             });
             $delete();
             return $change;
-        });
+        }));
     }
 
     /**
@@ -192,7 +197,7 @@ final class ScheduleService
      */
     private static function change(string $scope, int $id, bool $notify, \Closure $change): ScheduleChange
     {
-        return Db::transaction(static function () use ($scope, $id, $notify, $change): ScheduleChange {
+        return Db::retrying(static fn (): ScheduleChange => Db::transaction(static function () use ($scope, $id, $notify, $change): ScheduleChange {
             $old = array_column(self::concerned($scope, $id, true), null, 'id');
             $conflicts = $change();
             // The same bookings afterwards (a change keeps them in the day, round or account); the ones that
@@ -235,7 +240,7 @@ final class ScheduleService
             }, is_int($conflicts) ? $conflicts : 0, $moved);
             RateLimiter::add('teacher_bulk', $window, $queued, $account);
             return $result;
-        });
+        }));
     }
 
     /**

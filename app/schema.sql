@@ -63,6 +63,8 @@ CREATE TABLE IF NOT EXISTS rounds (
   UNIQUE KEY uq_rounds_slug (slug),
   UNIQUE KEY uq_rounds_code (code),
   KEY idx_rounds_user (user_id),
+  KEY idx_rounds_expired (expired_at),
+  CONSTRAINT ck_rounds_limit CHECK (booking_limit IN ('none', 'round', 'day')),
   CONSTRAINT fk_rounds_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -75,6 +77,9 @@ CREATE TABLE IF NOT EXISTS round_days (
   slot_minutes SMALLINT UNSIGNED NOT NULL,
   location VARCHAR(200) NULL,
   KEY idx_days_round (round_id, day_date),
+  KEY idx_days_date (day_date),
+  UNIQUE KEY uq_days_round_date (round_id, day_date),
+  CONSTRAINT ck_days_times CHECK (start_time < end_time AND slot_minutes > 0),
   CONSTRAINT fk_days_round FOREIGN KEY (round_id) REFERENCES rounds (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -185,6 +190,7 @@ CREATE TABLE IF NOT EXISTS sent_summaries (
   ref VARCHAR(40) NOT NULL,
   sent_at DATETIME NOT NULL,
   PRIMARY KEY (user_id, kind, ref),
+  KEY idx_summaries_sent (sent_at),
   CONSTRAINT fk_summaries_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

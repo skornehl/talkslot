@@ -41,4 +41,7 @@ return [
     '„default_language“ ist {value}, diese Sprache steht aber nicht unter „languages“. Stattdessen gilt {fallback}.' => '"default_language" is {value}, but that language is not listed under "languages". {fallback} is used instead.',
     '„mail.from_address“ fehlt: Ohne Absenderadresse verschickt TalkSlot keine E-Mails.' => '"mail.from_address" is missing: without a sender address TalkSlot sends no e-mails.',
     '„mail.transport“ ist „mail“, aber die PHP-Funktion mail() ist auf diesem Server abgeschaltet: So gehen keine E-Mails hinaus. Bitte stellen Sie auf „smtp“ um.' => '"mail.transport" is "mail", but the PHP function mail() is disabled on this server, so no e-mails go out. Please switch to "smtp".',
+
+    // A name or date taken by another request after the check of the form (expert review P2-6)
+    'Die Adresse der Runde oder einer ihrer Tage wurde gerade anderweitig vergeben. Bitte prüfen Sie die Angaben und speichern Sie noch einmal.' => 'The address of the round or one of its days has just been taken by someone else. Please check the details and save again.',
 ];
