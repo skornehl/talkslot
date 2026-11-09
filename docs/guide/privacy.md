@@ -61,8 +61,8 @@ ask how long they are kept and state it in the privacy policy.
 - **A request for an interpreter, not the language of the page:** which language parents use on the page says
   little about whether they need an interpreter and could hint at their origin, so it is not shown in the list of
   appointments or on the printout and never used to suggest an interpreter (a teacher sees it only as the language
-  for mails when editing a booking, and in a request for access). A round can ask instead (off by default): parents who would like an interpreter enter the language themselves in
-  an optional field. It serves only to prepare the meeting: it is shown to the teacher and admins in the list of
+  for mails when editing a booking, and in a request for access). A round can ask instead (off by default):
+  parents who would like an interpreter enter the language themselves in an optional field. It serves only to prepare the meeting: it is shown to the teacher and admins in the list of
   appointments, on the printout and in the search for a request for access, and to the parents on the page of
   their appointment. It appears in no mail or summary and is deleted with the booking. The privacy
   templates of both operator types, in all six languages, describe it.
