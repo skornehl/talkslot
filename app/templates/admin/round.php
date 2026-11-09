@@ -226,13 +226,17 @@ $deletionText = $deletion ? __('{date}, {time} Uhr', ['date' => fmt_date($deleti
 <?php /* Apart from the everyday actions above, so that a slip of the mouse deletes nothing; bookings need the box (checked on the server) */ ?>
 <section class="card danger-zone" id="delete-round" aria-labelledby="delete-round-title">
   <h2 id="delete-round-title"><?= e(__('Runde löschen')) ?></h2>
+  <?php if ($roundBookings): ?>
   <p><?= __h('Löscht die Runde {bold}. Das kann nicht rückgängig gemacht werden.', ['bold' => '<strong>' . e(__('mit allen Tagen, Pausen, Übersetzungen und Buchungen')) . '</strong>']) ?></p>
+  <?php else: ?>
+  <p data-trash-note><?= e(__('Die Runde hat keine Buchungen: Sie kommt mit allen Tagen, Pausen und Übersetzungen für {days} Tage in den Papierkorb und lässt sich dort wiederherstellen (Link „Papierkorb“ auf der Übersicht).', ['days' => App\RoundTrash::KEEP_DAYS])) ?></p>
+  <?php endif; ?>
   <?php if ($round['is_active']): ?>
   <p class="small"><?= e(__('Sollen nur keine neuen Buchungen mehr möglich sein? Dann die Runde stattdessen deaktivieren: Tage und Buchungen bleiben erhalten, Eltern können über ihren Link weiterhin absagen.')) ?></p>
   <form method="post" action="<?= e(url('/admin/round/' . $rid . '/toggle')) ?>" class="actions"><?= $csrf ?>
     <button type="submit" class="button"><?= e(__('Stattdessen deaktivieren')) ?></button></form>
   <?php endif; ?>
-  <?php $question = $roundBookings ? __('Runde „{title}“ mit allen Tagen und {count} Buchung(en) endgültig löschen?', ['title' => $round['title'], 'count' => $roundBookings]) : __('Runde „{title}“ mit allen Tagen und Buchungen endgültig löschen?', ['title' => $round['title']]); ?>
+  <?php $question = $roundBookings ? __('Runde „{title}“ mit allen Tagen und {count} Buchung(en) endgültig löschen?', ['title' => $round['title'], 'count' => $roundBookings]) : __('Runde „{title}“ mit allen Tagen in den Papierkorb legen?', ['title' => $round['title']]); ?>
   <form method="post" action="<?= e(url('/admin/round/' . $rid . '/delete')) ?>" class="actions inline-delete" data-confirm="<?= e($question . $cancelNote($parents)) ?>" data-confirm-off="<?= e($question . $offNote($parents)) ?>"><?= $csrf ?>
     <?php if ($roundBookings): ?>
       <label class="small"><input type="checkbox" name="confirm" value="1" required> <?= e(__('inkl. {count} Buchung(en)', ['count' => $roundBookings])) ?></label>

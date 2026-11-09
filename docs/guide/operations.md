@@ -141,15 +141,83 @@ TalkSlot writes its own log to `app/var/php-error.log`; PHP's own logging is swi
 messages may contain input. Values in quotes and brackets and e-mail addresses are removed before
 writing. The log is rotated at 5 MB (one previous file `php-error.log.1`).
 
-## Backups
+## Backups {#backups}
 
-Back up the **database** (e.g. `mysqldump --single-transaction`) and `config/config.php`. `app/var/` only
-holds sessions, the alert counter and logs and does not need a backup. Take a fresh database backup
-before an update whose release notes mention a database migration: a rollback switches the code, not the
-database.
+Back up the **database** and `config/config.php`. `app/var/` only holds sessions, the alert counter and logs
+and does not need a backup. Take a fresh database backup before an update whose release notes mention a
+database migration: a rollback switches the code, not the database.
 
-Keep in mind that bookings are personal data with a short life: restore a backup only as far as
-necessary and let the clean-up run afterwards.
+Bookings are personal data with a short life, while a backup keeps them as long as the backup exists. Keep
+**two kinds**, encrypted, with a fixed retention, and enter it in the record of processing and the privacy
+policy ([documents for the operator]({{ '/guide/operator-documents/' | relative_url }}#backups-and-retention)):
+
+| Kind | Contents | Retention |
+|---|---|---|
+| Configuration backup | `config.php`, the structure of every table and the data of all but those with parents' data | e.g. 12 months |
+| Full backup | `config.php` and the whole database | at most 14 days, then overwritten |
+
+The tables with parents' data are `bookings` and `mail_outbox`; `audit_log` and `rate_limits` are not needed
+either. With a table prefix (`db.prefix`, e.g. `tp_`) every table name starts with it; on a shared
+database export only the tables with your prefix.
+
+**With a shell** (user and password in `~/.my.cnf` under `[client]`, file mode 600, so that they appear neither
+on the command line nor in the shell history; `DB` = database, `P` = table prefix):
+
+```bash
+umask 077 # the dumps are readable only by you
+OPTS="--single-transaction --default-character-set=utf8mb4 --skip-add-locks"
+TABLES=$(mysql -N -e "SHOW TABLES" "$DB" | grep "^${P}")
+# Full backup
+mysqldump $OPTS "$DB" $TABLES > talkslot-full-$(date +%F).sql
+# Configuration backup: every table's structure, the data without bookings, queued mails, log and rate limits
+CONF=talkslot-config-$(date +%F).sql
+mysqldump $OPTS --no-data "$DB" $TABLES > "$CONF"
+mysqldump $OPTS --no-create-info "$DB" \
+  $(echo "$TABLES" | grep -vE "^${P}(bookings|mail_outbox|audit_log|rate_limits)$") >> "$CONF"
+```
+
+`--skip-add-locks` keeps a restore working with the [minimum privileges]({{ '/guide/operator-documents/' | relative_url }}#database-privileges).
+
+**Without a shell** (phpMyAdmin or the host's tool): *Export → Custom*, select only the tables with your
+prefix, character set `utf-8`, tick *Add DROP TABLE*; for the configuration backup export the four tables above
+with their structure only. Many hosts also keep backups of their own: ask how long, and count that retention as
+well.
+
+Encrypt the files (e.g. `gpg -c`), delete the unencrypted original and keep the backup away from the web server.
+
+### Restore
+
+A restore replaces the tables it contains. **Even a configuration backup wipes the current bookings** (links stop
+working, slots are free again), and accounts and passwords go back to the state of the backup. A full backup brings
+back bookings that were cancelled or moved since. So restore only what you need: a lost text or a round can often
+be entered again. TalkSlot has no maintenance mode: any page view runs migrations, the clean-up and the mail queue,
+hence the first step.
+
+1. **Stop all mail.** Set `mail.transport` to `none` in `config.php` of the active version (with the deployment:
+   variable `MAIL_TRANSPORT`), and pause the cron job (the *Cron* workflow, the external cron service or the server's
+   crontab).
+2. **Decrypt and import** the backup (`mysql "$DB" < file.sql`, or *Import* in phpMyAdmin with *Enable foreign key
+   checks* unticked).
+3. **Hold back reminders** (in the shell or the *SQL* tab of phpMyAdmin, with your prefix instead of `tp_`):
+   ```sql
+   DELETE FROM tp_mail_outbox;
+   UPDATE tp_bookings SET reminded_at = NOW() WHERE reminded_at IS NULL;
+   ```
+   Parents of restored bookings then get no reminder; their links keep working. A backup older than the mail queue
+   has no `mail_outbox` table: skip the first statement.
+4. **Open the admin area once**: database migrations run automatically if the backup is from an older version.
+   Then run the clean-up (`php bin/cron.php`; with the atomic deployment `php releases/$(cat current)/bin/cron.php`,
+   or trigger the web cron): bookings whose day has passed are deleted, and summaries for days closed since the
+   backup go nowhere while `mail.transport` is `none`.
+5. **Re-apply what happened since `[TIME OF THE BACKUP]`:** delete again what was deleted since (cancelled bookings,
+   erasure requests of parents); check accounts under *Benutzer* (*Users*). Tell the teachers: after a full backup
+   cancelled or moved bookings may be back in their lists; after a configuration backup bookings are gone and parents
+   have to book again.
+6. **Mail back on:** restore `mail.transport` and resume the cron job. The cron monitoring may warn once that the
+   job was late.
+
+Test a restore once a year on a separate, empty database, never the live one (a dump names its tables and replaces
+them), and note the result.
 
 ## Changing secrets {#changing-secrets}
 
@@ -194,6 +262,7 @@ valid.
 | Bookings (name, e-mail) of a day | from 0:00 of the following day |
 | Rounds | deactivated after their last day, deleted 24 h later by default (per round, empty = never); only rounds that were in use (active at some point or with an entry by the teacher); drafts that were never active stay |
 | Rate-limit data | after 24 hours at the latest |
+| Deleted rounds without bookings (trash) | after 14 days |
 | Inactive teacher accounts without rounds in use | 15 months after the last login, together with their drafts |
 | Admin log (*Protokoll*) | after 90 days (`audit_log_days`) |
 | Mail queue entries (no address or content) | once the mail is sent; mails that could not be sent after 48 hours |

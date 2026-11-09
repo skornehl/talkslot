@@ -57,6 +57,6 @@ Change link
 - **Using TalkSlot**: guides for the [admin]({{ '/guide/admin/' | relative_url }}),
   [teachers]({{ '/guide/teachers/' | relative_url }}) and a page you can link for
   [parents]({{ '/guide/parents/' | relative_url }}).
-- **Background**: [privacy]({{ '/guide/privacy/' | relative_url }}),
+- **Background**: [privacy]({{ '/guide/privacy/' | relative_url }}), [documents for the operator]({{ '/guide/operator-documents/' | relative_url }}),
   [security]({{ '/guide/security/' | relative_url }}),
   [development]({{ '/guide/development/' | relative_url }}) and the [FAQ]({{ '/guide/faq/' | relative_url }}).
