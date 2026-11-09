@@ -442,12 +442,15 @@ $version = (int) App\Settings::get('schema_version');
 $timeout = (int) App\Db::value('SELECT @@SESSION.lock_wait_timeout');
 $other->rollBack();
 $other = null;
+App\Migrations::run(); // within the pause: not yet
+$paused = (int) App\Settings::get('schema_version') === $step - 1;
+App\Settings::set('migrate_retry_after', '0');
 App\Migrations::run();
-printf("%s|%d|%d|%d|%d\n", $result, $waited >= 9 && $waited < 25, $version === $step - 1, $timeout > 10, (int) App\Settings::get('schema_version') === App\Migrations::LATEST);
+printf("%s|%d|%d|%d|%d|%d\n", $result, $waited >= 9 && $waited < 25, $version === $step - 1, $timeout > 10, $paused, (int) App\Settings::get('schema_version') === App\Migrations::LATEST);
 PHP
 OP_PX=$($DC exec -T app php /srv/app/tests/.op-migrate.php 2>&1)
 rm -f "$OP_SCRIPT"
-check "a step waiting for a metadata lock gives up after 10 s (error 1205) and the next request repeats it" '[ "$OP_PX" = "1205|1|1|1|1" ]' || echo "    $OP_PX"
+check "a step waiting for a metadata lock gives up after 10 s (error 1205), pauses a minute, then runs" '[ "$OP_PX" = "1205|1|1|1|1|1" ]' || echo "    $OP_PX"
 # Switched back to an earlier version: the database is newer than the code. It keeps working; admins are told
 OP_T1=$(date +%s)
 DBQ "UPDATE tp_settings SET value = '$((OP_LATEST + 1))' WHERE name = 'schema_version'"

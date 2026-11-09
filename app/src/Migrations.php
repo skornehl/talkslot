@@ -15,6 +15,9 @@ final class Migrations
     /** Seconds a step waits for a metadata lock (e.g. an open transaction in phpMyAdmin) before it gives up */
     private const LOCK_WAIT_SECONDS = 10;
 
+    /** Pause after a step gave up on a metadata lock */
+    private const RETRY_AFTER_SECONDS = 60;
+
     /** Version => SQL statements */
     private const STEPS = [
         2 => ['ALTER TABLE rounds ADD COLUMN IF NOT EXISTS access_pin VARCHAR(12) NULL AFTER description'],
@@ -332,7 +335,7 @@ final class Migrations
         }
         // Only one request migrates (parallel page requests, e.g. during the upload); the others
         // wait briefly and then find the new state. The lock is per database and prefix (Db::lock()).
-        if ($current < self::LATEST) {
+        if ($current < self::LATEST && (int) Settings::get('migrate_retry_after') <= time()) {
             // The steps use MariaDB syntax (ADD COLUMN IF NOT EXISTS …): on MySQL or an older MariaDB they would
             // fail half-way. Reported by alert mail with the reason instead (App::run, Health::check()).
             if (($problem = Health::serverProblem()) !== null) {
@@ -347,6 +350,13 @@ final class Migrations
                 Db::execRaw('SET SESSION lock_wait_timeout = ' . self::LOCK_WAIT_SECONDS);
                 $current = (int) Settings::get('schema_version');
                 self::steps($current);
+                Db::run("DELETE FROM settings WHERE name = 'migrate_retry_after'");
+            } catch (\PDOException $e) {
+                // Blocked by a metadata lock: not again for a minute, or every request would queue behind a new ALTER
+                if ((int) ($e->errorInfo[1] ?? 0) === 1205) {
+                    Settings::set('migrate_retry_after', (string) (time() + self::RETRY_AFTER_SECONDS));
+                }
+                throw $e;
             } finally {
                 Db::execRaw('SET SESSION lock_wait_timeout = DEFAULT');
                 Db::unlock('migrate');

@@ -209,7 +209,7 @@ directly. An existing one runs the missing steps of `Migrations::STEPS` on the n
   and runs every step since then a second time. `tests/n-1.sh` runs the latest release on the schema of the current code
   (sign-in, booking, moving, cancelling, health check); CI does this for every push.
 - A step waits at most 10 seconds for a metadata lock (`lock_wait_timeout`, e.g. an open transaction in
-  phpMyAdmin), then gives up; the next request repeats it. If the database is newer than the code (after
+  phpMyAdmin), then gives up; after a minute's pause a later request repeats it. If the database is newer than the code (after
   switching back), admins get one mail and a hint on the dashboard.
 - A new table goes into `Db::TABLES`, or it does not get the table prefix; no column may be named like a
   table (unit tests check both).

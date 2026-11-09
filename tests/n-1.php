@@ -78,6 +78,9 @@ check('parents: moving', $code === 200 && $codeMove === 303 && (int) Db::value('
 [$code] = $http($action, ['confirm' => '1'] + $fields);
 check('parents: cancelling', in_array($code, [200, 303], true) && Db::value('SELECT COUNT(*) FROM bookings WHERE name = ?', ['Nora Vorversion']) === 0);
 
+exec('php ' . escapeshellarg("$dir/bin/cron.php") . ' 2>&1', $cron, $cronRc);
+check('the cron job of the release runs on the newer schema', $cronRc === 0);
+
 $token = hash_hmac('sha256', 'health', (string) App\Config::get('secret', ''));
 [$code, $body] = $http('/health', [], ['X-Health-Token: ' . $token]);
 check('health check of the release: the newer schema counts as up to date (' . trim($body) . ')', $code === 200 && str_contains($body, 'ok'));

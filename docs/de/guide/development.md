@@ -223,7 +223,7 @@ direkt. Eine bestehende führt beim nächsten Aufruf die fehlenden Schritte aus 
   Release auf dem Schema des aktuellen Codes laufen (Anmeldung, Buchen, Verschieben, Absagen, Health-Check); die CI
   macht das bei jedem Push.
 - Ein Schritt wartet höchstens 10 Sekunden auf eine Metadatensperre (`lock_wait_timeout`, etwa eine offene
-  Transaktion in phpMyAdmin) und gibt dann auf; die nächste Anfrage wiederholt ihn. Ist die Datenbank neuer als der
+  Transaktion in phpMyAdmin) und gibt dann auf; nach einer Minute Pause wiederholt ihn eine spätere Anfrage. Ist die Datenbank neuer als der
   Code (nach dem Zurückschalten), bekommen Admins einmalig eine E-Mail und einen Hinweis in der Übersicht.
 - Eine neue Tabelle gehört in `Db::TABLES`, sonst bekommt sie kein Tabellenpräfix; keine Spalte darf wie eine
   Tabelle heißen (Unit-Tests prüfen beides).

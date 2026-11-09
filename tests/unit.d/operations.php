@@ -382,10 +382,14 @@ echo "Operations: migrations stay additive and repeatable (expert review P2-5)\n
 $p5Problems = static function (array $statements): array {
     $problems = [];
     $added = [];
+    $nullable = [];
     foreach ($statements as $sql) {
         $code = (string) preg_replace("/'(?:[^'\\\\]|\\\\.)*'/s", "''", $sql); // values do not count
         if (preg_match('/\b(DROP|RENAME|MODIFY|CHANGE|TRUNCATE)\b|\bCONVERT\s+TO\b|\bON\s+DELETE\s+RESTRICT\b/i', $code, $m)) {
             $problems[] = strtoupper($m[0]);
+        }
+        if (preg_match_all('/\bFOREIGN\s+KEY\b/i', $code) !== preg_match_all('/\bFOREIGN\s+KEY\b[^,]*?\bON\s+DELETE\s+(?:CASCADE|SET\s+NULL)\b/is', $code)) {
+            $problems[] = 'foreign key without ON DELETE CASCADE or SET NULL (the previous version could no longer delete)';
         }
         if (preg_match('/\bCREATE\s+(UNIQUE\s+)?(TABLE|INDEX)\b(?!\s+IF\s+NOT\s+EXISTS)/i', $code, $m) || preg_match('/\bCREATE\s+UNIQUE\s+INDEX\b/i', $code, $m)) {
             $problems[] = trim($m[0]) . ' without IF NOT EXISTS, or a unique index on existing columns';
@@ -411,15 +415,25 @@ $p5Problems = static function (array $statements): array {
         foreach (array_map('trim', $clauses) as $clause) {
             if (preg_match('/^ADD\s+COLUMN\s+IF\s+NOT\s+EXISTS\s+(\w+)\b(.*)$/is', $clause, $k)) {
                 $added[$alter[1]][] = strtolower($k[1]);
+                if (!preg_match('/\bNOT\s+NULL\b|\bDEFAULT\b/i', $k[2])) {
+                    $nullable[$alter[1]][] = strtolower($k[1]); // all rows NULL: a UNIQUE key on it cannot fail
+                }
                 if (preg_match('/\bNOT\s+NULL\b/i', $k[2]) && !preg_match('/\bDEFAULT\b/i', $k[2])) {
                     $problems[] = "column $k[1]: NOT NULL without DEFAULT";
                 }
+                if (preg_match('/\b(UNIQUE|PRIMARY)\b/i', $k[2])) {
+                    $problems[] = "column $k[1]: UNIQUE or PRIMARY in its definition";
+                }
             } elseif (preg_match('/^ADD\s+(UNIQUE\s+)?(?:KEY|INDEX)\s+IF\s+NOT\s+EXISTS\s+\w+\s*\((.*)\)\s*$/is', $clause, $k)) {
                 $columns = array_map(static fn (string $c): string => strtolower(trim((string) preg_replace('/\(\d+\)/', '', $c))), explode(',', $k[2]));
-                if (trim($k[1]) !== '' && array_diff($columns, $added[$alter[1]] ?? [])) {
-                    $problems[] = 'UNIQUE on existing columns: ' . implode(', ', $columns);
+                if (trim($k[1]) !== '' && array_diff($columns, $nullable[$alter[1]] ?? [])) {
+                    $problems[] = 'UNIQUE on columns that are not new and empty: ' . implode(', ', $columns);
                 }
-            } elseif (!preg_match('/^ALTER\s+COLUMN\s+\w+\s+SET\s+DEFAULT\b/i', $clause)) {
+            } elseif (preg_match('/^ALTER\s+COLUMN\s+(\w+)\s+SET\s+DEFAULT\b/i', $clause, $k)) {
+                if (!in_array(strtolower($k[1]), $added[$alter[1]] ?? [], true)) {
+                    $problems[] = "default of an existing column: $k[1]"; // what the previous version's INSERTs store
+                }
+            } elseif (!preg_match('/^(ALGORITHM|LOCK)\s*=\s*\w+$/i', $clause)) {
                 $problems[] = 'not additive or without IF NOT EXISTS: ' . substr($clause, 0, 60);
             }
         }
@@ -439,9 +453,9 @@ $p5Bad = ['ALTER TABLE users DROP COLUMN lang', 'RENAME TABLE users TO people', 
     'ALTER TABLE users ADD COLUMN lang VARCHAR(5) NULL', 'ALTER TABLE users ADD COLUMN IF NOT EXISTS x INT NOT NULL', 'ALTER TABLE users ADD KEY idx_x (lang)',
     'ALTER TABLE users ADD UNIQUE KEY IF NOT EXISTS uq_x (lang)', 'CREATE TABLE audit (id INT)', 'CREATE UNIQUE INDEX IF NOT EXISTS uq_x ON users (lang)',
     'ALTER TABLE users ALTER COLUMN lang DROP DEFAULT', 'ALTER TABLE users ADD CONSTRAINT fk_x FOREIGN KEY (lang) REFERENCES pages (lang)', "CREATE TABLE IF NOT EXISTS x (id INT, CONSTRAINT fk_y FOREIGN KEY (id) REFERENCES users (id) ON DELETE RESTRICT)",
-    'ALTER TABLE users CONVERT TO CHARACTER SET utf8mb4', 'TRUNCATE TABLE rate_limits', 'CREATE OR REPLACE TABLE rounds (id INT)', 'ALTER IGNORE TABLE users ADD COLUMN x INT NOT NULL', 'ALTER TABLE `users` ADD COLUMN IF NOT EXISTS x INT NOT NULL'];
+    'ALTER TABLE users CONVERT TO CHARACTER SET utf8mb4', 'TRUNCATE TABLE rate_limits', 'CREATE OR REPLACE TABLE rounds (id INT)', 'ALTER TABLE users ADD COLUMN IF NOT EXISTS u INT NOT NULL DEFAULT 0, ADD UNIQUE KEY IF NOT EXISTS uq_u (u)', 'ALTER TABLE users ADD COLUMN IF NOT EXISTS u INT UNIQUE NULL', 'ALTER TABLE users ALTER COLUMN lang SET DEFAULT 0', 'CREATE TABLE IF NOT EXISTS t (id INT, CONSTRAINT fk_z FOREIGN KEY (id) REFERENCES users (id))', 'ALTER IGNORE TABLE users ADD COLUMN x INT NOT NULL', 'ALTER TABLE `users` ADD COLUMN IF NOT EXISTS x INT NOT NULL'];
 $p5Good = ["ALTER TABLE users ADD COLUMN IF NOT EXISTS x VARCHAR(5) NOT NULL DEFAULT 'de' AFTER email, ADD COLUMN IF NOT EXISTS y CHAR(64) NULL, ADD UNIQUE KEY IF NOT EXISTS uq_y (y), ADD KEY IF NOT EXISTS idx_x (email(20), x)",
-    'ALTER TABLE users ALTER COLUMN x SET DEFAULT 0', 'CREATE TABLE IF NOT EXISTS t (id INT, UNIQUE KEY u (id), CONSTRAINT fk_t FOREIGN KEY (id) REFERENCES users (id) ON DELETE CASCADE)',
+    'ALTER TABLE users ADD COLUMN IF NOT EXISTS x INT NULL, ALTER COLUMN x SET DEFAULT 0, ALGORITHM=INSTANT', 'CREATE TABLE IF NOT EXISTS t (id INT, UNIQUE KEY u (id), CONSTRAINT fk_t FOREIGN KEY (id) REFERENCES users (id) ON DELETE CASCADE)',
     'CREATE INDEX IF NOT EXISTS idx_z ON users (email)', "UPDATE settings SET value = 'DROP RENAME' WHERE name = 'x'", "INSERT IGNORE INTO settings (name, value) VALUES ('a', 'b')"];
 $p5Missed = array_filter($p5Bad, static fn (string $sql): bool => $p5Problems([$sql]) === []);
 $p5False = array_filter($p5Good, static fn (string $sql): bool => $p5Problems([$sql]) !== []);

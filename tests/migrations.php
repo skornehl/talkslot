@@ -112,17 +112,20 @@ Settings::set('schema_version', '12');
 
 Migrations::run();
 check('every step from the first release on ran: schema version ' . Settings::get('schema_version') . ' of ' . Migrations::LATEST, (int) Settings::get('schema_version') === Migrations::LATEST);
-check('the data of the first release is still there',
+check('the data of the first release is still there, and the steps filled in the new columns',
     Db::value('SELECT name FROM bookings WHERE slot_id = ?', [$slotId]) === 'Anna Muster'
-    && Db::value('SELECT COUNT(*) FROM rounds WHERE id = ? AND user_id = ?', [$roundId, $userId]) === 1);
+    && Db::value('SELECT COUNT(*) FROM rounds WHERE id = ? AND user_id = ?', [$roundId, $userId]) === 1
+    && (int) Db::value('SELECT was_used FROM rounds WHERE id = ?', [$roundId]) === 1 && (int) Db::value('SELECT remind_ok FROM bookings WHERE slot_id = ?', [$slotId]) === 1);
 $migrated = $snapshot($old);
+$rows = static fn (): string => (string) json_encode([Db::all('SELECT * FROM users'), Db::all('SELECT * FROM rounds'), Db::all('SELECT * FROM round_days'), Db::all('SELECT * FROM slots'), Db::all('SELECT * FROM bookings')]);
+$before = $rows();
 
 // As after an interrupted update: every step again, on the finished schema and with the data
 Settings::set('schema_version', '12');
 Migrations::run();
 $again = $differences($migrated, $snapshot($old));
 check('every step since the first release once more (as after an interrupted update): no error, nothing changes' . ($again ? "\n      " . implode("\n      ", $again) : ''),
-    !$again && (int) Settings::get('schema_version') === Migrations::LATEST && Db::value('SELECT COUNT(*) FROM bookings') === 1);
+    !$again && (int) Settings::get('schema_version') === Migrations::LATEST && $rows() === $before);
 
 $fresh = $run . 'b_';
 $as($fresh);
