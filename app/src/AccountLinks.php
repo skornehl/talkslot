@@ -117,7 +117,7 @@ final class AccountLinks
                     : __('Falls Sie das nicht angefordert haben, können Sie diese E-Mail ignorieren – Ihr bisheriges Passwort bleibt dann unverändert.'),
             ]];
         });
-        $replyTo = $sender && filter_var((string) ($sender['email'] ?? ''), FILTER_VALIDATE_EMAIL) ? (string) $sender['email'] : null;
+        $replyTo = $sender && Email::isValid((string) ($sender['email'] ?? '')) ? (string) $sender['email'] : null;
         return Mailer::send((string) $user['email'], $subject, implode("\n", $lines), [], $replyTo);
     }
 }

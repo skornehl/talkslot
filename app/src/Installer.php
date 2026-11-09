@@ -109,6 +109,7 @@ final class Installer
     public static function validate(string $username, #[\SensitiveParameter] string $password, #[\SensitiveParameter] string $password2, string $email): array
     {
         $errors = [];
+        $email = Email::input($email);
         if (!Auth::validUsername($username)) {
             $errors[] = __('Benutzername: 3–254 Zeichen, nur Buchstaben, Ziffern und . _ @ + - (z. B. Ihre E-Mail-Adresse).');
         }
@@ -173,6 +174,7 @@ final class Installer
      */
     public static function install(string $username, #[\SensitiveParameter] string $password, string $email, string $displayName, string $operatorType): void
     {
+        $email = Email::input($email);
         if (($error = self::validateType($operatorType)) !== null) {
             throw new \InvalidArgumentException($error);
         }
