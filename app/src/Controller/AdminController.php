@@ -425,30 +425,30 @@ final class AdminController
 
         $errors = [];
         if (mb_strlen($data['title']) < 1 || mb_strlen($data['title']) > 200) {
-            $errors[] = __('Bitte einen Titel (max. 200 Zeichen) angeben.');
+            $errors['title'] = __('Bitte einen Titel (max. 200 Zeichen) angeben.');
         }
         if (mb_strlen($data['description']) > 5000) {
-            $errors[] = __('Der Beschreibungstext ist zu lang (max. 5000 Zeichen).');
+            $errors['description'] = __('Der Beschreibungstext ist zu lang (max. 5000 Zeichen).');
         }
         if (mb_strlen($data['location']) > 200) {
-            $errors[] = __('Ort: höchstens 200 Zeichen.');
+            $errors['location'] = __('Ort: höchstens 200 Zeichen.');
         }
         foreach ([
             'booking_deadline_hours' => __('Buchungsfrist: ganze Zahl zwischen 0 und 720 Stunden.'),
             'cancel_deadline_hours' => __('Änderungsfrist: ganze Zahl zwischen 0 und 720 Stunden.'),
         ] as $field => $error) {
             if (!ctype_digit((string) $data[$field]) || (int) $data[$field] > 720) {
-                $errors[] = $error;
+                $errors[$field] = $error;
             }
         }
         if ($deleteError !== null) {
-            $errors[] = $deleteError;
+            $errors['delete_after_days'] = $deleteError;
         }
         // Block publishing only if the round would (newly) become public as a result: when
         // activating it or reassigning an active round – not on every change to it
         $publishing = $owner && $data['is_active'] && (!$round || !$round['is_active'] || (int) $owner['id'] !== (int) $round['user_id']);
         if (!$owner) {
-            $errors[] = __('Bitte eine aktive Lehrkraft für die Runde wählen.');
+            $errors['user_id'] = __('Bitte eine aktive Lehrkraft für die Runde wählen.');
         } elseif ($publishing && ($hint = $this->publishBlocker($owner)) !== null) {
             // A round that is online stays so with its previous teacher; any other can be saved inactive meanwhile
             $errors[] = $hint . ' ' . ($round && $round['is_active'] ? __('Behalten Sie bis dahin die bisherige Lehrkraft, dann bleibt die Runde aktiv.') : self::saveInactiveHint());
@@ -926,17 +926,21 @@ final class AdminController
         $end = Time::normalizeTime(Http::post('end_time'));
         $minutes = Http::post('slot_minutes');
 
+        $dateErrors = [];
         if (!$dates) {
-            $errors[] = __('Bitte mindestens ein Datum angeben.');
+            $dateErrors[] = __('Bitte mindestens ein Datum angeben.');
         } elseif (count($dates) > 30) {
-            $errors[] = __('Höchstens 30 Tage auf einmal.');
+            $dateErrors[] = __('Höchstens 30 Tage auf einmal.');
         }
         foreach ($dates as $d) {
             if (!Time::isDate($d)) {
-                $errors[] = __('Ungültiges Datum: {date}', ['date' => $d]);
+                $dateErrors[] = __('Ungültiges Datum: {date}', ['date' => $d]);
             } elseif ($roundId !== null && $this->dateTaken($roundId, $d)) {
-                $errors[] = __('Den {date} gibt es in dieser Runde bereits – bitte den vorhandenen Tag bearbeiten.', ['date' => fmt_date($d)]);
+                $dateErrors[] = __('Den {date} gibt es in dieser Runde bereits – bitte den vorhandenen Tag bearbeiten.', ['date' => fmt_date($d)]);
             }
+        }
+        if ($dateErrors) {
+            $errors['day_dates'] = implode(' ', $dateErrors);
         }
         $errors = array_merge($errors, self::timeErrors($start, $end, $minutes));
         [$breaks, $breakErrors] = self::breaksInput();
@@ -947,7 +951,7 @@ final class AdminController
             'start' => $start ? fmt_time($start) : Http::post('start_time'),
             'end' => $end ? fmt_time($end) : Http::post('end_time'),
             'minutes' => (int) $minutes,
-            'breaks' => array_map(static fn ($b) => [fmt_time($b[0]), fmt_time($b[1]), $b[2]], $breaks),
+            'breaks' => $breakErrors ? self::breakRowsAsSent() : array_map(static fn ($b) => [fmt_time($b[0]), fmt_time($b[1]), $b[2]], $breaks),
             'start_sql' => $start, 'end_sql' => $end, 'breaks_sql' => $breaks,
         ];
         if (!$errors && !SlotGenerator::compute($start, $end, (int) $minutes, array_map(
@@ -1025,7 +1029,7 @@ final class AdminController
             }
             $breaks[] = [$ns, $ne, mb_substr($bl[$i] ?? '', 0, 100)];
         }
-        return [$breaks, $errors];
+        return [$breaks, $errors ? ['breaks' => implode(' ', $errors)] : []];
     }
 
     /** Shared check of time range and appointment duration (create and edit). */
@@ -1033,10 +1037,10 @@ final class AdminController
     {
         $errors = [];
         if (!$start || !$end || $start >= $end) {
-            $errors[] = __('Bitte gültige Zeiten angeben (erster Termin vor dem Ende, z. B. 14:00 bis 18:00).');
+            $errors[$start && !$end ? 'end_time' : 'start_time'] = __('Bitte gültige Zeiten angeben (erster Termin vor dem Ende, z. B. 14:00 bis 18:00).');
         }
         if (!ctype_digit($minutes) || (int) $minutes < 5 || (int) $minutes > 240) {
-            $errors[] = __('Dauer pro Termin: 5 bis 240 Minuten.');
+            $errors['slot_minutes'] = __('Dauer pro Termin: 5 bis 240 Minuten.');
         }
         return $errors;
     }
@@ -1101,7 +1105,7 @@ final class AdminController
         [$breaks, $breakErrors] = Http::post('breaks_field') === '1' ? self::breaksInput() : [null, []];
         $errors = array_merge($errors, $breakErrors);
         if (!$errors && $this->dateTaken((int) $day['round_id'], $in['date'], $id)) {
-            $errors[] = __('Diesen Tag gibt es in der Runde bereits.');
+            $errors['day_date'] = __('Diesen Tag gibt es in der Runde bereits.');
         }
         if (!$errors) {
             $slotBreaks = $breaks !== null ? array_map(static fn (array $b): array => ['start_time' => $b[0], 'end_time' => $b[1]], $breaks)
@@ -1292,10 +1296,10 @@ final class AdminController
         $end = Time::normalizeTime(Http::post('end_time'));
         $minutes = Http::post('slot_minutes');
         $location = trim(Http::post('location'));
-        $errors = Time::isDate($date) ? [] : [__('Bitte ein gültiges Datum angeben.')];
+        $errors = Time::isDate($date) ? [] : ['day_date' => __('Bitte ein gültiges Datum angeben.')];
         $errors = array_merge($errors, self::timeErrors($start, $end, $minutes));
         if (mb_strlen($location) > 200) {
-            $errors[] = __('Ort: höchstens 200 Zeichen.');
+            $errors['location'] = __('Ort: höchstens 200 Zeichen.');
         }
         return [['date' => $date, 'start' => $start, 'end' => $end, 'minutes' => (int) $minutes, 'location' => $location], $errors];
     }
@@ -2514,7 +2518,7 @@ final class AdminController
             'start' => $start ? fmt_time($start) : Http::post('start_time'),
             'end' => $end ? fmt_time($end) : Http::post('end_time'),
             'minutes' => (int) $minutes,
-            'breaks' => array_map(static fn ($b) => [fmt_time($b[0]), fmt_time($b[1]), $b[2]], $breaks),
+            'breaks' => $errors ? self::breakRowsAsSent() : array_map(static fn ($b) => [fmt_time($b[0]), fmt_time($b[1]), $b[2]], $breaks),
             'booking_deadline_hours' => Http::post('booking_deadline_hours'),
             'cancel_deadline_hours' => Http::post('cancel_deadline_hours'),
             'delete_after_hours' => $deleteAfter,

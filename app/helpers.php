@@ -94,6 +94,27 @@ function fmt_date(string $ymd): string
     ]);
 }
 
+/**
+ * Attributes of a form field for its error (expert review P2-2): errors with a string key belong to the field with
+ * that id, the others to the form as a whole. $hint: id of the field's hint, read after the error.
+ * @param array<int|string, string> $errors
+ */
+function field_attrs(array $errors, string $field, string $hint = ''): string
+{
+    $invalid = isset($errors[$field]);
+    $described = trim(($invalid ? $field . '-error ' : '') . $hint);
+    return ($invalid ? ' aria-invalid="true"' : '') . ($described !== '' ? ' aria-describedby="' . e($described) . '"' : '');
+}
+
+/**
+ * The message right at the field, '' without an error (see field_attrs()).
+ * @param array<int|string, string> $errors
+ */
+function field_error(array $errors, string $field): string
+{
+    return isset($errors[$field]) ? '<p class="field-error" id="' . e($field) . '-error">' . e($errors[$field]) . '</p>' : '';
+}
+
 /** Time HH:MM from a TIME value. */
 function fmt_time(string $time): string
 {

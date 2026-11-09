@@ -32,27 +32,31 @@ $action = $round ? url('/admin/round/' . (int) $round['id'] . '/edit') : url('/a
     <?php if (!empty($owners)): ?>
     <div class="field">
       <label for="user_id"><?= e(__('Lehrkraft')) ?></label>
-      <select id="user_id" name="user_id" aria-describedby="owner-hint">
+      <select id="user_id" name="user_id"<?= field_attrs($errors, 'user_id', 'owner-hint') ?>>
         <?php foreach ($owners as $o): ?>
           <option value="<?= (int) $o['id'] ?>"<?= (int) ($data['user_id'] ?? 0) === (int) $o['id'] ? ' selected' : '' ?>><?= e($o['display_name'] !== '' ? $o['display_name'] : $o['username']) ?><?= (int) $o['id'] === App\Auth::id() ? ' ' . e(__('(Sie)')) : '' ?><?= !$o['is_active'] ? ' ' . e(__('(deaktiviert)')) : '' ?></option>
         <?php endforeach; ?>
       </select>
+      <?= field_error($errors, 'user_id') ?>
       <p class="hint" id="owner-hint"><?= e(__('Die Runde erscheint bei dieser Lehrkraft, Eltern sehen ihren Namen und Zusammenfassungen gehen an sie.')) ?></p>
     </div>
     <?php endif; ?>
     <div class="field">
       <label for="title"><?= e(__('Titel')) ?></label>
-      <input type="text" id="title" name="title" required maxlength="200" value="<?= e($data['title']) ?>" placeholder="<?= e(__('z. B. Elternsprechtag August 2026')) ?>" aria-describedby="title-hint">
+      <input type="text" id="title" name="title" required maxlength="200" value="<?= e($data['title']) ?>" placeholder="<?= e(__('z. B. Elternsprechtag August 2026')) ?>"<?= field_attrs($errors, 'title', 'title-hint') ?>>
+      <?= field_error($errors, 'title') ?>
       <?php /* Expert review P2-4: a title such as "Beratung Förderbedarf" would make every booking a hint at special needs */ ?>
       <p class="hint" id="title-hint"><?= e(__('Bitte neutral halten: Titel und Beschreibung stehen in den E-Mails an Eltern und in Kalenderdateien, der Titel auch im Protokoll und beim Anlegen in der Adresse der Runde. Keine Hinweise auf Förderbedarf, Gesundheit oder andere sensible Themen.')) ?></p>
     </div>
     <div class="field">
       <label for="description"><?= e(__('Beschreibung (optional)')) ?></label>
-      <textarea id="description" name="description" rows="4" maxlength="5000" aria-describedby="title-hint" placeholder="<?= e(__('z. B. Bitte nur einen Termin pro Kind buchen. Bringen Sie gern das letzte Zeugnis mit.')) ?>"><?= e($data['description'] ?? '') ?></textarea>
+      <textarea id="description" name="description" rows="4" maxlength="5000"<?= field_attrs($errors, 'description', 'title-hint') ?> placeholder="<?= e(__('z. B. Bitte nur einen Termin pro Kind buchen. Bringen Sie gern das letzte Zeugnis mit.')) ?>"><?= e($data['description'] ?? '') ?></textarea>
+      <?= field_error($errors, 'description') ?>
     </div>
     <div class="field">
       <label for="location"><?= e(__('Ort (optional)')) ?></label>
-      <input type="text" id="location" name="location" maxlength="200" value="<?= e($data['location'] ?? '') ?>" placeholder="<?= e(__('z. B. Raum 1.12, Hauptgebäude')) ?>" aria-describedby="loc-hint">
+      <input type="text" id="location" name="location" maxlength="200" value="<?= e($data['location'] ?? '') ?>" placeholder="<?= e(__('z. B. Raum 1.12, Hauptgebäude')) ?>"<?= field_attrs($errors, 'location', 'loc-hint') ?>>
+      <?= field_error($errors, 'location') ?>
       <p class="hint" id="loc-hint"><?= e(__('Steht auf der Buchungsseite, in der Bestätigung, in der Kalenderdatei und im Einladungstext. Findet ein Tag woanders statt, ändern Sie das unter „Tag bearbeiten“.')) ?><?= $round && $parents['upcoming'] > 0 && $parents['mailable'] === 0 ? ' ' . e(__('Bereits gebuchte Eltern werden bei einer Änderung NICHT automatisch benachrichtigt.')) : '' ?></p>
     </div>
     <?php if ($round && $parents['mailable'] > 0): /* ticked unless unticked before an error */ ?>
@@ -87,11 +91,13 @@ $action = $round ? url('/admin/round/' . (int) $round['id'] . '/edit') : url('/a
     <div class="field-row">
       <div class="field">
         <label for="booking_deadline_hours"><?= e(__('Buchungsschluss (Stunden vorher)')) ?></label>
-        <input type="number" id="booking_deadline_hours" name="booking_deadline_hours" min="0" max="720" required value="<?= e($data['booking_deadline_hours']) ?>">
+        <input type="number" id="booking_deadline_hours" name="booking_deadline_hours" min="0" max="720" required<?= field_attrs($errors, 'booking_deadline_hours') ?> value="<?= e($data['booking_deadline_hours']) ?>">
+        <?= field_error($errors, 'booking_deadline_hours') ?>
       </div>
       <div class="field">
         <label for="cancel_deadline_hours"><?= e(__('Ändern/Absagen bis (Stunden vorher)')) ?></label>
-        <input type="number" id="cancel_deadline_hours" name="cancel_deadline_hours" min="0" max="720" required value="<?= e($data['cancel_deadline_hours']) ?>">
+        <input type="number" id="cancel_deadline_hours" name="cancel_deadline_hours" min="0" max="720" required<?= field_attrs($errors, 'cancel_deadline_hours') ?> value="<?= e($data['cancel_deadline_hours']) ?>">
+        <?= field_error($errors, 'cancel_deadline_hours') ?>
       </div>
     </div>
     <input type="hidden" name="remind_parents_field" value="1">
@@ -140,7 +146,8 @@ $action = $round ? url('/admin/round/' . (int) $round['id'] . '/edit') : url('/a
     <div class="field">
       <label for="delete_after_days"><?= e(__('Runde löschen nach Ablauf (Tage)')) ?></label>
       <?php $deleteDays = $data['delete_after_days'] ?? days_from_hours($data['delete_after_hours'] ?? null); /* as entered after an error */ ?>
-      <input type="number" id="delete_after_days" name="delete_after_days" min="0" max="365" step="any" value="<?= e($deleteDays) ?>" aria-describedby="del-hint">
+      <input type="number" id="delete_after_days" name="delete_after_days" min="0" max="365" step="any" value="<?= e($deleteDays) ?>"<?= field_attrs($errors, 'delete_after_days', 'del-hint') ?>>
+      <?= field_error($errors, 'delete_after_days') ?>
       <p class="hint" id="del-hint"><?= e(__('Ab dem Tag nach dem letzten Termin, z. B. 1 = einen Tag danach. Leer = Runde nie automatisch löschen (Buchungen werden trotzdem am Folgetag gelöscht).')) ?></p>
     </div>
   </details>

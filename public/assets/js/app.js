@@ -647,6 +647,7 @@ var L = (function () {
       addDate.addEventListener('click', function () {
         var inputs = box.querySelectorAll('[name="day_dates[]"]');
         var n = inputs[inputs.length - 1].cloneNode();
+        ['id', 'aria-invalid', 'aria-describedby'].forEach(function (a) { n.removeAttribute(a); }); // those of the first date
         n.value = ''; n.required = false; n.setAttribute('aria-label', L('Datum {n}', { n: inputs.length + 1 }));
         addDate.parentNode.insertBefore(n, addDate);
         n.focus();

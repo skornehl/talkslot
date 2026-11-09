@@ -38,7 +38,7 @@ check('input(): from a form, the stored form if usable, otherwise as typed (so t
     App\Email::input(' x@Müller.de ') === 'x@xn--mller-kva.de' && App\Email::input(' jürgen@example.org ') === 'jürgen@example.org' && App\Email::input('') === '');
 check('booking form: an address with umlauts in the domain is accepted, umlauts before the @ are not',
     App\Controller\PublicController::validate(['name' => 'Familie Müller', 'email' => 'eltern@müller.de'], false) === []
-    && App\Controller\PublicController::validate(['name' => 'Familie Müller', 'email' => 'jürgen@example.org'], false) === [t('err.email')]);
+    && App\Controller\PublicController::validate(['name' => 'Familie Müller', 'email' => 'jürgen@example.org'], false) === ['email' => t('err.email')]);
 // Account domains: an entry with umlauts as it is or as punycode, compared with the stored form
 $emCfg = App\Config::all();
 App\Config::load(['allowed_account_domains' => ['Grundschule-Münster.de', '@xn--bcher-kva.example', 'kein domain']] + $emCfg);

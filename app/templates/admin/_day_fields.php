@@ -11,6 +11,7 @@ $dates = $dayData['dates'] ?: [''];
 // Break rows only for breaks already entered (e.g. after an error); "+ Pause hinzufügen"
 // adds more from the template.
 $breaks = $dayData['breaks'] ?: [];
+$fieldErrors = $errors ?? [];
 $breakRow = static function (string $bs, string $be, string $bl): void { ?>
       <div class="inline-form break-row">
         <label><?= e(__('Von')) ?> <input type="text" inputmode="numeric" pattern="[0-9]{1,2}([:.][0-9]{2})?|[0-9]{3,4}" maxlength="5" placeholder="HH:MM" autocomplete="off" class="time-input" data-time name="break_start[]" value="<?= e($bs) ?>"></label>
@@ -27,23 +28,25 @@ $breakRow = static function (string $bs, string $be, string $bl): void { ?>
     <div class="field" data-dates>
       <label><?= e(__('Datum')) ?> <span class="muted small"><?= e(__('(weitere Tage mit denselben Zeiten möglich)')) ?></span></label>
       <?php foreach ($dates as $i => $d): ?>
-        <input type="date" data-de-date name="day_dates[]" value="<?= e($d) ?>"<?= $i === 0 ? ' required' : '' ?> class="date-input" aria-label="<?= e(__('Datum {n}', ['n' => $i + 1])) ?>">
+        <input type="date" data-de-date name="day_dates[]" value="<?= e($d) ?>"<?= $i === 0 ? ' required' : '' ?> class="date-input" aria-label="<?= e(__('Datum {n}', ['n' => $i + 1])) ?>"<?= $i === 0 ? ' id="day_dates"' . field_attrs($fieldErrors, 'day_dates') : '' ?>>
       <?php endforeach; ?>
+      <?= field_error($fieldErrors, 'day_dates') ?>
       <button type="button" class="button button-small" data-add-date><?= e(__('+ weiteren Tag')) ?></button>
     </div>
     <?php endif; ?>
     <?php if (isset($singleDate)): ?>
-    <div class="field"><label for="day_date"><?= e(__('Datum')) ?></label><input type="date" data-de-date id="day_date" name="day_date" required value="<?= e($singleDate) ?>"></div>
+    <div class="field"><label for="day_date"><?= e(__('Datum')) ?></label><input type="date" data-de-date id="day_date" name="day_date" required<?= field_attrs($fieldErrors, 'day_date') ?> value="<?= e($singleDate) ?>"><?= field_error($fieldErrors, 'day_date') ?></div>
     <?php endif; ?>
     <div class="field-row">
-      <div class="field"><label for="start_time"><?= e(__('Erster Termin ab')) ?></label><input type="text" inputmode="numeric" pattern="[0-9]{1,2}([:.][0-9]{2})?|[0-9]{3,4}" maxlength="5" placeholder="HH:MM" autocomplete="off" class="time-input" data-time id="start_time" name="start_time" required value="<?= e($dayData['start']) ?>"></div>
-      <div class="field"><label for="end_time"><?= e(__('Letzter Termin endet um')) ?></label><input type="text" inputmode="numeric" pattern="[0-9]{1,2}([:.][0-9]{2})?|[0-9]{3,4}" maxlength="5" placeholder="HH:MM" autocomplete="off" class="time-input" data-time id="end_time" name="end_time" required value="<?= e($dayData['end']) ?>"></div>
-      <div class="field"><label for="slot_minutes"><?= e(__('Dauer pro Termin (Minuten)')) ?></label><input type="number" id="slot_minutes" name="slot_minutes" required min="5" max="240" step="<?= (int) $dayData['minutes'] % 5 ? 1 : 5 /* a length from before the steps of 5 stays valid */ ?>" value="<?= (int) $dayData['minutes'] ?>"></div>
+      <div class="field"><label for="start_time"><?= e(__('Erster Termin ab')) ?></label><input type="text" inputmode="numeric" pattern="[0-9]{1,2}([:.][0-9]{2})?|[0-9]{3,4}" maxlength="5" placeholder="HH:MM" autocomplete="off" class="time-input" data-time id="start_time" name="start_time" required<?= field_attrs($fieldErrors, 'start_time') ?> value="<?= e($dayData['start']) ?>"><?= field_error($fieldErrors, 'start_time') ?></div>
+      <div class="field"><label for="end_time"><?= e(__('Letzter Termin endet um')) ?></label><input type="text" inputmode="numeric" pattern="[0-9]{1,2}([:.][0-9]{2})?|[0-9]{3,4}" maxlength="5" placeholder="HH:MM" autocomplete="off" class="time-input" data-time id="end_time" name="end_time" required<?= field_attrs($fieldErrors, 'end_time') ?> value="<?= e($dayData['end']) ?>"><?= field_error($fieldErrors, 'end_time') ?></div>
+      <div class="field"><label for="slot_minutes"><?= e(__('Dauer pro Termin (Minuten)')) ?></label><input type="number" id="slot_minutes" name="slot_minutes" required min="5" max="240" step="<?= (int) $dayData['minutes'] % 5 ? 1 : 5 /* a length from before the steps of 5 stays valid */ ?>" <?= field_attrs($fieldErrors, 'slot_minutes') ?> value="<?= (int) $dayData['minutes'] ?>"><?= field_error($fieldErrors, 'slot_minutes') ?></div>
     </div>
   </fieldset>
 
-  <fieldset class="field pin-fieldset">
+  <fieldset class="field pin-fieldset" id="breaks" tabindex="-1"<?= isset($fieldErrors['breaks']) ? ' aria-describedby="breaks-error"' : '' ?>>
     <legend><?= e(__('Pausen (optional)')) ?></legend>
+    <?= field_error($fieldErrors, 'breaks') ?>
     <div data-breaks>
       <?php foreach ($breaks as [$bs, $be, $bl]) { $breakRow($bs, $be, $bl); } ?>
     </div>
