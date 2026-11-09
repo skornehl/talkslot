@@ -49,6 +49,14 @@ E-Mails an Lehrkräfte (Einladung, Passwort-Link, Zusammenfassungen) folgen ihr.
 entscheidet die Sprache des Browsers, `admin_language` legt den Standard fest. Elternseiten und E-Mails an
 Eltern sind in sechs Sprachen übersetzt, weil Eltern ganz unterschiedlicher Herkunft sind.
 
+## Jemand hat alle Termine mit Fantasienamen belegt. Was nun?
+
+Unter jedem Tag der Runde listet *Mehrere Buchungen löschen …* die Buchungen eines Zeitraums, jede angehakt:
+Nehmen Sie bei den echten den Haken heraus und löschen Sie den Rest auf einmal. Schützen Sie die Runde danach
+mit *Nur mit Rundencode* (unter *Bearbeiten*) und geben Sie den Code nur den Eltern. Kommen innerhalb weniger
+Minuten viele Buchungen einer Runde aus einem Netzwerk, erhalten die Lehrkraft und die Admins eine
+Warn-E-Mail; meist fällt es also früh auf. Siehe [Sicherheit]({{ '/de/guide/security/' | relative_url }}).
+
 ## Eine Lehrkraft kann sich nicht anmelden, obwohl das Passwort stimmt
 
 Nach zu vielen Fehlversuchen lehnt TalkSlot weitere eine Zeit lang ab, auch mit dem richtigen Passwort: aus

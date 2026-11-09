@@ -5,8 +5,8 @@ namespace App;
 
 /**
  * Changes by the teacher that concern booked parents:
- * - deleteBooking(), deleteDay(), cancelRound(), deleteAccount(): the bookings are deleted, their parents get a
- *   cancellation (Notifier::teacherCancelled(), without a link: the booking is gone);
+ * - deleteBooking(), deleteBookings(), deleteDay(), cancelRound(), deleteAccount(): the bookings are deleted, their
+ *   parents get a cancellation (Notifier::teacherCancelled(), without a link: the booking is gone);
  * - changeDay() (date, times, location; the slots are recalculated), resyncDay() (after a break was added or
  *   removed) and changeRound() (location, teacher): parents whose appointment changed get the current details
  *   (Notifier::parentChanged()). A booking that no longer fits the schedule becomes a conflict; its parents are
@@ -97,6 +97,34 @@ final class ScheduleService
         return Notifier::QUEUED;
     }
 
+    /**
+     * Deletes the bookings $ids of a day at once (the teacher's bulk deletion, e.g. after slots were taken with
+     * made-up names, see Abuse); ids of other days are ignored. As for deleteDay(), with $notify the parents of
+     * the upcoming ones get a cancellation (bulk mails) and the others are listed.
+     * @param list<int|string> $ids
+     * @return array{0:int,1:ScheduleChange} bookings deleted, what it meant for the parents
+     */
+    public static function deleteBookings(int $dayId, array $ids, bool $notify): array
+    {
+        $wanted = array_flip(array_map('intval', $ids));
+        return Db::transaction(static function () use ($dayId, $wanted, $notify): array {
+            foreach (self::LOCKS['day'] as $sql) {
+                Db::all($sql, [$dayId]);
+            }
+            $bookings = array_values(array_filter(
+                Db::all(BookingService::DETAIL_SQL . ' WHERE d.id = ? ORDER BY s.start_time, b.id', [$dayId]),
+                static fn (array $b): bool => isset($wanted[(int) $b['id']])
+            ));
+            $change = self::tell(array_values(array_filter($bookings, [self::class, 'upcoming'])), $notify,
+                static fn (array $b): bool => self::queueCancellation($b, false));
+            $deleted = 0;
+            foreach ($bookings as $b) {
+                $deleted += (int) BookingService::delete($b);
+            }
+            return [$deleted, $change];
+        });
+    }
+
     public static function deleteDay(int $dayId, bool $notify): ScheduleChange
     {
         return self::delete('day', $dayId, $notify, static fn () => Db::run('DELETE FROM round_days WHERE id = ?', [$dayId]));
@@ -172,15 +200,23 @@ final class ScheduleService
     {
         return Db::transaction(static function () use ($scope, $id, $notify, $delete): ScheduleChange {
             // The rows have no foreign key to the booking: they outlive the deletion
-            $change = self::tell(self::concerned($scope, $id, true), $notify, static function (array $b) use ($scope): bool {
-                $soon = $b['day_date'] . ' ' . $b['start_time'] <= Time::now()->modify('+' . self::SOON_HOURS . ' hours')->format('Y-m-d H:i:s');
-                $data = Notifier::cancellationData($b);
-                Outbox::queueCancellation($scope === 'account' ? array_replace($data, ['teacher_email' => '']) : $data, false, !$soon);
-                return true;
-            });
+            $change = self::tell(self::concerned($scope, $id, true), $notify,
+                static fn (array $b): bool => self::queueCancellation($b, $scope === 'account'));
             $delete();
             return $change;
         });
+    }
+
+    /**
+     * Queues the cancellation of a booking about to be deleted; one of an appointment soon (SOON_HOURS) is no
+     * bulk mail. $accountGone: without the teacher's address for the replies.
+     */
+    private static function queueCancellation(array $b, bool $accountGone): bool
+    {
+        $soon = $b['day_date'] . ' ' . $b['start_time'] <= Time::now()->modify('+' . self::SOON_HOURS . ' hours')->format('Y-m-d H:i:s');
+        $data = Notifier::cancellationData($b);
+        Outbox::queueCancellation($accountGone ? array_replace($data, ['teacher_email' => '']) : $data, false, !$soon);
+        return true;
     }
 
     /**
