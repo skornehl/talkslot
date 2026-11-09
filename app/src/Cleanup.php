@@ -97,9 +97,19 @@ final class Cleanup
 
         // 8. Delete entries of the admin log after audit_log_days (default 90)
         $stats['audit_log_deleted'] = Db::exec('DELETE FROM audit_log WHERE created_at < ?', [Time::now()->modify('-' . Audit::retentionDays() . ' days')->format('Y-m-d H:i:s')]);
+        //    Booking events logged before expert review P2-4 still carry the time of the booking ("Buchung 12.11.2026
+        //    14:00 gelöscht", also "umgebucht auf …"); the time goes, the date stays. Only such entries match, so after
+        //    the first run this changes nothing (no migration step: it does not depend on the order of the schema steps)
+        $stats['audit_log_times_removed'] = Db::exec(
+            'UPDATE audit_log SET message = REGEXP_REPLACE(message, ?, ?) WHERE message REGEXP ?',
+            ['([0-9]{2}\.[0-9]{2}\.[0-9]{4}) [0-9]{2}:[0-9]{2}', '\1', '(Buchung|booking) [0-9]{2}\.[0-9]{2}\.[0-9]{4} [0-9]{2}:[0-9]{2}']
+        );
 
         // 9. Give up mails in the outbox that could not be sent within 48 hours
         $stats['mails_expired'] = Outbox::expire();
+
+        // 10. Delete rounds that have been in the trash for longer than RoundTrash::KEEP_DAYS
+        $stats['trash_deleted'] = RoundTrash::purge();
 
         Settings::set('last_cleanup', (string) time());
         return $stats;

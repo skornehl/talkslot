@@ -204,6 +204,7 @@ final class Installer
                 Settings::set('last_cleanup', '0');
                 Settings::set('schema_version', (string) Migrations::LATEST);
                 Settings::set('pages_version', Migrations::pagesVersion());
+                WhatsNew::installed(); // the notes on changes so far are nothing new on a new installation
             } catch (\Throwable $e) {
                 self::dropAfterFailure();
                 throw $e;

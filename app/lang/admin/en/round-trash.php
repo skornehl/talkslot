@@ -1,0 +1,26 @@
+<?php
+// Admin area in English: trash for rounds without bookings (App\RoundTrash)
+return [
+    'Papierkorb' => 'Trash',
+    'Papierkorb ({count})' => 'Trash ({count})',
+    'Der Papierkorb ist leer.' => 'The trash is empty.',
+    'Gelöschte Runden ohne Buchungen bleiben {days} Tage hier und lassen sich wiederherstellen; Adresse und Rundencode bleiben dabei in der Regel gleich. Runden mit Buchungen werden sofort endgültig gelöscht.' => 'Deleted rounds without bookings stay here for {days} days and can be restored; their address and round code usually stay the same. Rounds with bookings are deleted permanently at once.',
+    'Die Runde hat keine Buchungen: Sie kommt mit allen Tagen, Pausen und Übersetzungen für {days} Tage in den Papierkorb und lässt sich dort wiederherstellen (Link „Papierkorb“ auf der Übersicht).' => 'This round has no bookings: it goes to the trash with all days, breaks and translations for {days} days and can be restored from there (link “Trash” on the overview).',
+    'Runde „{title}“ mit allen Tagen in den Papierkorb legen?' => 'Move round “{title}” with all days to the trash?',
+    'Inzwischen hat sich an dieser Runde etwas geändert (z. B. eine neue Buchung). Bitte prüfen und erneut löschen.' => 'Something about this round has changed in the meantime (e.g. a new booking). Please check and delete it again.',
+    'in den Papierkorb gelegt' => 'moved to the trash',
+    'Runde in den Papierkorb gelegt. Sie lässt sich {days} Tage lang wiederherstellen (Link „Papierkorb“ oben auf dieser Seite).' => 'Round moved to the trash. It can be restored for {days} days (link “Trash” at the top of this page).',
+    'Dieser Eintrag ist nicht mehr im Papierkorb.' => 'This entry is no longer in the trash.',
+    'aus dem Papierkorb wiederhergestellt' => 'restored from the trash',
+    'Runde wiederhergestellt, mit ihrer bisherigen Adresse und ihrem Rundencode. War sie aktiv, ist sie wieder buchbar.' => 'Round restored, with its previous address and round code. If it was active, it can be booked again.',
+    'Runde wiederhergestellt. Ihre bisherige Adresse oder ihr Rundencode war vergeben, deshalb hat sie neue: Schon verteilte Links oder Codes führen nicht mehr zu dieser Runde, bitte geben Sie die neuen weiter.' => 'Round restored. Its previous address or round code was taken, so it has new ones: links or codes already handed out no longer lead to this round, please pass on the new ones.',
+    'Die Runde bleibt deaktiviert: {hint}' => 'The round stays deactivated: {hint}',
+    'aus dem Papierkorb endgültig gelöscht' => 'permanently deleted from the trash',
+    'Runde endgültig gelöscht.' => 'Round permanently deleted.',
+    'Termintage' => 'Dates',
+    'Gelöscht am' => 'Deleted on',
+    'Bleibt bis' => 'Kept until',
+    'Wiederherstellen' => 'Restore',
+    'Endgültig löschen' => 'Delete permanently',
+    'Runde „{title}“ endgültig löschen? Das kann nicht rückgängig gemacht werden.' => 'Permanently delete round “{title}”? This cannot be undone.',
+];

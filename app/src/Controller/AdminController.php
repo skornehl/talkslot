@@ -24,7 +24,9 @@ use App\Operator;
 use App\Outbox;
 use App\ParentContact;
 use App\RateLimiter;
+use App\Readiness;
 use App\RoundCode;
+use App\RoundTrash;
 use App\ScheduleChange;
 use App\ScheduleService;
 use App\SlotGenerator;
@@ -34,6 +36,7 @@ use App\Time;
 use App\Translator;
 use App\TrustedDevice;
 use App\View;
+use App\WhatsNew;
 
 /**
  * Admin area (German or English, see AdminI18n).
@@ -60,6 +63,9 @@ final class AdminController
         ['POST', '#^/round/(\d+)/toggle$#', 'roundToggle', 'teacher'],
         ['POST', '#^/round/(\d+)/duplicate$#', 'roundDuplicate', 'teacher'],
         ['POST', '#^/round/(\d+)/delete$#', 'roundDelete', 'teacher'],
+        ['GET', '#^/trash$#', 'trash', 'teacher'],
+        ['POST', '#^/trash/(\d+)/restore$#', 'trashRestore', 'teacher'],
+        ['POST', '#^/trash/(\d+)/delete$#', 'trashDelete', 'teacher'],
         ['POST', '#^/round/(\d+)/day$#', 'dayAdd', 'teacher'],
         ['GET', '#^/round/(\d+)/print$#', 'printView', 'teacher'],
         ['POST', '#^/round/(\d+)/translations$#', 'translationsSave', 'teacher'],
@@ -78,6 +84,7 @@ final class AdminController
         ['GET', '#^/profile$#', 'profile', 'teacher'],
         ['POST', '#^/profile$#', 'profileSave', 'teacher'],
         ['POST', '#^/profile/summaries$#', 'summaryNoticeSeen', 'teacher'],
+        ['POST', '#^/news$#', 'newsSeen', 'teacher'],
         ['POST', '#^/password$#', 'passwordSave', 'teacher'],
         ['GET', '#^/password-change$#', 'passwordChangeForm', 'teacher'],
         ['POST', '#^/password-change$#', 'passwordChangeSave', 'teacher'],
@@ -90,6 +97,7 @@ final class AdminController
         ['POST', '#^/users/(\d+)/delete$#', 'userDelete', 'admin'],
         ['POST', '#^/users/end-sessions$#', 'endAllSessions', 'admin'],
         ['GET', '#^/texts$#', 'texts', 'admin'],
+        ['GET', '#^/start$#', 'readiness', 'admin'],
         ['POST', '#^/texts/operator$#', 'operatorSave', 'admin'],
         ['POST', '#^/texts/contact$#', 'parentContactSave', 'admin'],
         ['GET', '#^/page/(imprint|privacy)/([a-z]{2})$#', 'pageForm', 'admin'],
@@ -277,7 +285,9 @@ final class AdminController
             $r['deletion_at'] = Cleanup::deletionAt($r, $r['last_day']);
         }
         unset($r);
+        $legalHints = Auth::isAdmin() ? array_merge(self::operatorHints(), self::legalHints(LegalTexts::outdated())) : [];
         $this->render('admin/dashboard', [
+            'trashCount' => RoundTrash::count($all ? null : (int) Auth::id()),
             'title' => $all ? __('Alle Terminrunden') : __('Meine Terminrunden'),
             'rounds' => $rounds,
             'showOwner' => $all,
@@ -300,7 +310,11 @@ final class AdminController
             'operatorMissing' => !Operator::ready(),
             'typeMissing' => !Auth::isAdmin() && Operator::ready() && Operator::type() === null,
             'textsOpen' => !Auth::isAdmin() && Operator::ready() && LegalTexts::open() !== [],
-            'legalHints' => Auth::isAdmin() ? array_merge(self::operatorHints(), self::legalHints(LegalTexts::outdated())) : [],
+            'legalHints' => $legalHints,
+            // Until the first round has been public: one checklist ("Bereit für den Start?") instead of the setup warnings
+            'readiness' => Auth::isAdmin() && !Readiness::started() ? Readiness::checks($legalHints) : null,
+            // "Was ist neu" after an update: what changed in how admins and teachers work
+            'whatsNew' => WhatsNew::unseen((array) Auth::user()),
             // Offboarding: active accounts nobody has signed in to for a long time (only the number)
             'unusedAccounts' => Auth::isAdmin() ? (int) Db::value(
                 'SELECT COUNT(*) FROM users WHERE is_active = 1 AND COALESCE(last_login_at, created_at) < ?',
@@ -802,11 +816,66 @@ final class AdminController
             Http::redirect('/admin/round/' . $id, [], 'delete-round');
         }
         $label = self::roundLabel($id); // for the log: the round is gone afterwards
+        // Without bookings: into the trash, restorable for a while. Booked in the meantime: ask again
+        if ($booked === 0) {
+            if (RoundTrash::put($id) === null) {
+                $this->flash('error', __('Inzwischen hat sich an dieser Runde etwas geändert (z. B. eine neue Buchung). Bitte prüfen und erneut löschen.'));
+                Http::redirect('/admin/round/' . $id, [], 'delete-round');
+            }
+            $this->audit(fn () => __('in den Papierkorb gelegt'), $label);
+            $this->flash('success', __('Runde in den Papierkorb gelegt. Sie lässt sich {days} Tage lang wiederherstellen (Link „Papierkorb“ oben auf dieser Seite).', ['days' => RoundTrash::KEEP_DAYS]));
+            Http::redirect('/admin');
+        }
         $parents = ScheduleService::cancelRound($id, Http::post('notify') === '1');
-        $this->audit(fn () => ($booked ? __('gelöscht (mit {count} Buchung(en))', ['count' => $booked]) : __('gelöscht')) . self::parentsAudit($parents), $label);
+        $this->audit(fn () => __('gelöscht (mit {count} Buchung(en))', ['count' => $booked]) . self::parentsAudit($parents), $label);
         $this->flash('success', __('Runde mit allen Tagen und Buchungen gelöscht.'));
         $this->parentsFlash($parents);
         Http::redirect('/admin');
+    }
+
+    // ---------------------------------------------------------------- Trash (rounds without bookings)
+
+    private function trash(): void
+    {
+        $this->render('admin/trash', ['title' => __('Papierkorb'), 'rows' => RoundTrash::entries(Auth::isAdmin() ? null : (int) Auth::id()),
+            'showOwner' => Auth::isAdmin(), 'days' => RoundTrash::KEEP_DAYS]);
+    }
+
+    /** An entry of the trash the signed-in account may act on, else 404 (own entries; admins all). */
+    private function trashEntry(int $id): array
+    {
+        $entry = RoundTrash::find($id);
+        return $entry && self::mayAccess((int) $entry['user_id']) ? $entry : $this->notFound();
+    }
+
+    private function trashRestore(int $id): void
+    {
+        $entry = $this->trashEntry($id);
+        // As when activating: a round only goes public if what that requires is (still) there
+        $blocker = $this->publishBlocker($this->userById((int) $entry['user_id']));
+        $restored = RoundTrash::restore($id, $blocker === null);
+        if ($restored === null) {
+            $this->flash('error', __('Dieser Eintrag ist nicht mehr im Papierkorb.'));
+            Http::redirect('/admin/trash');
+        }
+        $this->audit(fn () => __('aus dem Papierkorb wiederhergestellt'), $restored['id']);
+        $this->flash('success', $restored['same_address']
+            ? __('Runde wiederhergestellt, mit ihrer bisherigen Adresse und ihrem Rundencode. War sie aktiv, ist sie wieder buchbar.')
+            : __('Runde wiederhergestellt. Ihre bisherige Adresse oder ihr Rundencode war vergeben, deshalb hat sie neue: Schon verteilte Links oder Codes führen nicht mehr zu dieser Runde, bitte geben Sie die neuen weiter.'));
+        if ($restored['deactivated']) {
+            $this->flash('error', __('Die Runde bleibt deaktiviert: {hint}', ['hint' => (string) $blocker]));
+        }
+        Http::redirect('/admin/round/' . $restored['id']);
+    }
+
+    private function trashDelete(int $id): void
+    {
+        $entry = $this->trashEntry($id);
+        RoundTrash::remove($id);
+        $owner = Db::one("SELECT COALESCE(NULLIF(display_name, ''), username) AS owner FROM users WHERE id = ?", [$entry['user_id']]);
+        $this->audit(fn () => __('aus dem Papierkorb endgültig gelöscht'), ['title' => $entry['title'], 'owner' => $owner['owner'] ?? '?']);
+        $this->flash('success', __('Runde endgültig gelöscht.'));
+        Http::redirect('/admin/trash');
     }
 
     // ---------------------------------------------------------------- Days & breaks
@@ -1146,7 +1215,9 @@ final class AdminController
             // An entry puts a draft to use: from now on it expires after its last day (Cleanup)
             Db::run('UPDATE rounds SET was_used = 1 WHERE id = ?', [$round['id']]);
         }
-        $this->audit(fn () => __('Buchung {slot} eingetragen', ['slot' => self::when($slot['day_date'], $slot['start_time'])]), (int) $round['id']);
+        // Booking events with the date only (expert review P2-4): with the time, a summary mail or a printed list would
+        // tell whose booking it was for 90 days after the booking itself is gone
+        $this->audit(fn () => __('Buchung am {date} eingetragen', ['date' => self::when($slot['day_date'])]), (int) $round['id']);
         $msg = __('Eintrag angelegt. Änderungslink für die Eltern (wird nur jetzt angezeigt): {link}', ['link' => abs_url('/b/' . $token, ['lang' => $old['lang']])]);
         if ($old['send_mail'] && $old['email'] !== '' && $this->teacherMailAllowed($msg)) {
             $mail = $this->withoutSession(static fn () => Notifier::sendOrQueue((array) BookingService::findById($id), 'booked', $token));
@@ -1200,9 +1271,11 @@ final class AdminController
         }
         $newAddress = BookingService::update($id, PublicController::cleanName($old['name']), $old['email'] ?: null, $old['lang']);
         $target = $moved ? BookingService::findById($id) : null;
-        $this->audit(fn () => $target
-            ? __('Buchung {slot} geändert, umgebucht auf {target}', ['slot' => self::when($booking['day_date'], $booking['start_time']), 'target' => self::when($target['day_date'], $target['start_time'])])
-            : __('Buchung {slot} geändert', ['slot' => self::when($booking['day_date'], $booking['start_time'])]), (int) $booking['round_id']);
+        $this->audit(fn () => match (true) {
+            $target === null => __('Buchung am {date} geändert', ['date' => self::when($booking['day_date'])]),
+            $target['day_date'] === $booking['day_date'] => __('Buchung am {date} geändert, auf eine andere Uhrzeit am selben Tag umgebucht', ['date' => self::when($booking['day_date'])]),
+            default => __('Buchung am {date} geändert, umgebucht auf den {target}', ['date' => self::when($booking['day_date']), 'target' => self::when($target['day_date'])]),
+        }, (int) $booking['round_id']);
         $msg = $moved ? __('Eintrag gespeichert und umgebucht.') : __('Eintrag gespeichert.');
         // Also without a change here: this is how parents learn the new date, location or teacher of their
         // appointment after the day or the round was changed (the mail carries the current details)
@@ -1225,7 +1298,7 @@ final class AdminController
         $notify = Http::post('notify') === '1';
         // The cancellation goes out right away (session closed meanwhile), or from the outbox if the server refuses
         $mail = $this->withoutSession(static fn () => ScheduleService::deleteBooking($booking, $notify));
-        $this->audit(fn () => __('Buchung {slot} gelöscht', ['slot' => self::when($booking['day_date'], $booking['start_time'])])
+        $this->audit(fn () => __('Buchung am {date} gelöscht', ['date' => self::when($booking['day_date'])])
             . ($mail !== null ? ', ' . __('Eltern per E-Mail informiert') : ''), (int) $booking['round_id']);
         $this->flash('success', __('Eintrag gelöscht – der Slot ist wieder frei.') . match ($mail) {
             Notifier::SENT => ' ' . __('Absage per E-Mail an die Eltern gesendet.'),
@@ -1484,6 +1557,20 @@ final class AdminController
     {
         Db::run('UPDATE users SET summary_names = ? WHERE id = ? AND summary_names IS NULL', [\App\Config::get('summary_names', false) ? 1 : 0, Auth::id()]);
         Http::redirect('/admin');
+    }
+
+    /** "Was ist neu" confirmed: the notes so far are not shown again to this account. */
+    private function newsSeen(): void
+    {
+        WhatsNew::markSeen(Auth::id());
+        Http::redirect('/admin');
+    }
+
+    /** "Bereit für den Start?": the checklist of the setup (Readiness). */
+    private function readiness(): void
+    {
+        $items = Readiness::checks(array_merge(self::operatorHints(), self::legalHints(LegalTexts::outdated())));
+        $this->render('admin/readiness', ['title' => __('Bereit für den Start?'), 'items' => $items, 'started' => Readiness::started()]);
     }
 
     private function passwordSave(): void
@@ -1809,6 +1896,7 @@ final class AdminController
             $me = Auth::user();
             $this->withoutSession(static fn () => AccountSecurity::adminChange(AccountSecurity::DELETED, $user, $me));
         }
+        WhatsNew::forget($id);
         $this->flash('success', __('Benutzer „{name}“ mit allen Runden und Buchungen gelöscht.', ['name' => $user['username']]));
         $this->parentsFlash($parents);
         Http::redirect('/admin/users');
