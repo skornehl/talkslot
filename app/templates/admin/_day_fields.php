@@ -1,8 +1,11 @@
 <?php
 /**
  * Input for appointment days: date(s), time range, slot length, breaks + live preview.
- * Used when creating a round, for "Add day" and (without dates, $withDates = false) for templates.
+ * Used when creating a round, for "Add day", for "Tag bearbeiten" ($singleDate: the one date) and (without dates,
+ * $withDates = false) for templates.
  * @var array $dayData ['dates' => list, 'start' => 'HH:MM', 'end' => ..., 'minutes' => int, 'breaks' => list<[start,end,label]>]
+ * @var list<string> $bookedSlots "Tag bearbeiten": start times of the bookings; the preview counts those that would no longer fit
+ * @var string $singleDate "Tag bearbeiten": the date of the day
  */
 $dates = $dayData['dates'] ?: [''];
 // Break rows only for breaks already entered (e.g. after an error); "+ Pause hinzufügen"
@@ -17,7 +20,7 @@ $breakRow = static function (string $bs, string $be, string $bl): void { ?>
       </div>
 <?php };
 ?>
-<div class="day-fields" data-day-fields>
+<div class="day-fields" data-day-fields<?= isset($bookedSlots) ? ' data-booked="' . e(implode(',', $bookedSlots)) . '"' : '' ?>>
   <fieldset class="field pin-fieldset">
     <legend><?= e(__('Wann?')) ?></legend>
     <?php if ($withDates ?? true): ?>
@@ -29,10 +32,13 @@ $breakRow = static function (string $bs, string $be, string $bl): void { ?>
       <button type="button" class="button button-small" data-add-date><?= e(__('+ weiteren Tag')) ?></button>
     </div>
     <?php endif; ?>
+    <?php if (isset($singleDate)): ?>
+    <div class="field"><label for="day_date"><?= e(__('Datum')) ?></label><input type="date" data-de-date id="day_date" name="day_date" required value="<?= e($singleDate) ?>"></div>
+    <?php endif; ?>
     <div class="field-row">
       <div class="field"><label for="start_time"><?= e(__('Erster Termin ab')) ?></label><input type="text" inputmode="numeric" pattern="[0-9]{1,2}([:.][0-9]{2})?|[0-9]{3,4}" maxlength="5" placeholder="HH:MM" autocomplete="off" class="time-input" data-time id="start_time" name="start_time" required value="<?= e($dayData['start']) ?>"></div>
       <div class="field"><label for="end_time"><?= e(__('Letzter Termin endet um')) ?></label><input type="text" inputmode="numeric" pattern="[0-9]{1,2}([:.][0-9]{2})?|[0-9]{3,4}" maxlength="5" placeholder="HH:MM" autocomplete="off" class="time-input" data-time id="end_time" name="end_time" required value="<?= e($dayData['end']) ?>"></div>
-      <div class="field"><label for="slot_minutes"><?= e(__('Dauer pro Termin (Minuten)')) ?></label><input type="number" id="slot_minutes" name="slot_minutes" required min="5" max="240" step="5" value="<?= (int) $dayData['minutes'] ?>"></div>
+      <div class="field"><label for="slot_minutes"><?= e(__('Dauer pro Termin (Minuten)')) ?></label><input type="number" id="slot_minutes" name="slot_minutes" required min="5" max="240" step="<?= (int) $dayData['minutes'] % 5 ? 1 : 5 /* a length from before the steps of 5 stays valid */ ?>" value="<?= (int) $dayData['minutes'] ?>"></div>
     </div>
   </fieldset>
 
@@ -46,5 +52,7 @@ $breakRow = static function (string $bs, string $be, string $bl): void { ?>
     <p class="hint"><?= e(__('Uhrzeiten im 24-Stunden-Format, z. B. 14:30. In Pausen werden keine Termine angeboten; danach geht es ab Pausenende weiter.')) ?></p>
   </fieldset>
 
-  <div class="alert alert-info slot-preview" data-slot-preview aria-live="polite" hidden></div>
+  <?php if (isset($bookedSlots)): ?><div class="alert alert-warning" data-slot-conflicts hidden></div><?php endif; ?>
+  <div class="alert alert-info slot-preview" data-slot-preview hidden></div>
+  <div class="visually-hidden" role="status" data-slot-status></div>
 </div>

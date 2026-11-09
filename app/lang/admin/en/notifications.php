@@ -16,7 +16,7 @@ return [
     'Die Eltern erhalten eine Absage per E-Mail.' => 'The parents will receive a cancellation by email.',
     'Die Eltern von {count} Buchung(en) erhalten eine Absage per E-Mail.' => 'The parents of {count} booking(s) will receive a cancellation by email.',
     '{count} Buchung(en) ohne E-Mail an die Eltern – bitte persönlich informieren; die Namen stehen danach in der Meldung.' => '{count} booking(s) without an email to the parents – please inform them in person; their names will be in the message afterwards.',
-    'Die Eltern haben zu diesem Eintrag nie eine E-Mail erhalten und werden deshalb nicht benachrichtigt – bitte persönlich informieren.' => 'The parents never received an email about this entry and are therefore not notified – please inform them in person.',
+    'Die Eltern haben zu dieser Buchung nie eine E-Mail erhalten und werden deshalb nicht benachrichtigt – bitte persönlich informieren.' => 'The parents never received an email about this booking and are therefore not notified – please inform them in person.',
     // Forms: edit day (day_form.php) and round (round_form.php)
     'Die Eltern erfahren davon, wenn Sie ihn umbuchen oder löschen.' => 'The parents learn about it when you move or delete it.',
     'An diesem Tag sind {count} Termin(e) gebucht. Ändern sich Datum, Uhrzeit oder Ort eines Termins, erhalten die Eltern die neuen Daten per E-Mail, solange „Eltern per E-Mail informieren“ angehakt ist.' => '{count} appointment(s) booked on this day. If the date, time or location of an appointment changes, the parents receive the new details by email as long as “Inform parents by email” is ticked.',
