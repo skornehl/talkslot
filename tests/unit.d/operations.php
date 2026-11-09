@@ -334,7 +334,11 @@ check('prefix: nothing inside quotes or comments changes, also not with spaces a
     && App\Db::prefix("SELECT 'it''s users' FROM users WHERE x = 'a\\' rounds'") === "SELECT 'it''s users' FROM tp2_users WHERE x = 'a\\' rounds'"
     && App\Db::prefix("CREATE TABLE IF NOT EXISTS mail_outbox (id INT,\n  constraint  fk_outbox_user FOREIGN KEY (id) REFERENCES users (id))")
         === "CREATE TABLE IF NOT EXISTS tp2_mail_outbox (id INT,\n  constraint  tp2_fk_outbox_user FOREIGN KEY (id) REFERENCES tp2_users (id))"
-    && App\Db::prefix('SELECT fk_rounds_user, r.rounds_x, rounds.id FROM rounds') === 'SELECT fk_rounds_user, r.rounds_x, tp2_rounds.id FROM tp2_rounds');
+    && App\Db::prefix('SELECT fk_rounds_user, r.rounds_x, rounds.id FROM rounds') === 'SELECT fk_rounds_user, r.rounds_x, tp2_rounds.id FROM tp2_rounds'
+    && App\Db::prefix('ALTER TABLE rounds DROP CONSTRAINT fk_rounds_user') === 'ALTER TABLE tp2_rounds DROP CONSTRAINT fk_rounds_user'
+    && App\Db::prefix("SELECT 1 # users' note\nFROM users") === "SELECT 1 # users' note\nFROM tp2_users"
+    && App\Db::prefix('SELECT 1--1 FROM users -- users') === 'SELECT 1--1 FROM tp2_users -- users'
+    && App\Db::prefix('SELECT /*! users */ /*M! rounds */ /* slots */ 1') === 'SELECT /*! tp2_users */ /*M! tp2_rounds */ /* slots */ 1');
 App\Config::load($cfg);
 // Every table the app creates is in Db::TABLES (else it would run without the prefix), and every foreign key is
 // called fk_… (else it would keep its name and clash with a second installation in the same database)
@@ -348,7 +352,7 @@ check('schema.sql and every migration: each table in Db::TABLES, each foreign ke
     && count($p7Fks[1]) > 10 && $p7Fks[1] === array_values(array_filter($p7Fks[1], static fn (string $n): bool => str_starts_with($n, 'fk_'))));
 // A foreign key is never dropped by a name written into a migration: installations from before the prefixed
 // names have fk_…, newer ones <prefix>fk_… (Db::foreignKey() looks the name up)
-check('migrations: no foreign key dropped by a written-down name', !preg_match('/DROP\s+(?:FOREIGN\s+KEY|CONSTRAINT)\s+`?fk_/i', $p7Sql));
+check('migrations: no foreign key dropped by a written-down name', !preg_match('/DROP\s+(?:FOREIGN\s+KEY|CONSTRAINT)\s+(?:IF\s+EXISTS\s+)?`?fk_/i', $p7Sql));
 // No alias named like a table: Db::prefix() would rewrite it ("AS slots" → "AS tp_slots") and change the keys
 $p7Aliases = [];
 $p7Words = implode('|', App\Db::TABLES);
