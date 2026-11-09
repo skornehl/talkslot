@@ -125,8 +125,9 @@ var L = (function () {
     save(without(load(), forget.getAttribute('data-forget-url')));
   }
 
-  // Fills a box with one item per remembered appointment; afterForget(list) runs when one was removed
-  function fillEntries(box, entries, prefix, afterForget) {
+  // Fills a box with one item per remembered appointment. Removing one moves the focus to the next; onEmpty
+  // runs when the last one is gone.
+  function fillEntries(box, entries, prefix, onEmpty) {
     var list = box.querySelector('[data-remembered-list]');
     var item = box.querySelector('[data-remembered-item]');
     entries.forEach(function (entry, i) {
@@ -146,7 +147,12 @@ var L = (function () {
       drop.addEventListener('click', function () {
         save(without(load(), entry.u));
         li.remove();
-        afterForget(list);
+        if (list.children.length) {
+          list.querySelector('[data-remembered-forget]').focus();
+        } else {
+          box.hidden = true;
+          onEmpty();
+        }
       });
       list.appendChild(li);
     });
@@ -167,12 +173,9 @@ var L = (function () {
       var y = String(b.d || '9999') + String(b.l || '');
       return x < y ? -1 : (x > y ? 1 : 0);
     });
-    fillEntries(mine, all, 'mine-', function (list) {
-      if (list.children.length) {
-        list.querySelector('[data-remembered-forget]').focus();
-      } else {
-        mine.hidden = true;
-      }
+    fillEntries(mine, all, 'mine-', function () {
+      var code = document.getElementById('code');
+      if (code && code.offsetParent) { code.focus(); }
     });
     if (all.length) { mine.hidden = false; }
   }
@@ -192,14 +195,7 @@ var L = (function () {
       var first = area.querySelector('input:not([type=hidden]), button');
       if (first) { first.focus(); }
     };
-    fillEntries(box, entries, 'remembered-', function (list) {
-      if (list.children.length) {
-        list.querySelector('[data-remembered-forget]').focus();
-      } else {
-        box.hidden = true;
-        showForm();
-      }
-    });
+    fillEntries(box, entries, 'remembered-', showForm);
     if (entries.length) {
       box.hidden = false;
       if (!document.getElementById('form-errors') && !area.hasAttribute('data-keep-open')) {
