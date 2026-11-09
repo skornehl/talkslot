@@ -104,13 +104,31 @@ Please have native speakers review translations.
 | Option | Default | Meaning | Deployment |
 |---|---|---|---|
 | `mail.transport` | `mail` | `mail` (PHP `mail()`), `smtp` (bundled PHPMailer) or `none` | `MAIL_TRANSPORT` |
-| `mail.from_address` | – | sender address (domain with SPF/DKIM) | `MAIL_FROM` |
+| `mail.from_address` | – | sender address (domain with SPF/DKIM); also the envelope sender, so bounces come back to this mailbox (see [Bounces](#bounces)); use a mailbox somebody reads, not a no-reply address | `MAIL_FROM` |
 | `mail.from_name` | `TalkSlot` | sender name; follows `APP_NAME` when deployed | `MAIL_FROM_NAME` |
 | `mail.reply_to` | – | optional; mails to parents use the teacher's reply address (*Mein Profil*) or else the teacher's e-mail address as reply-to | `MAIL_REPLY_TO` |
 | `mail.smtp.host` / `port` | – / `587` | | `SMTP_HOST` / `SMTP_PORT` |
 | `mail.smtp.encryption` | `tls` | `tls` (STARTTLS), `ssl` or `none` | `SMTP_ENCRYPTION` |
 | `mail.smtp.user` / `pass` | – | | `SMTP_USER` / `SMTP_PASS` (secrets) |
 | `alert_email` | – | recipient of error alerts; empty = the admin's address (unavailable while the database is down) | `ALERT_EMAIL` |
+
+### Bounces {#bounces}
+
+A mail the mail server accepted can still turn out to be undeliverable later, e.g. because
+of a typo in a parent's address. The receiving server then sends a bounce to the envelope sender, which is
+`mail.from_address` (`-f` with `mail()`, the sender with SMTP). TalkSlot never sees it: the booking list marks
+only mails the mail server refused right away (*E-Mail nicht zugestellt*). Make sure somebody reads that
+mailbox, and tell the teacher when a bounce names a parent's address, so they can reach the parents another
+way.
+
+### Addresses with umlauts
+
+Addresses with umlauts in the domain (`eltern@müller.de`) are accepted in every form and in the
+configuration. They are stored and sent in their ASCII form (`eltern@xn--mller-kva.de`, punycode), which
+mail servers use; the booking list, the print view, the user list and the profile show that form, and the
+username of a new account is that form too (signing in and *Passwort vergessen* also take the address with
+umlauts). Umlauts or other special letters (ß, é) before the `@` are not accepted: few mail servers can
+deliver to such addresses.
 
 ## Legal pages
 
@@ -139,7 +157,7 @@ under Art. 28 GDPR. The servers are located in Germany.*
 | Option | Default | Meaning | Deployment |
 |---|---|---|---|
 | `summary_names` | `false` | the school allows names in the summaries for teachers, with a calendar file of the appointments (itself without names); each account then chooses *Mit Namen* in its profile, new ones start without. `false`: per day the number of appointments, anything worth a look and the link to the list only ([Teacher guide]({{ '/guide/teachers/' | relative_url }}#summary-mails)) | `SUMMARY_NAMES` (`1`) |
-| `allowed_account_domains` | `[]` | accounts may only use addresses at these domains, e.g. `['schule.example.org']`: the exact domain, umlauts as punycode (`xn--…`). A new or changed address elsewhere (account, reply address for parents, installer) is refused; an address from before at another domain gets no summaries and no replies of parents until it is changed (instead of such a reply address, the account's e-mail address is used if it is allowed). `[]` = any address | `ALLOWED_ACCOUNT_DOMAINS` (comma-separated) |
+| `allowed_account_domains` | `[]` | accounts may only use addresses at these domains, e.g. `['schule.example.org']`: the exact domain (umlauts as they are or as punycode, `xn--…`). A new or changed address elsewhere (account, reply address for parents, installer) is refused; an address from before at another domain gets no summaries and no replies of parents until it is changed (instead of such a reply address, the account's e-mail address is used if it is allowed). `[]` = any address | `ALLOWED_ACCOUNT_DOMAINS` (comma-separated) |
 
 Set `summary_names` only where all accounts use work addresses whose deletion rules the school controls,
 for instance together with `allowed_account_domains`: summary mails stay in mailboxes and synchronised
