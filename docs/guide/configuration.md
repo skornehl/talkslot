@@ -76,6 +76,13 @@ If something does not fit, the site answers 503 as for any other database proble
 address) says *Cannot connect to MySQL using SSL* (wrong or unreadable file, certificate for another name)
 or *MySQL server has gone away* (the server offers no TLS), followed by a hint about `db.ssl_ca`.
 
+**Sharing a database.** Every table and every foreign key gets the prefix, so another application or a second
+TalkSlot (a test and a live site, two schools) can use the same database with a prefix of its own. The installer
+refuses table or foreign key names that are already taken, and if it fails half-way it drops the tables it
+created, so it can simply be run again. Older installations kept their foreign key names without the prefix
+(`fk_…`); next to one of them, a second installation needs a prefix that is not empty. If an older version
+stopped half-way in a shared database, delete the tables with that prefix first.
+
 ## Languages
 
 | Option | Default | Meaning | Deployment |
@@ -135,6 +142,7 @@ deliver to such addresses.
 | Option | Meaning | Deployment |
 |---|---|---|
 | `hosting.de` / `hosting.en` | your web host, replaces `[[HOSTER]]` in the privacy policy | `HOSTING_DE` / `HOSTING_EN` |
+| `hosting.pl`, `hosting.ru`, … | optional: the same in the language of a translated privacy policy; without it the translation takes `hosting.en` (then `hosting.de`) | – |
 
 Example for `hosting.en`: *Example Hosting GmbH, Musterweg 1, 12345 Musterstadt, Germany, as processor
 under Art. 28 GDPR. The servers are located in Germany.*
@@ -175,6 +183,11 @@ at once wait in a mail queue (outbox) that the cron job sends; see [Operations](
 | `mail_queue.hourly_limit` | `0` | at most this many reminders, summaries and mails to many parents after one change by a teacher per hour, e.g. your host's mail quota (`0` = no limit); single confirmations, change notices and cancellations go first and are never held back |
 | `mail_queue.after_response` | `true` | with PHP-FPM or LiteSpeed, a page view also sends up to 10 due mails after its response has gone out |
 
+`mail_alert_hourly` (default `100`, `0` = off): when parents trigger more mails than this within an hour
+(confirmations, change notices, cancellations), the operator gets an alert (`alert_email`), at most one per
+hour. Right after a letter with the link went out this can be normal; otherwise somebody may be booking with
+other people's addresses so that mails go to them under the school's address.
+
 ## Rate limits
 
 `rate_limits` holds `[maximum, window in seconds]` per shortened IP address (IPv4 /24, IPv6 /48), unless
@@ -188,6 +201,11 @@ Wi-Fi).
 | `booking` | 30 per hour | successful bookings |
 | `manage` | 300 per hour | requests to change links |
 | `move` | 10 per hour | rebookings by parents (each sends a mail), per booking, not per IP address |
+| `move_ip` | 30 per hour | rebookings by parents of all their bookings |
+| `round` | 15 per hour | successful bookings **of one round** (against one person taking all slots with made-up names); deployment variable `ROUND_BOOKING_LIMIT`. Keep it generous: during a parents' evening many parents book over the school Wi-Fi |
+| `burst` | 5 per 5 min | not a limit: more bookings of one round from one network within the window send a warning to the teacher of the round and all admins, at most one per round and hour |
+| `recipient` | 10 per hour | mails parents trigger themselves (confirmation, change notice, cancellation, the confirmation sent again from the appointment page), **per e-mail address** (in lower case, without a `+tag`, Gmail without dots), not per IP address. Above it the booking, change or cancellation still happens, only without a mail; after booking or moving the appointment page says so. A booking whose confirmation was held back keeps no address, so no reminder or change notice goes there later either. Mails from teachers, reminders and summaries do not count |
+| `recipient_day` | 20 per day | the same per address and day |
 | `confirm` | 2 per 24 hours | confirmation mails parents send to themselves from the appointment page, per booking, not per IP address (the window cannot be longer than 24 hours) |
 | `login` | 5 per 15 min | failed admin logins |
 | `login_user` | 20 per hour | failed logins **per account**, from devices that have not signed in to it before |

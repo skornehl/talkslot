@@ -1,3 +1,5 @@
+> This is a translation. The German version is authoritative.
+
 This notice informs you, in accordance with Art. 13 of the General Data Protection Regulation (GDPR), which personal data is processed when you use this booking service, for what purpose, and what rights you have.
 
 # 1. Controller
@@ -30,27 +32,27 @@ If you provide an e-mail address, you receive confirmations with your appointmen
 
 **When you visit the site:**
 
-- **Abuse protection:** to prevent automated mass requests and guessing of codes, your IP address is shortened and then irreversibly hashed with a secret key, and stored together with the number of requests. These entries are deleted after 24 hours at the latest.
+- **Abuse protection:** to prevent automated mass requests and guessing of codes, your IP address is shortened and then irreversibly hashed with a secret key, and stored together with the number of requests. So that these pages cannot send masses of e-mails to one address, your e-mail address is likewise stored only as such a hash, together with the number of e-mails sent to it. These entries are deleted after 24 hours at the latest.
 - **Server logs:** the web host stores technical access data (including IP address, date and time, requested address, browser type) in log files. [ASK THE HOST FOR THE RETENTION PERIOD AND STATE IT HERE.]
 
 There are no user accounts, no advertising, no tracking and no usage analytics. No external services are embedded (no external fonts, scripts, maps or videos). This site does not set cookies.
 
 # 4. Legal basis
 
-- **Booking, changing and cancelling:** Art. 6(1)(b) GDPR – processing is necessary to carry out the appointment you requested.
+- **Booking, changing and cancelling:** Art. 6(1)(b) GDPR – processing is necessary to arrange the appointment you requested.
 - **E-mail confirmation:** Art. 6(1)(b) GDPR, at your request by voluntarily providing the address.
 - **Abuse protection and server logs:** Art. 6(1)(f) GDPR. The legitimate interest is the secure and reliable operation of the booking service and protection against spam, multiple and unauthorised bookings.
 - **Summary e-mails to the teacher:** Art. 6(1)(b) GDPR (carrying out the agreed appointment) and Art. 6(1)(f) GDPR. The legitimate interest is the teacher's reliable appointment planning. The operator is not responsible for keeping them in the teacher's mailbox (see section 1).
 - **Browser storage (“Remember my appointment”):** Section 25(1) TDDDG and Art. 6(1)(a) GDPR (your consent by ticking the box), see section 7.
 
-By ticking the required box in the booking form you only confirm that you have read this notice. This is not consent; the processing of your booking data is based on the legal grounds stated above.
+You do not need to give consent to book an appointment; the processing of your booking data is based on the legal grounds stated above. Consent only concerns the optional browser storage (“Remember my appointment”).
 
 # 5. Retention and deletion
 
 - **In the booking service** (database), your booking with name and e-mail address is **deleted automatically on the day after the appointment** (from midnight).
 - If you cancel via your personal link, your details are deleted from the booking service **immediately**.
 - If the teacher cancels your appointment or deletes a day or the booking round, the bookings concerned are deleted immediately. If you gave an e-mail address, you receive a cancellation by e-mail.
-- Shortened and hashed IP addresses are deleted after 24 hours at the latest.
+- Shortened and hashed IP addresses and hashed e-mail addresses (abuse protection) are deleted after 24 hours at the latest.
 - **E-mails still to be sent** (e.g. the reminder the evening before, or a confirmation that could not be delivered at once): until it is sent, only a note of which e-mail is due for which booking is kept, without address or content; both are created from your booking when sending. The note is deleted once the e-mail is sent, after 48 hours at the latest, and together with your booking. The only exception is a cancellation by the teacher: your booking is already deleted then, so for this e-mail the address, language, name and appointment (without a link) are kept until it is sent and deleted afterwards, also after 48 hours at the latest.
 - **Summary e-mails to the teacher** (see section 6) contain the number of appointments per day and a link to the appointment list, but no names and no e-mail addresses; time and name only if this has been allowed for the school. After sending, the booking service no longer stores them. How long the teacher keeps them in their mailbox follows the rules of their school (section 1). The operator recommends that teachers delete e-mails with names as soon as they no longer need them, at the latest at the end of the school year.
 - If you would like these e-mails deleted, please contact the teacher or the school (Art. 17 GDPR). For your details in the booking service, a short message to the controller (section 1) is sufficient.

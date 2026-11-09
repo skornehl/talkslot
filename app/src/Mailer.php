@@ -53,7 +53,7 @@ final class Mailer
         }
         $from = Email::normalize((string) Config::get('mail.from_address', ''));
         if ($from === null) {
-            ErrorPage::writeLog('Mailer: mail.from_address ist nicht gesetzt – keine Mail versendet');
+            ErrorPage::writeLog('Mailer: mail.from_address is not set – no mail sent');
             return false;
         }
         $subject = str_replace(["\r", "\n"], ' ', $subject);
@@ -66,12 +66,12 @@ final class Mailer
         } catch (\Throwable $e) {
             self::disconnect(); // in a batch: the next mail starts with a new connection
             $reason = get_class($e) . ': ' . ErrorPage::sanitize($e->getMessage());
-            ErrorPage::writeLog('Mailer: Versand fehlgeschlagen (' . $reason . ')');
+            ErrorPage::writeLog('Mailer: sending failed (' . $reason . ')');
             Alert::notify('mail', 'Mailversand fehlgeschlagen', ['Mailversand fehlgeschlagen: ' . $reason]);
             return false;
         }
         if (!$ok) {
-            ErrorPage::writeLog('Mailer: Versand fehlgeschlagen');
+            ErrorPage::writeLog('Mailer: sending failed');
             Alert::notify('mail', 'Mailversand fehlgeschlagen', ['Mailversand fehlgeschlagen (Transport meldet Fehler, keine Details).']);
         }
         return $ok;

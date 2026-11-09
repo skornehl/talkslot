@@ -5,7 +5,8 @@ namespace App;
 
 /**
  * Mail queue (outbox) for mails that do not go out within the page request: reminders, summaries for
- * teachers, and confirmations or change notices whose immediate sending failed (Notifier::sendOrQueue()).
+ * teachers, the warning about a burst of bookings (Abuse, not in the request of whoever booked), and
+ * confirmations or change notices whose immediate sending failed (Notifier::sendOrQueue()).
  * The cron job sends them (bin/cron.php, web cron); on PHP-FPM or LiteSpeed a page request also sends a few
  * after its response has gone out (afterResponse()), for installations whose cron job runs rarely.
  *
@@ -27,7 +28,7 @@ namespace App;
 final class Outbox
 {
     /** Kind of mail => priority (lower goes first). */
-    public const KINDS = ['booked' => 1, 'changed' => 1, 'cancelled' => 1, 'summary_deadline' => 2, 'summary_evening' => 2, 'reminder' => 3];
+    public const KINDS = ['booked' => 1, 'changed' => 1, 'cancelled' => 1, 'burst_warning' => 1, 'summary_deadline' => 2, 'summary_evening' => 2, 'reminder' => 3];
     /** Priority of bulk mails: after single mails, so they respect the hourly limit (spread over hours), before reminders. */
     public const BULK = 2;
     /** Mails not sent after this long are given up (the booking shows "mail not delivered"). */
@@ -40,8 +41,8 @@ final class Outbox
     private const MAX_FAILURES_IN_A_ROW = 3;
     /** Seconds the cron job waits for a run in progress (e.g. one after a page request) before it gives up. */
     public const CRON_WAIT = 15;
-    /** Lock of a run, per database and table prefix: installations on one database server do not block each other. */
-    private const LOCK = "SHA1(CONCAT(DATABASE(), '.', ?))";
+    /** Lock of a run (Db::lock(), per database and table prefix): installations on one server do not block each other. */
+    private const LOCK = 'outbox';
     /** Fallback after the response of a page request: at most this many mails and seconds. */
     private const REQUEST_MAILS = 10;
     private const REQUEST_SECONDS = 10;
@@ -82,7 +83,7 @@ final class Outbox
         );
     }
 
-    /** Queues a mail to an account (summaries; $ref: the day it is about). */
+    /** Queues a mail to an account (summaries, $ref: the day it is about; the warning about a burst, $ref: the round). */
     public static function queueAccount(int $userId, string $kind, string $ref): void
     {
         Db::run('INSERT IGNORE INTO mail_outbox (kind, user_id, ref, priority, next_attempt_at, created_at) VALUES (?, ?, ?, ?, ?, ?)',
@@ -107,7 +108,7 @@ final class Outbox
         $stats = ['mails_sent' => 0, 'mails_failed' => 0, 'mails_dropped' => 0];
         $limit ??= max(1, (int) Config::get('mail_queue.batch', 100));
         $seconds ??= max(1.0, (float) Config::get('mail_queue.seconds', 20));
-        if ((int) Db::value('SELECT GET_LOCK(' . self::LOCK . ', ?)', [Db::table('outbox'), max(0, $wait)]) !== 1) {
+        if (!Db::lock(self::LOCK, $wait)) {
             return $stats;
         }
         try {
@@ -158,7 +159,7 @@ final class Outbox
                 Settings::set('mail_hour', $hour . '|' . $count);
             }
         } finally {
-            Db::value('SELECT RELEASE_LOCK(' . self::LOCK . ')', [Db::table('outbox')]);
+            Db::unlock(self::LOCK);
         }
         return $stats;
     }
@@ -250,7 +251,8 @@ final class Outbox
             return isset($data['day_date'], $data['start_time']) && ScheduleService::upcoming($data) ? Notifier::teacherCancelled($data) : null;
         }
         if ($row['booking_id'] === null) {
-            return Summaries::deliver((string) $row['kind'], (int) $row['user_id'], (string) $row['ref']);
+            return $row['kind'] === 'burst_warning' ? Abuse::deliverWarning((int) $row['user_id'], (string) $row['ref'])
+                : Summaries::deliver((string) $row['kind'], (int) $row['user_id'], (string) $row['ref']);
         }
         $b = BookingService::findById((int) $row['booking_id']);
         if (!$b || (string) $b['email'] === '' || $b['day_date'] < Time::today()) {

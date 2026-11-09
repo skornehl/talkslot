@@ -28,7 +28,7 @@ check "CLI installer after installation: abort" 'dcx exec -T app php /srv/app/bi
 # Reinstall, this time via the web installer (same credentials as dev/reset.sh). It deletes
 # itself after success; the file is restored afterwards.
 INSTALL_BAK=$(mktemp); cp "$ROOT/public/install.php" "$INSTALL_BAK"
-dcx exec -T db mariadb -uapp -papp-dev-only talkslot -e "SET FOREIGN_KEY_CHECKS=0; DROP TABLE IF EXISTS tp_mail_outbox, tp_round_templates, tp_audit_log, tp_round_translations, tp_sent_summaries, tp_bookings, tp_slots, tp_day_breaks, tp_round_days, tp_rounds, tp_pages, tp_rate_limits, tp_settings, tp_users, tp_admin_users; CREATE TABLE tp_users (id INT)"
+dcx exec -T db mariadb -uapp -papp-dev-only talkslot -e "SET FOREIGN_KEY_CHECKS=0; DROP TABLE IF EXISTS tp_round_trash, tp_mail_outbox, tp_round_templates, tp_audit_log, tp_round_translations, tp_sent_summaries, tp_bookings, tp_slots, tp_day_breaks, tp_round_days, tp_rounds, tp_pages, tp_rate_limits, tp_settings, tp_users, tp_admin_users; CREATE TABLE tp_users (id INT)"
 dcx exec -T app php -r '@unlink("/srv/app/app/var/installed.lock");'
 check "installer reachable while not installed" 'curl -s "$B/install.php" | grep -q "name=\"install_key\""'
 check "CLI installer: different passwords, no operator type → abort, the usage names the three input lines" 'O=$(printf "Sehr-Sicheres-Pw-1\nanderes-Passwort-2\n" | dcx exec -T app php /srv/app/bin/install.php sabrina 2>&1); echo "$O" | grep -q "Passwörter stimmen nicht überein" && echo "$O" | grep -q "Bitte wählen Sie die Betriebsart" && echo "$O" | grep -qF "Input: password, password again, operator type (school or private), one per line"'
@@ -115,28 +115,26 @@ check "duplicate date rejected, input kept" 'echo "$DUP" | grep -q "gibt es in d
 echo "Parents"
 P=$(curl -s -D - "$B/$SLUG")
 check "round page without cookie" '! echo "$P" | grep -qi "^set-cookie"'
-check "new round: one appointment per person (default), notice for parents" 'echo "$P" | grep -q "Pro Person ist nur ein Termin möglich. Für Geschwister" && curl -s -b "$J" "$B/admin/round/$RID" | grep -q "Ein Termin pro Person ·"'
+check "new round: one appointment per person (default), notice for parents" 'echo "$P" | grep -q "Pro Kind ist nur ein Termin möglich. Für Geschwister" && curl -s -b "$J" "$B/admin/round/$RID" | grep -q "Ein Termin pro Person ·"'
 PC=$(echo "$P" | csrf)
 SLOT=$(echo "$P" | grep -o 'name="slot_id" id="slot-[0-9]*" value="[0-9]*"' | head -1 | grep -o 'value="[0-9]*"' | grep -o '[0-9]*')
-code=$(curl -s -o /dev/null -w '%{http_code}' --data-urlencode "csrf=$PC" -d "slot_id=$SLOT&name=Max&privacy=1&website=spam" "$B/$SLUG")
+code=$(curl -s -o /dev/null -w '%{http_code}' --data-urlencode "csrf=$PC" -d "slot_id=$SLOT&name=Max&website=spam" "$B/$SLUG")
 check "honeypot blocks" '[ "$code" = 422 ]'
-code=$(curl -s -o /dev/null -w '%{http_code}' --data-urlencode "csrf=$PC" -d "slot_id=$SLOT&name=Max" "$B/$SLUG")
-check "without privacy checkbox → 422" '[ "$code" = 422 ]'
-code=$(curl -s -o /dev/null -w '%{http_code}' -d "csrf=123.abc&slot_id=$SLOT&name=Max&privacy=1" "$B/$SLUG")
+code=$(curl -s -o /dev/null -w '%{http_code}' -d "csrf=123.abc&slot_id=$SLOT&name=Max" "$B/$SLUG")
 check "invalid CSRF token → 422" '[ "$code" = 422 ]'
 X=$(curl -s --data-urlencode "csrf=$PC" --data-urlencode 'name=<script>alert(1)</script>' -d "slot_id=$SLOT&email=kaputt" "$B/$SLUG")
 check "XSS escaped + email validation" 'echo "$X" | grep -q "&lt;script&gt;" && ! echo "$X" | grep -q "<script>alert" && echo "$X" | grep -q "ungültig"'
 
 # Race condition: 20 parallel bookings for the same slot
 for i in $(seq 1 20); do
-  curl -s -o /dev/null -w '%{http_code}\n' --data-urlencode "csrf=$PC" -d "slot_id=$SLOT&name=Kind+$i&privacy=1&remember=1&email=eltern$i@example.org" "$B/$SLUG" &
+  curl -s -o /dev/null -w '%{http_code}\n' --data-urlencode "csrf=$PC" -d "slot_id=$SLOT&name=Kind+$i&remember=1&email=eltern$i@example.org" "$B/$SLUG" &
 done > /tmp/tp_race.$$; wait
 WIN=$(grep -c '^303$' /tmp/tp_race.$$); rm -f /tmp/tp_race.$$
 check "race: exactly 1 of 20 parallel bookings succeeds ($WIN)" '[ "$WIN" = 1 ]'
 PUB=$(curl -s "$B/$SLUG"); check "slot no longer publicly visible" '! echo "$PUB" | grep -q "id=\"slot-$SLOT\""' || { echo "    SLOT=$SLOT"; echo "$PUB" | grep -n "id=\"slot-$SLOT\""; }
 
 SLOT2=$(curl -s "$B/$SLUG" | grep -o 'value="[0-9]*" required' | head -1 | grep -o '[0-9]*')
-LOC=$(curl -s -o /dev/null -w '%{redirect_url}' --data-urlencode "csrf=$PC" -d "slot_id=$SLOT2&name=Erika+Muster&email=erika@example.org&privacy=1&remember=1&lang=en" "$B/$SLUG")
+LOC=$(curl -s -o /dev/null -w '%{redirect_url}' --data-urlencode "csrf=$PC" -d "slot_id=$SLOT2&name=Erika+Muster&email=erika@example.org&remember=1&lang=en" "$B/$SLUG")
 TOKEN=$(echo "$LOC" | grep -o '/b/[A-Za-z0-9_-]\{43\}' | cut -c4-)
 check "booking → manage link with 43-character token" '[ ${#TOKEN} = 43 ]'
 M=$(curl -s "$LOC")
@@ -210,7 +208,7 @@ curl -s -o /dev/null -b "$J" --data-urlencode "csrf=$T" --data-urlencode "title=
 check "translation of an original changed in the meantime rejected (409)" '[ "$(btrans "$R6" 1 "$OLDPAGE")" = "409 {\"error\":\"outdated\"}" ] && ! curl -s "$B/$S6?lang=tr" | grep -q "\[TR\] Elternsprechtag Herbst"'
 check "original changed → all outdated (manual ones too), browser retranslates" 'curl -s -b "$J" "$B/admin/round/$R6" | grep -q "data-pending=\"en,pl,ru,uk,tr\"" && [[ "$(btrans "$R6")" == "200 {\"saved\":5,"* ]] && curl -s "$B/$S6?lang=pl" | grep -q "\[PL\] Elternsprechtag Winter"'
 P6=$(curl -s "$B/$S6?lang=uk")
-curl -s -o /dev/null --data-urlencode "csrf=$(echo "$P6" | csrf)" -d "lang=uk&slot_id=$(echo "$P6" | grep -o 'value="[0-9]*" required' | head -1 | grep -o '[0-9]*')&name=Kind+UK&email=uk-eltern@example.org&privacy=1" "$B/$S6"
+curl -s -o /dev/null --data-urlencode "csrf=$(echo "$P6" | csrf)" -d "lang=uk&slot_id=$(echo "$P6" | grep -o 'value="[0-9]*" required' | head -1 | grep -o '[0-9]*')&name=Kind+UK&email=uk-eltern@example.org" "$B/$S6"
 UKM=$($DC exec -T app php -r '$r=json_decode(file_get_contents("http://mail:8025/api/v1/search?query=to:uk-eltern@example.org"),true); echo $r["messages"][0]["Subject"] ?? "";')
 check "mail to parents with translated title ($UKM)" 'echo "$UKM" | grep -q "\[UK\] Elternsprechtag Winter"'
 UKT=$($DC exec -T app php -r '$r=json_decode(file_get_contents("http://mail:8025/api/v1/search?query=to:uk-eltern@example.org"),true); echo json_decode(file_get_contents("http://mail:8025/api/v1/message/".$r["messages"][0]["ID"]),true)["Text"];')
@@ -278,7 +276,7 @@ check "slot blocked → publicly invisible" '! curl -s "$B/$SLUG" | grep -q "id=
 # Crafted request: an existing booking must not be moved onto a blocked slot either
 # (booking a blocked slot directly is covered under "Rules the server enforces itself")
 MOVE_PAGE=$(curl -s "$B/$SLUG")
-LOC=$(curl -s -o /dev/null -w '%{redirect_url}' --data-urlencode "csrf=$(echo "$MOVE_PAGE" | csrf)" -d "slot_id=$(echo "$MOVE_PAGE" | grep -o 'value="[0-9]*" required' | head -1 | grep -o '[0-9]*')&name=Verschieben+Gesperrt&privacy=1&lang=de" "$B/$SLUG")
+LOC=$(curl -s -o /dev/null -w '%{redirect_url}' --data-urlencode "csrf=$(echo "$MOVE_PAGE" | csrf)" -d "slot_id=$(echo "$MOVE_PAGE" | grep -o 'value="[0-9]*" required' | head -1 | grep -o '[0-9]*')&name=Verschieben+Gesperrt&lang=de" "$B/$SLUG")
 MOVE_TOKEN=$(echo "$LOC" | grep -o '/b/[A-Za-z0-9_-]\{43\}' | cut -c4-)
 X=$(curl -s -w '\n%{http_code}' --data-urlencode "csrf=$(curl -s "$B/b/$MOVE_TOKEN" | csrf)" -d "action=move&slot_id=$FREE" "$B/b/$MOVE_TOKEN")
 check "blocked slot: moving a booking there rejected" '[ ${#MOVE_TOKEN} = 43 ] && [ "$(echo "$X" | tail -1)" = 200 ] && echo "$X" | grep -q "Dieser Termin ist nicht mehr verfügbar"'
@@ -328,7 +326,7 @@ check "day with bookings not deleted without confirmation" 'curl -s -b "$J" "$B/
 # Deactivated round: parents can still cancel
 P2=$(curl -s "$B/$(curl -s -b "$J" "$B/admin/round/$R2" | grep -o 'data-copy="[^"]*"' | head -1 | sed 's#.*/##;s/"$//')")
 S2=$(echo "$P2" | grep -o 'value="[0-9]*" required' | head -1 | grep -o '[0-9]*')
-L2=$(curl -s -o /dev/null -w '%{redirect_url}' --data-urlencode "csrf=$(echo "$P2" | csrf)" -d "slot_id=$S2&name=Absagetest&privacy=1" "$B/$(echo "$P2" | grep -o 'action="/[^"]*"' | head -1 | sed 's#action="/##;s/"$//')")
+L2=$(curl -s -o /dev/null -w '%{redirect_url}' --data-urlencode "csrf=$(echo "$P2" | csrf)" -d "slot_id=$S2&name=Absagetest" "$B/$(echo "$P2" | grep -o 'action="/[^"]*"' | head -1 | sed 's#action="/##;s/"$//')")
 curl -s -o /dev/null -b "$J" -d "csrf=$T" "$B/admin/round/$R2/toggle"
 MP=$(curl -s "$L2")
 check "deactivated round: cancellation possible, moving hidden" 'echo "$MP" | grep -q "name=\"action\" value=\"cancel\"" && ! echo "$MP" | grep -q "value=\"move\""'
@@ -354,15 +352,15 @@ H1=$(DBQ "SELECT COALESCE(MAX(hits),0) FROM tp_rate_limits WHERE bucket='code'")
 check "old PIN (digits only) on the round page → format notice, does not count" 'curl -s --data-urlencode "csrf=$GC" -d "step=unlock&code=482913" "$B/$S3" | grep -q "besteht aus 8 Buchstaben und Ziffern" && [ "$(DBQ "SELECT COALESCE(MAX(hits),0) FROM tp_rate_limits WHERE bucket=\"code\"")" = "$H1" ]'
 U=$(curl -s --data-urlencode "csrf=$GC" --data-urlencode "code=$(echo "$RC3" | tr A-Z a-z | tr - ' ')" -d "step=unlock" "$B/$S3")
 check "correct code (lower case, with spaces) → slots + access token" 'echo "$U" | grep -q "name=\"access\"" && echo "$U" | grep -q "slot_id"'
-code=$(curl -s -o /dev/null -w '%{http_code}' --data-urlencode "csrf=$(echo "$U" | csrf)" -d "slot_id=$(echo "$U" | grep -o 'value="[0-9]*" required' | head -1 | grep -o '[0-9]*')&name=Ohne+Token&privacy=1" "$B/$S3")
+code=$(curl -s -o /dev/null -w '%{http_code}' --data-urlencode "csrf=$(echo "$U" | csrf)" -d "slot_id=$(echo "$U" | grep -o 'value="[0-9]*" required' | head -1 | grep -o '[0-9]*')&name=Ohne+Token" "$B/$S3")
 check "booking without access token rejected" '[ "$code" = 422 ]'
 ACC=$(echo "$U" | grep -o 'name="access" value="[^"]*"' | head -1 | sed 's/.*value="//;s/"$//')
-loc=$(curl -s -o /dev/null -w '%{redirect_url}' --data-urlencode "csrf=$(echo "$U" | csrf)" --data-urlencode "access=$ACC" -d "slot_id=$(echo "$U" | grep -o 'value="[0-9]*" required' | head -1 | grep -o '[0-9]*')&name=Mit+Token&privacy=1" "$B/$S3")
+loc=$(curl -s -o /dev/null -w '%{redirect_url}' --data-urlencode "csrf=$(echo "$U" | csrf)" --data-urlencode "access=$ACC" -d "slot_id=$(echo "$U" | grep -o 'value="[0-9]*" required' | head -1 | grep -o '[0-9]*')&name=Mit+Token" "$B/$S3")
 check "booking with access token succeeds" 'echo "$loc" | grep -q "/b/"'
 check "privacy summary in the form" 'echo "$U" | grep -q "Datenschutz auf einen Blick"'
 SL=$(echo "$U" | grep -o 'value="[0-9]*" required' | sed -n 2p | grep -o '[0-9]*')
-KEEP=$(curl -s --data-urlencode "csrf=$(echo "$U" | csrf)" --data-urlencode "access=$ACC" --data-urlencode "name=Müller Max" -d "lang=de&switch_lang=en&slot_id=$SL&email=m@example.org&privacy=1&remember=1" "$B/$S3")
-check "language switch keeps input (slot, name, email, checkboxes), does not book" 'echo "$KEEP" | grep -q "Choose a free time slot" && echo "$KEEP" | grep -q "value=\"Müller Max\"" && echo "$KEEP" | grep -q "value=\"m@example.org\"" && echo "$KEEP" | grep -q "value=\"$SL\" required checked" && echo "$KEEP" | grep -q "name=\"privacy\" value=\"1\" required checked" && ! echo "$KEEP" | grep -q "alert-error"'
+KEEP=$(curl -s --data-urlencode "csrf=$(echo "$U" | csrf)" --data-urlencode "access=$ACC" --data-urlencode "name=Müller Max" -d "lang=de&switch_lang=en&slot_id=$SL&email=m@example.org&remember=1" "$B/$S3")
+check "language switch keeps input (slot, name, email, checkbox), does not book" 'echo "$KEEP" | grep -q "Choose a free time slot" && echo "$KEEP" | grep -q "value=\"Müller Max\"" && echo "$KEEP" | grep -q "value=\"m@example.org\"" && echo "$KEEP" | grep -q "value=\"$SL\" required checked" && echo "$KEEP" | grep -q "name=\"remember\" value=\"1\" aria-describedby=\"remember-hint\" checked" && ! echo "$KEEP" | grep -q "alert-error"'
 check "language buttons submit the booking form" 'echo "$KEEP" | grep -q "form=\"booking-form\" name=\"switch_lang\" value=\"de\""'
 SW=$(curl -s -d "step=switch&lang=en" --data-urlencode "access=$ACC" "$B/$S3")
 check "language switch keeps access (code not needed again)" 'echo "$SW" | grep -q "slot_id" && echo "$SW" | grep -q "Choose a free time slot" && ! echo "$SW" | grep -q "name=\"step\" value=\"unlock\""'
@@ -392,7 +390,7 @@ check "code assigned right when creating/duplicating (not only when viewing)" '[
 AR=$(curl -s -b "$J" "$B/admin/round/$RID"); RCODE=$(rcode "$RID")
 check "round code shown + in the invitation text ($RCODE)" '[[ "$RCODE" =~ ^[2-9A-HJKMNP-Z]{4}-[2-9A-HJKMNP-Z]{4}$ ]] && echo "$AR" | grep -q "den Code der Terminvergabe $RCODE eingeben"'
 check "home page with code field" 'curl -s "$B/" | grep -q "name=\"code\""'
-check "without language choice always German (the browser language does not switch)" 'curl -s -H "Accept-Language: en-US,en;q=0.9" "$B/" | grep -q "<html lang=\"de\">" && curl -s -H "Accept-Language: tr" "$B/$SLUG" | grep -q ">Name <"'
+check "without language choice always German (the browser language does not switch)" 'curl -s -H "Accept-Language: en-US,en;q=0.9" "$B/" | grep -q "<html lang=\"de\">" && curl -s -H "Accept-Language: tr" "$B/$SLUG" | grep -q ">Name des Kindes <"'
 r=$(curl -s -o /dev/null -w '%{http_code} %{redirect_url}' -G --data-urlencode "code=$(echo "$RCODE" | tr A-Z a-z | tr - ' ')" -d lang=tr "$B/")
 check "code (lower case, with spaces) → round, language kept ($r)" '[[ "$r" == "303 "*"/$SLUG?lang=tr" ]]'
 CYR=$(echo "$RCODE" | sed 's/A/А/g;s/B/В/g;s/C/С/g;s/E/Е/g;s/H/Н/g;s/K/К/g;s/M/М/g;s/P/Р/g;s/T/Т/g;s/X/Х/g;s/Y/У/g;s/3/З/g;s/-/–/')
@@ -410,7 +408,7 @@ check "home page form submits via POST (code not in the URL)" 'curl -s "$B/" | g
 HP=$(curl -s -d "code=$(rcode "$R3")" "$B/")
 S3NOW=$(curl -s -b "$J" "$B/admin/round/$R3" | grep -o 'data-copy="[^"]*"' | head -1 | sed 's#.*/##;s/"$//')
 HACT=$(echo "$HP" | grep -o '<form[^>]*id="booking-form"[^>]*>' | grep -o 'action="[^"]*"' | sed 's/action="//;s/"$//')
-loc=$(curl -s -o /dev/null -w '%{redirect_url}' --data-urlencode "csrf=$(echo "$HP" | csrf)" --data-urlencode "access=$(echo "$HP" | grep -o 'name="access" value="[^"]*"' | head -1 | sed 's/.*value="//;s/"$//')" -d "slot_id=$(echo "$HP" | grep -o 'value="[0-9]*" required' | head -1 | grep -o '[0-9]*')&name=Ueber+Startseite&privacy=1" "$B$HACT")
+loc=$(curl -s -o /dev/null -w '%{redirect_url}' --data-urlencode "csrf=$(echo "$HP" | csrf)" --data-urlencode "access=$(echo "$HP" | grep -o 'name="access" value="[^"]*"' | head -1 | sed 's/.*value="//;s/"$//')" -d "slot_id=$(echo "$HP" | grep -o 'value="[0-9]*" required' | head -1 | grep -o '[0-9]*')&name=Ueber+Startseite" "$B$HACT")
 check "booking via the round unlocked on the home page (form to /$S3NOW)" '[ "$HACT" = "/$S3NOW" ] && echo "$loc" | grep -q "/b/"'
 check "copy has its own code" 'C=$(rcode "$RC"); [ -n "$C" ] && [ "$C" != "$RCODE" ]'
 OLD6=$(rcode "$R6")
@@ -482,7 +480,7 @@ R4=$(echo "$loc" | grep -o '[0-9]*$')
 S4=$(curl -s -c "$J2" -b "$J2" "$B/admin/round/$R4" | grep -o 'data-copy="[^"]*"' | head -1 | sed 's#.*/##;s/"$//')
 P4=$(curl -s "$B/$S4")
 check "round page names the teacher" 'echo "$P4" | grep -q "Gesprächstermine bei Herr Zwei"'
-curl -s -o /dev/null --data-urlencode "csrf=$(echo "$P4" | csrf)" -d "slot_id=$(echo "$P4" | grep -o 'value="[0-9]*" required' | head -1 | grep -o '[0-9]*')&name=Kind+Zwei&email=eltern-zwei@example.org&privacy=1" "$B/$S4"
+curl -s -o /dev/null --data-urlencode "csrf=$(echo "$P4" | csrf)" -d "slot_id=$(echo "$P4" | grep -o 'value="[0-9]*" required' | head -1 | grep -o '[0-9]*')&name=Kind+Zwei&email=eltern-zwei@example.org" "$B/$S4"
 DBQ "UPDATE tp_pages SET content = REPLACE(content, '$SMOKE_HOST', '[[HOSTER]]') WHERE page_key='privacy' AND lang='de'"
 PRIV=$(curl -s "$B/datenschutz?r=$S4")
 check "without web host in the configuration: visible placeholder, notice in the admin area" 'echo "$PRIV" | grep -qF "[HOSTER MIT ANSCHRIFT]" && ! echo "$PRIV" | grep -qF "[[HOSTER]]" && curl -s -b "$J" "$B/admin/texts" | grep -q "fehlen die Angaben zum Hoster"'
@@ -511,7 +509,7 @@ SL4=$(curl -s -b "$J" "$B/admin/round/$R4" | grep -o '/admin/slot/[0-9]*/book' |
 curl -s -o /dev/null -b "$J" --data-urlencode "csrf=$TA" -d "name=Vom+Admin+gebucht&email=admin-buchung@example.org&lang=de&send_mail=1" "$B$SL4"
 BK4=$($DC exec -T db mariadb -uapp -papp-dev-only talkslot -Ne "SELECT id FROM tp_bookings WHERE name='Vom Admin gebucht'")
 AMAIL=$($DC exec -T app php -r '$r=json_decode(file_get_contents("http://mail:8025/api/v1/search?query=to:admin-buchung@example.org"),true); echo json_encode($r["messages"][0]["ReplyTo"] ?? []), " ", json_decode(file_get_contents("http://mail:8025/api/v1/message/".($r["messages"][0]["ID"] ?? "x")),true)["Text"] ?? "";')
-check "admin books in a teacher's round: mail with the teacher's Reply-To, footer names the admin" '[ -n "$BK4" ] && echo "$AMAIL" | grep -q "zwei@example.org" && echo "$AMAIL" | grep -q "Verantwortlich: Sabrina Test" && ! echo "$AMAIL" | grep -q "Verantwortlich: Herr Zwei"'
+check "admin books in a teacher's round: mail with the teacher's Reply-To, footer names the admin" '[ -n "$BK4" ] && echo "$AMAIL" | grep -q "zwei@example.org" && echo "$AMAIL" | grep -q "Verantwortlich für die Terminvergabe: Sabrina Test" && ! echo "$AMAIL" | grep -q "Verantwortlich für die Terminvergabe: Herr Zwei"'
 curl -s -o /dev/null -b "$J" -d "csrf=$TA" "$B/admin/booking/$BK4/delete"
 # The message after deleting names the parents, so look at the booking list itself
 check "admin deletes a booking in a teacher's round" '[ -z "$(DBQ "SELECT id FROM tp_bookings WHERE id=$BK4")" ] && ! curl -s -b "$J" "$B/admin/round/$R4" | grep -q "<strong>Vom Admin gebucht</strong>"'
@@ -534,7 +532,7 @@ check "details back: round can be activated and reached again" '[ "$(curl -s -o 
 MAILP=$($DC exec -T app php -r 'echo file_get_contents("http://mail:8025/api/v1/search?query=to:eltern-zwei@example.org");')
 check "parent mail: teacher named, replies go to the teacher" 'echo "$MAILP" | grep -q "\"ReplyTo\":\[{\"Name\":\"\",\"Address\":\"zwei@example.org\"}\]"'
 PTXT=$($DC exec -T app php -r '$r=json_decode(file_get_contents("http://mail:8025/api/v1/search?query=to:eltern-zwei@example.org"),true); echo json_decode(file_get_contents("http://mail:8025/api/v1/message/".$r["messages"][0]["ID"]),true)["Text"];')
-check "parent mail: the admin is the controller (footer), not the teacher" 'echo "$PTXT" | grep -q "Verantwortlich: Sabrina Test" && ! echo "$PTXT" | grep -q "Verantwortlich: Herr Zwei"'
+check "parent mail: the admin is the controller (footer), not the teacher" 'echo "$PTXT" | grep -q "Verantwortlich für die Terminvergabe: Sabrina Test" && ! echo "$PTXT" | grep -q "Verantwortlich für die Terminvergabe: Herr Zwei"'
 
 # Summaries
 OUT=$($DC exec -T app php /srv/app/bin/cron.php -v)
@@ -546,7 +544,7 @@ check "daily overview to teacher 2: without names unless the school allows them,
 
 # A parent's booking with teacher 2, to try moving it after the account is deactivated
 P4B=$(curl -s "$B/$S4")
-L4=$(curl -s -o /dev/null -w '%{redirect_url}' --data-urlencode "csrf=$(echo "$P4B" | csrf)" -d "slot_id=$(echo "$P4B" | grep -o 'value="[0-9]*" required' | head -1 | grep -o '[0-9]*')&name=Kind+Verschieben&privacy=1" "$B/$S4")
+L4=$(curl -s -o /dev/null -w '%{redirect_url}' --data-urlencode "csrf=$(echo "$P4B" | csrf)" -d "slot_id=$(echo "$P4B" | grep -o 'value="[0-9]*" required' | head -1 | grep -o '[0-9]*')&name=Kind+Verschieben" "$B/$S4")
 L4=${L4%%\?*}
 M4C=$(curl -s "$L4" | csrf)
 
@@ -619,19 +617,19 @@ LD1=$(date -d '+6 day' +%F); LD2=$(date -d '+7 day' +%F)
 mkround() { curl -s -o /dev/null -w '%{redirect_url}' -b "$J" --data-urlencode "csrf=$T" -d "title=$1&booking_limit=$2&is_active=1&booking_deadline_hours=0&cancel_deadline_hours=0&day_dates%5B%5D=$LD1&day_dates%5B%5D=$LD2&start_time=09:00&end_time=10:00&slot_minutes=15" "$B/admin/round/new" | grep -o '[0-9]*$'; }
 slugof() { curl -s -b "$J" "$B/admin/round/$1" | grep -o 'data-copy="[^"]*"' | head -1 | sed 's#.*/##;s/"$//'; }
 # book <slug> <name> <email> [n-th free slot] → status and, if any, manage link
-book() { local P; P=$(curl -s "$B/$1"); curl -s -o /dev/null -w '%{http_code} %{redirect_url}' --data-urlencode "csrf=$(echo "$P" | csrf)" --data-urlencode "name=$2" --data-urlencode "email=$3" -d "privacy=1&slot_id=$(echo "$P" | grep -o 'value="[0-9]*" required' | sed -n "${4:-1}p" | grep -o '[0-9]*')" "$B/$1"; }
+book() { local P; P=$(curl -s "$B/$1"); curl -s -o /dev/null -w '%{http_code} %{redirect_url}' --data-urlencode "csrf=$(echo "$P" | csrf)" --data-urlencode "name=$2" --data-urlencode "email=$3" -d "slot_id=$(echo "$P" | grep -o 'value="[0-9]*" required' | sed -n "${4:-1}p" | grep -o '[0-9]*')" "$B/$1"; }
 LR=$(mkround Sperre+Runde round); LRS=$(slugof "$LR")
 check "round: first booking" '[[ "$(book "$LRS" "Max Muster" "eltern-a@example.org")" == 303* ]]'
 R=$(book "$LRS" "  max   MUSTER " "")
-check "round: same name without email (spelled differently) rejected" '[[ "$R" == 422* ]] && P=$(curl -s "$B/$LRS"); curl -s --data-urlencode "csrf=$(echo "$P" | csrf)" -d "name=max+muster&privacy=1&slot_id=$(echo "$P" | grep -o "value=\"[0-9]*\" required" | head -1 | grep -o "[0-9]*")" "$B/$LRS" | grep -q "Für diesen Namen gibt es hier bereits einen Termin"'
+check "round: same name without email (spelled differently) rejected" '[[ "$R" == 422* ]] && P=$(curl -s "$B/$LRS"); curl -s --data-urlencode "csrf=$(echo "$P" | csrf)" -d "name=max+muster&slot_id=$(echo "$P" | grep -o "value=\"[0-9]*\" required" | head -1 | grep -o "[0-9]*")" "$B/$LRS" | grep -q "Für diesen Namen gibt es hier bereits einen Termin"'
 check "round: same name, same email (other day) rejected" '[[ "$(book "$LRS" "Max Muster" "Eltern-A@example.org" 5)" == 422* ]]'
 check "round: siblings (other name, same email) allowed" '[[ "$(book "$LRS" "Erika Muster" "eltern-a@example.org")" == 303* ]]'
 check "round: same name, other email (other family) allowed" '[[ "$(book "$LRS" "Max Muster" "eltern-b@example.org")" == 303* ]]'
 check "round: teacher's entry not limited" 'curl -s -o /dev/null -b "$J" -d "csrf=$T&name=Max+Muster&lang=de" "$B$(curl -s -b "$J" "$B/admin/round/$LR" | grep -o "/admin/slot/[0-9]*/book" | head -1)" && [ "$(DBQ "SELECT COUNT(*) FROM tp_bookings b JOIN tp_slots s ON s.id=b.slot_id JOIN tp_round_days d ON d.id=s.day_id WHERE d.round_id=$LR AND b.name=\"Max Muster\"")" = 3 ]'
 LT=$(mkround Sperre+Tag day); LTS=$(slugof "$LT")
-check "day: notice 'one appointment per person and day'" 'curl -s "$B/$LTS" | grep -q "Pro Person ist nur ein Termin pro Tag möglich" && curl -s -b "$J" "$B/admin/round/$LT" | grep -q "Ein Termin pro Person und Tag ·"'
+check "day: notice 'one appointment per person and day'" 'curl -s "$B/$LTS" | grep -q "Pro Kind ist nur ein Termin pro Tag möglich" && curl -s -b "$J" "$B/admin/round/$LT" | grep -q "Ein Termin pro Person und Tag ·"'
 TOM1=$(book "$LTS" "Tom" "")
-check "day: second appointment on the same day rejected" '[[ "$(book "$LTS" "Tom" "")" == 422* ]] && P=$(curl -s "$B/$LTS"); curl -s --data-urlencode "csrf=$(echo "$P" | csrf)" -d "name=Tom&privacy=1&slot_id=$(echo "$P" | grep -o "value=\"[0-9]*\" required" | head -1 | grep -o "[0-9]*")" "$B/$LTS" | grep -q "an diesem Tag bereits einen Termin"'
+check "day: second appointment on the same day rejected" '[[ "$(book "$LTS" "Tom" "")" == 422* ]] && P=$(curl -s "$B/$LTS"); curl -s --data-urlencode "csrf=$(echo "$P" | csrf)" -d "name=Tom&slot_id=$(echo "$P" | grep -o "value=\"[0-9]*\" required" | head -1 | grep -o "[0-9]*")" "$B/$LTS" | grep -q "an diesem Tag bereits einen Termin"'
 TOM2=$(book "$LTS" "Tom" "" 4)
 check "day: allowed on another day" '[[ "$TOM2" == 303* ]]'
 M2=$(curl -s "${TOM2#* }"); MC2=$(echo "$M2" | csrf)
@@ -640,11 +638,11 @@ check "day: moving to a day with an own appointment rejected" 'curl -s --data-ur
 DAY2SLOT=$(DBQ "SELECT s.id FROM tp_slots s JOIN tp_round_days d ON d.id=s.day_id LEFT JOIN tp_bookings b ON b.slot_id=s.id WHERE d.round_id=$LT AND d.day_date=\"$LD2\" AND b.id IS NULL ORDER BY s.start_time LIMIT 1")
 check "day: moving on the same day allowed" 'curl -s -o /dev/null -w "%{redirect_url}" --data-urlencode "csrf=$MC2" -d "action=move&slot_id=$DAY2SLOT" "${TOM2#* }" | grep -q "done=changed"'
 LN=$(mkround Ohne+Sperre none); LNS=$(slugof "$LN")
-check "no limit: old notice, same name possible multiple times" 'curl -s "$B/$LNS" | grep -q "Bitte buchen Sie nur einen Termin." && [[ "$(book "$LNS" "Ida" "")" == 303* ]] && [[ "$(book "$LNS" "Ida" "")" == 303* ]]'
+check "no limit: old notice, same name possible multiple times" 'curl -s "$B/$LNS" | grep -qF "Bitte buchen Sie nur einen Termin pro Kind." && [[ "$(book "$LNS" "Ida" "")" == 303* ]] && [[ "$(book "$LNS" "Ida" "")" == 303* ]]'
 # Concurrent: 10 parallel bookings with the same name for different slots → exactly one
 LP=$(mkround Sperre+parallel round); LPS=$(slugof "$LP"); PP=$(curl -s "$B/$LPS"); PPC=$(echo "$PP" | csrf)
 for i in $(seq 1 8); do
-  curl -s -o /dev/null -w '%{http_code}\n' --data-urlencode "csrf=$PPC" -d "name=Gleichzeitig&privacy=1&slot_id=$(echo "$PP" | grep -o 'value="[0-9]*" required' | sed -n "${i}p" | grep -o '[0-9]*')" "$B/$LPS" &
+  curl -s -o /dev/null -w '%{http_code}\n' --data-urlencode "csrf=$PPC" -d "name=Gleichzeitig&slot_id=$(echo "$PP" | grep -o 'value="[0-9]*" required' | sed -n "${i}p" | grep -o '[0-9]*')" "$B/$LPS" &
 done > /tmp/tp_limit.$$; wait
 check "concurrent bookings by the same person: exactly one succeeds ($(grep -c '^303$' /tmp/tp_limit.$$))" '[ "$(grep -c "^303$" /tmp/tp_limit.$$)" = 1 ]'
 rm -f /tmp/tp_limit.$$
@@ -730,7 +728,7 @@ check "own round cannot be activated without display name" 'curl -s -L -b "$J" -
 DBQ "UPDATE tp_users SET display_name = UNHEX('${ACC0%%:*}'), email = UNHEX('${ACC0##*:}') WHERE role='admin'; UPDATE tp_settings SET value = UNHEX('$(echo "$ACC0" | cut -d: -f2)') WHERE name='controller_contact'"
 R=$(curl -s -b "$J" --data-urlencode "csrf=$T" -d "display_name=&email=kaputt" "$B/admin/profile")
 check "profile: missing display name and invalid email rejected" 'echo "$R" | has "Bitte einen Anzeigenamen angeben" && echo "$R" | has "Die E-Mail-Adresse ist ungültig"'
-check "delete round" 'curl -s -L -b "$J" -d "csrf=$T" "$B/admin/round/$RN/delete" | has "Runde mit allen Tagen und Buchungen gelöscht" && [ -z "$(DBQ "SELECT id FROM tp_rounds WHERE id=$RN")" ]'
+check "delete round" 'curl -s -L -b "$J" -d "csrf=$T" "$B/admin/round/$RN/delete" | has "Runde in den Papierkorb gelegt" && [ -z "$(DBQ "SELECT id FROM tp_rounds WHERE id=$RN")" ]'
 
 # Change password (profile) and forced change
 PW() { curl -s -L -c "$J" -b "$J" -d "csrf=$T" --data-urlencode "current_password=$1" --data-urlencode "new_password=$2" --data-urlencode "new_password2=$3" "$B/admin/${4:-password}"; }
@@ -780,10 +778,10 @@ check "text saved (line endings normalized), notice about missing placeholder" '
 DBQ "UPDATE tp_pages SET content = UNHEX('$IMP') WHERE page_key='imprint' AND lang='de'"
 
 echo "More parent flows"
-check "booking for unknown round → 404" '[ "$(curl -s -o /dev/null -w "%{http_code}" -d "slot_id=1&name=X&privacy=1" "$B/gibt-es-nicht-xyz")" = 404 ]'
+check "booking for unknown round → 404" '[ "$(curl -s -o /dev/null -w "%{http_code}" -d "slot_id=1&name=X" "$B/gibt-es-nicht-xyz")" = 404 ]'
 SP=$(curl -s -b "$J" "$B/admin/round/$R6" | grep -o 'data-copy="[^"]*"' | head -1 | sed 's#.*/##;s/"$//')  # current link (random part was regenerated above)
 P=$(curl -s "$B/$SP")
-R=$(curl -s --data-urlencode "csrf=$(echo "$P" | csrf)" -d "name=&privacy=1" "$B/$SP")
+R=$(curl -s --data-urlencode "csrf=$(echo "$P" | csrf)" -d "name=" "$B/$SP")
 check "booking without slot and name → both notices" 'echo "$R" | has "Bitte wählen Sie einen Termin" && echo "$R" | has "Bitte geben Sie einen Namen an"'
 DBQ "UPDATE tp_rounds SET code_required = 1 WHERE id = $R3" # protection was reset by the migration test above
 S3C=$(curl -s -b "$J" "$B/admin/round/$R3" | grep -o 'data-copy="[^"]*"' | head -1 | sed 's#.*/##;s/"$//')  # current link
@@ -796,7 +794,7 @@ KC=$(DBQ "SELECT key_hash FROM tp_rate_limits WHERE bucket = 'booking' ORDER BY 
 K4=$(php -r 'echo hash_hmac("sha256", "ip|127.0.0.0", str_repeat("d", 64));'); K6=$(php -r 'echo hash_hmac("sha256", "ip|::", str_repeat("d", 64));')
 LIMIT() { local k; for k in $KC $K4 $K6; do DBQ "INSERT INTO tp_rate_limits (bucket, key_hash, window_start, hits) VALUES ('$1', '$k', UNIX_TIMESTAMP(), 100000) ON DUPLICATE KEY UPDATE hits = 100000, window_start = UNIX_TIMESTAMP()"; done; }
 LIMIT attempt
-check "too many booking attempts → 429" '[ "$(curl -s -o /dev/null -w "%{http_code}" --data-urlencode "csrf=$(echo "$P" | csrf)" -d "slot_id=1&name=Max&privacy=1" "$B/$SP")" = 429 ]'
+check "too many booking attempts → 429" '[ "$(curl -s -o /dev/null -w "%{http_code}" --data-urlencode "csrf=$(echo "$P" | csrf)" -d "slot_id=1&name=Max" "$B/$SP")" = 429 ]'
 DBQ "DELETE FROM tp_rate_limits WHERE bucket = 'attempt'" # each limit on its own, so the right one answers
 LIMIT code
 X=$(curl -s -w "\n%{http_code}" --data-urlencode "csrf=$(echo "$G" | csrf)" -d "step=unlock&code=123" "$B/$S3C")
@@ -820,20 +818,23 @@ check "admin session expired after 30 minutes of inactivity (notice, new login r
 rm -f "$JS"
 # Rules the server enforces itself (tampered form)
 PB=$(curl -s "$B/$SP"); PBC=$(echo "$PB" | csrf)
-FREEB=$(echo "$PB" | grep -o 'value="[0-9]*" required' | sed -n 2p | grep -o '[0-9]*')
+# The only free slot of the round (the second match used to be the privacy checkbox, value="1" required, which the
+# form no longer has since expert review P1-9), blocked for the check and unblocked again
+FREEB=$(echo "$PB" | grep -o 'name="slot_id" id="slot-[0-9]*" value="[0-9]*" required' | head -1 | grep -o 'value="[0-9]*"' | grep -o '[0-9]*')
 curl -s -o /dev/null -b "$J" -d "csrf=$T" "$B/admin/slot/$FREEB/block"
-check "blocked slot cannot be booked via a tampered form" 'R=$(curl -s -w "%{http_code}" --data-urlencode "csrf=$PBC" -d "slot_id=$FREEB&name=Gesperrt+Test&privacy=1" "$B/$SP"); [[ "$R" == *422 ]] && echo "$R" | grep -q "Dieser Termin ist nicht mehr verfügbar"'
+check "blocked slot cannot be booked via a tampered form" 'R=$(curl -s -w "%{http_code}" --data-urlencode "csrf=$PBC" -d "slot_id=$FREEB&name=Gesperrt+Test" "$B/$SP"); [ -n "$FREEB" ] && [[ "$R" == *422 ]] && echo "$R" | grep -q "Dieser Termin ist nicht mehr verfügbar" && [ "$(DBQ "SELECT is_blocked FROM tp_slots WHERE id = $FREEB")" = 1 ]'
+curl -s -o /dev/null -b "$J" -d "csrf=$T" "$B/admin/slot/$FREEB/block"
 OTHER=$(DBQ "SELECT s.id FROM tp_slots s JOIN tp_round_days d ON d.id=s.day_id LEFT JOIN tp_bookings b ON b.slot_id=s.id WHERE d.round_id=$LT AND b.id IS NULL LIMIT 1")
-check "slot of another round cannot be booked via a tampered form" 'R=$(curl -s -w "%{http_code}" --data-urlencode "csrf=$PBC" -d "slot_id=$OTHER&name=Fremd+Test&privacy=1" "$B/$SP"); [[ "$R" == *422 ]] && echo "$R" | grep -q "Dieser Termin ist nicht mehr verfügbar" && [ -z "$(DBQ "SELECT id FROM tp_bookings WHERE name=\"Fremd Test\"")" ]'
+check "slot of another round cannot be booked via a tampered form" 'R=$(curl -s -w "%{http_code}" --data-urlencode "csrf=$PBC" -d "slot_id=$OTHER&name=Fremd+Test" "$B/$SP"); [[ "$R" == *422 ]] && echo "$R" | grep -q "Dieser Termin ist nicht mehr verfügbar" && [ -z "$(DBQ "SELECT id FROM tp_bookings WHERE name=\"Fremd Test\"")" ]'
 FREEC=$(DBQ "SELECT s.id FROM tp_slots s JOIN tp_round_days d ON d.id=s.day_id LEFT JOIN tp_bookings b ON b.slot_id=s.id WHERE d.round_id=$R6 AND b.id IS NULL AND s.is_blocked=0 LIMIT 1")
 DBQ "UPDATE tp_rounds SET booking_deadline_hours = 720 WHERE id = $R6"
-check "after the booking deadline nothing can be booked via a tampered form" 'R=$(curl -s -w "%{http_code}" --data-urlencode "csrf=$PBC" -d "slot_id=$FREEC&name=Frist+Test&privacy=1" "$B/$SP"); [[ "$R" == *422 ]] && echo "$R" | grep -q "die Buchungsfrist ist abgelaufen"'
+check "after the booking deadline nothing can be booked via a tampered form" 'R=$(curl -s -w "%{http_code}" --data-urlencode "csrf=$PBC" -d "slot_id=$FREEC&name=Frist+Test" "$B/$SP"); [[ "$R" == *422 ]] && echo "$R" | grep -q "die Buchungsfrist ist abgelaufen"'
 DBQ "UPDATE tp_rounds SET booking_deadline_hours = 1 WHERE id = $R6"
 # Protected round with exactly one slot: book, manage page, then no free slots
 loc=$(curl -s -o /dev/null -w '%{redirect_url}' -b "$J" --data-urlencode "csrf=$T" -d "title=Einzeltermin&code_required=1&is_active=1&booking_deadline_hours=0&cancel_deadline_hours=0&day_dates%5B%5D=$(date -d '+5 day' +%F)&start_time=10:00&end_time=10:30&slot_minutes=30" "$B/admin/round/new")
 RE=$(echo "$loc" | grep -o '[0-9]*$'); SE=$(curl -s -b "$J" "$B/admin/round/$RE" | grep -o 'data-copy="[^"]*"' | head -1 | sed 's#.*/##;s/"$//'); CE=$(rcode "$RE")
 UE=$(curl -s -d "code=$CE" "$B/")
-LOCE=$(curl -s -o /dev/null -w '%{redirect_url}' --data-urlencode "csrf=$(echo "$UE" | csrf)" --data-urlencode "access=$(echo "$UE" | grep -o 'name="access" value="[^"]*"' | head -1 | sed 's/.*value="//;s/"$//')" -d "slot_id=$(echo "$UE" | grep -o 'value="[0-9]*" required' | head -1 | grep -o '[0-9]*')&name=Einzel&privacy=1" "$B/$SE")
+LOCE=$(curl -s -o /dev/null -w '%{redirect_url}' --data-urlencode "csrf=$(echo "$UE" | csrf)" --data-urlencode "access=$(echo "$UE" | grep -o 'name="access" value="[^"]*"' | head -1 | sed 's/.*value="//;s/"$//')" -d "slot_id=$(echo "$UE" | grep -o 'value="[0-9]*" required' | head -1 | grep -o '[0-9]*')&name=Einzel" "$B/$SE")
 ME=$(curl -s "$LOCE"); MEC=$(echo "$ME" | csrf); TKE=$(echo "$LOCE" | grep -o '/b/[A-Za-z0-9_-]\{43\}')
 check "manage page: no other free slots" 'echo "$ME" | has "Derzeit gibt es keine anderen freien Termine"'
 check "change with expired form → notice" 'curl -s -d "csrf=alt&action=cancel&confirm=1" "$B$TKE" | has "Das Formular ist abgelaufen"'
@@ -880,7 +881,7 @@ check "login with password[] → 401 without warning" '[ "$(curl -s -o /dev/null
 check "invalid UTF-8 in the round title → notice instead of server error" 'R=$(curl -s -w "%{http_code}" -b "$J" --data-urlencode "csrf=$T" -d "title=Kaputt%FF&is_active=1&booking_deadline_hours=0&cancel_deadline_hours=0" "$B/admin/round/$SQ/edit"); [[ "$R" == *200 ]] && echo "$R" | grep -q "Bitte einen Titel"'
 check "email with quotes/spaces rejected" '[[ "$(book "$SQS" "Mit Mail" "\"a b\"@example.org")" == 422* ]]'
 P=$(curl -s "$B/$SQS")
-check "link in the name rejected (phishing via confirmation mails)" 'R=$(curl -s -w "%{http_code}" --data-urlencode "csrf=$(echo "$P" | csrf)" --data-urlencode "name=Zahlung offen: https://evil.example/pay" -d "privacy=1&slot_id=$(echo "$P" | grep -o "value=\"[0-9]*\" required" | head -1 | grep -o "[0-9]*")" "$B/$SQS"); [[ "$R" == *422 ]] && echo "$R" | grep -q "keine Internetadressen"'
+check "link in the name rejected (phishing via confirmation mails)" 'R=$(curl -s -w "%{http_code}" --data-urlencode "csrf=$(echo "$P" | csrf)" --data-urlencode "name=Zahlung offen: https://evil.example/pay" -d "slot_id=$(echo "$P" | grep -o "value=\"[0-9]*\" required" | head -1 | grep -o "[0-9]*")" "$B/$SQS"); [[ "$R" == *422 ]] && echo "$R" | grep -q "keine Internetadressen"'
 check "language links on error pages never point to foreign domains" 'curl -s "$B/%5Cevil.example" | grep -q "href=\"/?lang=en\"" && ! curl -s "$B/%5Cevil.example" | grep -q "evil.example?lang" && ! curl -s "$B/%09/evil.example" | grep -q "evil.example?lang"'
 check "login page without cookie does not create a session" '! curl -s -D - -o /dev/null "$B/admin/login" | grep -qi "^set-cookie: tp_admin" && ! curl -s -D - -o /dev/null "$B/admin/forgot" | grep -qi "^set-cookie"'
 for f in probe.bak probe.swp; do echo x > "$ROOT/public/$f"; done

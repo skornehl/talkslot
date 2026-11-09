@@ -89,7 +89,7 @@ check('every table of schema.sql gets the prefix (Db::TABLES)', $m[1] && !array_
 preg_match_all('/^  ([a-z_]+) [A-Z]/m', (string) file_get_contents(dirname(__DIR__) . '/app/schema.sql'), $m);
 check('no column is named like a table (the prefix would rewrite it)', $m[1] && !array_intersect($m[1], App\Db::TABLES));
 check('tables get prefixed', App\Db::prefix('SELECT b.* FROM bookings b JOIN slots s ON s.id = b.slot_id JOIN round_days d ON d.id = s.day_id') === 'SELECT b.* FROM tp_bookings b JOIN tp_slots s ON s.id = b.slot_id JOIN tp_round_days d ON d.id = s.day_id');
-check('columns/constraints stay unchanged', App\Db::prefix('ALTER TABLE rounds ADD CONSTRAINT fk_rounds_user FOREIGN KEY (user_id) REFERENCES users (id)') === 'ALTER TABLE tp_rounds ADD CONSTRAINT fk_rounds_user FOREIGN KEY (user_id) REFERENCES tp_users (id)');
+check('columns stay unchanged, foreign keys get the prefix (their names are unique per database)', App\Db::prefix('ALTER TABLE rounds ADD CONSTRAINT fk_rounds_user FOREIGN KEY (user_id) REFERENCES users (id)') === 'ALTER TABLE tp_rounds ADD CONSTRAINT tp_fk_rounds_user FOREIGN KEY (user_id) REFERENCES tp_users (id)');
 check('quoted values unchanged', App\Db::prefix("SELECT value FROM settings WHERE name = 'users'") === "SELECT value FROM tp_settings WHERE name = 'users'");
 
 echo "Language files\n";
@@ -438,6 +438,7 @@ echo "Security (audit)\n";
 $allowed = [
     'BookingService.php:$perDay' => 'boolean, selects a fixed clause',
     'Installer.php:$stmt' => 'statements from app/schema.sql',
+    'RoundTrash.php:$columns' => 'a filtered copy of the constant RoundTrash::ROUND_COLUMNS',
     'Migrations.php:$sql' => 'fixed statements from Migrations::STEPS',
     'Summaries.php:$where' => 'fixed conditions from callers in the same class',
     'ScheduleService.php:$where' => 'fixed conditions from ScheduleService::SCOPES',
@@ -530,8 +531,8 @@ check("app/vendor/phpmailer ($bundled) matches composer.lock (" . ($locked['phpm
 echo "Web host in the privacy policy\n";
 App\Config::load(['hosting' => ['de' => 'Beispiel Hosting GmbH, Weg 1']] + $cfg);
 check('[[HOSTER]] from the configuration, per language of the page text', App\Hosting::fill("- **Hosting:** [[HOSTER]]\n", 'de') === "- **Hosting:** Beispiel Hosting GmbH, Weg 1\n");
-check('not configured: visible placeholder in the language of the text (otherwise English)', str_starts_with(App\Hosting::fill('[[HOSTER]]', 'en'), '[WEB HOST WITH ADDRESS]')
-    && str_starts_with(App\Hosting::fill('[[HOSTER]]', 'pl'), '[WEB HOST WITH ADDRESS]') && !App\Hosting::configured('en'));
+check('not configured: visible placeholder in the language of the text; a translation takes English or German (expert review P1-9)', str_starts_with(App\Hosting::fill('[[HOSTER]]', 'en'), '[WEB HOST WITH ADDRESS]')
+    && App\Hosting::fill('[[HOSTER]]', 'pl') === 'Beispiel Hosting GmbH, Weg 1' && !App\Hosting::configured('en'));
 check('templates contain [[HOSTER]]', str_contains((string) file_get_contents(dirname(__DIR__) . '/app/templates/pages/privacy.de.md'), '[[HOSTER]]')
     && str_contains((string) file_get_contents(dirname(__DIR__) . '/app/templates/pages/privacy.en.md'), '[[HOSTER]]'));
 App\Config::load($cfg);

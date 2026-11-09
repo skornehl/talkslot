@@ -57,6 +57,6 @@ Persönlicher Änderungslink
 - **TalkSlot nutzen**: Anleitungen für den [Admin]({{ '/de/guide/admin/' | relative_url }}),
   für [Lehrkräfte]({{ '/de/guide/teachers/' | relative_url }}) und eine Seite, die Sie für
   [Eltern]({{ '/de/guide/parents/' | relative_url }}) verlinken können.
-- **Hintergrund**: [Datenschutz]({{ '/de/guide/privacy/' | relative_url }}),
+- **Hintergrund**: [Datenschutz]({{ '/de/guide/privacy/' | relative_url }}), [Unterlagen]({{ '/de/guide/operator-documents/' | relative_url }}),
   [Sicherheit]({{ '/de/guide/security/' | relative_url }}),
   [Entwicklung]({{ '/de/guide/development/' | relative_url }}) und die [FAQ]({{ '/de/guide/faq/' | relative_url }}).

@@ -43,9 +43,9 @@ says that no completed run of the cron job has been recorded ([cron monitoring](
    `dev/reset.sh` alone, do that under *Texte* first).
 2. **Open a round** on the dashboard (*Alle Runden*). You see the link for parents, the round code, the
    invitation text and the bookings of each day.
-3. **Book as a parent:** click *Öffnen* next to the link, choose a slot, enter a name and tick the
-   privacy checkbox. The confirmation page shows the personal change link. With an e-mail address the
-   confirmation arrives in Mailpit, including a calendar file.
+3. **Book as a parent:** click *Öffnen* next to the link, choose a slot and enter a name; the line above
+   the button shows the slot you chose. The confirmation page shows the personal change link and until when
+   it works. With an e-mail address the confirmation arrives in Mailpit, including a calendar file.
 4. **Switch the language** at the top of the page, and try light and dark mode in the footer.
 5. **Create your own round** with *+ Neue Runde*: pick one or more dates, the first and last slot, the
    duration and breaks. The preview shows the resulting slots before you save.

@@ -23,7 +23,8 @@ itself, otherwise the private person, association or independent provider whose 
    both legal pages and is shared by all admins. Without it **no round is publicly reachable**.
 3. **Legal texts** (*Texte*): imprint and privacy policy come from the templates of the operator type.
    Review them for every language and replace the remaining `[PLACEHOLDERS]`. Until then no round can be
-   activated. Details in [Privacy and legal]({{ '/guide/privacy/' | relative_url }}).
+   activated (in the translations of the privacy policy, open placeholders only mean that parents get the
+   English text). Details in [Privacy and legal]({{ '/guide/privacy/' | relative_url }}).
 4. **Mail check:** *Texte → E-Mail-Versand* shows the transport and sender. Make a test booking with your
    own e-mail address and check that the confirmation arrives (and is not marked as spam).
 5. **Contact for parents** (*Texte → Kontakt für Eltern bei Fragen*, optional): for example the school
@@ -33,6 +34,19 @@ itself, otherwise the private person, association or independent provider whose 
    keep it short and without abbreviations. Without any contact, these places refer parents to the imprint.
 6. **Templates** (*Vorlagen*, optional): set up the usual formats once, e.g. your parent-teacher day.
 7. **Invite teachers** and, if you like, further admins (*Benutzer*).
+
+**Ready to start?** (*Bereit für den Start?*, linked below the heading of *Alle Runden* and at the top of
+*Texte*) shows all of this on one page, each item as *Erledigt* (done), *Bitte prüfen* (please check) or *Noch
+offen* (still to do), with the way to fix it: imprint and privacy policy, the school's data protection officer
+(only when operated by the school), the contact for parents, mail delivery, cron job, server and configuration, and the permissions of
+the configuration file. Mail delivery counts as done once an invited account has signed in: its invitation
+arrived. Until the first round has been active, *Alle Runden* shows this checklist instead of the separate
+warnings on these items; after that, the warnings appear as before.
+
+**What's new** (*Neu seit dem letzten Update*): after an update, *Alle Runden* lists what changed in how admins
+and teachers work, for example a new option in the profile, so that it does not look like an error. *Verstanden*
+(got it) hides the notes for your account. Accounts created after the update, and a new installation, do not get
+the older notes.
 
 If the dashboard warns that the configuration can be read by every user of the server, set the
 permissions of the files it lists to `600` or pass the warning on to whoever runs the server: they contain
@@ -102,6 +116,12 @@ A taken-over session or a misused admin account must not be able to take over ot
   deleted. Please do not filter these mails away: they are often the only way to notice misuse.
 - **Password links** are only sent by mail and never shown on screen. A reset by an admin tells the person
   that their previous password no longer works.
+- **Misuse of the public pages:** when more than 5 bookings of a round come from one network within 5
+  minutes, the teacher of the round and all admins get a mail (*Auffällig viele Buchungen in der Runde …*),
+  at most one per round and hour. Check the bookings; *Mehrere Buchungen löschen …* under each day deletes
+  those of a time span at once, and *Nur mit Rundencode* keeps it from happening again. The operator
+  (`alert_email`) gets an alert when parents trigger more than 100 mails in an hour; to one address at most 10
+  such mails per hour go out (see [Security]({{ '/guide/security/' | relative_url }}#built-in-protections)).
 - **Alle Sitzungen beenden** (end all sessions, at the bottom of *Benutzer*) signs out every account on
   every device except your current session, e.g. after a lost device or a suspected break-in. It needs
   your password, and all admins get a mail. What else to do in such a case is described under
@@ -123,7 +143,8 @@ teacher or move a round to another teacher (field *Lehrkraft* in the round form)
 for that teacher, parents see their name and summaries go to them. Parents who have already booked get a
 change notice with the new teacher if *Eltern per E-Mail informieren* stays ticked; the message after saving
 names those who could not be mailed. Teachers
-only ever see their own rounds; this is enforced centrally and covered by tests.
+only ever see their own rounds; this is enforced centrally and covered by tests. In the trash (*Papierkorb*)
+admins see the deleted rounds without bookings of all teachers, too.
 
 How rounds work is described in the [Teacher guide]({{ '/guide/teachers/' | relative_url }}).
 
@@ -149,9 +170,15 @@ update are entered as *TalkSlot*: an operator type taken over from unedited temp
 replaced by newer templates. The admin who then saves the operator type is logged as confirming it, and a
 legal text saved after reconciling it with a newer template is logged as such.
 
-The log does **not** record what teachers do in their own rounds, and it never contains data of parents:
-a booking appears only as date and time (e.g. "Buchung 12.11.2026 14:00 gelöscht"). Entries are deleted
+The log does **not** record what teachers do in their own rounds, and it never contains names or e-mail
+addresses of parents: a booking appears with its date only (e.g. "Buchung am 12.11.2026 gelöscht"), without
+the time, which together with a summary mail or a printed list would tell whose booking it was; round, teacher
+and date can still point to a family, so the log stays for admins only. Entries are deleted
 after 90 days (configurable, `audit_log_days`). Only admins can see the log.
+
+From the log page, *Auskunft zu einer E-Mail-Adresse* (request for access by email address) finds the data for a
+parent's request for access: see [Requests for access]({{ '/guide/privacy/' | relative_url }}#requests-for-access).
+These searches are in the log as well, without the address.
 
 ## Legal texts
 
@@ -163,7 +190,14 @@ simple Markdown (headings with `#`, lists, bold, links). Two placeholders are fi
 | `[[VERANTWORTLICHE]]` | the details for imprint and privacy policy (*Angaben für Impressum und Datenschutz*, at the top of *Texte*) |
 | `[[HOSTER]]` | the web host from the configuration (`hosting`) |
 
-Languages without their own version fall back to English. Both texts have one template per **operator
+The privacy policy has templates in all six parent languages; the translations say that the German
+version is authoritative and contain the same placeholders as the German one, so you enter the same details
+there. The imprint exists in German and English. A language without a text, with an empty one or with a
+translation whose placeholders are still open falls back to English, then German, then the default language
+(English and German only if they are offered), with a notice to parents in their language. If none of these has a
+text for a page, no round can be activated. Fill in the translations before you invite parents in these languages.
+When you save the German privacy policy after a complete translation, the dashboard asks you to check that
+translation (the German version is authoritative); saving it again confirms it. Both texts have one template per **operator
 type** (*Von der Schule betrieben* / *Operated by the school*, *Privat betrieben* / *Operated privately*).
 *Vorlage laden* (*Load template*) on the text form puts one of them into the form, the one of the operator
 type first; the stored text only changes when you save. If you change the operator type at the top of
@@ -212,10 +246,13 @@ If no operator type is chosen (installations from before it, with edited texts),
 *Bitte Betriebsart wählen* (*Please choose the operator type*), and no round can be activated until an
 admin chooses one; rounds that are already active stay online.
 
-Details only you can provide are `[PLACEHOLDERS]` in square brackets. As long as a text of an offered
-language still contains one, no round can be activated; rounds that are already active stay online. Hints
-on the dashboard and under *Texte* list the open placeholders per text and tell you when a text is missing
-a placeholder, is outdated or does not fit the operator type (e.g. the legal bases of the school template
+Details only you can provide are `[PLACEHOLDERS]` in square brackets. As long as a text in English or the
+default language still contains one, no round can be activated; rounds that are already active stay online.
+Open placeholders in a translation of the privacy policy do not stop activation; the dashboard and *Texte*
+show *Übersetzungen noch nicht vollständig* (*Translations not complete yet*) instead, until you fill them in
+or empty the translation. Hints on the dashboard and under *Texte* list the open placeholders per text and
+tell you when a text is missing a placeholder, is outdated (e.g. still mentions the required checkbox the
+booking form no longer has) or does not fit the operator type (e.g. the legal bases of the school template
 when TalkSlot is operated privately).
 
 ## Notifications

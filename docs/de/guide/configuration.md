@@ -79,6 +79,14 @@ Passt etwas nicht, antwortet die Seite wie bei jedem anderen Datenbankproblem mi
 *Cannot connect to MySQL using SSL* (falsche oder nicht lesbare Datei, Zertifikat für einen anderen Namen) oder
 *MySQL server has gone away* (der Server bietet kein TLS an), gefolgt von einem Hinweis auf `db.ssl_ca`.
 
+**Eine Datenbank teilen.** Jede Tabelle und jeder Fremdschlüssel bekommt das Präfix, sodass eine andere
+Anwendung oder ein zweites TalkSlot (Test- und Live-Seite, zwei Schulen) dieselbe Datenbank mit einem eigenen
+Präfix nutzen kann. Der Installer lehnt Tabellen- oder Fremdschlüsselnamen ab, die schon vergeben sind, und löscht
+nach einem Abbruch mitten in der Installation die angelegten Tabellen wieder, sodass er einfach erneut laufen
+kann. Ältere Installationen haben ihre Fremdschlüssel ohne Präfix angelegt (`fk_…`); neben einer solchen braucht
+eine zweite Installation ein Präfix, das nicht leer ist. Ist eine ältere Version in einer geteilten Datenbank
+mitten in der Installation abgebrochen, löschen Sie zuerst die Tabellen mit diesem Präfix.
+
 ## Sprachen {#languages}
 
 | Option | Standard | Bedeutung | Deployment |
@@ -141,6 +149,7 @@ wenige Mailserver können an solche Adressen zustellen.
 | Option | Bedeutung | Deployment |
 |---|---|---|
 | `hosting.de` / `hosting.en` | Ihr Hoster, ersetzt `[[HOSTER]]` in der Datenschutzerklärung | `HOSTING_DE` / `HOSTING_EN` |
+| `hosting.pl`, `hosting.ru`, … | optional: dasselbe in der Sprache einer übersetzten Datenschutzerklärung; ohne Eintrag nimmt die Übersetzung `hosting.en` (danach `hosting.de`) | – |
 
 Beispiel für `hosting.de`: *Beispiel Hosting GmbH, Musterweg 1, 12345 Musterstadt, als
 Auftragsverarbeiter nach Art. 28 DSGVO. Die Server stehen in Deutschland.*
@@ -183,6 +192,11 @@ der Cronjob abarbeitet; siehe
 | `mail_queue.hourly_limit` | `0` | höchstens so viele Erinnerungen, Zusammenfassungen und E-Mails an viele Eltern nach einer Änderung durch eine Lehrkraft pro Stunde, z. B. das Mail-Kontingent Ihres Hosters (`0` = keine Grenze); einzelne Bestätigungen, Änderungsmitteilungen und Absagen gehen vor und werden nie zurückgehalten |
 | `mail_queue.after_response` | `true` | mit PHP-FPM oder LiteSpeed verschickt auch ein Seitenaufruf bis zu 10 fällige E-Mails, nachdem seine Antwort beim Browser ist |
 
+`mail_alert_hourly` (Standard `100`, `0` = aus): Lösen Eltern innerhalb einer Stunde mehr E-Mails aus
+(Bestätigungen, Änderungsmitteilungen, Absagen), erhält der Betreiber eine Warnmeldung (`alert_email`),
+höchstens eine pro Stunde. Kurz nach dem Verteilen eines Elternbriefs mit dem Link kann das normal sein;
+sonst bucht womöglich jemand mit fremden Adressen, damit unter dem Absender der Schule E-Mails an sie gehen.
+
 ## Rate-Limits {#rate-limits}
 
 `rate_limits` enthält `[Maximum, Zeitfenster in Sekunden]` pro gekürzter IP-Adresse (IPv4 /24,
@@ -196,6 +210,11 @@ womöglich eine Adresse (Mobilfunknetze, Schul-WLAN).
 | `booking` | 30 pro Stunde | erfolgreiche Buchungen |
 | `manage` | 300 pro Stunde | Aufrufe von Änderungslinks |
 | `move` | 10 pro Stunde | Umbuchungen durch Eltern (jede verschickt eine E-Mail), pro Buchung statt pro IP-Adresse |
+| `move_ip` | 30 pro Stunde | Umbuchungen durch Eltern über alle ihre Buchungen |
+| `round` | 15 pro Stunde | erfolgreiche Buchungen **einer Runde** (gegen eine Person, die alle Termine mit Fantasienamen belegt); Deploy-Variable `ROUND_BOOKING_LIMIT`. Bitte großzügig lassen: Bei einem Elternabend buchen viele Eltern über das Schul-WLAN |
+| `burst` | 5 pro 5 Min. | keine Grenze: Mehr Buchungen einer Runde aus einem Netzwerk innerhalb des Zeitfensters schicken der Lehrkraft der Runde und allen Admins eine Warnung, höchstens eine pro Runde und Stunde |
+| `recipient` | 10 pro Stunde | E-Mails, die Eltern selbst auslösen (Bestätigung, Änderungsmitteilung, Absage, die nachträglich gesendete Bestätigung), **pro E-Mail-Adresse** (kleingeschrieben, ohne `+Zusatz`, bei Gmail ohne Punkte) statt pro IP-Adresse. Darüber wird trotzdem gebucht, umgebucht oder abgesagt, nur ohne E-Mail; nach dem Buchen oder Umbuchen sagt die Seite des Termins das. Eine Buchung, deren Bestätigung zurückgehalten wurde, behält keine Adresse, also geht auch später keine Erinnerung oder Änderungsmitteilung dorthin. E-Mails von Lehrkräften, Erinnerungen und Zusammenfassungen zählen nicht |
+| `recipient_day` | 20 pro Tag | dasselbe pro Adresse und Tag |
 | `confirm` | 2 pro 24 Stunden | Bestätigungs-E-Mails, die Eltern sich auf der Seite ihres Termins schicken, pro Buchung statt pro IP-Adresse (das Zeitfenster kann nicht länger als 24 Stunden sein) |
 | `login` | 5 pro 15 Min. | fehlgeschlagene Admin-Anmeldungen |
 | `login_user` | 20 pro Stunde | fehlgeschlagene Anmeldungen **pro Konto** von Geräten, die sich dort noch nie angemeldet haben |

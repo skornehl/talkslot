@@ -42,11 +42,13 @@ $action = $round ? url('/admin/round/' . (int) $round['id'] . '/edit') : url('/a
     <?php endif; ?>
     <div class="field">
       <label for="title"><?= e(__('Titel')) ?></label>
-      <input type="text" id="title" name="title" required maxlength="200" value="<?= e($data['title']) ?>" placeholder="<?= e(__('z. B. Elternsprechtag August 2026')) ?>">
+      <input type="text" id="title" name="title" required maxlength="200" value="<?= e($data['title']) ?>" placeholder="<?= e(__('z. B. Elternsprechtag August 2026')) ?>" aria-describedby="title-hint">
+      <?php /* Expert review P2-4: a title such as "Beratung Förderbedarf" would make every booking a hint at special needs */ ?>
+      <p class="hint" id="title-hint"><?= e(__('Bitte neutral halten: Titel und Beschreibung stehen in den E-Mails an Eltern und in Kalenderdateien, der Titel auch im Protokoll und beim Anlegen in der Adresse der Runde. Keine Hinweise auf Förderbedarf, Gesundheit oder andere sensible Themen.')) ?></p>
     </div>
     <div class="field">
       <label for="description"><?= e(__('Beschreibung (optional)')) ?></label>
-      <textarea id="description" name="description" rows="4" maxlength="5000" placeholder="<?= e(__('z. B. Bitte nur einen Termin pro Kind buchen. Bringen Sie gern das letzte Zeugnis mit.')) ?>"><?= e($data['description'] ?? '') ?></textarea>
+      <textarea id="description" name="description" rows="4" maxlength="5000" aria-describedby="title-hint" placeholder="<?= e(__('z. B. Bitte nur einen Termin pro Kind buchen. Bringen Sie gern das letzte Zeugnis mit.')) ?>"><?= e($data['description'] ?? '') ?></textarea>
     </div>
     <div class="field">
       <label for="location"><?= e(__('Ort (optional)')) ?></label>
@@ -76,7 +78,7 @@ $action = $round ? url('/admin/round/' . (int) $round['id'] . '/edit') : url('/a
     <div class="field">
       <label for="booking_limit"><?= e(__('Mehrfachbuchungen')) ?></label>
       <select id="booking_limit" name="booking_limit" aria-describedby="bl-hint">
-        <?php foreach (['round' => __('Ein Termin pro Person in dieser Runde'), 'day' => __('Ein Termin pro Person und Tag'), 'none' => __('Erlaubt (nur Hinweis „Bitte buchen Sie nur einen Termin“)')] as $v => $label): ?>
+        <?php foreach (['round' => __('Ein Termin pro Person in dieser Runde'), 'day' => __('Ein Termin pro Person und Tag'), 'none' => __('Erlaubt (nur Hinweis „Bitte buchen Sie nur einen Termin pro Kind.“)')] as $v => $label): ?>
           <option value="<?= e($v) ?>"<?= ($data['booking_limit'] ?? 'round') === $v ? ' selected' : '' ?>><?= e($label) ?></option>
         <?php endforeach; ?>
       </select>

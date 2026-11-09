@@ -19,7 +19,7 @@ $action = $row ? url('/admin/templates/' . (int) $row['id'] . '/edit') : url('/a
   <div class="field">
     <label for="booking_limit"><?= e(__('Mehrfachbuchungen')) ?></label>
     <select id="booking_limit" name="booking_limit">
-      <?php foreach (['round' => __('Ein Termin pro Person in der Runde'), 'day' => __('Ein Termin pro Person und Tag'), 'none' => __('Erlaubt (nur Hinweis „Bitte buchen Sie nur einen Termin“)')] as $v => $label): ?>
+      <?php foreach (['round' => __('Ein Termin pro Person in der Runde'), 'day' => __('Ein Termin pro Person und Tag'), 'none' => __('Erlaubt (nur Hinweis „Bitte buchen Sie nur einen Termin pro Kind.“)')] as $v => $label): ?>
         <option value="<?= e($v) ?>"<?= $data['booking_limit'] === $v ? ' selected' : '' ?>><?= e($label) ?></option>
       <?php endforeach; ?>
     </select>

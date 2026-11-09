@@ -115,10 +115,32 @@ function fmt_range(string $start, string $end): string
     return fmt_time($start) . '–' . fmt_time($end);
 }
 
+/**
+ * A DATETIME value for the admin area, e.g. "17.08.2026 14:05" ($format 'd.m.Y': the date alone). '' for an
+ * empty or unreadable value, where date() and strtotime() would show 01.01.1970.
+ */
+function fmt_datetime(?string $value, string $format = 'd.m.Y H:i'): string
+{
+    $ts = $value !== null && $value !== '' ? strtotime($value) : false;
+    return $ts === false ? '' : date($format, $ts);
+}
+
 /** Full appointment label, e.g. for emails and the browser remember-me entry. */
 function fmt_slot(string $date, string $start, string $end): string
 {
     return fmt_date($date) . ', ' . fmt_range($start, $end) . t('time_suffix');
+}
+
+/** Date and time, e.g. "Dienstag, 10.11.2026, 15:45 Uhr" (deadlines). */
+function fmt_datetime(DateTimeImmutable $d): string
+{
+    return fmt_date($d->format('Y-m-d')) . ', ' . $d->format('H:i') . t('time_suffix');
+}
+
+/** A number of hours in the parents' language, e.g. "1 Stunde", "24 Stunden", "24 godziny". */
+function fmt_hours(int $hours): string
+{
+    return I18n::plural('hours', $hours);
 }
 
 /** Location of a day: its own, otherwise the round's ('' = none given). */
@@ -126,6 +148,17 @@ function location_of(array $day, array $round): string
 {
     $own = trim((string) ($day['location'] ?? ''));
     return $own !== '' ? $own : trim((string) ($round['location'] ?? ''));
+}
+
+/**
+ * A slot as parents choose it, with the location of its day if there is one, e.g. "Mittwoch, 11.11.2026,
+ * 15:45–16:00 Uhr, Ort: A 112" (the chosen appointment above the booking button).
+ * @param array{date: string, location?: string} $day day from BookingService::groupByDay()
+ */
+function slot_label(array $day, array $slot, array $round): string
+{
+    $location = location_of($day, $round);
+    return fmt_slot($day['date'], $slot['start_time'], $slot['end_time']) . ($location !== '' ? ', ' . t('round.location', ['location' => $location]) : '');
 }
 
 function app_name(): string

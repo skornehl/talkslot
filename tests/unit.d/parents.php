@@ -63,7 +63,7 @@ check('no current template counts as old', !array_intersect(App\Migrations::CURR
 check('variants: the school template comes first, loading only existing files',
     array_values(App\LegalTexts::VARIANTS['privacy'])[0] === 'privacy' && array_values(App\LegalTexts::VARIANTS['imprint'])[0] === 'imprint'
     && App\LegalTexts::template('privacy', 'private', 'en') === $tpl('privacy-private.en') && App\LegalTexts::template('privacy', 'school', 'de') === $publicDe
-    && App\LegalTexts::template('privacy', 'school', 'pl') === null && App\LegalTexts::template('imprint', 'public', 'de') === null
+    && App\LegalTexts::template('imprint', 'school', 'pl') === null && App\LegalTexts::template('imprint', 'public', 'de') === null
     && App\LegalTexts::template('privacy', 'school', '../de') === null);
 // As parents see it: the details of the operator and the web host do not count as open placeholders, a missing web host does
 $contact = new ReflectionProperty(App\Operator::class, 'contact');
