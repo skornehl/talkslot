@@ -841,7 +841,6 @@ final class AdminController
             $this->flash('error', $error);
             Http::redirect('/admin/round/' . $id);
         }
-        session_regenerate_id(true);
         $owner = $this->userById((int) $round['user_id']);
         $me = Auth::user();
         $mailed = (bool) $this->withoutSession(static fn (): bool => AccountSecurity::substitution($round, $owner, $me));
