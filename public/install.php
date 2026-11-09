@@ -44,8 +44,8 @@ if (Http::isPost()) {
         sleep(2); // slow down guessing
         $errors[] = __('Der Installationsschlüssel ist falsch.');
     }
-    if (!$errors && ($conflicts = Installer::conflictingTables())) {
-        $errors[] = __('Die Datenbank enthält bereits Tabellen mit gleichem Namen ({tables}), vermutlich von einer anderen Anwendung. Bitte legen Sie für TalkSlot eine eigene, leere Datenbank an und tragen Sie deren Zugangsdaten ein. Es wurde nichts verändert.', ['tables' => implode(', ', $conflicts)]);
+    if (!$errors) {
+        $errors = Installer::conflicts(); // tables or foreign keys with our names: nothing is changed
     }
     if (!$errors) {
         $errors = Installer::environmentProblems(); // MariaDB from 10.6 on, app/var writable
@@ -58,13 +58,17 @@ if (Http::isPost()) {
         }
     }
     // Two concurrent installations: only one creates, the other then sees "installed"
-    if (!$errors && ((int) App\Db::value('SELECT GET_LOCK(?, 10)', [App\Db::table('install')]) !== 1 || Installer::isInstalled())) {
+    if (!$errors && (!App\Db::lock('install', 10) || Installer::isInstalled())) {
         $errors[] = __('Die Installation läuft bereits oder ist abgeschlossen.');
     }
     if (!$errors) {
-        Installer::install($old['username'], Http::postRaw('password'), $old['notify_email'], mb_substr($old['display_name'], 0, 200), $old['operator_type']);
-        $done = true;
-        @unlink(__FILE__);
+        // A failed installation has dropped its tables again: the reason is shown, the form can be sent again
+        if (($error = Installer::tryInstall($old['username'], Http::postRaw('password'), $old['notify_email'], mb_substr($old['display_name'], 0, 200), $old['operator_type'])) === null) {
+            $done = true;
+            @unlink(__FILE__);
+        } else {
+            $errors[] = $error;
+        }
     }
 }
 

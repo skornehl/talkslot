@@ -139,6 +139,31 @@ Datenschutzerklärung.
   werden; sie informieren (Art. 13). Das Pflicht-Häkchen bestätigt daher, dass man die Hinweise *gelesen*
   hat, und die Hinweise stellen klar, dass es sich nicht um eine Einwilligung handelt.
 
+## Auskunftsanfragen {#requests-for-access}
+
+Eltern können fragen, was über sie gespeichert ist (Art. 15 DSGVO). Ein Admin findet die Daten dafür unter
+*Protokoll → Auskunft zu einer E-Mail-Adresse*: Geben Sie genau die Adresse ein und bestätigen Sie, dass Sie eine
+Auskunftsanfrage bearbeiten. Die Seite zeigt über alle Lehrkräfte hinweg die Buchungen mit dieser Adresse
+(Termin, Runde, Lehrkraft, Name wie gebucht, Sprache, wann und von wem eingetragen, Stand von Erinnerung und
+Zustellung) und Absage-E-Mails, die noch auf den Versand warten. Groß- und Kleinschreibung spielen keine Rolle;
+Teile einer Adresse werden nicht gesucht, und die Suche ist ein abgeschicktes Formular, die Adresse steht also in
+keiner URL.
+
+Jede Suche wird im [Protokoll]({{ '/de/guide/admin/' | relative_url }}#protokoll) vermerkt: wer gesucht hat, wann
+und wie viele Einträge gefunden wurden, nicht die Adresse. Nur Admins können sie nutzen.
+
+Nicht enthalten sind bereits verschickte E-Mails (Postfächer der Lehrkräfte, Zusammenfassungen, der Mailserver),
+Sicherungen und die Protokolle des Webhosters; eine Buchung ohne E-Mail-Adresse lässt sich so nicht finden, dafür
+kann die Lehrkraft in der Buchungsliste der Runde nachsehen. Da Buchungen um Mitternacht nach dem Termin gelöscht
+werden, lautet die Antwort oft, dass in TalkSlot nichts mehr gespeichert ist.
+
+So beantworten Sie die Anfrage: Vergewissern Sie sich, dass sie wirklich von der Person stammt, der die Adresse
+gehört (antworten Sie nur an diese Adresse oder prüfen Sie vorher die Identität, Art. 12 Abs. 6 DSGVO), und
+antworten Sie innerhalb eines Monats (Art. 12 Abs. 3), auch wenn nichts gefunden wurde. Übernehmen Sie das Ergebnis
+in Ihre Antwort und verweisen Sie für Zwecke, Empfänger und Speicherfristen auf die Datenschutzerklärung. Fragen Sie
+die Lehrkräfte und den Webhoster nach dem, was die Seite nicht abdeckt. Möchten die Eltern, dass eine Buchung gelöscht
+wird, löschen Sie sie in der Buchungsliste der Runde.
+
 ## Vorlagen für die Rechtstexte
 
 Vorlagen für Impressum und Datenschutzerklärung auf Deutsch und Englisch werden bei der Installation in

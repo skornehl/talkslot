@@ -64,7 +64,8 @@ schools (GDPR/DSGVO, TDDDG) and multilingual families.
 - Admins (one or more): invite teachers and further admins by e-mail (one-time link, no passwords in
   mails), change roles, deactivate, reset or delete accounts, see and edit all rounds, create rounds for a
   teacher, maintain templates and the details for the legal pages. A log (*Protokoll*) shows which admin
-  changed what (no names or e-mail addresses of parents, bookings with their date only; deleted after 90 days).
+  changed what (no names or e-mail addresses of parents, bookings with their date only; deleted after 90 days); from
+  there, a logged search finds the data for a parent's request for access (Art. 15 GDPR) by one exact email address.
 - Teachers only see their own rounds (enforced centrally, foreign IDs return 404).
 - Rounds: several days, first/last slot, duration, any number of breaks, live preview; add days later;
   location (per round, optionally per day); block single slots; duplicate with a new first day; a 14-day trash for rounds deleted without bookings; templates
@@ -121,7 +122,8 @@ schools (GDPR/DSGVO, TDDDG) and multilingual families.
   in public repositories after 60 days without activity).
 - Database migrations run automatically and are additive (columns, tables, indexes), so a rollback to the
   previous version of the same major version keeps working.
-- Table prefix (default `tp_`), so a database can be shared with other applications.
+- Table prefix (default `tp_`) for tables and foreign keys, so a database can be shared with other applications
+  or a second TalkSlot.
 
 ## Requirements
 

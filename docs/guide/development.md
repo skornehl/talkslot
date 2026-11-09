@@ -79,6 +79,10 @@ and checks that PHP 7.4 and 8.2 get the message of `App\Platform` instead of a s
 - **Commits:** [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `docs:`, …);
   releases are derived from them.
 - **Database:** only prepared statements; the unit test's SQL audit fails on concatenated variables.
+- **Table prefix:** SQL names the tables plainly and `Db::prefix()` adds the prefix. A new table goes into
+  `Db::TABLES`, a foreign key is called `fk_…` (it gets the prefix too; to drop one, look its name up with
+  `Db::foreignKey()`, as older installations have it without the prefix), no alias is named like a table, and a
+  named lock goes through `Db::lock()`. Unit tests check all four.
 - **Admin routes:** add a route to `AdminController::ROUTES` with the role it needs as the fourth element
   (`'teacher'` for every signed-in account, `'admin'` for admin accounts only). A route without a known role
   is admin-only. GET routes must not change data; the smoke test opens every GET route of the table and

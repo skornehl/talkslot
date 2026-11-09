@@ -340,21 +340,21 @@ final class Migrations
         }
         $current = (int) $version;
         // Only one request migrates (parallel page requests, e.g. during the upload); the others
-        // wait briefly and then find the new state
+        // wait briefly and then find the new state. The lock is per database and prefix (Db::lock()).
         if ($current < self::LATEST) {
             // The steps use MariaDB syntax (ADD COLUMN IF NOT EXISTS …): on MySQL or an older MariaDB they would
             // fail half-way. Reported by alert mail with the reason instead (App::run, Health::check()).
             if (($problem = Health::serverProblem()) !== null) {
                 throw new \RuntimeException($problem);
             }
-            if ((int) Db::value("SELECT GET_LOCK(?, 10)", [Db::table('migrate')]) !== 1) {
+            if (!Db::lock('migrate', 10)) {
                 return;
             }
             try {
                 $current = (int) Settings::get('schema_version');
                 self::steps($current);
             } finally {
-                Db::value('SELECT RELEASE_LOCK(?)', [Db::table('migrate')]);
+                Db::unlock('migrate');
             }
         }
         // Templates for legal notice/privacy policy: independent of the schema version, as soon as the

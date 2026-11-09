@@ -175,6 +175,10 @@ the time, which together with a summary mail or a printed list would tell whose 
 and date can still point to a family, so the log stays for admins only. Entries are deleted
 after 90 days (configurable, `audit_log_days`). Only admins can see the log.
 
+From the log page, *Auskunft zu einer E-Mail-Adresse* (request for access by email address) finds the data for a
+parent's request for access: see [Requests for access]({{ '/guide/privacy/' | relative_url }}#requests-for-access).
+These searches are in the log as well, without the address.
+
 ## Legal texts
 
 *Texte* lists imprint (*Impressum*) and privacy policy (*Datenschutz*) per language. They are written in
