@@ -59,7 +59,7 @@ check('admin events: granted, taken away, deactivated, reactivated; none for tea
 
 // Users list: sign-ins only in coarse steps, no login times of colleagues
 $row = ['id' => 2, 'username' => 'anna', 'display_name' => 'Anna', 'email' => 'anna@example.org', 'role' => 'teacher', 'is_active' => 1,
-    'must_change_password' => 0, 'access_token_expires_at' => null, 'never_signed_in' => 0, 'long_inactive' => 0, 'round_count' => 1];
+    'must_change_password' => 0, 'access_token_expires_at' => null, 'never_signed_in' => 0, 'invite_open' => 0, 'long_inactive' => 0, 'round_count' => 1];
 $page = App\AdminI18n::with('de', static fn () => App\View::capture('admin/users', ['me' => 1, 'users' => [
     $row, ['id' => 3, 'long_inactive' => 1] + $row, ['id' => 4, 'never_signed_in' => 1, 'long_inactive' => null] + $row,
 ]]));
@@ -69,10 +69,10 @@ check('users list: "in den letzten 12 Monaten", "vor über 12 Monaten", "nie" in
 check('users list: "Alle Sitzungen beenden" with the password', str_contains($page, 'action="/admin/users/end-sessions"')
     && str_contains($page, 'name="current_password" required autocomplete="current-password"'));
 $dash = static fn (int $n): string => App\View::capture('admin/dashboard', ['rounds' => [], 'title' => 'x', 'showOwner' => true,
-    'profileHints' => [], 'legalHints' => [], 'operatorMissing' => false, 'unusedAccounts' => $n]);
+    'profileHints' => [], 'legalHints' => [], 'operatorMissing' => false, 'unusedAccounts' => $n, 'configExposed' => [], 'mailsLate' => null]);
 check('overview: number of accounts unused for over 12 months, with a link to the users', str_contains($dash(3), 'nicht genutzt wurden: 3.')
     && str_contains($dash(3), 'href="/admin/users"') && !str_contains($dash(0), 'nicht genutzt'));
-$form = static fn (string $role): string => App\View::capture('admin/user_form', ['title' => 'x', 'errors' => [], 'isSelf' => false,
+$form = static fn (string $role): string => App\View::capture('admin/user_form', ['title' => 'x', 'errors' => [], 'isSelf' => false, 'parents' => ['upcoming' => 0, 'mailable' => 0],
     'user' => ['id' => 5, 'role' => $role, 'username' => 'anna', 'display_name' => 'Anna', 'email' => 'anna@example.org', 'last_login_at' => null],
     'data' => ['role' => $role, 'username' => 'anna', 'display_name' => 'Anna', 'email' => 'anna@example.org', 'is_active' => 1, 'lang' => 'de']]);
 check('account form: password field; deleting an admin needs it too, deleting a teacher does not',
@@ -121,7 +121,7 @@ check('without an argument: the config.php of this installation',
 
 $dashboard = static fn (array $exposed): string => App\View::capture('admin/dashboard', [
     'title' => 'Alle Terminrunden', 'rounds' => [], 'showOwner' => true, 'configExposed' => $exposed,
-    'profileHints' => [], 'operatorMissing' => false, 'legalHints' => [],
+    'profileHints' => [], 'operatorMissing' => false, 'legalHints' => [], 'unusedAccounts' => 0, 'mailsLate' => null,
 ]);
 $cfgTwo = ['releases/a/config/config.php' => '0644', 'releases/b/config/config.php' => '0666'];
 check('dashboard: warning with the paths and permissions, nothing without exposure',

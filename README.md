@@ -382,13 +382,17 @@ language file to the plural rule of the language (`one`, `pl`, `east-slavic` or 
 
 ```bash
 php tests/unit.php      # unit tests, no database needed (also run in CI on PHP 8.3–8.5)
-tests/smoke.sh          # several hundred end-to-end checks against the local Docker setup
+tests/smoke.sh          # several hundred end-to-end checks against the local Docker setup, with tests/integration.php
 node tests/browser.mjs  # the JavaScript in headless Chrome (after dev/reset.sh && dev/demo.sh)
 tests/deploy.sh         # atomic deployment via lftp file:// under load, switch-back on errors (needs lftp, openssl and the local DB)
+dev/phpstan.sh          # static analysis (PHPStan level 6 with a baseline)
 ```
 
-CI runs all four on every push: the unit tests on PHP 8.3–8.5, the others against the Docker environment,
-the smoke tests also against MariaDB 10.6; PHP 7.4 and 8.2 must get the "cannot start" message.
+CI runs all of them on every push: the unit tests on PHP 8.3–8.5, the others against the Docker environment,
+the smoke tests also against MariaDB 10.6; PHP 7.4 and 8.2 must get the "cannot start" message. It measures
+the line coverage of all tests (PCOV, shown in the job summary, changed lines without a test marked in pull
+requests, a minimum that must not be undercut) and fails on any PHP warning, notice or deprecation of the app.
+Details: [Development](https://skornehl.github.io/talkslot/guide/development/#measuring-instead-of-guessing).
 
 The smoke test covers login and lockout, account management, **data separation between teachers**,
 CSRF, honeypot, XSS escaping, SQL injection, **20 parallel bookings on one slot → exactly one succeeds**,
@@ -413,7 +417,7 @@ bin/              cron.php, install.php, build.sh, deploy.sh, setup-secrets.sh, 
 config/           config.sample.php → config.php (not in Git)
 public/           document root: index.php, install.php, .htaccess, assets/
 dev/              local Docker environment (PHP 8.5, MariaDB 11.8, Mailpit)
-tests/            unit.php, smoke.sh, browser.mjs, deploy.sh
+tests/            unit.php, smoke.sh, integration.php, browser.mjs, deploy.sh, coverage/, phpstan.neon
 ```
 
 ## Contributing
