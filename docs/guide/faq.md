@@ -41,8 +41,9 @@ repositories after 60 days without activity. See
 
 German and English. Every account picks its language under *Mein Profil* (*Sprache / Language*); mails to
 teachers (invitation, password link, summaries) follow it. Before signing in, the browser language decides;
-`admin_language` sets the default. Parent pages and mails are translated into six languages, because
-parents come from many backgrounds.
+`admin_language` sets the default. Parent pages, mails and the privacy policy template are translated into
+six languages, because parents come from many backgrounds; for the privacy policy the German version is
+authoritative, and admins fill in the translations with the same details as the German text.
 
 ## Somebody took all slots with made-up names. What now?
 

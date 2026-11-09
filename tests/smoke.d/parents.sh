@@ -29,7 +29,7 @@ JP=$(mktemp)
 curl -s -o /dev/null -c "$JP" -b "$JP" -d "csrf=$(curl -s -c "$JP" -b "$JP" "$B/admin/login" | csrf)&username=platzhalter@example.org&password=Platzhalter-Passwort-1" "$B/admin/login"
 
 PF=$(curl -s -b "$J" "$B/admin/page/privacy/de")
-check "text form offers the templates of both operator types (the one of the type first), none without a template file" 'echo "$PF" | grep -q "href=\"/admin/page/privacy/de?template=school\">Von der Schule betrieben</a> (passend zur Betriebsart) · <a href=\"/admin/page/privacy/de?template=private\">Privat betrieben</a>" && echo "$PF" | grep -q "lit. b und f DSGVO" && curl -s -b "$J" "$B/admin/page/imprint/en" | grep -q "href=\"/admin/page/imprint/en?template=private\">Privat betrieben</a>" && ! curl -s -b "$J" "$B/admin/page/privacy/pl" | grep -q "?template="'
+check "text form offers the templates of both operator types (the one of the type first), none without a template file" 'echo "$PF" | grep -q "href=\"/admin/page/privacy/de?template=school\">Von der Schule betrieben</a> (passend zur Betriebsart) · <a href=\"/admin/page/privacy/de?template=private\">Privat betrieben</a>" && echo "$PF" | grep -q "lit. b und f DSGVO" && curl -s -b "$J" "$B/admin/page/imprint/en" | grep -q "href=\"/admin/page/imprint/en?template=private\">Privat betrieben</a>" && ! curl -s -b "$J" "$B/admin/page/imprint/pl" | grep -q "?template="'
 PF=$(curl -s -b "$J" "$B/admin/page/privacy/de?template=private")
 check "loading the template \"Privat betrieben\" fills the form, but stores nothing yet" 'echo "$PF" | grep -q "Vorlage „Privat betrieben“ geladen" && echo "$PF" | grep -qF "auf Art. 6 Abs. 1 lit. f DSGVO beruht" && ! curl -s "$B/datenschutz" | grep -qF "lit. f DSGVO" && ! curl -s -b "$J" "$B/admin/page/privacy/de?template=xyz" | grep -q "geladen"'
 curl -s -o /dev/null -b "$J" --data-urlencode "csrf=$PT" --data-urlencode "content@$ROOT/app/templates/pages/privacy-private.de.md" "$B/admin/page/privacy/de"
@@ -47,7 +47,7 @@ check "an active round given to another teacher: refused, and no advice to take 
 TG=$(curl -s -L -b "$J" -d "csrf=$PT" "$B/admin/round/$PLI/toggle")
 check "activating an inactive round refused (admin)" 'echo "$TG" | grep -qF "offenen Platzhalter in eckigen Klammern: Datenschutzerklärung (DE)." && [ "$(DBQ "SELECT is_active FROM tp_rounds WHERE id=$PLI")" = 0 ]'
 TG=$(curl -s -L -c "$JP" -b "$JP" -d "csrf=$(curl -s -c "$JP" -b "$JP" "$B/admin" | csrf)" "$B/admin/round/$PLR/toggle")
-check "teacher: notice on the overview, activation refused with a matching message, the round form says why and starts inactive" 'curl -s -c "$JP" -b "$JP" "$B/admin" | grep -q "enthalten noch offene Platzhalter (Aufgabe der Admins)" && F=$(curl -s -c "$JP" -b "$JP" "$B/admin/round/new") && echo "$F" | grep -qF "wenn ein Admin die offenen Platzhalter in Impressum bzw. Datenschutzerklärung ausgefüllt hat. Bis dahin können Sie die Runde ohne Häkchen" && echo "$F" | grep -qF "value=\"1\" aria-describedby=\"active-hint\">" && echo "$TG" | grep -q "wenn ein Admin die offenen Platzhalter in Impressum bzw. Datenschutzerklärung ausgefüllt hat" && [ "$(DBQ "SELECT is_active FROM tp_rounds WHERE id=$PLR")" = 0 ]'
+check "teacher: notice on the overview, activation refused with a matching message, the round form says why and starts inactive" 'curl -s -c "$JP" -b "$JP" "$B/admin" | grep -q "sind noch nicht vollständig (Aufgabe der Admins)" && F=$(curl -s -c "$JP" -b "$JP" "$B/admin/round/new") && echo "$F" | grep -qF "wenn ein Admin die offenen Platzhalter in Impressum bzw. Datenschutzerklärung ausgefüllt hat. Bis dahin können Sie die Runde ohne Häkchen" && echo "$F" | grep -qF "value=\"1\" aria-describedby=\"active-hint\">" && echo "$TG" | grep -q "wenn ein Admin die offenen Platzhalter in Impressum bzw. Datenschutzerklärung ausgefüllt hat" && [ "$(DBQ "SELECT is_active FROM tp_rounds WHERE id=$PLR")" = 0 ]'
 # Language that is not offered: parents never see it, so it does not block
 DBQ "INSERT INTO tp_pages (page_key, lang, content, updated_at) VALUES ('privacy', 'fr', '[ADRESSE]', NOW())"
 check "only the texts of offered languages count" '[ "$(DBQ "SELECT COUNT(*) FROM tp_pages WHERE lang=\"fr\"")" = 1 ] && D=$(curl -s -b "$J" "$B/admin") && echo "$D" | grep -qF "Datenschutzerklärung (DE): [BITTE PRÜFEN" && ! echo "$D" | grep -qF "(FR):"'
@@ -86,7 +86,7 @@ check "browser language Turkish: page stays German, a button in Turkish is offer
 HINT=$(curl -s -H "Accept-Language: fr-FR,fr;q=0.9,en;q=0.8,de;q=0.7" "$B/" | grep -o '<a href="[^"]*" hreflang="en" lang="en">View this page in English</a>' | sed 's/<a href="//;s/".*//')
 check "home page: the first offered browser language is linked in that language and opens the page in it ($HINT)" '[ "$HINT" = "/?lang=en" ] && curl -s "$B$HINT" | grep -q "<html lang=\"en\">"'
 check "hint only while the page is shown in another language than the preferred one" 'curl -s -H "Accept-Language: tr" "$B/$IVS" | grep -q "lang-hint" && ! curl -s -H "Accept-Language: de-DE,de;q=0.9,en;q=0.8" "$B/" | grep -q "lang-hint" && ! curl -s -H "Accept-Language: tr" "$B/$IVS?lang=tr" | grep -q "lang-hint" && ! curl -s -H "Accept-Language: tr" "$B/$IVS?lang=en" | grep -q "lang-hint"'
-SWH=$(curl -s -w '\n%{http_code}' -H "Accept-Language: uk" --data-urlencode "csrf=$(echo "$LANGP" | csrf)" -d "lang=de&switch_lang=uk&name=Olena+Movna&privacy=1" "$B/$IVS")
+SWH=$(curl -s -w '\n%{http_code}' -H "Accept-Language: uk" --data-urlencode "csrf=$(echo "$LANGP" | csrf)" -d "lang=de&switch_lang=uk&name=Olena+Movna" "$B/$IVS")
 check "switching via the hint keeps the input and books nothing" '[ "$(echo "$SWH" | tail -1)" = 200 ] && echo "$SWH" | grep -q "<html lang=\"uk\">" && echo "$SWH" | grep -q "value=\"Olena Movna\"" && echo "$SWH" | grep -q "value=\"uk\" formnovalidate class=\"button-link\" lang=\"uk\" aria-current=\"true\">Українська</button>" && ! echo "$SWH" | grep -q "lang-hint"'
 
 # Invitation text: direct link per further language, sentence on multiple bookings as on the round page
@@ -195,7 +195,7 @@ echo "Appointment page: keeping the link (copy, calendar file, confirmation by m
 T=$(curl -s -b "$J" "$B/admin" | csrf)
 KL=$(mkround Link+behalten none); KLS=$(slugof "$KL")
 KP=$(curl -s "$B/$KLS")
-KLOC=$(curl -s -o /dev/null -w '%{redirect_url}' --data-urlencode "csrf=$(echo "$KP" | csrf)" -d "slot_id=$(echo "$KP" | grep -o 'value="[0-9]*" required' | head -1 | grep -o '[0-9]*')&name=Link+Behalten&privacy=1&remember=1" "$B/$KLS")
+KLOC=$(curl -s -o /dev/null -w '%{redirect_url}' --data-urlencode "csrf=$(echo "$KP" | csrf)" -d "slot_id=$(echo "$KP" | grep -o 'value="[0-9]*" required' | head -1 | grep -o '[0-9]*')&name=Link+Behalten&remember=1" "$B/$KLS")
 KT=$(echo "$KLOC" | grep -o '/b/[A-Za-z0-9_-]\{43\}' | cut -c4-)
 KM=$(curl -s "$KLOC"); KMC=$(echo "$KM" | csrf)
 KD=$(DBQ "SELECT d.day_date FROM tp_bookings b JOIN tp_slots s ON s.id = b.slot_id JOIN tp_round_days d ON d.id = s.day_id WHERE b.name = 'Link Behalten'")

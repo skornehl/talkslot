@@ -46,8 +46,10 @@ Aktivität ab. Siehe [Überwachung des Cronjobs]({{ '/de/guide/operations/' | re
 
 Auf Deutsch und Englisch. Jedes Konto wählt seine Sprache unter *Mein Profil* (*Sprache / Language*);
 E-Mails an Lehrkräfte (Einladung, Passwort-Link, Zusammenfassungen) folgen ihr. Vor der Anmeldung
-entscheidet die Sprache des Browsers, `admin_language` legt den Standard fest. Elternseiten und E-Mails an
-Eltern sind in sechs Sprachen übersetzt, weil Eltern ganz unterschiedlicher Herkunft sind.
+entscheidet die Sprache des Browsers, `admin_language` legt den Standard fest. Elternseiten, E-Mails an
+Eltern und die Vorlage der Datenschutzerklärung sind in sechs Sprachen übersetzt, weil Eltern ganz
+unterschiedlicher Herkunft sind; bei der Datenschutzerklärung ist die deutsche Fassung maßgeblich, und Admins
+tragen in die Übersetzungen dieselben Angaben ein wie in den deutschen Text.
 
 ## Jemand hat alle Termine mit Fantasienamen belegt. Was nun?
 

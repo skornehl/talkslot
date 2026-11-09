@@ -204,7 +204,7 @@ $deletionText = $deletion ? __('{date}, {time} Uhr', ['date' => fmt_date($deleti
           <?php elseif ($s['is_blocked']): ?><span class="muted"><?= e(__('gesperrt')) ?></span>
           <?php else: ?><span class="muted"><?= e(__('frei')) ?></span><?php endif; ?>
         </td>
-        <td class="small nowrap"><?= $s['booking_id'] ? e(date('d.m.Y H:i', strtotime($s['booked_at']))) : '' ?></td>
+        <td class="small nowrap"><?= $s['booking_id'] ? e(fmt_datetime($s['booked_at'])) : '' ?></td>
         <td class="row-actions">
           <?php if ($s['booking_id'] && !$seesParents): ?>
             <?php /* Nothing to do with a booking without taking over */ ?>

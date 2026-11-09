@@ -35,8 +35,8 @@ final class PublicController
             $path === '/' => $this->home(),
             in_array($path, ['/impressum', '/imprint'], true) => $this->page('imprint'),
             in_array($path, ['/datenschutz', '/privacy'], true) => $this->page('privacy'),
-            (bool) preg_match('#^/b/([A-Za-z0-9_-]{43})$#', $path, $m) => $post ? $this->managePost($m[1]) : $this->manage($m[1]),
-            (bool) preg_match('#^/([a-z0-9][a-z0-9-]{0,99})$#', $path, $m) => $post ? $this->bookPost($m[1]) : $this->round($m[1]),
+            (bool) preg_match('#^/b/([A-Za-z0-9_-]{43})\z#', $path, $m) => $post ? $this->managePost($m[1]) : $this->manage($m[1]),
+            (bool) preg_match('#^/([a-z0-9][a-z0-9-]{0,99})\z#', $path, $m) => $post ? $this->bookPost($m[1]) : $this->round($m[1]),
             default => $this->notFound(),
         };
     }
@@ -83,25 +83,21 @@ final class PublicController
             'contact' => $errors ? ParentContact::general() : '']);
     }
 
+    /**
+     * Legal notice or privacy policy in the parents' language. Without a text in it (missing, empty, or a
+     * translation whose placeholders the admins have not filled in yet): the English one (more understandable
+     * than German for most), then the one of the default language (LegalTexts::forParents()). The page then says
+     * so in the parents' language and marks the language of the text (screen readers).
+     */
     private function page(string $key): void
     {
-        // Without a dedicated version: English (more understandable than German for most), then the default language
-        $content = null;
-        $contentLang = I18n::lang();
-        foreach (array_unique([I18n::lang(), 'en', I18n::defaultLanguage()]) as $l) {
-            if ($content === null && ($content = Db::value('SELECT content FROM pages WHERE page_key = ? AND lang = ?', [$key, $l])) !== null) {
-                $contentLang = $l;
-            }
-        }
+        // The operator is the controller (and named in the legal notice); the web host comes from the configuration
+        $text = LegalTexts::forParents($key, I18n::lang(), t('privacy.controller.generic'));
         $slug = is_string($_GET['r'] ?? null) ? (string) $_GET['r'] : '';
-        if ($content !== null) {
-            // The operator is the controller for all rounds (and named in the legal notice); the web host
-            // comes from the configuration
-            $content = LegalTexts::render((string) $content, $contentLang, t('privacy.controller.generic'));
-        }
         View::render('public/page', [
             'title' => t('footer.' . $key),
-            'html' => $content !== null ? Markdown::toHtml((string) $content) : '',
+            'html' => $text !== null ? Markdown::toHtml($text[0]) : '',
+            'contentLang' => $text[1] ?? I18n::lang(),
             'privacyRound' => $slug !== '' && preg_match('/^[a-z0-9-]{1,100}$/', $slug) ? $slug : null,
         ]);
     }
@@ -184,6 +180,10 @@ final class PublicController
             'contact' => ParentContact::forTeacher($round['teacher_contact'] ?? null),
             // No free slot: why (all booked, deadline passed, none planned), so that parents know what is going on
             'unavailable' => $days ? null : BookingService::unavailableReason($round),
+            // First level of the privacy information in the form: who is responsible, and the legal basis that
+            // depends on who runs the platform
+            'controller' => Operator::name(),
+            'operatorType' => Operator::type(),
         ]);
     }
 
@@ -252,7 +252,6 @@ final class PublicController
             'name' => Http::post('name'),
             'email' => Http::post('email'),
             'remember' => Http::post('remember') === '1',
-            'privacy' => Http::post('privacy') === '1',
         ];
 
         // Language switch: show the form again with all input in the new language, book nothing
@@ -284,10 +283,8 @@ final class PublicController
             return;
         }
 
+        // No checkbox for the privacy notice: Art. 13 GDPR asks to inform, not to confirm (expert review P1-9)
         $errors = self::validate($old, true);
-        if (Http::post('privacy') !== '1') {
-            $errors[] = t('err.privacy');
-        }
         if ($errors) {
             $this->round($slug, $errors, $old, true);
             return;
@@ -395,7 +392,7 @@ final class PublicController
             return;
         }
         if (!BookingService::canChange($booking)) {
-            $this->manage($token, [t('manage.locked', ['hours' => (int) $booking['cancel_deadline_hours']])]);
+            $this->manage($token, [BookingService::changeNotice($booking)]);
             return;
         }
 
@@ -515,7 +512,12 @@ final class PublicController
      */
     private static function mailParam(?string $result): ?string
     {
-        return match ($result) { Notifier::SENT => '1', Notifier::QUEUED => 'queued', Abuse::LIMITED => 'limited', default => null };
+        return match ($result) {
+            Notifier::SENT => '1',
+            Notifier::QUEUED => 'queued',
+            Abuse::LIMITED => 'limited',
+            default => null,
+        };
     }
 
     /** Shared validation for name/email/slot (also used by the admin). */
@@ -552,7 +554,7 @@ final class PublicController
 
     private static function rememberValid(#[\SensitiveParameter] string $token, string $value): bool
     {
-        if (!preg_match('/^(\d{10})\.([a-f0-9]{32})$/', $value, $m) || time() - (int) $m[1] > 600 || (int) $m[1] > time() + 60) {
+        if (!preg_match('/^(\d{10})\.([a-f0-9]{32})\z/', $value, $m) || time() - (int) $m[1] > 600 || (int) $m[1] > time() + 60) {
             return false;
         }
         return hash_equals(substr(hash_hmac('sha256', 'remember|' . $token . '|' . $m[1], (string) Config::get('secret', '')), 0, 32), $m[2]);
