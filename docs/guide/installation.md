@@ -7,7 +7,8 @@ description: Put TalkSlot on a web server by hand. For automatic deployments see
 
 - **PHP 8.3 or newer** (tested with 8.3, 8.4 and 8.5) with `pdo_mysql`, `mbstring` and `iconv`;
   `openssl` for SMTP with TLS
-- **MariaDB 10.6 or newer.** Migrations use MariaDB syntax; MySQL is not supported.
+- **MariaDB 10.6 or newer.** Migrations use MariaDB syntax; MySQL is not supported. Which
+  [privileges]({{ '/guide/operator-documents/' | relative_url }}#database-privileges) the database user needs.
 - **Apache** with `mod_rewrite`, ideally `mod_headers`. The rules are in `public/.htaccess`; other web
   servers need equivalent rules (front controller, deny hidden and internal files, security headers).
 - **HTTPS** with a valid certificate. TalkSlot redirects plain HTTP.

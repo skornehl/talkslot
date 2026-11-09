@@ -166,6 +166,44 @@ erklären kann:
    bei hohem Risiko die Betroffenen informieren (Art. 34 DSGVO). Beziehen Sie Ihre Datenschutzbeauftragte
    bzw. Ihren Datenschutzbeauftragten ein.
 
+## Bedrohungsmodell {#threat-model}
+
+Wer was darf, wo die Vertrauensgrenzen liegen und welche Risiken bewusst akzeptiert sind. Betreiber können das für
+ihre Dokumentation nutzen (siehe [Unterlagen für Schule und Betreiber]({{ '/de/guide/operator-documents/' | relative_url }})).
+
+| Rolle | Vertrauen | Darf |
+|---|---|---|
+| Eltern | keines, anonym | über Rundenlink oder -code buchen, die eigene Buchung mit dem persönlichen Link sehen und ändern |
+| Lehrkräfte | angemeldet, für die eigenen Runden vertrauenswürdig | Buchungen eigener Runden sehen, ändern und eintragen |
+| Admins | mit allen Daten der Installation betraut | Konten und Rollen, alle Runden, Rechtstexte, das Protokoll |
+| Betreiber mit Serverzugang (FTP, Datenbank, GitHub-Secrets) | vollständig vertrauenswürdig | alles, auch die Secrets in `config.php` |
+| Hoster, Mailanbieter | Auftragsverarbeiter, vertraglich gebunden | die gespeicherten Daten, die Dateien, die E-Mails auf dem Transportweg |
+| Angreifer | – | aus dem Internet: Formulare und Anmeldung erreichen, Links und Codes raten; andere im selben Netz oder auf demselben Shared-Hosting-Server |
+
+**Vertrauensgrenzen**
+1. **Browser ↔ Webserver (HTTPS):** Jede Eingabe ist nicht vertrauenswürdig: CSRF-Token, Rate-Limits, Prüfung,
+   maskierte Ausgabe, Sicherheits-Header.
+2. **Webserver ↔ Datenbank:** nur Prepared Statements; die Zugangsdaten stehen in `config.php` (beim automatischen
+   Deployment Rechte 600; bei manueller Installation setzen Sie sie selbst).
+3. **Webserver ↔ Mailserver:** SMTP mit TLS, wenn `mail.transport` auf `smtp` steht, sonst `mail()` des Hosters; versendete E-Mails liegen außerhalb von TalkSlot (Postfächer von Eltern
+   und Lehrkräften).
+4. **Deployment:** GitHub Actions baut `config.php` aus Secrets und lädt sie per FTPS hoch; wer das Repository und
+   seine Secrets kontrolliert, kontrolliert die Installation.
+5. **Shared Hosting:** Andere Kunden des Hosters trennt der Hoster (Dateirechte, PHP-Benutzer); das Dashboard warnt,
+   wenn `config.php` für andere lesbar ist.
+
+**Akzeptierte Restrisiken**
+- **Der persönliche Link im URL-Pfad** (`/b/<token>`): Er kann in den Zugriffs-Logs des Webservers, im Browserverlauf
+  und in weitergeleiteten E-Mails landen. Gemindert durch `Referrer-Policy: no-referrer`, Speichern nur seines Hashes und
+  kurze Log-Aufbewahrung beim Hoster; ihn aus dem Pfad zu nehmen, würde das Buchen ohne JavaScript unmöglich machen.
+- **Der Rundencode im Klartext:** Lehrkräfte müssen ihn weitergeben; er hält nur Fremde von der Terminliste fern.
+- **Kein zweiter Faktor** für Konten (siehe unten).
+- **Rate-Limits je gekürzter IP-Adresse** können gemeinsam genutzte Netze wie das Schul-WLAN treffen (siehe unten).
+- **E-Mails sind nur auf dem Transportweg verschlüsselt**, nicht Ende-zu-Ende.
+- **Admins sehen alle Buchungen:** Sie sind vertrauenswürdig und zur Vertraulichkeit verpflichtet; das Protokoll zeigt,
+  was sie ändern.
+- **Zusammenfassungen und Ausdrucke** liegen außerhalb von TalkSlot, sobald sie bei der Lehrkraft sind.
+
 ## Bekannte Einschränkungen
 
 - Rate-Limits gelten pro gekürzter IP-Adresse. Wer im selben Netz (z. B. Schul-WLAN) immer wieder falsche
