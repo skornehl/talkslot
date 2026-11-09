@@ -490,7 +490,7 @@ final class AdminController
             // Parents whose appointment gets a new location or teacher are told (ScheduleService)
             try {
                 $parents = ScheduleService::changeRound($id, $data['notify'], static fn () => Db::run(
-                'UPDATE rounds SET title = ?, slug = ?, description = ?, location = ?, source_lang = ?, code_required = ?, booking_limit = ?, remind_parents = ?, is_active = ?, booking_deadline_hours = ?,
+                    'UPDATE rounds SET title = ?, slug = ?, description = ?, location = ?, source_lang = ?, code_required = ?, booking_limit = ?, remind_parents = ?, is_active = ?, booking_deadline_hours = ?,
                         cancel_deadline_hours = ?, delete_after_hours = ?, updated_at = ?,
                         expired_at = IF(? = 1, NULL, expired_at), was_used = GREATEST(was_used, ?), user_id = ?
                   WHERE id = ? AND user_id = ?',
