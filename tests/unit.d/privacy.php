@@ -513,7 +513,7 @@ check('date and time', fmt_deadline(new DateTimeImmutable('2026-11-10 15:45')) =
 $pvManage = static fn (bool $canChange, array $booking = [], ?bool $canMove = null): string => App\View::capture('public/manage', [
     'booking' => $booking + ['id' => 5, 'round_id' => 7, 'title' => 'Elternsprechtag 7b', 'teacher_name' => 'Frau Berger', 'name' => 'Max Muster', 'location' => ''] + $pvBooking,
     'token' => str_repeat('Tk', 21) . 'x', 'canChange' => $canChange, 'canMove' => $canMove ?? $canChange, 'days' => [], 'csrf' => '1.abc',
-    'done' => 'booked', 'mailed' => false, 'remember' => false, 'errors' => [], 'open' => '', 'mailTo' => '',
+    'done' => 'booked', 'mailed' => false, 'mailQueued' => false, 'mailLimited' => false, 'remember' => false, 'errors' => [], 'open' => '', 'mailTo' => '',
 ]);
 check('appointment page: until when changing and cancelling work online, or that the time is up',
     str_contains($pvManage(true), '<p class="hint" data-change-deadline>Ändern oder absagen können Sie den Termin online bis Dienstag, 12.11.2030, 15:45 Uhr.</p>')

@@ -1,0 +1,38 @@
+# Static analysis (expert review P1-14): dev/phpstan.sh, in CI the job "Static analysis".
+# Level 6 with a baseline: the errors present when it was introduced are listed in phpstan-baseline.neon
+# and tolerated, every new one fails. Fix entries rather than adding to them; dev/phpstan.sh --generate-baseline
+# rewrites the list (also after fixing entries, to keep it short). Value types of arrays (array<string, mixed>,
+# array shapes for database rows) are not required yet: the code uses plain `array` throughout; once the rows
+# get types, drop the ignored identifier below.
+# Not analysed: app/templates (their variables come from View::render() via extract()) and app/vendor (only
+# scanned for the PHPMailer classes).
+includes:
+  - phpstan-baseline.neon
+parameters:
+  level: 6
+  phpVersion: 80300 # the minimum (App\Platform)
+  paths:
+    - ../app/src
+    - ../app/helpers.php
+    - ../app/bootstrap.php
+    - ../bin
+    - ../public
+  scanDirectories:
+    - ../app/vendor
+  bootstrapFiles:
+    - phpstan-bootstrap.php
+  # Their values depend on the installation (atomic deployment, document root)
+  dynamicConstantNames:
+    - APP_ROOT
+    - RELEASE
+    - DATA_ROOT
+    - PUBLIC_ROOT
+  # A fixed entry that no longer occurs is not an error: other branches can remove code at the same time
+  reportUnmatchedIgnoredErrors: false
+  # PDO::inTransaction(), Installer::isInstalled() and the like can change between two calls
+  rememberPossiblyImpureFunctionValues: false
+  ignoreErrors:
+    - identifier: missingType.iterableValue
+    # The routes are called as $this->$action(...$arguments): PHPStan cannot count the spread arguments
+    - message: '#^Method App\\Controller\\AdminController::\w+\(\) invoked with 0 parameters, #'
+      path: ../app/src/Controller/AdminController.php

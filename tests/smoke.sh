@@ -19,10 +19,15 @@ ALERTS() { docker compose -f "$(dirname "$0")/../dev/compose.yml" exec -T app ph
 ALERTS 'unlink("/srv/app/app/var/alerts.json"); file_get_contents("http://mail:8025/api/v1/search?query=to:betrieb@example.org", false, stream_context_create(["http" => ["method" => "DELETE"]]));' 2>/dev/null
 check(){ if eval "$2"; then ok "$1"; else bad "$1"; return 1; fi; }
 csrf() { grep -o 'name="csrf" value="[^"]*"' | head -1 | sed 's/.*value="//;s/"$//'; }
+# A stable marker of the templates (attribute data-<name>) instead of wording that may change, e.g.
+# '! curl -s … | marker profile-hints': a reworded text would make a negative check pass unnoticed
+marker() { grep -qE "data-$1([ =>]|\$)"; }
 
 echo "Installation (web and CLI)"
 dcx() { docker compose -f "$(dirname "$0")/../dev/compose.yml" "$@"; }
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+# At the end no PHP warning, notice or deprecation of the app may have been logged (tests/php-errors.sh)
+PHP_LOG_START=$(stat -c %s "$ROOT/app/var/php-error.log" 2>/dev/null || echo 0)
 check "installer locked after installation (404)" '[ "$(curl -s -o /dev/null -w "%{http_code}" "$B/install.php")" = 404 ]'
 check "CLI installer after installation: abort" 'dcx exec -T app php /srv/app/bin/install.php x </dev/null 2>&1 | grep -q "Already installed"'
 # Reinstall, this time via the web installer (same credentials as dev/reset.sh). It deletes
@@ -68,7 +73,7 @@ NP=$(curl -s -w '\n%{http_code}' -b "$J" --data-urlencode "csrf=$T" -d "title=Oh
 check "activating without imprint/privacy details rejected (nothing created)" '[ "$(echo "$NP" | tail -1)" = 200 ] && echo "$NP" | grep -q "Bevor Runden aktiviert werden können" && ! curl -s -b "$J" "$B/admin" | grep -q "Ohne Profil" && curl -s -b "$J" "$B/admin" | grep -q "Die Angaben für Impressum und Datenschutz fehlen"'
 curl -s -o /dev/null -b "$J" --data-urlencode "csrf=$T" --data-urlencode "display_name=Frau Sabrina Test" \
   -d "email=lehrer@example.org&summary_evening=1&summary_deadline=1" "$B/admin/profile"
-check "profile saved" '! curl -s -b "$J" "$B/admin" | grep -q "Bitte ergänzen Sie"'
+check "profile saved: no hint to complete it any more" '! curl -s -b "$J" "$B/admin" | marker profile-hints'
 curl -s -o /dev/null -b "$J" --data-urlencode "csrf=$T" \
   --data-urlencode $'controller_contact=Sabrina Test\r\nTeststraße 1\n12345 Teststadt\nE-Mail: sabrina@example.org' "$B/admin/texts/operator"
 check "details for legal notice/privacy policy saved on their own page, no notice left" 'curl -s -b "$J" "$B/admin/texts" | grep -q "Teststraße 1" && ! curl -s -b "$J" "$B/admin" | grep -q "Angaben für Impressum und Datenschutz fehlen"'
@@ -1157,5 +1162,7 @@ LU=$(ALERTS 'require "/srv/app/app/bootstrap.php";
 check "login: limit per username across IP addresses ($LU)" '[ "$LU" = "3|refused" ]'
 AL=$(ALERTS 'echo json_decode(file_get_contents("http://mail:8025/api/v1/search?query=to:betrieb@example.org"), true)["messages_count"] ?? "?";')
 check "no error report (exception, warning) during the whole test run" '[ "$AL" = 0 ]'
+PE=$("$ROOT/tests/php-errors.sh" "$ROOT/app/var/php-error.log" "$PHP_LOG_START")
+check "no PHP warning, notice or deprecation of the app in the error log during the whole test run" '[ -z "$PE" ]' || printf '%s\n' "$PE" | sed 's/^/      /'
 rm -f "$J"
 [ $FAIL = 0 ] && echo "ALL TESTS PASSED" || { echo "FAILURES"; exit 1; }
