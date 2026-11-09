@@ -12,10 +12,12 @@ $dates = $dayData['dates'] ?: [''];
 // adds more from the template.
 $breaks = $dayData['breaks'] ?: [];
 $fieldErrors = $errors ?? [];
-$breakRow = static function (string $bs, string $be, string $bl): void { ?>
+$badDates = $dayData['badDates'] ?? []; // the dates the error is about; none: the first field stands for all
+$firstBad = $badDates[0] ?? null;
+$breakRow = static function (string $bs, string $be, string $bl, bool $bad = false): void { $badAttrs = $bad ? ' aria-invalid="true" aria-describedby="breaks-error"' : ''; ?>
       <div class="inline-form break-row">
-        <label><?= e(__('Von')) ?> <input type="text" inputmode="numeric" pattern="[0-9]{1,2}([:.][0-9]{2})?|[0-9]{3,4}" maxlength="5" placeholder="HH:MM" autocomplete="off" class="time-input" data-time name="break_start[]" value="<?= e($bs) ?>"></label>
-        <label><?= e(__('Bis')) ?> <input type="text" inputmode="numeric" pattern="[0-9]{1,2}([:.][0-9]{2})?|[0-9]{3,4}" maxlength="5" placeholder="HH:MM" autocomplete="off" class="time-input" data-time name="break_end[]" value="<?= e($be) ?>"></label>
+        <label><?= e(__('Von')) ?> <input type="text" inputmode="numeric" pattern="[0-9]{1,2}([:.][0-9]{2})?|[0-9]{3,4}" maxlength="5" placeholder="HH:MM" autocomplete="off" class="time-input" data-time name="break_start[]" value="<?= e($bs) ?>"<?= $badAttrs ?>></label>
+        <label><?= e(__('Bis')) ?> <input type="text" inputmode="numeric" pattern="[0-9]{1,2}([:.][0-9]{2})?|[0-9]{3,4}" maxlength="5" placeholder="HH:MM" autocomplete="off" class="time-input" data-time name="break_end[]" value="<?= e($be) ?>"<?= $badAttrs ?>></label>
         <label><?= e(__('Bezeichnung')) ?> <input type="text" name="break_label[]" maxlength="100" value="<?= e($bl) ?>" placeholder="<?= e(__('z. B. Mittagspause')) ?>"></label>
         <button type="button" class="button-link" data-remove-break><?= e(__('Entfernen')) ?></button>
       </div>
@@ -28,10 +30,10 @@ $breakRow = static function (string $bs, string $be, string $bl): void { ?>
     <div class="field" data-dates>
       <label><?= e(__('Datum')) ?> <span class="muted small"><?= e(__('(weitere Tage mit denselben Zeiten möglich)')) ?></span></label>
       <?php foreach ($dates as $i => $d): ?>
-        <input type="date" data-de-date name="day_dates[]" value="<?= e($d) ?>"<?= $i === 0 ? ' required' : '' ?> class="date-input" aria-label="<?= e(__('Datum {n}', ['n' => $i + 1])) ?>"<?= $i === 0 ? ' id="day_dates"' . field_attrs($fieldErrors, 'day_dates') : '' ?>>
+        <input type="date" data-de-date name="day_dates[]" value="<?= e($d) ?>"<?= $i === 0 ? ' required' : '' ?> class="date-input" aria-label="<?= e(__('Datum {n}', ['n' => $i + 1])) ?>"<?= $d === $firstBad || ($firstBad === null && $i === 0) ? ' id="day_dates"' : '' ?><?= isset($fieldErrors['day_dates']) && ($badDates ? in_array($d, $badDates, true) : $i === 0) ? field_attrs($fieldErrors, 'day_dates') : '' ?>>
       <?php endforeach; ?>
-      <?= field_error($fieldErrors, 'day_dates') ?>
       <button type="button" class="button button-small" data-add-date><?= e(__('+ weiteren Tag')) ?></button>
+      <?= field_error($fieldErrors, 'day_dates') ?>
     </div>
     <?php endif; ?>
     <?php if (isset($singleDate)): ?>
@@ -48,7 +50,7 @@ $breakRow = static function (string $bs, string $be, string $bl): void { ?>
     <legend><?= e(__('Pausen (optional)')) ?></legend>
     <?= field_error($fieldErrors, 'breaks') ?>
     <div data-breaks>
-      <?php foreach ($breaks as [$bs, $be, $bl]) { $breakRow($bs, $be, $bl); } ?>
+      <?php foreach ($breaks as $row) { $breakRow($row[0], $row[1], $row[2], !empty($row[3])); } ?>
     </div>
     <template data-break-template><?php $breakRow('', '', ''); ?></template>
     <button type="button" class="button button-small" data-add-break><?= e(__('+ Pause hinzufügen')) ?></button>

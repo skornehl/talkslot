@@ -38,7 +38,7 @@ check "nothing left to choose: the message is there, without a link into a form 
 # Admins: new round, with a break that has a typo
 FER=$(fe_post -d "title=&is_active=1&booking_limit=round&booking_deadline_hours=x&cancel_deadline_hours=999&delete_after_days=abc&start_time=11:00&end_time=10:00&slot_minutes=3&break_start%5B%5D=25:00&break_end%5B%5D=&break_label%5B%5D=Tippfehler" "$B/admin/round/new")
 check "new round: each wrong field linked from the list and marked" \
-  'fe_marked "$FER" title booking_deadline_hours cancel_deadline_hours delete_after_days day_dates start_time slot_minutes breaks'
+  'fe_marked "$FER" title booking_deadline_hours cancel_deadline_hours delete_after_days day_dates end_time slot_minutes breaks'
 check "… hints stay linked after the error, the target of the dates is the first date" \
   'echo "$FER" | has "aria-invalid=\"true\" aria-describedby=\"title-error title-hint\"" && echo "$FER" | has "aria-invalid=\"true\" aria-describedby=\"delete_after_days-error del-hint\"" && [ "$(echo "$FER" | grep -c "id=\"day_dates\"")" = 1 ]'
 check "… the break with the typo is still in the form, the fieldset names the message" \
@@ -47,6 +47,16 @@ FEDAY=$(DBQ "SELECT id FROM tp_round_days WHERE round_id=$FEID")
 FER=$(fe_post -d "day_date=kaputt&start_time=10:00&end_time=&slot_minutes=30&breaks_field=1&location=$(printf 'x%.0s' {1..201})" "$B/admin/day/$FEDAY/edit")
 check "edit a day: date, end of the time range and location linked and marked" \
   'fe_marked "$FER" day_date end_time location'
-FER=$(fe_post -d "day_dates%5B%5D=$FED&start_time=10:00&end_time=11:00&slot_minutes=30" "$B/admin/round/$FEID/day")
-check "add a day that exists: at the date on the round page" \
-  'echo "$FER" | has "<a href=\"#day_dates\">" && echo "$FER" | has "id=\"day_dates-error\""'
+FEDNEW=$(date -d '+20 day' +%F)
+FER=$(fe_post -d "day_dates%5B%5D=$FEDNEW&day_dates%5B%5D=$FED&start_time=10:00&end_time=11:00&slot_minutes=30" "$B/admin/round/$FEID/day")
+check "add days, one of them exists: the link and the mark at that date, not at the other" \
+  'echo "$FER" | has "<a href=\"#day_dates\">" && echo "$FER" | has "id=\"day_dates-error\"" && echo "$FER" | grep -qE "value=\"$FED\"[^>]*id=\"day_dates\"[^>]*aria-invalid=\"true\"" && ! echo "$FER" | grep -qE "value=\"$FEDNEW\"[^>]*aria-invalid"'
+fe_breaks() { fe_post -d "break_start%5B%5D=&break_end%5B%5D=&break_label%5B%5D=&$1" "${@:2}"; } # fe_breaks <rows after an empty one> <curl arguments>
+FER=$(fe_breaks "day_dates%5B%5D=$FEDNEW&start_time=10:00&end_time=11:00&slot_minutes=30&break_start%5B%5D=25:00&break_end%5B%5D=10:30&break_label%5B%5D=" "$B/admin/round/$FEID/day")
+check "an empty row before the typo: numbered as the form shows it, the row marked" \
+  'echo "$FER" | has "Pause 1: Bitte" && echo "$FER" | has "name=\"break_start[]\" value=\"25:00\" aria-invalid=\"true\" aria-describedby=\"breaks-error\""'
+FER=$(fe_post -d "name=FE+Vorlage+$FERUN&start_time=10:00&end_time=11:00&slot_minutes=30&booking_deadline_hours=24&cancel_deadline_hours=12&booking_limit=round&break_start%5B%5D=25:00&break_end%5B%5D=&break_label%5B%5D=Tippfehler" "$B/admin/templates/new")
+check "template form: the break with the typo stays and is linked" \
+  'echo "$FER" | has "<a href=\"#breaks\">" && echo "$FER" | has "value=\"Tippfehler\""'
+FEC=$(fe_post -o /dev/null -w '%{http_code}' -d "day_date=$FED&start_time=10:00&end_time=11:00&slot_minutes=30&breaks_field=1&break_start%5Bfoo%5D=25:00&break_end%5Bfoo%5D=" "$B/admin/day/$FEDAY/edit")
+check "a hand-made form with text as the row key: an error message, not a crash" '[ "$FEC" = 422 ] || [ "$FEC" = 200 ]'

@@ -911,7 +911,7 @@ final class AdminController
 
     /**
      * Reads date(s), times, appointment duration and breaks from the form.
-     * @return array{0:array,1:list<string>} [dayData, errors]
+     * @return array{0:array,1:array<int|string,string>} [dayData, errors; a string key is the id of the field]
      */
     private function daysInput(?int $roundId): array
     {
@@ -927,6 +927,7 @@ final class AdminController
         $minutes = Http::post('slot_minutes');
 
         $dateErrors = [];
+        $badDates = [];
         if (!$dates) {
             $dateErrors[] = __('Bitte mindestens ein Datum angeben.');
         } elseif (count($dates) > 30) {
@@ -935,8 +936,10 @@ final class AdminController
         foreach ($dates as $d) {
             if (!Time::isDate($d)) {
                 $dateErrors[] = __('Ungültiges Datum: {date}', ['date' => $d]);
+                $badDates[] = $d;
             } elseif ($roundId !== null && $this->dateTaken($roundId, $d)) {
                 $dateErrors[] = __('Den {date} gibt es in dieser Runde bereits – bitte den vorhandenen Tag bearbeiten.', ['date' => fmt_date($d)]);
+                $badDates[] = $d;
             }
         }
         if ($dateErrors) {
@@ -948,6 +951,7 @@ final class AdminController
 
         $dayData = [
             'dates' => $dates ?: [''],
+            'badDates' => $badDates,
             'start' => $start ? fmt_time($start) : Http::post('start_time'),
             'end' => $end ? fmt_time($end) : Http::post('end_time'),
             'minutes' => (int) $minutes,
@@ -983,15 +987,23 @@ final class AdminController
         return [(string) (int) round((float) $days * 24), null];
     }
 
-    /** The break rows as sent, for the form after an error: a row with a typo must not vanish from it. */
+    /** Start and end of a break as times, null if they are no valid range. @return ?array{0: string, 1: string} */
+    private static function breakTimes(string $start, string $end): ?array
+    {
+        $from = Time::normalizeTime($start);
+        $to = Time::normalizeTime($end);
+        return $from && $to && $from < $to ? [$from, $to] : null;
+    }
+
+    /** The break rows as sent, for the form after an error: a row with a typo must not vanish from it. The last value: is the row wrong? */
     private static function breakRowsAsSent(): array
     {
-        $field = static fn (string $name, int $i): string => is_string($_POST[$name][$i] ?? null) ? trim($_POST[$name][$i]) : '';
+        $field = static fn (string $name, int|string $i): string => is_string($_POST[$name][$i] ?? null) ? trim($_POST[$name][$i]) : '';
         $rows = [];
         foreach (array_keys(is_array($_POST['break_start'] ?? null) ? $_POST['break_start'] : []) as $i) {
-            $row = [$field('break_start', $i), $field('break_end', $i), $field('break_label', $i)];
-            if ($row[0] !== '' || $row[1] !== '') {
-                $rows[] = $row;
+            [$start, $end, $label] = [$field('break_start', $i), $field('break_end', $i), $field('break_label', $i)];
+            if ($start !== '' || $end !== '') {
+                $rows[] = [$start, $end, $label, self::breakTimes($start, $end) === null];
             }
         }
         return $rows;
@@ -1004,7 +1016,7 @@ final class AdminController
 
     /**
      * Breaks from the form (break_start[], break_end[], break_label[]); empty rows are skipped.
-     * @return array{0:list<array{0:string,1:string,2:string}>,1:list<string>} [breaks as [start, end, label], errors]
+     * @return array{0:list<array{0:string,1:string,2:string}>,1:array<int|string,string>} [breaks as [start, end, label], errors]
      */
     private static function breaksInput(): array
     {
@@ -1016,18 +1028,19 @@ final class AdminController
         $bl = $arr('break_label');
         $breaks = [];
         $errors = [];
+        $row = 0; // counted as the form shows them again: without empty rows
         foreach ($arr('break_start') as $i => $s) {
             $e = $be[$i] ?? '';
             if ($s === '' && $e === '') {
                 continue;
             }
-            $ns = Time::normalizeTime($s);
-            $ne = Time::normalizeTime($e);
-            if (!$ns || !$ne || $ns >= $ne) {
-                $errors[] = __('Pause {n}: Bitte Start- und Endzeit angeben (Start vor Ende).', ['n' => $i + 1]);
+            $row++;
+            $times = self::breakTimes($s, $e);
+            if ($times === null) {
+                $errors[] = __('Pause {n}: Bitte Start- und Endzeit angeben (Start vor Ende).', ['n' => $row]);
                 continue;
             }
-            $breaks[] = [$ns, $ne, mb_substr($bl[$i] ?? '', 0, 100)];
+            $breaks[] = [$times[0], $times[1], mb_substr($bl[$i] ?? '', 0, 100)];
         }
         return [$breaks, $errors ? ['breaks' => implode(' ', $errors)] : []];
     }
@@ -1037,7 +1050,7 @@ final class AdminController
     {
         $errors = [];
         if (!$start || !$end || $start >= $end) {
-            $errors[$start && !$end ? 'end_time' : 'start_time'] = __('Bitte gültige Zeiten angeben (erster Termin vor dem Ende, z. B. 14:00 bis 18:00).');
+            $errors[$start ? 'end_time' : 'start_time'] = __('Bitte gültige Zeiten angeben (erster Termin vor dem Ende, z. B. 14:00 bis 18:00).');
         }
         if (!ctype_digit($minutes) || (int) $minutes < 5 || (int) $minutes > 240) {
             $errors['slot_minutes'] = __('Dauer pro Termin: 5 bis 240 Minuten.');
@@ -1288,7 +1301,7 @@ final class AdminController
         return __('Die Eltern erfahren davon, wenn Sie den Termin umbuchen (mit „Änderung per E-Mail mitteilen“) oder löschen (mit „Eltern per E-Mail informieren“); ohne E-Mail-Adresse bitte persönlich informieren.');
     }
 
-    /** @return array{0:array,1:list<string>} */
+    /** @return array{0:array,1:array<int|string,string>} */
     private function dayInput(): array
     {
         $date = Http::post('day_date');
