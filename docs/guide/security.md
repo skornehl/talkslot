@@ -34,6 +34,17 @@ together with the release that contains it (see
   browsers send `Origin: null` on TalkSlot's own forms too. Browsers without the header are still
   protected by the tokens.
 - Spam protection: honeypot field, minimum time to fill in a form, rate limits.
+- Slot squatting (one person taking all slots of a round with made-up names): successful bookings are
+  limited per round and shortened IP address (15 per hour by default, generous because of school Wi-Fi).
+  More than 5 bookings of a round from one network within 5 minutes send a warning to the teacher of the
+  round and all admins; under each day, *Mehrere Buchungen löschen …* (delete several bookings) deletes the
+  bookings of a time span at once. A round with *Nur mit Rundencode* (round code required) is only open to
+  those who got the code, the best protection for rounds meant for one class.
+- Mails under the school's address: the mails parents trigger themselves (confirmation, change notice,
+  cancellation, the confirmation sent again) go to one address at most 10 times per hour and 20 times per day;
+  above that the action still works, without a mail. The address is only counted as an HMAC hash and deleted
+  after 24 hours at the latest. Rebookings are also limited per shortened IP address, and the operator gets
+  an alert when parents trigger more than 100 mails in an hour (`mail_alert_hourly`).
 
 **Tokens**
 - Change links, invitation and password links are 256-bit random tokens; only their SHA-256 hash is stored.
@@ -191,7 +202,11 @@ for their documentation (see [documents for the operator]({{ '/guide/operator-do
 ## Known limitations
 
 - Rate limits work per shortened IP address. Somebody in the same network (e.g. school Wi-Fi) who keeps
-  sending wrong passwords blocks logins from that network for 15 minutes.
+  sending wrong passwords blocks logins from that network for 15 minutes. In the same way, somebody who
+  books many slots of a round through the school Wi-Fi uses up its limit for the other parents there for an
+  hour; they see a hint to use another connection (e.g. mobile data) or to contact the teacher.
+- With many shortened IP addresses (e.g. IPv6 or a botnet) somebody can still take the slots of an open
+  round. The warning and the bulk deletion help to notice and repair it; *Nur mit Rundencode* prevents it.
 - Somebody who knows a username (for new accounts it is the e-mail address, which parents see as the
   reply address unless the account gives its own reply address for parents) can use up its per-account
   limit. For up to an hour, the account can then only be used

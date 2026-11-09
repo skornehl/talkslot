@@ -488,4 +488,12 @@ T=$(curl -s -b "$J" "$B/admin/users" | csrf)
 curl -s -o /dev/null -b "$J" -d "csrf=$T&confirm=1" "$B/admin/users/$SUID/delete"
 check "cleaned up: test account deleted" '[ -z "$(DBQ "SELECT id FROM tp_users WHERE username = \"$SU\"")" ]'
 S_CLEAR
+# In-process (script on stdin for the coverage run): an account gone before the notice went out
+SD=$($DC exec -T app php <<'PHP'
+<?php
+require '/srv/app/app/bootstrap.php';
+var_export(App\Auth::deliverLockoutNotice(0, '2026-01-01 10:00:00'));
+PHP
+)
+check "the notice about failed sign-ins: nothing for an account that is gone ($SD)" '[ "$SD" = NULL ]'
 rm -f "$SJ1" "$SJ2" "$SJ3" "$SJ4" "$SJ5" "$SJ6" "$SJ7" "$SJ8" "$SJ9" "$SJ10" "$AS_DEV" "$AS_NEW"

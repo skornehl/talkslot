@@ -74,6 +74,8 @@ final class AdminController
         ['GET', '#^/day/(\d+)/edit$#', 'dayForm', 'teacher'],
         ['POST', '#^/day/(\d+)/edit$#', 'daySave', 'teacher'],
         ['POST', '#^/day/(\d+)/delete$#', 'dayDelete', 'teacher'],
+        ['GET', '#^/day/(\d+)/bookings$#', 'dayBookingsForm', 'teacher'],
+        ['POST', '#^/day/(\d+)/bookings/delete$#', 'dayBookingsDelete', 'teacher'],
         ['POST', '#^/day/(\d+)/break$#', 'breakAdd', 'teacher'],
         ['POST', '#^/break/(\d+)/delete$#', 'breakDelete', 'teacher'],
         ['POST', '#^/slot/(\d+)/block$#', 'slotToggleBlock', 'teacher'],
@@ -1095,6 +1097,68 @@ final class AdminController
         $this->flash('success', $bookings ? __('Tag gelöscht (inkl. {count} Buchung(en)).', ['count' => $bookings]) : __('Tag gelöscht.'));
         $this->parentsFlash($parents);
         Http::redirect('/admin/round/' . $day['round_id']);
+    }
+
+    /**
+     * Deleting several bookings of a day at once (expert review P1-7, after slots were taken with made-up names):
+     * the bookings of the appointments within ?from–?to (without them all of the day, conflicts outside its
+     * times too), each with a box, so the teacher keeps the genuine ones: ticked, except the teacher's own
+     * entries. Nothing is deleted here (GET); dayBookingsDelete() deletes the ticked ones.
+     */
+    private function dayBookingsForm(int $id): void
+    {
+        $day = $this->day($id);
+        $round = $this->round((int) $day['round_id']);
+        $span = Http::query('from') === '' && Http::query('to') === '';
+        $from = $span ? (string) $day['start_time'] : Time::normalizeTime(Http::query('from'));
+        $to = $span ? (string) $day['end_time'] : Time::normalizeTime(Http::query('to'));
+        $valid = $from && $to && $from < $to;
+        $bookings = match (true) {
+            !$valid => [],
+            $span => Db::all(BookingService::DETAIL_SQL . ' WHERE d.id = ? ORDER BY s.start_time, b.id', [$id]),
+            default => Db::all(
+                BookingService::DETAIL_SQL . ' WHERE d.id = ? AND s.start_time >= ? AND s.end_time <= ? ORDER BY s.start_time, b.id',
+                [$id, $from, $to]
+            ),
+        };
+        foreach ($bookings as &$b) {
+            $b['mailable'] = ScheduleService::upcoming($b) && ScheduleService::mailable($b);
+        }
+        unset($b);
+        $this->render('admin/bookings_delete', [
+            'title' => __('Mehrere Buchungen löschen'),
+            'round' => $round,
+            'day' => $day,
+            'from' => $valid ? $from : Http::query('from'),
+            'to' => $valid ? $to : Http::query('to'),
+            'errors' => $valid ? [] : [__('Bitte gültige Start- und Endzeit angeben (Start vor Ende).')],
+            'bookings' => $bookings,
+            'mailable' => count(array_filter(array_column($bookings, 'mailable'))),
+        ]);
+    }
+
+    /** Deletes the bookings of the day ticked in dayBookingsForm(); the parents are told only if asked to. */
+    private function dayBookingsDelete(int $id): void
+    {
+        $day = $this->day($id);
+        $ids = is_array($_POST['booking'] ?? null) ? array_filter($_POST['booking'], static fn ($v): bool => is_string($v) && ctype_digit($v)) : [];
+        if (!$ids) {
+            $this->flash('error', __('Keine Buchung ausgewählt – es wurde nichts gelöscht.'));
+            Http::redirect('/admin/round/' . $day['round_id'], [], 'day-' . $id);
+        }
+        // The cancellations go to the outbox (bulk mails), nothing is sent while the page waits
+        $notify = Http::post('notify') === '1';
+        [$deleted, $parents] = ScheduleService::deleteBookings($id, array_values($ids), $notify);
+        if ($deleted === 0) { // deleted meanwhile (another tab, the parents) or not of this day
+            $this->flash('error', __('Keine der ausgewählten Buchungen gibt es noch – es wurde nichts gelöscht.'));
+            Http::redirect('/admin/round/' . $day['round_id'], [], 'day-' . $id);
+        }
+        $this->audit(fn () => __('Tag {date}: {count} Buchung(en) auf einmal gelöscht', ['date' => self::when($day['day_date']), 'count' => $deleted])
+            . self::parentsAudit($parents), (int) $day['round_id']);
+        $this->flash('success', __('{count} Buchung(en) gelöscht – die Slots sind wieder frei.', ['count' => $deleted]));
+        // Without the box nobody is told on purpose (made-up names): no list of people to inform
+        $notify ? $this->parentsFlash($parents) : $this->flash('info', __('Es wurden keine Absagen per E-Mail versendet.'));
+        Http::redirect('/admin/round/' . $day['round_id'], [], 'day-' . $id);
     }
 
     private function dayBookings(int $dayId): int
