@@ -1,4 +1,4 @@
-<?php /** @var array $user @var array $data @var array $errors @var string $generalContact the contact for parents set for all ('' = none) */ use App\Csrf; ?>
+<?php /** @var array $user @var array $data @var array $errors @var string $generalContact the contact for parents set for all ('' = none) @var array $security own security events, previous sign-in, failed attempts since */ use App\Csrf; ?>
 <h1><?= e(__('Mein Profil')) ?></h1>
 <?php require __DIR__ . '/_errors.php'; ?>
 
@@ -72,6 +72,33 @@
     <?php require __DIR__ . '/_password_fields.php'; ?>
     <div class="actions"><button type="submit" class="button button-primary"><?= e(__('Passwort ändern')) ?></button></div>
   </form>
+</section>
+
+<?php /* Expert review P2-9: what happened to this account, for its holder only (SecurityEvents), no IP */ ?>
+<section class="card" id="security">
+  <h2><?= e(__('Sicherheit')) ?></h2>
+  <?php if ($security['known'] && $security['previous'] !== null): ?>
+  <p><?= e(__('Ihre vorige Anmeldung: {date}. Fehlgeschlagene Anmeldeversuche seitdem: {count}.', ['date' => fmt_datetime((string) $security['previous']), 'count' => $security['failed']])) ?></p>
+  <?php elseif ($security['known'] && $security['failed'] > 0): ?>
+  <p><?= e(__('Fehlgeschlagene Anmeldeversuche vor Ihrer ersten Anmeldung: {count}.', ['count' => $security['failed']])) ?></p>
+  <?php endif; ?>
+  <?php if ($security['events']): ?>
+  <div class="table-wrap">
+  <table class="table">
+    <caption><?= e(__('Sicherheitsereignisse der letzten {days} Tage', ['days' => $security['days']])) ?></caption>
+    <thead><tr><th scope="col"><?= e(__('Zeitpunkt')) ?></th><th scope="col"><?= e(__('Ereignis')) ?></th></tr></thead>
+    <tbody>
+    <?php foreach ($security['events'] as $ev): ?>
+      <tr><td class="small nowrap"><?= e(fmt_datetime((string) $ev['created_at'])) ?></td><td><?= e(App\SecurityEvents::label((string) $ev['event'], (bool) $ev['by_admin'])) ?></td></tr>
+    <?php endforeach; ?>
+    </tbody>
+  </table>
+  </div>
+  <?php else: ?>
+  <p class="muted"><?= e(__('Keine Sicherheitsereignisse in den letzten {days} Tagen.', ['days' => $security['days']])) ?></p>
+  <?php endif; ?>
+  <p class="small"><?= e(__('Kommt Ihnen etwas unbekannt vor? Ändern Sie Ihr Passwort und sprechen Sie einen Admin an.')) ?></p>
+  <p class="small muted"><?= e(__('Erfasst werden Änderungen an Passwort, E-Mail-Adresse und Admin-Rechten, angeforderte Links zum Zurücksetzen und wenn die Anmeldung wegen vieler Fehlversuche eingeschränkt wurde, ohne IP-Adresse oder Gerät. Fehlversuche zählen nur, wenn das Passwort geprüft wurde. In der Anwendung sehen das nur Sie, auch Admins nicht. Einträge werden nach {days} Tagen gelöscht.', ['days' => $security['days']])) ?></p>
 </section>
 
 <p class="small muted"><?= __h('Angemeldet als {username} ({role}).', ['username' => '<strong>' . e($user['username']) . '</strong>', 'role' => $user['role'] === 'admin' ? 'Admin' : e(__('Lehrkraft'))]) ?></p>

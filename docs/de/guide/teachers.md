@@ -261,6 +261,12 @@ vergeben sind oder die Frist für Änderungen abgelaufen ist. Bleibt das Feld le
 den die Admins für alle hinterlegt haben, falls es einen gibt. Eltern sehen ihn so, wie Sie ihn schreiben
 (nicht übersetzt); bitte keine privaten Telefonnummern.
 
+### Sicherheit Ihres Kontos
+
+*Mein Profil → Sicherheit* zeigt, was mit Ihrem Konto geschehen ist: Änderungen an Passwort, E-Mail-Adresse und
+Admin-Rechten, angeforderte Links zum Zurücksetzen und fehlgeschlagene Anmeldungen seit der vorigen. Das sehen in der
+Anwendung nur Sie. Kommt Ihnen etwas unbekannt vor, ändern Sie Ihr Passwort und sprechen Sie einen Admin an.
+
 ### Links aus den E-Mails
 
 Der Link in einer Zusammenfassung öffnet die Seite direkt. Sind Sie angemeldet, öffnet sie sich angemeldet

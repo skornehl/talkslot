@@ -23,7 +23,8 @@
     </div>
     <div class="field">
       <label for="password"><?= e(__('Passwort (mind. 12 Zeichen)')) ?></label>
-      <input type="password" id="password" name="password" required minlength="12" autocomplete="new-password">
+      <input type="password" id="password" name="password" required minlength="12" autocomplete="new-password" aria-describedby="password-hint">
+      <?php require __DIR__ . '/admin/_password_hint.php'; ?>
     </div>
     <div class="field">
       <label for="password2"><?= e(__('Passwort wiederholen')) ?></label>

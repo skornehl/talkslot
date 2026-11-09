@@ -121,11 +121,26 @@ können:
   Adresse). Nach 5 falschen Eingaben in 15 Minuten (falsche aktuelle Passwörter beim Ändern des eigenen
   Passworts zählen mit) wird die Bestätigung eine Weile abgelehnt; nach Ab- und erneutem Anmelden geht es
   sofort wieder.
-- **Sicherheitsmails:** Der Kontoinhaber erhält eine E-Mail, wenn sein Passwort geändert oder festgelegt
-  wurde; die bisherige Adresse, wenn ein Admin die E-Mail-Adresse oder den Benutzernamen geändert hat; alle
-  aktiven Admins (auch Sie selbst) und die betroffene Person, wenn sich Admin-Rechte ändern oder ein
-  Admin-Konto deaktiviert, wieder aktiviert oder gelöscht wird. Bitte filtern Sie diese Mails nicht weg:
-  Oft sind sie der einzige Weg, einen Missbrauch zu bemerken.
+- **Sicherheitsmails** (bitte nicht wegfiltern: Oft sind sie der einzige Weg, einen Missbrauch zu bemerken),
+  in der Sprache der Empfänger:
+
+  | E-Mail | An | Wann |
+  |---|---|---|
+  | *Ihr Passwort wurde geändert* / *festgelegt* | das Konto | sein Passwort wurde im Profil geändert oder über einen Einladungs- bzw. Zurücksetzungslink festgelegt |
+  | *Ihre E-Mail-Adresse wurde geändert*, *Ihr Benutzername wurde geändert* | die bisherige Adresse | die Person selbst (in *Mein Profil*) oder ein Admin hat sie geändert |
+  | *Sicherheitshinweis: Änderung im Verwaltungsbereich von …* | alle aktiven Admins (auch Sie) und die betroffene Person; ein eingeladener Admin erhält stattdessen die Einladung | ein Admin wurde eingeladen, Admin-Rechte wurden vergeben oder entzogen, ein Admin-Konto wurde deaktiviert, wieder aktiviert oder gelöscht |
+  | dieselbe, *Alle Sitzungen wurden beendet* | alle aktiven Admins | jemand hat alle Sitzungen beendet |
+  | *Viele fehlgeschlagene Anmeldeversuche bei …* | das Konto | Fremde haben sein Anmeldelimit aufgebraucht; höchstens eine am Tag. Sie kann später eintreffen (mit PHP-FPM oder LiteSpeed sofort, sonst mit dem nächsten Cron-Lauf) und nennt den Zeitpunkt |
+  | *Sicherheitshinweis: viele fehlgeschlagene Anmeldungen bei …* | alle aktiven Admins | das Anmeldelimit von mehr als 3 Konten wurde innerhalb einer Stunde erreicht; höchstens einer am Tag, ohne Namen |
+  | *Passwort festlegen für …*, bei einem Konto, das sich nie angemeldet hat, *Einladung zu …* | das Konto | ein Admin hat sein Passwort zurückgesetzt (*Link zum Zurücksetzen senden*) oder die Einladung erneut gesendet |
+- **Sicherheitsereignisse** (*Mein Profil → Sicherheit*): Jedes Konto sieht seine eigenen: Änderungen an
+  Passwort, E-Mail-Adresse und Admin-Rechten, angeforderte Links zum Zurücksetzen, dass sein Anmeldelimit erreicht
+  wurde, und die Zahl der fehlgeschlagenen Anmeldungen seit der vorigen. IP-Adressen oder Geräte werden nicht
+  gespeichert, Anmeldungen selbst nicht erfasst. **In der Anwendung sieht das nur der Kontoinhaber**, Admins nicht:
+  Dafür gibt es keine Seite (wer Zugriff auf die Datenbank oder Backups hat, könnte es lesen). Admins erhalten nur
+  einen Alarm ohne Namen, wenn das Anmeldelimit bei mehr als 3 Konten innerhalb einer Stunde erreicht wird
+  (höchstens einmal am Tag). Einträge werden nach 30 Tagen gelöscht (`security_events_days`, höchstens 90); stimmen
+  Sie die Frist mit dem Personalrat ab.
 - **Passwortlinks** gehen nur per E-Mail hinaus und werden nie angezeigt. Setzt ein Admin ein Passwort
   zurück, erfährt die Person, dass ihr bisheriges Passwort nicht mehr gilt.
 - **Missbrauch der öffentlichen Seiten:** Kommen innerhalb von 5 Minuten mehr als 5 Buchungen einer Runde
@@ -137,7 +152,8 @@ können:
   [Sicherheit]({{ '/de/guide/security/' | relative_url }})).
 - **Alle Sitzungen beenden** (unten auf der Seite *Benutzer*) meldet alle Konten auf allen Geräten ab, nur
   Ihre aktuelle Sitzung bleibt bestehen, z. B. nach einem verlorenen Gerät oder bei Verdacht auf einen
-  Einbruch. Es braucht Ihr Passwort, und alle Admins erhalten eine E-Mail. Was in so einem Fall außerdem zu
+  Einbruch. Es braucht Ihr Passwort, und alle Admins erhalten eine E-Mail. Alle bekannten Geräte gelten
+  danach als neu: Wer dann durch Fremde über dem Anmeldelimit ist, braucht *Passwort vergessen?*. Was in so einem Fall außerdem zu
   tun ist, steht unter [Sicherheit]({{ '/de/guide/security/' | relative_url }}#bei-verdacht-auf-missbrauch).
 
 ### Wenn jemand die Schule verlässt

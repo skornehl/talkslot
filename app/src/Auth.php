@@ -11,8 +11,9 @@ namespace App;
  * - Brute-force protection (see attempt()): failed logins are limited per truncated IP and per
  *   account. The per-account limit slows down guessing from many addresses, but it is a lockout:
  *   once strangers have used it up, unknown devices cannot sign in to the account until the window
- *   ends. The owner gets an e-mail then, and devices that signed in to the account before
- *   (TrustedDevice) are exempt, so the owner can still sign in there.
+ *   ends. The owner gets an e-mail then (after the response, from the mail queue), and devices that
+ *   signed in to the account before (TrustedDevice) are exempt, so the owner can still sign in there.
+ *   Ending the sessions of the account (new password) or of all accounts also revokes those devices.
  * - Passwords: 12 characters up to 72 bytes, not common, no patterns, nothing personal (passwordPolicy()).
  * - Sessions end when the password of the account changes (users.session_epoch) or when an admin ends
  *   all sessions of all accounts (setting global_session_epoch, see endAllSessions()).
@@ -158,16 +159,15 @@ final class Auth
         }
         $user = Db::one('SELECT * FROM users WHERE username = ?', [$username]);
 
-        [$bucket, $subject] = ['login_device', $user ? TrustedDevice::subject((int) $user['id']) : null];
+        $epoch = self::deviceEpoch($user ?? []); // also without an account: the same queries either way
+        [$bucket, $subject] = ['login_device', $user ? TrustedDevice::subject((int) $user['id'], $epoch) : null];
         [$deviceLimit, $deviceWindow] = RateLimiter::limits('login_device', 20, 3600);
         if ($subject === null || !RateLimiter::hit($bucket, $deviceLimit, $deviceWindow, $subject)) {
             [$bucket, $subject] = ['login_user', $user ? 'login:#' . $user['id'] : 'login:' . strtolower($username)];
-            [$userLimit, $userWindow] = RateLimiter::limits('login_user', 20, 3600);
+            [$userLimit, $userWindow] = self::accountLimit();
             if (!RateLimiter::hit($bucket, $userLimit, $userWindow, $subject)) {
                 RateLimiter::undo('login');
-                if ($user) {
-                    self::lockoutNotice($user, $userLimit, $userWindow);
-                }
+                self::lockoutNotice($user, $username);
                 return $generic;
             }
         }
@@ -190,7 +190,7 @@ final class Auth
         }
         RateLimiter::undo('login');
         RateLimiter::undo($bucket, $subject);
-        TrustedDevice::remember((int) $user['id']);
+        TrustedDevice::remember((int) $user['id'], $epoch);
         // An open "forgot password" link is settled by logging in
         Db::run('UPDATE users SET access_token_hash = NULL, access_token_expires_at = NULL WHERE id = ?', [$user['id']]);
 
@@ -203,29 +203,122 @@ final class Auth
             'started' => time(),
             'last' => time(),
             'csrf' => bin2hex(random_bytes(32)),
+            // For the account holder only (SecurityEvents): the sign-in before this one, failed attempts since
+            'previous_login' => $user['last_login_at'],
+            'failed_before' => (int) $user['failed_logins'],
         ];
         return true;
     }
 
     /**
-     * E-mail to the account holder when the per-account limit refuses an attempt, at most one per
-     * account and day ("login_notice"). It is sent during the refused attempt: the longer response
-     * shows up only once a day and only for an account whose name the sender knows anyway.
+     * Epoch of the account's known-device cookies (TrustedDevice): its session counter and the one of all
+     * accounts, so that ending the sessions (new password, reset by an admin, "Alle Sitzungen beenden") also
+     * makes the devices count as unknown again.
+     * @param array $user users row (session_epoch)
      */
-    private static function lockoutNotice(array $user, int $limit, int $window): void
+    public static function deviceEpoch(array $user): string
+    {
+        return (int) ($user['session_epoch'] ?? 0) . '.' . self::globalEpoch();
+    }
+
+    /** deviceEpoch() as it is now in the database, e.g. right after the sessions of the account ended. */
+    public static function deviceEpochOf(int $userId): string
+    {
+        return self::deviceEpoch(Db::one('SELECT session_epoch FROM users WHERE id = ?', [$userId]) ?? []);
+    }
+
+    /**
+     * E-mail to the account holder when the per-account limit refuses an attempt, at most one per
+     * account and day ("login_notice"). Queued in the outbox, so it goes out after the response (on PHP-FPM or
+     * LiteSpeed right after it, otherwise with the cron job). The counter also runs for names without an
+     * account, so that the time a refused attempt takes does not tell whether the account exists.
+     */
+    private static function lockoutNotice(?array $user, string $username): void
     {
         [$noticeLimit, $noticeWindow] = RateLimiter::limits('login_notice', 1, 86400);
-        if (!$user['is_active'] || !is_valid_email((string) $user['email'])
-            || !RateLimiter::hit('login_notice', $noticeLimit, $noticeWindow, 'notice:' . $user['id'])) {
-            return;
+        $first = RateLimiter::hit('login_notice', $noticeLimit, $noticeWindow, 'notice:' . ($user ? '#' . $user['id'] : strtolower($username)));
+        if ($first && $user && $user['is_active']) {
+            Outbox::queueAccount((int) $user['id'], 'login_notice', Time::today());
         }
-        // In the language of the account
-        AdminI18n::with(AdminI18n::of($user), static function () use ($user, $limit, $window): void {
-            $vars = ['app' => app_name(), 'url' => abs_url('/admin', ['lang' => null]), 'count' => $limit, 'minutes' => (int) ceil($window / 60)];
-            Mailer::send((string) $user['email'], __('Viele fehlgeschlagene Anmeldeversuche bei {app}', $vars), implode("\n", [
+    }
+
+    /**
+     * When more accounts than "login_alarm" reached the limit within its window before $at, all admins get one
+     * alarm a day, without names (the holders got their own notice). Counted from the events, so a run of the
+     * cron job that sends several notices later does not make them look simultaneous.
+     */
+    private static function alarmAdmins(string $at): void
+    {
+        [$alarm, $window] = RateLimiter::limits('login_alarm', 3, 3600);
+        $accounts = (int) Db::value(
+            'SELECT COUNT(DISTINCT user_id) FROM security_events WHERE event = ? AND created_at <= ? AND created_at >= ?',
+            [SecurityEvents::LOGIN_LIMIT, $at, date('Y-m-d H:i:s', (strtotime($at) ?: time()) - $window)]
+        );
+        if ($accounts > $alarm && RateLimiter::hit('login_alarm_sent', 1, 86400, 'admins')) {
+            foreach (Db::all("SELECT id FROM users WHERE role = 'admin' AND is_active = 1") as $admin) {
+                Outbox::queueAccount((int) $admin['id'], 'login_alarm', Time::today());
+            }
+        }
+    }
+
+    /**
+     * Sends the alarm about the sign-in limit of several accounts (from the outbox, see lockoutNotice()) to an
+     * admin, in its language. null: no longer needed (account inactive, no admin, no valid address).
+     */
+    public static function deliverLoginAlarm(int $userId): ?bool
+    {
+        $user = Db::one("SELECT * FROM users WHERE id = ? AND is_active = 1 AND role = 'admin'", [$userId]);
+        if (!$user || !is_valid_email((string) $user['email'])) {
+            return null;
+        }
+        [$alarm, $alarmWindow] = RateLimiter::limits('login_alarm', 3, 3600);
+        return (bool) AdminI18n::with(AdminI18n::of($user), static function () use ($user, $alarm, $alarmWindow): bool {
+            $vars = ['app' => app_name(), 'url' => abs_url('/admin', ['lang' => null]), 'count' => $alarm, 'minutes' => (int) ceil($alarmWindow / 60)];
+            return Mailer::send((string) $user['email'], __('Sicherheitshinweis: viele fehlgeschlagene Anmeldungen bei {app}', $vars), implode("\n", [
                 __('Hallo {name},', ['name' => $user['display_name'] ?: $user['username']]),
                 '',
-                __('für Ihr Konto bei {app} ({url}) gab es viele fehlgeschlagene Anmeldeversuche (mehr als {count}). Zum Schutz Ihres Kontos ist die Anmeldung deshalb für bis zu {minutes} Minuten nur auf Geräten möglich, auf denen Sie sich schon einmal angemeldet haben.', $vars),
+                __('bei {app} ({url}) haben fehlgeschlagene Anmeldeversuche innerhalb von {minutes} Minuten bei mehr als {count} Konten das Limit pro Konto erreicht. Vermutlich probiert jemand über längere Zeit Passwörter aus.', $vars),
+                __('Die betroffenen Konten haben je eine E-Mail erhalten; auf ihren bekannten Geräten können sie sich weiter anmelden. Welche Konten es sind, sehen nur ihre Inhaber.'),
+                '',
+                __('Bitte erinnern Sie die Lehrkräfte daran, hier kein Passwort zu verwenden, das sie auch anderswo nutzen. Halten die Versuche an, sprechen Sie mit dem Betreiber über die Zugriffsprotokolle des Hosters.'),
+                '',
+                __('Diese Nachricht geht an alle Admins, höchstens einmal am Tag.'),
+            ]));
+        });
+    }
+
+    /** [limit, window] of the failed sign-ins per account. @return array{0:int,1:int} */
+    private static function accountLimit(): array
+    {
+        return RateLimiter::limits('login_user', 20, 3600);
+    }
+
+    /**
+     * Sends the notice about many failed sign-ins (from the outbox, see lockoutNotice()) in the language of
+     * the account; $queuedAt: when it happened, as the mail may go out hours later (with the cron job).
+     * null: no longer needed (account inactive or without a valid address).
+     */
+    public static function deliverLockoutNotice(int $userId, string $queuedAt): ?bool
+    {
+        $user = Db::one('SELECT * FROM users WHERE id = ? AND is_active = 1', [$userId]);
+        if (!$user) {
+            return null;
+        }
+        // Here, after the response, so that a refused attempt takes the same time for every name
+        SecurityEvents::record($userId, SecurityEvents::LOGIN_LIMIT, false, $queuedAt);
+        self::alarmAdmins($queuedAt);
+        if (!is_valid_email((string) $user['email'])) {
+            return null;
+        }
+        [$limit, $window] = self::accountLimit();
+        return (bool) AdminI18n::with(AdminI18n::of($user), static function () use ($user, $limit, $window, $queuedAt): bool {
+            $at = strtotime($queuedAt) ?: time();
+            $vars = ['app' => app_name(), 'url' => abs_url('/admin', ['lang' => null]), 'count' => $limit, 'minutes' => (int) ceil($window / 60),
+                'date' => date('d.m.Y', $at), 'time' => date('H:i', $at)];
+            return Mailer::send((string) $user['email'], __('Viele fehlgeschlagene Anmeldeversuche bei {app}', $vars), implode("\n", [
+                __('Hallo {name},', ['name' => $user['display_name'] ?: $user['username']]),
+                '',
+                __('am {date} um {time} Uhr gab es für Ihr Konto bei {app} ({url}) viele fehlgeschlagene Anmeldeversuche (mehr als {count}). Zum Schutz Ihres Kontos ist die Anmeldung von da an für bis zu {minutes} Minuten nur auf Geräten möglich, auf denen Sie sich schon einmal angemeldet haben.', $vars),
                 '',
                 __('Auf einem neuen Gerät hilft „Passwort vergessen?“ auf der Anmeldeseite: Wenn Sie über den Link ein neues Passwort festlegen, können Sie sich in diesem Browser sofort anmelden.'),
                 '',
@@ -267,7 +360,7 @@ final class Auth
         }
     }
 
-    private static function globalEpoch(): int
+    public static function globalEpoch(): int
     {
         return (int) Settings::get('global_session_epoch', '0');
     }
@@ -348,6 +441,9 @@ final class Auth
         session_regenerate_id(true);
         Substitution::clear();
         self::endOtherSessions($userId, true);
+        SecurityEvents::record($userId, SecurityEvents::PASSWORD_CHANGED);
+        // The new epoch revoked the account's known devices; this browser proved the password, it stays known
+        TrustedDevice::remember($userId, self::deviceEpochOf($userId));
         session_write_close(); // the account's other tabs do not wait for the mail server
         try {
             AccountSecurity::passwordChanged($user);

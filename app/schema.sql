@@ -200,6 +200,20 @@ CREATE TABLE IF NOT EXISTS audit_log (
   CONSTRAINT fk_audit_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Security events of an account, shown only to the account holder (App\SecurityEvents): password, e-mail address,
+-- admin rights, sign-in limit reached. No IP, no device; by_admin: an admin made the change (not who).
+-- Deleted after security_events_days (default 30) and with the account.
+CREATE TABLE IF NOT EXISTS security_events (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  user_id INT UNSIGNED NOT NULL,
+  event VARCHAR(30) NOT NULL,
+  by_admin TINYINT(1) NOT NULL DEFAULT 0,
+  created_at DATETIME NOT NULL,
+  KEY idx_security_events_user (user_id, created_at),
+  KEY idx_security_events_created (created_at),
+  CONSTRAINT fk_security_events_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Delivery log of the summary emails (prevents duplicate sends), without content
 CREATE TABLE IF NOT EXISTS sent_summaries (
   user_id INT UNSIGNED NOT NULL,

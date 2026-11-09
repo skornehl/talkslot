@@ -17,7 +17,7 @@ use PDOStatement;
 final class Db
 {
     /** All tables of the application (including historical ones for migrations) */
-    public const TABLES = ['users', 'rounds', 'round_days', 'day_breaks', 'slots', 'bookings', 'pages', 'rate_limits', 'settings', 'sent_summaries', 'admin_users', 'round_translations', 'audit_log', 'round_templates', 'mail_outbox', 'round_trash'];
+    public const TABLES = ['users', 'rounds', 'round_days', 'day_breaks', 'slots', 'bookings', 'pages', 'rate_limits', 'settings', 'sent_summaries', 'admin_users', 'round_translations', 'audit_log', 'round_templates', 'mail_outbox', 'round_trash', 'security_events'];
 
     private static ?PDO $pdo = null;
     /** Connection error of this request: don't wait for the timeout again on every query. */

@@ -248,6 +248,12 @@ need it most when all slots are taken or the deadline for changes has passed. Le
 contact the admins set for all, if any. Parents see it as you write it (not translated); please no private
 phone numbers.
 
+### Security of your account
+
+*Mein Profil → Sicherheit* shows what happened to your account: changes of the password, the e-mail address and
+admin rights, requested reset links, and failed sign-ins since the previous one. Only you see this in the
+application. If something looks unfamiliar, change your password and talk to an admin.
+
 ### Links from the mails
 
 The link in a summary opens the page directly. If you are signed in, it opens signed in (the browser keeps
