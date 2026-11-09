@@ -14,6 +14,10 @@ moment; use a quiet time, or switch to the atomic deployment.
 
 Read the [release notes](https://github.com/skornehl/talkslot/releases) before updating.
 
+**Upgrade path:** every 1.x version can be updated directly to the latest 1.x. A future version 2.0 will only
+update installations of v1.3.0 or newer, so bring an installation older than that to the latest 1.x first.
+Your version is shown at the bottom of every page (*Powered by TalkSlot v…*).
+
 ## Database migrations
 
 There is nothing to run by hand. On the first request after an update TalkSlot raises the schema step

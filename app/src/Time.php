@@ -33,9 +33,9 @@ final class Time
     public static function normalizeTime(string $v): ?string
     {
         $v = trim($v);
-        if (preg_match('/^(\d{1,2})[:.](\d{2})(:\d{2})?$/', $v, $m)) {
+        if (preg_match('/^(\d{1,2})[:.](\d{2})(:\d{2})?\z/', $v, $m)) {
             [$h, $min] = [(int) $m[1], (int) $m[2]];
-        } elseif (preg_match('/^\d{1,4}$/', $v)) {
+        } elseif (preg_match('/^\d{1,4}\z/', $v)) {
             $d = strlen($v) <= 2 ? $v . '00' : str_pad($v, 4, '0', STR_PAD_LEFT);
             [$h, $min] = [(int) substr($d, 0, -2), (int) substr($d, -2)];
         } else {

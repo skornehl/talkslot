@@ -22,7 +22,7 @@ app/              Anwendung (außerhalb des Document Roots)
 bin/              cron.php, install.php, build.sh, deploy.sh, build-config.php, …
 config/           config.sample.php → config.php (nicht in Git)
 public/           Document Root: index.php (Front Controller), install.php, .htaccess, assets/
-dev/              Docker-Umgebung, reset.sh, demo.sh
+dev/              Docker-Umgebung, reset.sh, demo.sh, cs.sh
 docs/             diese Website (GitHub Pages, Jekyll)
 tests/            unit.php, smoke.sh, browser.mjs, deploy.sh
 ```
@@ -82,6 +82,11 @@ Syntaxfehlers.
   `one`, `pl`, `east-slavic` oder `none`) und so viele Formen von `'hours'`, wie die Regel braucht.
 - **Commits:** [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `docs:`, …);
   Releases werden daraus abgeleitet.
+- **Coding-Standard:** PSR-12 für `app/src`, `bin`, `public` und `config` (die Ausnahmen stehen in
+  `.php-cs-fixer.dist.php`). `dev/cs.sh` prüft ihn mit einem festgelegten PHP-CS-Fixer, `dev/cs.sh --fix` wendet ihn
+  an; die CI prüft ihn im Workflow *Coding standard*.
+- **Reguläre Ausdrücke:** Routen und Prüfungen eines ganzen Werts enden auf `\z`, nicht auf `$`, das auch vor einem
+  abschließenden Zeilenumbruch passt (ein Unit-Test prüft die Routen).
 - **Datenbank:** ausschließlich Prepared Statements; das SQL-Audit im Unit-Test schlägt bei
   eingesetzten (verketteten) Variablen fehl.
 - **Tabellenpräfix:** SQL nennt die Tabellen ohne Präfix, `Db::prefix()` setzt es davor. Eine neue Tabelle kommt in
@@ -232,7 +237,10 @@ direkt. Eine bestehende führt beim nächsten Aufruf die fehlenden Schritte aus 
   `admin_users`, Löschen von Spalten) stammt aus der Zeit vor dieser Regel.
 - Während die Dateien eines Updates hochgeladen werden, kann neuer Code kurz auf das alte Schema treffen. Wo das
   zählt (eine Seite, die nicht scheitern darf), sollte der Code auf das alte Verhalten zurückfallen, bis der
-  Schritt gelaufen ist, wie `RoundAccess::required()`.
+  Schritt gelaufen ist, wie `RoundAccess::required()`. Ein solcher Rückfall nennt die Migration, die er
+  überbrückt, und kann mit der nächsten Major-Version nur entfallen, wenn der
+  [Upgrade-Pfad]({{ '/de/guide/operations/' | relative_url }}#updates) nicht mehr unterhalb dieser Migration beginnt: 2.0
+  soll v1.3.0 voraussetzen (Migration 13).
 - Die Schritte nutzen MariaDB-Syntax (10.6 oder neuer); MySQL wird nicht unterstützt.
 - Parallele Branches: Zwei Branches, die einen Schritt unter derselben Nummer hinzufügen, geraten in Git in
   Konflikt, und wer beim Auflösen beide Blöcke behält, verliert einen davon unbemerkt (PHP behält von zwei

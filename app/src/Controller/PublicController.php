@@ -35,8 +35,8 @@ final class PublicController
             $path === '/' => $this->home(),
             in_array($path, ['/impressum', '/imprint'], true) => $this->page('imprint'),
             in_array($path, ['/datenschutz', '/privacy'], true) => $this->page('privacy'),
-            (bool) preg_match('#^/b/([A-Za-z0-9_-]{43})$#', $path, $m) => $post ? $this->managePost($m[1]) : $this->manage($m[1]),
-            (bool) preg_match('#^/([a-z0-9][a-z0-9-]{0,99})$#', $path, $m) => $post ? $this->bookPost($m[1]) : $this->round($m[1]),
+            (bool) preg_match('#^/b/([A-Za-z0-9_-]{43})\z#', $path, $m) => $post ? $this->managePost($m[1]) : $this->manage($m[1]),
+            (bool) preg_match('#^/([a-z0-9][a-z0-9-]{0,99})\z#', $path, $m) => $post ? $this->bookPost($m[1]) : $this->round($m[1]),
             default => $this->notFound(),
         };
     }
@@ -512,7 +512,12 @@ final class PublicController
      */
     private static function mailParam(?string $result): ?string
     {
-        return match ($result) { Notifier::SENT => '1', Notifier::QUEUED => 'queued', Abuse::LIMITED => 'limited', default => null };
+        return match ($result) {
+            Notifier::SENT => '1',
+            Notifier::QUEUED => 'queued',
+            Abuse::LIMITED => 'limited',
+            default => null,
+        };
     }
 
     /** Shared validation for name/email/slot (also used by the admin). */
@@ -549,7 +554,7 @@ final class PublicController
 
     private static function rememberValid(#[\SensitiveParameter] string $token, string $value): bool
     {
-        if (!preg_match('/^(\d{10})\.([a-f0-9]{32})$/', $value, $m) || time() - (int) $m[1] > 600 || (int) $m[1] > time() + 60) {
+        if (!preg_match('/^(\d{10})\.([a-f0-9]{32})\z/', $value, $m) || time() - (int) $m[1] > 600 || (int) $m[1] > time() + 60) {
             return false;
         }
         return hash_equals(substr(hash_hmac('sha256', 'remember|' . $token . '|' . $m[1], (string) Config::get('secret', '')), 0, 32), $m[2]);

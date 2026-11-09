@@ -221,7 +221,7 @@ foreach ((new ReflectionClassConstant(App\Controller\AdminController::class, "RO
     if ($r[0] !== $argv[1]) {
         continue;
     }
-    $path = substr($r[1], 2, -2); // without #^ and $#
+    $path = substr($r[1], 2, str_ends_with($r[1], "\\z#") ? -3 : -2); // without #^ and $# or \z#
     $path = str_replace("(\\d+)", $ids[explode("/", $path)[1]] ?? "?", $path);
     $path = (string) preg_replace("/\\(([a-z]+)(\\|[a-z]+)+\\)/", "$1", $path); // (imprint|privacy) → imprint
     $path = str_replace("([a-z]{2})", "de", $path);

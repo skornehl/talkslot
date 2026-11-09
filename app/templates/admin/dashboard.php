@@ -24,7 +24,7 @@
   </div>
 <?php endif; ?>
 <?php if ($mailsLate && ($readiness ?? null) === null): /* during the setup a point of the checklist */ ?>
-  <div class="alert alert-warning" role="status" data-mails-late><p><?= e(__('{count} E-Mail(s) warten seit über {hours} Stunden auf den Versand (die älteste seit {since}). Erinnerungen, Zusammenfassungen und Bestätigungen, die nicht sofort zugestellt werden konnten, verschickt der Cron-Job: Bitte prüfen Sie, ob er regelmäßig läuft und ob der Mailversand funktioniert. Nach 48 Stunden werden sie verworfen.', ['count' => $mailsLate['count'], 'hours' => App\Outbox::lateHours(), 'since' => date('d.m.Y H:i', (int) strtotime($mailsLate['since']))])) ?></p></div>
+  <div class="alert alert-warning" role="status" data-mails-late><p><?= e(__('{count} E-Mail(s) warten seit über {hours} Stunden auf den Versand (die älteste seit {since}). Erinnerungen, Zusammenfassungen und Bestätigungen, die nicht sofort zugestellt werden konnten, verschickt der Cron-Job: Bitte prüfen Sie, ob er regelmäßig läuft und ob der Mailversand funktioniert. Nach 48 Stunden werden sie verworfen.', ['count' => $mailsLate['count'], 'hours' => App\Outbox::lateHours(), 'since' => fmt_datetime($mailsLate['since'])])) ?></p></div>
 <?php endif; ?>
 <?php foreach (($readiness ?? null) === null ? $legalHints : [] as $h): ?>
   <div class="alert alert-warning" role="status"><p><?= e($h) ?> <a href="<?= e(url('/admin/texts')) ?>"><?= e(__('Zu den Texten')) ?></a></p></div>
@@ -90,7 +90,7 @@
     <tr>
       <td><a href="<?= e(url('/admin/round/' . (int) $r['id'])) ?>"><strong><?= e($r['title']) ?></strong></a><?= App\RoundAccess::required($r) ? ' <span class="badge" title="' . e(__('nur mit Rundencode erreichbar')) . '">' . e(__('Code')) . '</span>' : '' ?></td>
       <?php if ($showOwner): ?><td><?= e($r['owner_name']) ?><?= !$r['owner_active'] ? ' <span class="badge">' . e(__('deaktiviert')) . '</span>' : '' ?></td><?php endif; ?>
-      <td><?= $r['first_day'] ? e(date('d.m.Y', strtotime($r['first_day']))) . ($r['last_day'] !== $r['first_day'] ? ' – ' . e(date('d.m.Y', strtotime($r['last_day']))) : '') : '<span class="muted">' . e(__('keine Tage')) . '</span>' ?></td>
+      <td><?= $r['first_day'] ? e(fmt_datetime($r['first_day'], 'd.m.Y')) . ($r['last_day'] !== $r['first_day'] ? ' – ' . e(fmt_datetime($r['last_day'], 'd.m.Y')) : '') : '<span class="muted">' . e(__('keine Tage')) . '</span>' ?></td>
       <td><?= (int) $r['booking_count'] ?> / <?= (int) $r['slot_count'] ?></td>
       <td>
         <?php if ($r['is_active']): ?><span class="status status-on"><?= e(__('aktiv')) ?></span>

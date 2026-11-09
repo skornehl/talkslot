@@ -42,10 +42,10 @@ final class Version
     {
         $info ??= self::info();
         $v = $info['version'];
-        if (preg_match('/^v?(\d+\.\d+\.\d+(?:-[0-9A-Za-z.]+?)?)-(\d+)-g([0-9a-f]+)(-dirty)?$/', $v, $m)) {
+        if (preg_match('/^v?(\d+\.\d+\.\d+(?:-[0-9A-Za-z.]+?)?)-(\d+)-g([0-9a-f]+)(-dirty)?\z/', $v, $m)) {
             return 'v' . $m[1] . '+' . $m[2] . ' (' . substr($m[3], 0, 7) . ')';
         }
-        if (preg_match('/^v?(\d+\.\d+\.\d+(?:-[0-9A-Za-z.]+)?)$/', $v, $m)) {
+        if (preg_match('/^v?(\d+\.\d+\.\d+(?:-[0-9A-Za-z.]+)?)\z/', $v, $m)) {
             return 'v' . $m[1];
         }
         if ($v === 'dev' || $v === '') {
@@ -65,8 +65,8 @@ final class Version
         if ($lastTag === '') {
             return 'v1.0.0';
         }
-        if (!preg_match('/^v(\d+)\.(\d+)\.(\d+)$/', $lastTag, $m)) {
-            throw new \InvalidArgumentException("Kein Versions-Tag: $lastTag");
+        if (!preg_match('/^v(\d+)\.(\d+)\.(\d+)\z/', $lastTag, $m)) {
+            throw new \InvalidArgumentException("Not a version tag: $lastTag");
         }
         [$major, $minor, $patch] = [(int) $m[1], (int) $m[2], (int) $m[3]];
         $bump = 'patch';
@@ -103,6 +103,6 @@ final class Version
             }
             $head = trim((string) $sha);
         }
-        return preg_match('/^[0-9a-f]{7,40}$/', $head) ? substr($head, 0, 7) : '';
+        return preg_match('/^[0-9a-f]{7,40}\z/', $head) ? substr($head, 0, 7) : '';
     }
 }

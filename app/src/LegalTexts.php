@@ -85,13 +85,14 @@ final class LegalTexts
                 $re .= preg_quote($part, '/');
                 break;
             }
-            $alone = preg_match('/(?:^|\n)\h*$/', $part) === 1 && preg_match('/^\h*(?:\n|$)/', $parts[$i + 1]) === 1;
+            $alone = preg_match('/(?:^|\n)\h*\z/', $part) === 1 && preg_match('/^\h*(?:\n|$)/', $parts[$i + 1]) === 1;
             $re .= match (true) {
                 $alone && str_contains($text, $found[0][$i]) => preg_quote($part . $found[0][$i], '/'),
                 $alone => preg_quote(rtrim($part), '/') . '\s*.*?',
                 default => preg_quote(rtrim($part, " \t"), '/') . '\h*[^\n]*?',
             };
         }
+        // $ on purpose, not \z: a line break at the very end of the stored text does not make it a different text
         return $text === $template || ($last > 0 && preg_match('/^' . $re . '$/su', $text) === 1);
     }
 
@@ -106,7 +107,7 @@ final class LegalTexts
         $sections = ['' => ['heading' => null, 'lines' => []]];
         $key = '';
         foreach (preg_split('/\r\n|\r|\n/', $text) ?: [] as $line) {
-            if (preg_match('/^#\s+(?:\d+\.\s*)?(.*?)\s*$/u', trim($line), $m)) {
+            if (preg_match('/^#\s+(?:\d+\.\s*)?(.*?)\s*\z/u', trim($line), $m)) {
                 for ($key = $m[1], $n = 2; isset($sections[$key]); $n++) {
                     $key = $m[1] . " ($n)"; // the same heading twice
                 }
@@ -550,7 +551,7 @@ final class LegalTexts
     {
         $name = self::VARIANTS[$key][$type] ?? null;
         $file = APP_ROOT . "/app/templates/pages/$name.$lang.md";
-        return $name !== null && preg_match('/^[a-z]{2}$/', $lang) && is_file($file) ? (string) file_get_contents($file) : null;
+        return $name !== null && preg_match('/^[a-z]{2}\z/', $lang) && is_file($file) ? (string) file_get_contents($file) : null;
     }
 
     /**
@@ -562,7 +563,7 @@ final class LegalTexts
         $hash = hash('sha256', $content);
         $types = array_flip(self::VARIANTS[$key] ?? []);
         foreach (Migrations::CURRENT_PAGE_HASHES as $file => $current) {
-            $type = $types[(string) preg_replace('/\.[a-z]{2}$/', '', $file)] ?? null;
+            $type = $types[(string) preg_replace('/\.[a-z]{2}\z/', '', $file)] ?? null;
             if ($type !== null && $current === $hash) {
                 return $type;
             }

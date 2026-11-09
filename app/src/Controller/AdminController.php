@@ -54,67 +54,67 @@ final class AdminController
      * password" and invitation links work without an account and are handled in dispatch() before this table.
      */
     private const ROUTES = [
-        ['GET', '#^/$#', 'dashboard', 'teacher'],
-        ['POST', '#^/logout$#', 'logout', 'teacher'],
-        ['GET', '#^/round/new$#', 'roundForm', 'teacher'],
-        ['POST', '#^/round/new$#', 'roundSave', 'teacher'],
-        ['GET', '#^/round/(\d+)$#', 'roundShow', 'teacher'],
-        ['GET', '#^/round/(\d+)/edit$#', 'roundForm', 'teacher'],
-        ['POST', '#^/round/(\d+)/edit$#', 'roundSave', 'teacher'],
-        ['POST', '#^/round/(\d+)/toggle$#', 'roundToggle', 'teacher'],
-        ['POST', '#^/round/(\d+)/duplicate$#', 'roundDuplicate', 'teacher'],
-        ['POST', '#^/round/(\d+)/delete$#', 'roundDelete', 'teacher'],
-        ['GET', '#^/trash$#', 'trash', 'teacher'],
-        ['POST', '#^/trash/(\d+)/restore$#', 'trashRestore', 'teacher'],
-        ['POST', '#^/trash/(\d+)/delete$#', 'trashDelete', 'teacher'],
-        ['POST', '#^/round/(\d+)/day$#', 'dayAdd', 'teacher'],
-        ['GET', '#^/round/(\d+)/print$#', 'printView', 'teacher'],
-        ['POST', '#^/round/(\d+)/translations$#', 'translationsSave', 'teacher'],
-        ['POST', '#^/round/(\d+)/translations/auto$#', 'translationsAuto', 'teacher'],
-        ['GET', '#^/day/(\d+)/edit$#', 'dayForm', 'teacher'],
-        ['POST', '#^/day/(\d+)/edit$#', 'daySave', 'teacher'],
-        ['POST', '#^/day/(\d+)/delete$#', 'dayDelete', 'teacher'],
-        ['GET', '#^/day/(\d+)/bookings$#', 'dayBookingsForm', 'teacher'],
-        ['POST', '#^/day/(\d+)/bookings/delete$#', 'dayBookingsDelete', 'teacher'],
-        ['POST', '#^/day/(\d+)/break$#', 'breakAdd', 'teacher'],
-        ['POST', '#^/break/(\d+)/delete$#', 'breakDelete', 'teacher'],
-        ['POST', '#^/slot/(\d+)/block$#', 'slotToggleBlock', 'teacher'],
-        ['GET', '#^/slot/(\d+)/book$#', 'bookingNew', 'teacher'],
-        ['POST', '#^/slot/(\d+)/book$#', 'bookingCreate', 'teacher'],
-        ['GET', '#^/booking/(\d+)/edit$#', 'bookingEdit', 'teacher'],
-        ['POST', '#^/booking/(\d+)/edit$#', 'bookingUpdate', 'teacher'],
-        ['POST', '#^/booking/(\d+)/delete$#', 'bookingDelete', 'teacher'],
-        ['GET', '#^/profile$#', 'profile', 'teacher'],
-        ['POST', '#^/profile$#', 'profileSave', 'teacher'],
-        ['POST', '#^/profile/summaries$#', 'summaryNoticeSeen', 'teacher'],
-        ['POST', '#^/news$#', 'newsSeen', 'teacher'],
-        ['POST', '#^/password$#', 'passwordSave', 'teacher'],
-        ['GET', '#^/password-change$#', 'passwordChangeForm', 'teacher'],
-        ['POST', '#^/password-change$#', 'passwordChangeSave', 'teacher'],
-        ['GET', '#^/users$#', 'users', 'admin'],
-        ['GET', '#^/users/new$#', 'userForm', 'admin'],
-        ['POST', '#^/users/new$#', 'userSave', 'admin'],
-        ['GET', '#^/users/(\d+)/edit$#', 'userForm', 'admin'],
-        ['POST', '#^/users/(\d+)/edit$#', 'userSave', 'admin'],
-        ['POST', '#^/users/(\d+)/reset-password$#', 'userResetPassword', 'admin'],
-        ['POST', '#^/users/(\d+)/delete$#', 'userDelete', 'admin'],
-        ['POST', '#^/users/end-sessions$#', 'endAllSessions', 'admin'],
-        ['GET', '#^/texts$#', 'texts', 'admin'],
-        ['GET', '#^/start$#', 'readiness', 'admin'],
-        ['POST', '#^/texts/operator$#', 'operatorSave', 'admin'],
-        ['POST', '#^/texts/contact$#', 'parentContactSave', 'admin'],
-        ['GET', '#^/page/(imprint|privacy)/([a-z]{2})$#', 'pageForm', 'admin'],
-        ['POST', '#^/page/(imprint|privacy)/([a-z]{2})$#', 'pageSave', 'admin'],
-        ['GET', '#^/log$#', 'auditLog', 'admin'],
-        ['GET', '#^/access-request$#', 'accessRequestForm', 'admin'],
-        ['POST', '#^/access-request$#', 'accessRequestSearch', 'admin'],
-        ['GET', '#^/templates$#', 'templates', 'admin'],
-        ['GET', '#^/templates/new$#', 'templateForm', 'admin'],
-        ['POST', '#^/templates/new$#', 'templateSave', 'admin'],
-        ['GET', '#^/templates/(\d+)/edit$#', 'templateForm', 'admin'],
-        ['POST', '#^/templates/(\d+)/edit$#', 'templateSave', 'admin'],
-        ['POST', '#^/templates/(\d+)/delete$#', 'templateDelete', 'admin'],
-        ['POST', '#^/templates/from-round/(\d+)$#', 'templateFromRound', 'admin'],
+        ['GET', '#^/\z#', 'dashboard', 'teacher'],
+        ['POST', '#^/logout\z#', 'logout', 'teacher'],
+        ['GET', '#^/round/new\z#', 'roundForm', 'teacher'],
+        ['POST', '#^/round/new\z#', 'roundSave', 'teacher'],
+        ['GET', '#^/round/(\d+)\z#', 'roundShow', 'teacher'],
+        ['GET', '#^/round/(\d+)/edit\z#', 'roundForm', 'teacher'],
+        ['POST', '#^/round/(\d+)/edit\z#', 'roundSave', 'teacher'],
+        ['POST', '#^/round/(\d+)/toggle\z#', 'roundToggle', 'teacher'],
+        ['POST', '#^/round/(\d+)/duplicate\z#', 'roundDuplicate', 'teacher'],
+        ['POST', '#^/round/(\d+)/delete\z#', 'roundDelete', 'teacher'],
+        ['GET', '#^/trash\z#', 'trash', 'teacher'],
+        ['POST', '#^/trash/(\d+)/restore\z#', 'trashRestore', 'teacher'],
+        ['POST', '#^/trash/(\d+)/delete\z#', 'trashDelete', 'teacher'],
+        ['POST', '#^/round/(\d+)/day\z#', 'dayAdd', 'teacher'],
+        ['GET', '#^/round/(\d+)/print\z#', 'printView', 'teacher'],
+        ['POST', '#^/round/(\d+)/translations\z#', 'translationsSave', 'teacher'],
+        ['POST', '#^/round/(\d+)/translations/auto\z#', 'translationsAuto', 'teacher'],
+        ['GET', '#^/day/(\d+)/edit\z#', 'dayForm', 'teacher'],
+        ['POST', '#^/day/(\d+)/edit\z#', 'daySave', 'teacher'],
+        ['POST', '#^/day/(\d+)/delete\z#', 'dayDelete', 'teacher'],
+        ['GET', '#^/day/(\d+)/bookings\z#', 'dayBookingsForm', 'teacher'],
+        ['POST', '#^/day/(\d+)/bookings/delete\z#', 'dayBookingsDelete', 'teacher'],
+        ['POST', '#^/day/(\d+)/break\z#', 'breakAdd', 'teacher'],
+        ['POST', '#^/break/(\d+)/delete\z#', 'breakDelete', 'teacher'],
+        ['POST', '#^/slot/(\d+)/block\z#', 'slotToggleBlock', 'teacher'],
+        ['GET', '#^/slot/(\d+)/book\z#', 'bookingNew', 'teacher'],
+        ['POST', '#^/slot/(\d+)/book\z#', 'bookingCreate', 'teacher'],
+        ['GET', '#^/booking/(\d+)/edit\z#', 'bookingEdit', 'teacher'],
+        ['POST', '#^/booking/(\d+)/edit\z#', 'bookingUpdate', 'teacher'],
+        ['POST', '#^/booking/(\d+)/delete\z#', 'bookingDelete', 'teacher'],
+        ['GET', '#^/profile\z#', 'profile', 'teacher'],
+        ['POST', '#^/profile\z#', 'profileSave', 'teacher'],
+        ['POST', '#^/profile/summaries\z#', 'summaryNoticeSeen', 'teacher'],
+        ['POST', '#^/news\z#', 'newsSeen', 'teacher'],
+        ['POST', '#^/password\z#', 'passwordSave', 'teacher'],
+        ['GET', '#^/password-change\z#', 'passwordChangeForm', 'teacher'],
+        ['POST', '#^/password-change\z#', 'passwordChangeSave', 'teacher'],
+        ['GET', '#^/users\z#', 'users', 'admin'],
+        ['GET', '#^/users/new\z#', 'userForm', 'admin'],
+        ['POST', '#^/users/new\z#', 'userSave', 'admin'],
+        ['GET', '#^/users/(\d+)/edit\z#', 'userForm', 'admin'],
+        ['POST', '#^/users/(\d+)/edit\z#', 'userSave', 'admin'],
+        ['POST', '#^/users/(\d+)/reset-password\z#', 'userResetPassword', 'admin'],
+        ['POST', '#^/users/(\d+)/delete\z#', 'userDelete', 'admin'],
+        ['POST', '#^/users/end-sessions\z#', 'endAllSessions', 'admin'],
+        ['GET', '#^/texts\z#', 'texts', 'admin'],
+        ['GET', '#^/start\z#', 'readiness', 'admin'],
+        ['POST', '#^/texts/operator\z#', 'operatorSave', 'admin'],
+        ['POST', '#^/texts/contact\z#', 'parentContactSave', 'admin'],
+        ['GET', '#^/page/(imprint|privacy)/([a-z]{2})\z#', 'pageForm', 'admin'],
+        ['POST', '#^/page/(imprint|privacy)/([a-z]{2})\z#', 'pageSave', 'admin'],
+        ['GET', '#^/log\z#', 'auditLog', 'admin'],
+        ['GET', '#^/access-request\z#', 'accessRequestForm', 'admin'],
+        ['POST', '#^/access-request\z#', 'accessRequestSearch', 'admin'],
+        ['GET', '#^/templates\z#', 'templates', 'admin'],
+        ['GET', '#^/templates/new\z#', 'templateForm', 'admin'],
+        ['POST', '#^/templates/new\z#', 'templateSave', 'admin'],
+        ['GET', '#^/templates/(\d+)/edit\z#', 'templateForm', 'admin'],
+        ['POST', '#^/templates/(\d+)/edit\z#', 'templateSave', 'admin'],
+        ['POST', '#^/templates/(\d+)/delete\z#', 'templateDelete', 'admin'],
+        ['POST', '#^/templates/from-round/(\d+)\z#', 'templateFromRound', 'admin'],
     ];
 
     public function dispatch(string $path, string $method): void
@@ -131,7 +131,7 @@ final class AdminController
             return;
         }
         // Invitation/password link and "forgot password" work without login
-        if (preg_match('#^/invite/([A-Za-z0-9_-]{43})$#', $path, $m)) {
+        if (preg_match('#^/invite/([A-Za-z0-9_-]{43})\z#', $path, $m)) {
             $method === 'POST' ? $this->inviteSave($m[1]) : $this->inviteForm($m[1]);
             return;
         }
@@ -1696,11 +1696,12 @@ final class AdminController
         // Sign-ins only in coarse steps (never, within / more than 12 months ago): enough to clean up
         // accounts, without showing everybody's login times to all admins (employee data protection)
         $users = Db::all(
-            'SELECT u.id, u.username, u.display_name, u.email, u.role, u.is_active, u.must_change_password, u.access_token_expires_at,
+            'SELECT u.id, u.username, u.display_name, u.email, u.role, u.is_active, u.must_change_password,
                     u.last_login_at IS NULL AS never_signed_in, u.last_login_at < ? AS long_inactive,
+                    COALESCE(u.access_token_expires_at > ?, 0) AS invite_open,
                     (SELECT COUNT(*) FROM rounds r WHERE r.user_id = u.id) AS round_count
                FROM users u ORDER BY u.is_active DESC, u.display_name, u.username',
-            [self::inactiveSince()]
+            [self::inactiveSince(), Time::nowSql()]
         );
         $this->render('admin/users', ['title' => __('Benutzer'), 'users' => $users, 'me' => Auth::id()]);
     }
@@ -2642,7 +2643,7 @@ final class AdminController
 
     private static function when(string $date, ?string $time = null): string
     {
-        return date('d.m.Y', (int) strtotime($date)) . ($time !== null ? ' ' . substr($time, 0, 5) : '');
+        return fmt_datetime($date, 'd.m.Y') . ($time !== null ? ' ' . substr($time, 0, 5) : '');
     }
 
     private static function accountLabel(array $user): string

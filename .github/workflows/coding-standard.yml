@@ -1,0 +1,31 @@
+# Coding standard (PSR-12 with the exceptions in .php-cs-fixer.dist.php), checked with the pinned PHP-CS-Fixer of
+# dev/cs.sh. Fails with the diff of every file that does not follow it; dev/cs.sh --fix changes them.
+name: Coding standard
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  php-cs-fixer:
+    name: PHP-CS-Fixer
+    runs-on: ubuntu-latest
+    steps:
+      # Code via git instead of actions/checkout, as in tests.yml: no third-party actions needed
+      - name: Fetch code
+        env:
+          REPO: ${{ github.repository }}
+          REF: ${{ github.sha }}
+          TOKEN: ${{ github.token }}
+        run: |
+          git init -q . && git remote add origin "https://github.com/$REPO.git"
+          AUTH="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$TOKEN" | base64 -w0)"
+          git -c http.extraheader="$AUTH" fetch -q --depth=1 origin "$REF"
+          git checkout -q --detach "FETCH_HEAD^{commit}"
+          git log -1 --format='Checked out: %h %s'
+
+      - name: PHP-CS-Fixer
+        run: CS_DOCKER=1 dev/cs.sh
