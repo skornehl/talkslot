@@ -730,7 +730,7 @@ check "own round cannot be activated without display name" 'curl -s -L -b "$J" -
 DBQ "UPDATE tp_users SET display_name = UNHEX('${ACC0%%:*}'), email = UNHEX('${ACC0##*:}') WHERE role='admin'; UPDATE tp_settings SET value = UNHEX('$(echo "$ACC0" | cut -d: -f2)') WHERE name='controller_contact'"
 R=$(curl -s -b "$J" --data-urlencode "csrf=$T" -d "display_name=&email=kaputt" "$B/admin/profile")
 check "profile: missing display name and invalid email rejected" 'echo "$R" | has "Bitte einen Anzeigenamen angeben" && echo "$R" | has "Die E-Mail-Adresse ist ungültig"'
-check "delete round" 'curl -s -L -b "$J" -d "csrf=$T" "$B/admin/round/$RN/delete" | has "Runde mit allen Tagen und Buchungen gelöscht" && [ -z "$(DBQ "SELECT id FROM tp_rounds WHERE id=$RN")" ]'
+check "delete round" 'curl -s -L -b "$J" -d "csrf=$T" "$B/admin/round/$RN/delete" | has "Runde in den Papierkorb gelegt" && [ -z "$(DBQ "SELECT id FROM tp_rounds WHERE id=$RN")" ]'
 
 # Change password (profile) and forced change
 PW() { curl -s -L -c "$J" -b "$J" -d "csrf=$T" --data-urlencode "current_password=$1" --data-urlencode "new_password=$2" --data-urlencode "new_password2=$3" "$B/admin/${4:-password}"; }

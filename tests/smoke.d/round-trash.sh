@@ -35,7 +35,7 @@ RT_O=$(mkround "Besetzt+$RT_N" none)
 DBQ "UPDATE tp_rounds SET slug = '$RT_S', code = '$RT_C' WHERE id = $RT_O"
 RT_X=$(curl -s -L -b "$J" -d "csrf=$T" "$B/admin/trash/$RT_E/restore")
 RT_N3=$(DBQ "SELECT id FROM tp_rounds WHERE title = 'Papierkorb $RT_N'")
-check "address and code taken meanwhile: new ones, and the message says so" '[ -n "$RT_N3" ] && [ "$(DBQ "SELECT slug FROM tp_rounds WHERE id = $RT_N3")" != "$RT_S" ] && [ "$(DBQ "SELECT code FROM tp_rounds WHERE id = $RT_N3")" != "$RT_C" ] && echo "$RT_X" | has "Ihre bisherige Adresse war vergeben"'
+check "address and code taken meanwhile: new ones, and the message says so" '[ -n "$RT_N3" ] && [ "$(DBQ "SELECT slug FROM tp_rounds WHERE id = $RT_N3")" != "$RT_S" ] && [ "$(DBQ "SELECT code FROM tp_rounds WHERE id = $RT_N3")" != "$RT_C" ] && echo "$RT_X" | has "Ihre bisherige Adresse oder ihr Rundencode war vergeben"'
 curl -s -o /dev/null -b "$J" -d "csrf=$T&confirm=1" "$B/admin/round/$RT_O/delete"
 curl -s -o /dev/null -b "$J" -d "csrf=$T" "$B/admin/round/$RT_N3/delete"
 RT_E=$(DBQ "SELECT id FROM tp_round_trash WHERE title = 'Papierkorb $RT_N'")
@@ -65,6 +65,18 @@ book "$RT_BS" "Familie Papierkorb" "" >/dev/null
 RT_C0=$(DBQ "SELECT COUNT(*) FROM tp_round_trash")
 curl -s -o /dev/null -b "$J" -d "csrf=$T&confirm=1" "$B/admin/round/$RT_B/delete"
 check "with a booking: deleted at once, not in the trash" '[ "$(DBQ "SELECT COUNT(*) FROM tp_rounds WHERE id = $RT_B")" = 0 ] && [ "$(DBQ "SELECT COUNT(*) FROM tp_round_trash")" = "$RT_C0" ]'
+# Nothing to do (in-process, script on stdin for the coverage run): an unknown round or entry, a round with a booking
+RT_B2=$(mkround "Gebucht-Zwei+$RT_N" none); RT_BS2=$(slugof "$RT_B2")
+book "$RT_BS2" "Familie Zwei" "" >/dev/null
+RT_NUL=$($DC exec -T app php -- /srv/app "$RT_B2" 2>&1 <<'PHP'
+<?php
+[, $root, $booked] = $argv;
+require "$root/app/bootstrap.php";
+var_export([App\RoundTrash::put(99999999), App\RoundTrash::put((int) $booked), App\RoundTrash::restore(99999999)]);
+PHP
+)
+check "an unknown round or entry, or a round that has a booking by now: nothing changes" '[ "$(echo "$RT_NUL" | tr -d " \n")" = "array(0=>NULL,1=>NULL,2=>NULL,)" ] && [ "$(DBQ "SELECT COUNT(*) FROM tp_rounds WHERE id = $RT_B2")" = 1 ]' || printf '      %s\n' "$RT_NUL"
+curl -s -o /dev/null -b "$J" -d "csrf=$T&confirm=1" "$B/admin/round/$RT_B2/delete"
 # Clean-up after KEEP_DAYS, and the entries of a deleted account go with it
 RT_R2=$(mkround "Abgelaufen+$RT_N" none)
 curl -s -o /dev/null -b "$J" -d "csrf=$T" "$B/admin/round/$RT_R2/delete"
