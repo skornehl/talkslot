@@ -73,7 +73,7 @@ $snapshot = static function (string $prefix) use ($pdo): array {
     }
     $indexes = [];
     foreach ($query('SELECT TABLE_NAME, INDEX_NAME, NON_UNIQUE, COLUMN_NAME, SUB_PART FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME LIKE ? ORDER BY TABLE_NAME, INDEX_NAME, SEQ_IN_INDEX') as [$t, $i, $nonUnique, $c, $sub]) {
-        $key = "index {$strip($t)}.$i";
+        $key = "index {$strip($t)}.{$strip($i)}"; // an implicit index of a foreign key has the name of the key
         $indexes[$key] = ($indexes[$key] ?? ($nonUnique ? 'key' : 'unique')) . " $c" . ($sub !== null ? "($sub)" : '');
     }
     $out += $indexes;

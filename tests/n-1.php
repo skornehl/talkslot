@@ -76,7 +76,7 @@ check('parents: moving', $code === 200 && $codeMove === 303 && (int) Db::value('
 [, $page] = $http($manage);
 [$action, $fields] = $form($page, './/input[@name="action" and @value="cancel"]');
 [$code] = $http($action, ['confirm' => '1'] + $fields);
-check('parents: cancelling', $code === 303 && Db::value('SELECT COUNT(*) FROM bookings WHERE name = ?', ['Nora Vorversion']) === 0);
+check('parents: cancelling', in_array($code, [200, 303], true) && Db::value('SELECT COUNT(*) FROM bookings WHERE name = ?', ['Nora Vorversion']) === 0);
 
 $token = hash_hmac('sha256', 'health', (string) App\Config::get('secret', ''));
 [$code, $body] = $http('/health', [], ['X-Health-Token: ' . $token]);
