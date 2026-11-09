@@ -219,7 +219,7 @@ direkt. Eine bestehende führt beim nächsten Aufruf die fehlenden Schritte aus 
 - **Automatisch geprüft.** Ein Unit-Test lehnt ab, was ein Schritt nicht tun darf (jeder Schritt außer 3, der älter
   ist als die Regel), und doppelte Nummern. `tests/migrations.php` (Teil des Smoke-Tests) bringt das Schema des
   ersten Releases mit einigen Daten auf den aktuellen Stand, vergleicht es mit einer Neuinstallation (Tabellen,
-  Spalten, Indizes, Fremdschlüssel) und führt jeden Schritt ein zweites Mal aus. `tests/n-1.sh` lässt das letzte
+  Spalten, Indizes, Fremdschlüssel) und führt jeden Schritt seither ein zweites Mal aus. `tests/n-1.sh` lässt das letzte
   Release auf dem Schema des aktuellen Codes laufen (Anmeldung, Buchen, Verschieben, Absagen, Health-Check); die CI
   macht das bei jedem Push.
 - Ein Schritt wartet höchstens 10 Sekunden auf eine Metadatensperre (`lock_wait_timeout`, etwa eine offene

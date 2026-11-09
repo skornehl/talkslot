@@ -90,7 +90,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
         run: |
-          TAG="$(gh api "repos/$REPO/releases/latest" -q .tag_name)"
+          TAG="$(gh api "repos/$REPO/releases/latest" -q .tag_name || true)"
+          if [ -z "$TAG" ]; then echo "::notice::No release yet (e.g. a fork): nothing to compare with."; exit 0; fi
           AUTH="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)"
           git -c http.extraheader="$AUTH" fetch -q --depth=1 origin "refs/tags/$TAG:refs/tags/$TAG"
           dev/reset.sh && dev/demo.sh && tests/n-1.sh "$TAG"

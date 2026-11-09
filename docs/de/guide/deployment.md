@@ -178,7 +178,7 @@ neuesten Code aus.
 
 Die Datenbank wird **nicht** zurückgesetzt. Deshalb fügen Migrationen immer nur Spalten (mit
 Standardwerten) und Tabellen hinzu: Eine ältere Version funktioniert auch mit einem neueren Schema. Solange die
-Datenbank neuer ist als der Code, bekommen Admins einmalig eine E-Mail und einen Hinweis in der Übersicht. Die CI
+Datenbank neuer ist als der Code, bekommen Admins einmalig eine E-Mail und einen Hinweis in der Übersicht (ab dieser Version). Die CI
 testet das bei jedem Push mit dem letzten Release.
 
 ## Deployment aus einem eigenen Repository {#deploying-from-your-own-repository}

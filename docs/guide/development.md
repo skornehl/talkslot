@@ -206,7 +206,7 @@ directly. An existing one runs the missing steps of `Migrations::STEPS` on the n
 - **Checked automatically.** A unit test rejects what a step must not do (every step except 3, from before the
   rule) and duplicate numbers. `tests/migrations.php` (part of the smoke test) brings the schema of the first
   release up to date with some data, compares it with a new installation (tables, columns, indexes, foreign keys)
-  and runs every step a second time. `tests/n-1.sh` runs the latest release on the schema of the current code
+  and runs every step since then a second time. `tests/n-1.sh` runs the latest release on the schema of the current code
   (sign-in, booking, moving, cancelling, health check); CI does this for every push.
 - A step waits at most 10 seconds for a metadata lock (`lock_wait_timeout`, e.g. an open transaction in
   phpMyAdmin), then gives up; the next request repeats it. If the database is newer than the code (after

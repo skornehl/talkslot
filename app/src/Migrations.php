@@ -327,6 +327,8 @@ final class Migrations
         $current = (int) $version;
         if ($current > self::LATEST) {
             self::reportAhead($current);
+        } elseif (Settings::get('schema_ahead_reported') !== null) {
+            Db::run("DELETE FROM settings WHERE name = 'schema_ahead_reported'"); // back in step: the next switch back is reported again
         }
         // Only one request migrates (parallel page requests, e.g. during the upload); the others
         // wait briefly and then find the new state. The lock is per database and prefix (Db::lock()).
@@ -359,18 +361,20 @@ final class Migrations
 
     /**
      * The database is newer than this code: expected after switching back to an earlier version (switch.yml), and
-     * harmless as long as the newer steps only added. Reported once per schema version (expert review P2-5).
+     * harmless as long as the newer steps only added. Reported once per time it happens (expert review P2-5).
      */
     private static function reportAhead(int $current): void
     {
         if (Settings::get('schema_ahead_reported') === (string) $current) {
             return;
         }
-        Settings::set('schema_ahead_reported', (string) $current);
-        Alert::notify('schema-ahead', 'Datenbank neuer als der Code', [
+        $sent = Alert::notify('schema-ahead', 'Datenbank neuer als der Code', [
             'Die Datenbank hat Schema-Version ' . $current . ', diese Version von TalkSlot kennt nur bis ' . self::LATEST . '.',
             'Das ist nach dem Zurückschalten auf eine ältere Version zu erwarten und unbedenklich, solange die neueren Migrationen nur hinzugefügt haben. Bitte spielen Sie bald wieder die aktuelle Version aus.',
         ]);
+        if ($sent) {
+            Settings::set('schema_ahead_reported', (string) $current);
+        }
     }
 
     /** Hint for the dashboard of admins while the database is newer than this code, or null. */

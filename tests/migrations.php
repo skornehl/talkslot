@@ -6,7 +6,7 @@
  *
  * The schema of the first release (tests/fixtures/schema-v1.0.0.sql, schema version 12) with some data, brought up
  * to date by Migrations::run(), must end up like a new installation: the same tables, columns, indexes and foreign
- * keys. Then every step runs once more, as after an interrupted update, and nothing may change. Works in throwaway
+ * keys. Then every step since that release runs once more, as after an interrupted update, and nothing may change. Works in throwaway
  * tables under a random prefix in the configured database, dropped at the end, so an installation stays untouched.
  * Only with "debug" in config.php (the Docker environment) or TALKSLOT_INTEGRATION=1.
  */
@@ -112,7 +112,7 @@ Settings::set('schema_version', '12');
 
 Migrations::run();
 check('every step from the first release on ran: schema version ' . Settings::get('schema_version') . ' of ' . Migrations::LATEST, (int) Settings::get('schema_version') === Migrations::LATEST);
-check('the data of the first release is still there, with the values of the new columns',
+check('the data of the first release is still there',
     Db::value('SELECT name FROM bookings WHERE slot_id = ?', [$slotId]) === 'Anna Muster'
     && Db::value('SELECT COUNT(*) FROM rounds WHERE id = ? AND user_id = ?', [$roundId, $userId]) === 1);
 $migrated = $snapshot($old);
@@ -121,7 +121,7 @@ $migrated = $snapshot($old);
 Settings::set('schema_version', '12');
 Migrations::run();
 $again = $differences($migrated, $snapshot($old));
-check('every step once more (as after an interrupted update): no error, nothing changes' . ($again ? "\n      " . implode("\n      ", $again) : ''),
+check('every step since the first release once more (as after an interrupted update): no error, nothing changes' . ($again ? "\n      " . implode("\n      ", $again) : ''),
     !$again && (int) Settings::get('schema_version') === Migrations::LATEST && Db::value('SELECT COUNT(*) FROM bookings') === 1);
 
 $fresh = $run . 'b_';

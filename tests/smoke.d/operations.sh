@@ -457,8 +457,8 @@ OP_AHEAD='$q = urlencode("to:betrieb@example.org subject:\"Datenbank neuer als d
 OP_AL=$(ALERTS "$OP_AHEAD"' echo json_decode(file_get_contents($u), true)["messages_count"] ?? "?";')
 check "database newer than the code: health check ok, a hint for admins, one mail ($OP_AL)" \
   'op_is "$OP_H" 200 ok && echo "$OP_PAGE" | grep -q "Die Datenbank ist neuer als diese Version von TalkSlot (Schema-Version $((OP_LATEST + 1)), diese Version kennt nur bis $OP_LATEST)" && [ "$OP_AL" = 1 ]'
-DBQ "UPDATE tp_settings SET value = '$OP_LATEST' WHERE name = 'schema_version'; DELETE FROM tp_settings WHERE name = 'schema_ahead_reported'"
-check "database at the version of the code: no hint" '! curl -s -b "$J" "$B/admin" | grep -q "Die Datenbank ist neuer als"'
+DBQ "UPDATE tp_settings SET value = '$OP_LATEST' WHERE name = 'schema_version'"
+check "database at the version of the code: no hint, the next switch back is reported again" '! curl -s -b "$J" "$B/admin" | grep -q "Die Datenbank ist neuer als" && [ -z "$(OP_SETTING schema_ahead_reported)" ]'
 ALERTS "$OP_AHEAD"' file_get_contents($u, false, stream_context_create(["http" => ["method" => "DELETE"]]));
   $f = "/srv/app/app/var/alerts.json"; $s = json_decode((string) @file_get_contents($f), true);
   if (is_array($s)) { $n = count($s["keys"] ?? []); $s["keys"] = array_filter($s["keys"] ?? [], fn ($e) => $e["last"] < '"$OP_T1"');

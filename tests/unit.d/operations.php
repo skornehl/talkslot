@@ -390,6 +390,11 @@ $p5Problems = static function (array $statements): array {
         if (preg_match('/\bCREATE\s+(UNIQUE\s+)?(TABLE|INDEX)\b(?!\s+IF\s+NOT\s+EXISTS)/i', $code, $m) || preg_match('/\bCREATE\s+UNIQUE\s+INDEX\b/i', $code, $m)) {
             $problems[] = trim($m[0]) . ' without IF NOT EXISTS, or a unique index on existing columns';
         }
+        // Only these kinds of statement are known to be additive; anything else (CREATE OR REPLACE, ALTER IGNORE, a
+        // quoted table name) is reported rather than passed
+        if (!preg_match('/^\s*(?:ALTER\s+TABLE\s+\w+\s|CREATE\s+TABLE\s+IF\s+NOT\s+EXISTS\s|CREATE\s+INDEX\s+IF\s+NOT\s+EXISTS\s|UPDATE\s|INSERT\s|DELETE\s+FROM\s)/i', $code)) {
+            $problems[] = 'unknown kind of statement: ' . substr(trim($code), 0, 40);
+        }
         if (!preg_match('/^\s*ALTER\s+TABLE\s+(\w+)\s+(.*)$/is', $code, $alter)) {
             continue;
         }
@@ -409,7 +414,7 @@ $p5Problems = static function (array $statements): array {
                 if (preg_match('/\bNOT\s+NULL\b/i', $k[2]) && !preg_match('/\bDEFAULT\b/i', $k[2])) {
                     $problems[] = "column $k[1]: NOT NULL without DEFAULT";
                 }
-            } elseif (preg_match('/^ADD\s+(UNIQUE\s+)?(?:KEY|INDEX)\s+IF\s+NOT\s+EXISTS\s+\w+\s*\(([^)]*)\)/is', $clause, $k)) {
+            } elseif (preg_match('/^ADD\s+(UNIQUE\s+)?(?:KEY|INDEX)\s+IF\s+NOT\s+EXISTS\s+\w+\s*\((.*)\)\s*$/is', $clause, $k)) {
                 $columns = array_map(static fn (string $c): string => strtolower(trim((string) preg_replace('/\(\d+\)/', '', $c))), explode(',', $k[2]));
                 if (trim($k[1]) !== '' && array_diff($columns, $added[$alter[1]] ?? [])) {
                     $problems[] = 'UNIQUE on existing columns: ' . implode(', ', $columns);
@@ -434,7 +439,7 @@ $p5Bad = ['ALTER TABLE users DROP COLUMN lang', 'RENAME TABLE users TO people', 
     'ALTER TABLE users ADD COLUMN lang VARCHAR(5) NULL', 'ALTER TABLE users ADD COLUMN IF NOT EXISTS x INT NOT NULL', 'ALTER TABLE users ADD KEY idx_x (lang)',
     'ALTER TABLE users ADD UNIQUE KEY IF NOT EXISTS uq_x (lang)', 'CREATE TABLE audit (id INT)', 'CREATE UNIQUE INDEX IF NOT EXISTS uq_x ON users (lang)',
     'ALTER TABLE users ALTER COLUMN lang DROP DEFAULT', 'ALTER TABLE users ADD CONSTRAINT fk_x FOREIGN KEY (lang) REFERENCES pages (lang)', "CREATE TABLE IF NOT EXISTS x (id INT, CONSTRAINT fk_y FOREIGN KEY (id) REFERENCES users (id) ON DELETE RESTRICT)",
-    'ALTER TABLE users CONVERT TO CHARACTER SET utf8mb4', 'TRUNCATE TABLE rate_limits'];
+    'ALTER TABLE users CONVERT TO CHARACTER SET utf8mb4', 'TRUNCATE TABLE rate_limits', 'CREATE OR REPLACE TABLE rounds (id INT)', 'ALTER IGNORE TABLE users ADD COLUMN x INT NOT NULL', 'ALTER TABLE `users` ADD COLUMN IF NOT EXISTS x INT NOT NULL'];
 $p5Good = ["ALTER TABLE users ADD COLUMN IF NOT EXISTS x VARCHAR(5) NOT NULL DEFAULT 'de' AFTER email, ADD COLUMN IF NOT EXISTS y CHAR(64) NULL, ADD UNIQUE KEY IF NOT EXISTS uq_y (y), ADD KEY IF NOT EXISTS idx_x (email(20), x)",
     'ALTER TABLE users ALTER COLUMN x SET DEFAULT 0', 'CREATE TABLE IF NOT EXISTS t (id INT, UNIQUE KEY u (id), CONSTRAINT fk_t FOREIGN KEY (id) REFERENCES users (id) ON DELETE CASCADE)',
     'CREATE INDEX IF NOT EXISTS idx_z ON users (email)', "UPDATE settings SET value = 'DROP RENAME' WHERE name = 'x'", "INSERT IGNORE INTO settings (name, value) VALUES ('a', 'b')"];
