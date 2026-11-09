@@ -9,7 +9,7 @@ check "test round of the code hygiene removed" '[ "$(DBQ "SELECT COUNT(*) FROM t
 # Users list: an invitation counts as open until it expires (decided in the query, see AdminController::users())
 HY_MAIL=hy-einladung-$(date +%s%N | tail -c 8)@example.org
 curl -s -o /dev/null -b "$J" --data-urlencode "csrf=$T" --data-urlencode "display_name=Einladung Test" --data-urlencode "email=$HY_MAIL" -d "role=teacher" "$B/admin/users/new"
-hy_state() { curl -s -b "$J" "$B/admin/users" | grep -F -A10 "$HY_MAIL" | grep -m1 -o 'Einladung [a-z]*'; }
+hy_state() { curl -s -b "$J" "$B/admin/users" | grep -F -A10 "$HY_MAIL" | grep -m1 -oE 'Einladung (offen|abgelaufen)'; }
 DBQ "UPDATE tp_users SET access_token_expires_at = NOW() + INTERVAL 1 DAY WHERE email = '$HY_MAIL'"
 HY_OPEN=$(hy_state)
 DBQ "UPDATE tp_users SET access_token_expires_at = '2020-01-01 00:00:00' WHERE email = '$HY_MAIL'"
