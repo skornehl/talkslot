@@ -77,7 +77,7 @@ book() { # book <slot index> <name> [email]
   page=$(curl -s "$B/$SLUG")
   csrf=$(echo "$page" | csrf)
   slot=$(echo "$page" | grep -o 'name="slot_id" id="slot-[0-9]*" value="[0-9]*"' | sed -n "$1p" | grep -o 'value="[0-9]*"' | grep -o '[0-9]*')
-  curl -s -o /dev/null --data-urlencode "csrf=$csrf" --data-urlencode "name=$2" --data-urlencode "email=${3:-}" -d "slot_id=$slot&privacy=1" "$B/$SLUG"
+  curl -s -o /dev/null --data-urlencode "csrf=$csrf" --data-urlencode "name=$2" --data-urlencode "email=${3:-}" -d "slot_id=$slot" "$B/$SLUG"
 }
 book 1 'Familie Yılmaz (Elif)' elif.yilmaz@example.org
 book 2 'Lukas Schmidt'

@@ -82,7 +82,7 @@ check('operated by the school: unedited private texts (also those up to v1.5) be
 check('never replaced: edited texts, texts that already are the template, languages without a template',
     $replace('privacy', 'de', $privateDe . "\nErgänzung", 'school') === null && $replace('privacy', 'de', str_replace('Lehrkraft', 'Lehrerin', $v15), 'private') === null
     && $replace('privacy', 'de', $privateDe, 'private') === null && $replace('imprint', 'de', $legalTpl('imprint.de'), 'school') === null
-    && $replace('privacy', 'pl', null, 'school') === null && $replace('privacy', 'pl', 'Polityka prywatności', 'private') === null);
+    && $replace('imprint', 'pl', null, 'school') === null && $replace('privacy', 'it', null, 'private') === null && $replace('privacy', 'pl', 'Polityka prywatności', 'private') === null);
 $detect = [App\LegalTexts::class, 'detectType'];
 $v15Install = ['imprint' => ['de' => $legalTpl('imprint-private.de'), 'en' => $legalTpl('imprint-private.en')],
     'privacy' => ['de' => $v15, 'en' => $legalFixture('privacy.en.v1.5')]];
@@ -136,4 +136,4 @@ $dashboardTeacher = static fn (bool $typeMissing): string => App\View::capture('
     'profileHints' => [], 'legalHints' => [], 'operatorMissing' => false, 'typeMissing' => $typeMissing, 'textsOpen' => true, 'configExposed' => [], 'unusedAccounts' => 0, 'mailsLate' => null]);
 check('teachers: notice that the admins still have to choose the operator type (before the one on open placeholders)',
     str_contains($dashboardTeacher(true), 'Die Admins müssen noch wählen, ob die Terminvergabe von der Schule oder privat betrieben wird.')
-    && !str_contains($dashboardTeacher(false), 'Die Admins müssen noch wählen') && str_contains($dashboardTeacher(false), 'offene Platzhalter (Aufgabe der Admins)'));
+    && !str_contains($dashboardTeacher(false), 'Die Admins müssen noch wählen') && str_contains($dashboardTeacher(false), 'noch nicht vollständig (Aufgabe der Admins)'));

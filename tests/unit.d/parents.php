@@ -63,7 +63,7 @@ check('no current template counts as old', !array_intersect(App\Migrations::CURR
 check('variants: the school template comes first, loading only existing files',
     array_values(App\LegalTexts::VARIANTS['privacy'])[0] === 'privacy' && array_values(App\LegalTexts::VARIANTS['imprint'])[0] === 'imprint'
     && App\LegalTexts::template('privacy', 'private', 'en') === $tpl('privacy-private.en') && App\LegalTexts::template('privacy', 'school', 'de') === $publicDe
-    && App\LegalTexts::template('privacy', 'school', 'pl') === null && App\LegalTexts::template('imprint', 'public', 'de') === null
+    && App\LegalTexts::template('imprint', 'school', 'pl') === null && App\LegalTexts::template('imprint', 'public', 'de') === null
     && App\LegalTexts::template('privacy', 'school', '../de') === null);
 // As parents see it: the details of the operator and the web host do not count as open placeholders, a missing web host does
 $contact = new ReflectionProperty(App\Operator::class, 'contact');
@@ -231,7 +231,7 @@ $mBooking = ['id' => 5, 'round_id' => 7, 'title' => 'Elternsprechtag 7b', 'teach
     'day_date' => '2030-01-07', 'start_time' => '14:00:00', 'end_time' => '14:15:00', 'cancel_deadline_hours' => 24];
 $manage = static fn (array $vars = []): string => App\View::capture('public/manage', $vars + [
     'booking' => $mBooking, 'token' => $mToken, 'canChange' => true, 'canMove' => true, 'days' => [], 'csrf' => '1.abc',
-    'done' => '', 'mailed' => false, 'mailQueued' => false, 'remember' => false, 'errors' => [], 'open' => '', 'mailTo' => '',
+    'done' => '', 'mailed' => false, 'mailQueued' => false, 'mailLimited' => false, 'remember' => false, 'errors' => [], 'open' => '', 'mailTo' => '',
 ]);
 $mp = $manage(['days' => [['date' => '2030-01-08', 'slots' => [['id' => 9, 'start_time' => '15:00:00', 'end_time' => '15:15:00']]]]]);
 $mLink = abs_url('/b/' . $mToken);

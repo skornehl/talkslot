@@ -324,3 +324,54 @@ check('error page: everything still buffered is discarded, the page is the whole
 check('error page before a language was chosen: the default language, never raw text keys; no legal notice link while the database is down',
     str_contains($out, '<html lang="en">') && str_contains($out, '<h1>Something went wrong</h1>') && !str_contains($out, 'error.') && !str_contains($out, 'impressum')
     && str_contains($out, '<a href="/">Go to the start page</a>'));
+
+echo "Operations: table prefix, foreign keys and locks (expert review P2-7)\n";
+App\Config::load(['db' => ['prefix' => 'tp2_'] + $cfg['db']] + $cfg);
+// Only names of tables outside quotes and comments: values, LIKE patterns and quoted identifiers stay as written
+check('prefix: nothing inside quotes or comments changes, also not with spaces around the word; tables and foreign keys get it',
+    App\Db::prefix("SELECT * FROM rounds WHERE title LIKE '%the users and rounds%' AND note = \"slots, bookings\" -- users\nAND `pages` = 1 /* settings */")
+        === "SELECT * FROM tp2_rounds WHERE title LIKE '%the users and rounds%' AND note = \"slots, bookings\" -- users\nAND `pages` = 1 /* settings */"
+    && App\Db::prefix("SELECT 'it''s users' FROM users WHERE x = 'a\\' rounds'") === "SELECT 'it''s users' FROM tp2_users WHERE x = 'a\\' rounds'"
+    && App\Db::prefix("CREATE TABLE IF NOT EXISTS mail_outbox (id INT,\n  constraint  fk_outbox_user FOREIGN KEY (id) REFERENCES users (id))")
+        === "CREATE TABLE IF NOT EXISTS tp2_mail_outbox (id INT,\n  constraint  tp2_fk_outbox_user FOREIGN KEY (id) REFERENCES tp2_users (id))"
+    && App\Db::prefix('SELECT fk_rounds_user, r.rounds_x, rounds.id FROM rounds') === 'SELECT fk_rounds_user, r.rounds_x, tp2_rounds.id FROM tp2_rounds'
+    && App\Db::prefix('ALTER TABLE rounds DROP CONSTRAINT fk_rounds_user') === 'ALTER TABLE tp2_rounds DROP CONSTRAINT fk_rounds_user'
+    && App\Db::prefix("SELECT 1 # users' note\nFROM users") === "SELECT 1 # users' note\nFROM tp2_users"
+    && App\Db::prefix('SELECT 1--1 FROM users -- users') === 'SELECT 1--1 FROM tp2_users -- users'
+    && App\Db::prefix('SELECT /*! users */ /*M! rounds */ /* slots */ 1') === 'SELECT /*! tp2_users */ /*M! tp2_rounds */ /* slots */ 1');
+App\Config::load($cfg);
+// Every table the app creates is in Db::TABLES (else it would run without the prefix), and every foreign key is
+// called fk_… (else it would keep its name and clash with a second installation in the same database)
+$p7Steps = (new ReflectionClassConstant(App\Migrations::class, 'STEPS'))->getValue();
+$p7Sql = (string) file_get_contents(dirname(__DIR__, 2) . '/app/schema.sql') . "\n" . implode("\n", array_merge(...array_values($p7Steps)));
+preg_match_all('/CREATE TABLE(?: IF NOT EXISTS)? (\w+)/i', $p7Sql, $p7Tables);
+preg_match_all('/\bCONSTRAINT\s+(\w+)\s+FOREIGN KEY/i', $p7Sql, $p7Fks);
+preg_match_all('/\bFOREIGN KEY\b/i', $p7Sql, $p7AllFks);
+check('schema.sql and every migration: each table in Db::TABLES, each foreign key named fk_…',
+    count($p7Tables[1]) > 10 && !array_diff($p7Tables[1], App\Db::TABLES) && count($p7Fks[1]) === count($p7AllFks[0])
+    && count($p7Fks[1]) > 10 && $p7Fks[1] === array_values(array_filter($p7Fks[1], static fn (string $n): bool => str_starts_with($n, 'fk_'))));
+// A foreign key is never dropped by a name written into a migration: installations from before the prefixed
+// names have fk_…, newer ones <prefix>fk_… (Db::foreignKey() looks the name up)
+check('migrations: no foreign key dropped by a written-down name', !preg_match('/DROP\s+(?:FOREIGN\s+KEY|CONSTRAINT)\s+(?:IF\s+EXISTS\s+)?`?fk_/i', $p7Sql));
+// No alias named like a table: Db::prefix() would rewrite it ("AS slots" → "AS tp_slots") and change the keys
+$p7Aliases = [];
+$p7Words = implode('|', App\Db::TABLES);
+foreach (array_merge(glob(dirname(__DIR__, 2) . '/app/src/*.php') ?: [], glob(dirname(__DIR__, 2) . '/app/src/*/*.php') ?: [], glob(dirname(__DIR__, 2) . '/bin/*.php') ?: [], glob(dirname(__DIR__, 2) . '/public/*.php') ?: []) as $f) {
+    foreach (token_get_all((string) file_get_contents($f)) as $tok) {
+        if (is_array($tok) && in_array($tok[0], [T_CONSTANT_ENCAPSED_STRING, T_ENCAPSED_AND_WHITESPACE], true)
+            && preg_match("/\\bAS\\s+($p7Words)\\b|\\b(?:FROM|JOIN|UPDATE)\\s+\\w+\\s+($p7Words)\\b/i", $tok[1])) {
+            $p7Aliases[] = basename($f) . ':' . $tok[2];
+        }
+    }
+}
+check('SQL in the code: no alias named like a table' . ($p7Aliases ? ' (' . implode(', ', $p7Aliases) . ')' : ''), !$p7Aliases);
+// Locks only through Db::lock(): its name holds the database and the prefix (GET_LOCK names count server-wide)
+$p7Locks = [];
+foreach (array_merge(glob(dirname(__DIR__, 2) . '/app/src/*.php') ?: [], glob(dirname(__DIR__, 2) . '/app/src/*/*.php') ?: [], glob(dirname(__DIR__, 2) . '/bin/*.php') ?: [], glob(dirname(__DIR__, 2) . '/public/*.php') ?: []) as $f) {
+    if (basename($f) !== 'Db.php' && preg_match('/\b(?:GET_LOCK|RELEASE_LOCK|IS_FREE_LOCK|IS_USED_LOCK)\s*\(/i', (string) file_get_contents($f))) {
+        $p7Locks[] = basename($f);
+    }
+}
+$p7Db = (string) file_get_contents(dirname(__DIR__, 2) . '/app/src/Db.php');
+check('named locks only through Db::lock(), whose name contains DATABASE() and the prefix' . ($p7Locks ? ' (' . implode(', ', $p7Locks) . ')' : ''),
+    !$p7Locks && str_contains($p7Db, "private const LOCK_NAME = \"SHA1(CONCAT(DATABASE(), '.', ?))\";") && str_contains($p7Db, '[self::table($name), max(0, $timeout)]'));

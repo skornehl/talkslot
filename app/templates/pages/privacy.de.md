@@ -37,7 +37,7 @@ Es gibt keine Benutzerkonten, keine Werbung, kein Tracking und keine Analyse des
 - **Missbrauchsschutz und Server-Protokolle:** Art. 6 Abs. 1 lit. e, Abs. 3 DSGVO in Verbindung mit [VORSCHRIFT IM DATENSCHUTZGESETZ DES LANDES]. Beides dient dem sicheren und störungsfreien Betrieb der Terminvergabe (Art. 32 DSGVO) sowie dem Schutz vor Spam, Mehrfach- und Fremdbuchungen.
 - **Speicherung im Browser („Termin merken“):** § 25 Abs. 1 TDDDG und Art. 6 Abs. 1 lit. a DSGVO (Ihre Einwilligung durch Ankreuzen), siehe Abschnitt 7.
 
-Mit dem Pflicht-Häkchen im Buchungsformular bestätigen Sie nur, dass Sie diese Hinweise zur Kenntnis genommen haben. Es handelt sich nicht um eine Einwilligung; die Verarbeitung Ihrer Buchungsdaten beruht auf den oben genannten Rechtsgrundlagen.
+Für die Terminbuchung brauchen Sie keine Einwilligung zu erteilen; die Verarbeitung Ihrer Buchungsdaten beruht auf den oben genannten Rechtsgrundlagen. Eine Einwilligung betrifft nur die freiwillige Speicherung im Browser („Termin merken“).
 
 # 5. Speicherdauer und Löschung
 

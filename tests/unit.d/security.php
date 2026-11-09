@@ -59,7 +59,7 @@ check('admin events: granted, taken away, deactivated, reactivated; none for tea
 
 // Users list: sign-ins only in coarse steps, no login times of colleagues
 $row = ['id' => 2, 'username' => 'anna', 'display_name' => 'Anna', 'email' => 'anna@example.org', 'role' => 'teacher', 'is_active' => 1,
-    'must_change_password' => 0, 'access_token_expires_at' => null, 'never_signed_in' => 0, 'long_inactive' => 0, 'round_count' => 1];
+    'must_change_password' => 0, 'access_token_expires_at' => null, 'never_signed_in' => 0, 'invite_open' => 0, 'long_inactive' => 0, 'round_count' => 1];
 $page = App\AdminI18n::with('de', static fn () => App\View::capture('admin/users', ['me' => 1, 'users' => [
     $row, ['id' => 3, 'long_inactive' => 1] + $row, ['id' => 4, 'never_signed_in' => 1, 'long_inactive' => null] + $row,
 ]]));
@@ -150,8 +150,8 @@ check('admin routes: every route has method, pattern, action and a role (teacher
     . ($badRoutes ? ' (' . implode(', ', $badRoutes) . ')' : ''), count($routes) > 40 && !$badRoutes);
 $keys = array_map(static fn (array $r): string => $r[0] . ' ' . $r[1], $routes);
 check('admin routes: no route listed twice', count($keys) === count(array_unique($keys)));
-$opened = array_filter($routes, static fn (array $r): bool => preg_match('~^#\^/(users|texts|page|log|templates)(/|\$)~', $r[1]) === 1 && ($r[3] ?? null) !== 'admin');
-check('accounts, texts, legal pages, log and templates stay admin-only' . ($opened ? ' (' . implode(', ', array_column($opened, 1)) . ')' : ''), !$opened);
+$opened = array_filter($routes, static fn (array $r): bool => preg_match('~^#\^/(users|texts|page|log|access-request|templates)(/|\$|\\\\z)~', $r[1]) === 1 && ($r[3] ?? null) !== 'admin');
+check('accounts, texts, legal pages, log, requests for access and templates stay admin-only' . ($opened ? ' (' . implode(', ', array_column($opened, 1)) . ')' : ''), !$opened);
 $allows = (new ReflectionMethod(App\Controller\AdminController::class, 'allows'))->getClosure(null);
 check('role check fails closed: teachers only on teacher routes, a missing or unknown role means admins only',
     $allows(['GET', '#x#', 'a', 'teacher'], false) && !$allows(['GET', '#x#', 'a', 'admin'], false)
