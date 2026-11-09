@@ -50,6 +50,7 @@ $deadlines = array_filter([
       <div class="field">
         <label for="name"><?= e(t('form.name')) ?> <span class="req" aria-hidden="true">*</span><span class="visually-hidden">(<?= e(t('form.required')) ?>)</span></label>
         <input type="text" id="name" name="name" required maxlength="200" autocomplete="off" aria-describedby="name-hint" value="<?= e($old['name'] ?? '') ?>">
+        <?php /* The child's name, nothing more (expert review P2-4); the sibling rule is in the info box above */ ?>
         <p class="hint" id="name-hint"><?= e(t('form.name.hint')) ?></p>
       </div>
       <div class="field">

@@ -24,6 +24,13 @@ final class CronMonitor
     /** Default of cron_alert_hours (see above) */
     public const DEFAULT_HOURS = 12;
 
+    /** Time of the last completed cron run, null if none has been recorded (readiness page). */
+    public static function lastRun(): ?int
+    {
+        $last = Settings::get('last_cron');
+        return $last !== null ? (int) $last : null;
+    }
+
     /** At the end of a completed cron run. */
     public static function ran(): void
     {

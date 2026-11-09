@@ -14,7 +14,12 @@ Englisch umstellen.
 - ***Vorlage*** (falls Ihre Admins welche angelegt haben): *Übernehmen* trägt Zeiten, Pausen und
   Einstellungen ein, z. B. „Elternsprechtag: 08:00–16:00, 15 Minuten, Mittagspause“. Alles bleibt
   änderbar; nur Titel und Datum fehlen dann noch.
-- **Titel** und optional ein ***Beschreibungstext***, die den Eltern angezeigt werden. Reiner Text.
+- **Titel** und optional ein ***Beschreibungstext***, die den Eltern angezeigt werden. Reiner Text. Bitte
+  neutral halten, z. B. „Elternsprechtag 7b“: Beide stehen in den E-Mails an Eltern und in Kalenderdateien,
+  der Titel auch im Protokoll und beim Anlegen in der Adresse der Runde. Ein Titel wie „Beratung
+  Förderbedarf“ verriete jedem, der eine Buchung sieht, mehr als den Termin.
+- **Volljährige Schülerinnen und Schüler:** Bei Klassen mit Schülerinnen und Schülern ab 18 klären Sie vorher
+  mit Ihrer Schule, ob und worüber Sie mit deren Eltern sprechen dürfen (Schulrecht des Landes).
 - ***Ort*** (optional), z. B. „Raum 1.12“. Er steht auf der Buchungsseite, auf der Bestätigungsseite, in
   der Bestätigungsmail, in der Kalenderdatei, in der Druckansicht und im Einladungstext. Findet ein Tag
   woanders statt, tragen Sie das unter *Tag bearbeiten* ein.
@@ -148,7 +153,8 @@ aktuellen Daten, wenn sich diese seit ihrer letzten E-Mail geändert haben. Ein 
 *Änderung per E-Mail mitteilen* speichern, schickt die aktuellen Daten auch ohne Änderung (höchstens 30
 E-Mails pro Stunde aus Ihrem Konto).
 
-Weitere Aktionen für die Runde: bearbeiten, deaktivieren, ***Druckansicht / PDF*** und
+Weitere Aktionen für die Runde: bearbeiten, deaktivieren, ***Druckansicht / PDF*** (die letzte Spalte,
+*Organisatorisches*, ist nur für Organisatorisches gedacht, nicht für Gesprächsinhalte) und
 ***Duplizieren …***: eine Kopie mit neuem Link und Code, mit Zeiten, Pausen, gesperrten Terminen,
 Einstellungen und Übersetzungen, aber ohne Buchungen; die Kopie ist inaktiv. Geben Sie den **ersten Tag
 der Kopie** an, verschieben sich alle Tage um denselben Abstand (Tage am Dienstag und Donnerstag bleiben
@@ -156,9 +162,11 @@ Dienstag und Donnerstag), praktisch fürs nächste Halbjahr. Ohne Datum behält 
 Daten; weil sie nie aktiv war, wird sie nicht automatisch gelöscht, und Sie können sie in Ruhe vorbereiten.
 
 **Eine Runde löschen** Sie in einem eigenen Abschnitt am Ende ihrer Seite (*Runde löschen*; *Löschen …*
-bei den Aktionen springt dorthin). Das löscht die Runde mit allen Tagen, Pausen, Übersetzungen und
-Buchungen und lässt sich nicht rückgängig machen. Hat die Runde Buchungen, haken Sie vorher
-*inkl. N Buchung(en)* an: Ohne den Haken wird nichts gelöscht, auch wenn Ihr Browser den
+bei den Aktionen springt dorthin). Eine Runde **ohne Buchungen** kommt für 14 Tage in den **Papierkorb** (Schaltfläche oben
+auf der Übersicht, solange etwas darin liegt): Dort können Sie sie wiederherstellen oder endgültig löschen. Adresse
+und Rundencode bleiben in der Regel gleich, und eine Runde, die aktiv war, ist gleich wieder buchbar. Eine Runde **mit Buchungen** wird sofort mit allen Tagen, Pausen,
+Übersetzungen und Buchungen gelöscht, das lässt sich nicht rückgängig machen: Haken Sie vorher
+*inkl. N Buchung(en)* an; ohne den Haken wird nichts gelöscht, auch wenn Ihr Browser den
 Bestätigungsdialog nicht anzeigt. Sollen nur keine neuen Buchungen mehr möglich sein, wählen Sie
 *Stattdessen deaktivieren*: Tage und Buchungen bleiben erhalten, Eltern können weiterhin absagen.
 

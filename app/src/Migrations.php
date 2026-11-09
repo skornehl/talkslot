@@ -10,7 +10,7 @@ namespace App;
  */
 final class Migrations
 {
-    public const LATEST = 23;
+    public const LATEST = 24;
 
     /** Version => SQL statements */
     private const STEPS = [
@@ -184,6 +184,15 @@ final class Migrations
         //     ParentContact); NULL = the contact the admins set for all (setting parent_contact) or none
         23 => [
             'ALTER TABLE users ADD COLUMN IF NOT EXISTS parent_contact VARCHAR(300) NULL AFTER reply_to',
+        ],
+        // 24: trash for rounds without bookings (RoundTrash); additive, the previous version ignores the table
+        24 => [
+            "CREATE TABLE IF NOT EXISTS round_trash (
+                id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, user_id INT UNSIGNED NOT NULL, title VARCHAR(200) NOT NULL,
+                data MEDIUMTEXT NOT NULL, deleted_at DATETIME NOT NULL,
+                KEY idx_trash_user (user_id), KEY idx_trash_deleted (deleted_at),
+                CONSTRAINT fk_trash_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
         ],
     ];
 

@@ -44,9 +44,9 @@ return [
 
     'round.teacher' => 'Terminy rozmów: {name}',
     'round.location' => 'Miejsce: {location}',
-    'round.one_only' => 'Prosimy zarezerwować tylko jeden termin.',
-    'round.limit_round' => 'Możliwy jest tylko jeden termin na osobę. W przypadku rodzeństwa prosimy rezerwować z imieniem każdego dziecka.',
-    'round.limit_day' => 'Możliwy jest tylko jeden termin na osobę dziennie. W przypadku rodzeństwa prosimy rezerwować z imieniem każdego dziecka.',
+    'round.one_only' => 'Prosimy zarezerwować tylko jeden termin na dziecko.',
+    'round.limit_round' => 'Możliwy jest tylko jeden termin na dziecko. W przypadku rodzeństwa prosimy rezerwować z imieniem każdego dziecka.',
+    'round.limit_day' => 'Możliwy jest tylko jeden termin na dziecko dziennie. W przypadku rodzeństwa prosimy rezerwować z imieniem każdego dziecka.',
     'round.auto_translated' => 'Tytuł i opis zostały przetłumaczone automatycznie (oryginał: {source}). W razie wątpliwości obowiązuje wersja oryginalna.',
     'round.choose' => '1. Wybierz wolny termin',
     'round.no_slots' => 'Obecnie nie ma wolnych terminów.',
@@ -62,8 +62,8 @@ return [
     'round.remembered.another' => 'Zarezerwuj kolejny termin (np. dla rodzeństwa)',
 
     'form.required' => 'pole obowiązkowe',
-    'form.name' => 'Imię i nazwisko',
-    'form.name.hint' => 'Na przykład imię i nazwisko dziecka.',
+    'form.name' => 'Imię i nazwisko dziecka',
+    'form.name.hint' => 'Imię i nazwisko, w razie potrzeby z podaniem klasy (np. „Mia Schmidt, 7b”). Inne dane nie są potrzebne.',
     'form.email' => 'Adres e-mail (opcjonalnie)',
     'form.email.hint' => 'Służy wyłącznie do wysłania potwierdzenia z osobistym linkiem. Bez adresu link zobaczą Państwo tylko na następnej stronie.',
     'form.email.hint_reminder' => 'Służy wyłącznie do wysłania potwierdzenia z osobistym linkiem oraz przypomnienia w przeddzień wieczorem. Bez adresu link zobaczą Państwo tylko na następnej stronie.',

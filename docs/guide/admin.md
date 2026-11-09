@@ -35,6 +35,19 @@ itself, otherwise the private person, association or independent provider whose 
 6. **Templates** (*Vorlagen*, optional): set up the usual formats once, e.g. your parent-teacher day.
 7. **Invite teachers** and, if you like, further admins (*Benutzer*).
 
+**Ready to start?** (*Bereit für den Start?*, linked below the heading of *Alle Runden* and at the top of
+*Texte*) shows all of this on one page, each item as *Erledigt* (done), *Bitte prüfen* (please check) or *Noch
+offen* (still to do), with the way to fix it: imprint and privacy policy, the school's data protection officer
+(only when operated by the school), the contact for parents, mail delivery, cron job, server and configuration, and the permissions of
+the configuration file. Mail delivery counts as done once an invited account has signed in: its invitation
+arrived. Until the first round has been active, *Alle Runden* shows this checklist instead of the separate
+warnings on these items; after that, the warnings appear as before.
+
+**What's new** (*Neu seit dem letzten Update*): after an update, *Alle Runden* lists what changed in how admins
+and teachers work, for example a new option in the profile, so that it does not look like an error. *Verstanden*
+(got it) hides the notes for your account. Accounts created after the update, and a new installation, do not get
+the older notes.
+
 If the dashboard warns that the configuration can be read by every user of the server, set the
 permissions of the files it lists to `600` or pass the warning on to whoever runs the server: they contain
 the database and mail passwords. If these may have got out in the meantime, see
@@ -124,7 +137,8 @@ teacher or move a round to another teacher (field *Lehrkraft* in the round form)
 for that teacher, parents see their name and summaries go to them. Parents who have already booked get a
 change notice with the new teacher if *Eltern per E-Mail informieren* stays ticked; the message after saving
 names those who could not be mailed. Teachers
-only ever see their own rounds; this is enforced centrally and covered by tests.
+only ever see their own rounds; this is enforced centrally and covered by tests. In the trash (*Papierkorb*)
+admins see the deleted rounds without bookings of all teachers, too.
 
 How rounds work is described in the [Teacher guide]({{ '/guide/teachers/' | relative_url }}).
 
@@ -150,8 +164,10 @@ update are entered as *TalkSlot*: an operator type taken over from unedited temp
 replaced by newer templates. The admin who then saves the operator type is logged as confirming it, and a
 legal text saved after reconciling it with a newer template is logged as such.
 
-The log does **not** record what teachers do in their own rounds, and it never contains data of parents:
-a booking appears only as date and time (e.g. "Buchung 12.11.2026 14:00 gelöscht"). Entries are deleted
+The log does **not** record what teachers do in their own rounds, and it never contains names or e-mail
+addresses of parents: a booking appears with its date only (e.g. "Buchung am 12.11.2026 gelöscht"), without
+the time, which together with a summary mail or a printed list would tell whose booking it was; round, teacher
+and date can still point to a family, so the log stays for admins only. Entries are deleted
 after 90 days (configurable, `audit_log_days`). Only admins can see the log.
 
 ## Legal texts
