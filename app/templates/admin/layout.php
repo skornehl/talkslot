@@ -36,9 +36,9 @@ $legalQuery = ['lang' => App\AdminI18n::lang() !== 'de' && App\I18n::lang() === 
     <a class="brand" href="<?= e(url('/admin')) ?>"><?= e(app_name()) ?> <span class="badge"><?= Auth::check() && Auth::isAdmin() ? 'Admin' : e(__('Verwaltung')) ?></span></a>
     <?php if (Auth::check()): ?>
     <?php /* Where you are in the menu: "page" on the page itself, "true" on a page within that section */
-    $here = (string) parse_url((string) ($_SERVER['REQUEST_URI'] ?? ''), PHP_URL_PATH);
-    $current = static fn (string $path, array $sections = []): string => $here === url($path) ? ' aria-current="page"'
-        : (array_filter($sections, static fn (string $section): bool => str_starts_with($here, url($section))) ? ' aria-current="true"' : ''); ?>
+    $here = App\Http::path();
+    $current = static fn (string $path, array $sections = []): string => $here === $path ? ' aria-current="page"'
+        : (array_filter($sections, static fn (string $section): bool => str_starts_with($here, $section)) ? ' aria-current="true"' : ''); ?>
     <nav class="admin-nav" aria-label="<?= e(__('Hauptmenü')) ?>">
       <a href="<?= e(url('/admin')) ?>"<?= $current('/admin', ['/admin/round/', '/admin/day/', '/admin/slot/', '/admin/booking/']) ?>><?= App\Auth::isAdmin() ? e(__('Alle Runden')) : e(__('Meine Runden')) ?></a>
       <a href="<?= e(url('/admin/profile')) ?>"<?= $current('/admin/profile') ?>><?= e(__('Mein Profil')) ?></a>

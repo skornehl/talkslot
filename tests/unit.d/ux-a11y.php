@@ -6,8 +6,9 @@ $a11yTokens = static function (string $block): array {
     preg_match_all('/--([a-z-]+):\s*(#[0-9a-fA-F]{6})\b/', $block, $m);
     return array_combine($m[1], $m[2]);
 };
-$a11yMedia = (int) strpos($a11yCss, '@media screen and (prefers-color-scheme: dark)');
-$a11yForced = (int) strpos($a11yCss, ':root[data-theme="dark"] {');
+$a11yMedia = strpos($a11yCss, '@media screen and (prefers-color-scheme: dark)');
+$a11yForced = strpos($a11yCss, ':root[data-theme="dark"] {');
+check('the stylesheet has the light and both dark blocks the contrast check reads', $a11yMedia !== false && $a11yForced !== false && $a11yForced > $a11yMedia);
 $a11yThemes = ['light' => $a11yTokens(substr($a11yCss, 0, $a11yMedia)), 'dark (system)' => $a11yTokens(substr($a11yCss, $a11yMedia, $a11yForced - $a11yMedia)),
     'dark (chosen)' => $a11yTokens(substr($a11yCss, $a11yForced, (int) strpos($a11yCss, '}', $a11yForced) - $a11yForced))];
 $a11yLuminance = static function (string $hex): float {
@@ -23,6 +24,10 @@ $a11yLow = [];
 foreach ($a11yThemes as $theme => $t) {
     foreach (['focus', 'input-border'] as $fg) {
         foreach (['bg', 'surface'] as $bg) {
+            if (!isset($t[$fg], $t[$bg])) {
+                $a11yLow[] = "$theme: --$fg or --$bg missing or not a #rrggbb colour";
+                continue;
+            }
             if ($a11yRatio($t[$fg], $t[$bg]) < 3) {
                 $a11yLow[] = "$theme: --$fg on --$bg " . round($a11yRatio($t[$fg], $t[$bg]), 2);
             }

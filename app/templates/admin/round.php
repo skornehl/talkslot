@@ -179,7 +179,7 @@ $deletionText = $deletion ? __('{date}, {time} Uhr', ['date' => fmt_date($deleti
   <table class="table slots-table">
     <thead><tr><th scope="col"><?= e(__('Zeit')) ?></th><th scope="col"><?= e(__('Eintrag')) ?></th><th scope="col"><?= e(__('Gebucht am')) ?></th><th scope="col"><span class="visually-hidden"><?= e(__('Aktionen')) ?></span></th></tr></thead>
     <tbody>
-    <?php foreach ($day['slots'] as $s): $sid = (int) $s['id']; $slotName = $dayName . ', ' . fmt_range($s['start_time'], $s['end_time']) . ($s['booking_id'] ? ' ' . $s['name'] : ''); ?>
+    <?php foreach ($day['slots'] as $s): $sid = (int) $s['id']; $slotName = $dayName . ', ' . fmt_range($s['start_time'], $s['end_time']) . ($s['booking_id'] ? ', ' . $s['name'] : ''); ?>
       <tr id="slot-<?= $sid ?>" class="<?= $s['booking_id'] ? 'is-booked' : ($s['is_blocked'] ? 'is-blocked' : 'is-free') ?><?= $s['is_conflict'] ? ' is-conflict' : '' ?>">
         <td class="nowrap"><?= e(fmt_range($s['start_time'], $s['end_time'])) ?><?= $s['is_conflict'] ? ' <span class="badge badge-warning" data-conflict><span aria-hidden="true">⚠ </span>' . e(__('Konflikt')) . '</span>' : '' ?></td>
         <td>

@@ -161,7 +161,7 @@ try {
   const clip = await js(`navigator.clipboard.readText().catch(e => 'ERR ' + e.message)`);
   check('"Link kopieren" copies and confirms', copied && clip === copyLink && cdp.dialogs.length === 0,
     `confirmed=${copied} clipboard=${clip} dialogs=${JSON.stringify(cdp.dialogs)}`);
-  check('"Kopiert" is announced by a status region as well', await js(`(() => { const s = document.querySelector('[data-copy-status]'); return s && s.getAttribute('role') === 'status' && s.textContent === 'Kopiert ✓'; })()`));
+  check('"Kopiert" is announced by a status region as well', await until(`(() => { const s = document.querySelector('[data-copy-status]'); return s && s.getAttribute('role') === 'status' && s.textContent === 'Kopiert ✓'; })()`));
   const noClipboard = await cdp.send('Page.addScriptToEvaluateOnNewDocument', { source: `Object.defineProperty(navigator, 'clipboard', { value: undefined });` });
   await goto('/admin');
   cdp.dialogs = [];

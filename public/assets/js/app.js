@@ -188,6 +188,7 @@ var L = (function () {
   // button is hidden until JavaScript runs)
   // "Kopiert" only changes the text of the button: screen readers hear it from a status region
   var copyStatus = null;
+  var copyClear = null;
   if (document.querySelector('[data-copy]')) {
     copyStatus = document.createElement('div');
     copyStatus.setAttribute('role', 'status');
@@ -204,8 +205,12 @@ var L = (function () {
       var text = btn.getAttribute('data-copy');
       var done = function () {
         btn.textContent = copied;
-        copyStatus.textContent = copied;
-        setTimeout(function () { btn.textContent = original; copyStatus.textContent = ''; }, 2000);
+        // Emptied first, so that a second copy within the two seconds is announced as well
+        copyStatus.textContent = '';
+        window.setTimeout(function () { copyStatus.textContent = copied; }, 50);
+        window.clearTimeout(copyClear);
+        copyClear = window.setTimeout(function () { copyStatus.textContent = ''; }, 2000);
+        setTimeout(function () { btn.textContent = original; }, 2000);
       };
       if (navigator.clipboard && window.isSecureContext) {
         navigator.clipboard.writeText(text).then(done, function () { window.prompt(ask, text); });
