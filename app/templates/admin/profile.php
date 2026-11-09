@@ -78,7 +78,7 @@
 <section class="card" id="security">
   <h2><?= e(__('Sicherheit')) ?></h2>
   <?php if ($security['known'] && $security['previous'] !== null): ?>
-  <p><?= e(__('Ihre vorige Anmeldung: {date}. Fehlgeschlagene Anmeldeversuche seitdem: {count}.', ['date' => date('d.m.Y H:i', (int) strtotime((string) $security['previous'])), 'count' => $security['failed']])) ?></p>
+  <p><?= e(__('Ihre vorige Anmeldung: {date}. Fehlgeschlagene Anmeldeversuche seitdem: {count}.', ['date' => fmt_datetime((string) $security['previous']), 'count' => $security['failed']])) ?></p>
   <?php elseif ($security['known'] && $security['failed'] > 0): ?>
   <p><?= e(__('Fehlgeschlagene Anmeldeversuche vor Ihrer ersten Anmeldung: {count}.', ['count' => $security['failed']])) ?></p>
   <?php endif; ?>
@@ -89,7 +89,7 @@
     <thead><tr><th scope="col"><?= e(__('Zeitpunkt')) ?></th><th scope="col"><?= e(__('Ereignis')) ?></th></tr></thead>
     <tbody>
     <?php foreach ($security['events'] as $ev): ?>
-      <tr><td class="small nowrap"><?= e(date('d.m.Y H:i', (int) strtotime((string) $ev['created_at']))) ?></td><td><?= e(App\SecurityEvents::label((string) $ev['event'], (bool) $ev['by_admin'])) ?></td></tr>
+      <tr><td class="small nowrap"><?= e(fmt_datetime((string) $ev['created_at'])) ?></td><td><?= e(App\SecurityEvents::label((string) $ev['event'], (bool) $ev['by_admin'])) ?></td></tr>
     <?php endforeach; ?>
     </tbody>
   </table>
