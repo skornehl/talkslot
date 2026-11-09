@@ -898,9 +898,23 @@ final class AdminController
             return ['', null];
         }
         if (!is_numeric($days) || (float) $days < 0 || (float) $days > 365) {
-            return [$days, __('Löschfrist: leer lassen (nie löschen) oder 0 bis 365 Tage.')];
+            return [$days, __('Runde löschen nach Ablauf: leer lassen (nie löschen) oder 0 bis 365 Tage.')];
         }
         return [(string) (int) round((float) $days * 24), null];
+    }
+
+    /** The break rows as sent, for the form after an error: a row with a typo must not vanish from it. */
+    private static function breakRowsAsSent(): array
+    {
+        $field = static fn (string $name, int $i): string => is_string($_POST[$name][$i] ?? null) ? trim($_POST[$name][$i]) : '';
+        $rows = [];
+        foreach (array_keys(is_array($_POST['break_start'] ?? null) ? $_POST['break_start'] : []) as $i) {
+            $row = [$field('break_start', $i), $field('break_end', $i), $field('break_label', $i)];
+            if ($row[0] !== '' || $row[1] !== '') {
+                $rows[] = $row;
+            }
+        }
+        return $rows;
     }
 
     private static function noSlots(): string
@@ -977,10 +991,10 @@ final class AdminController
         });
     }
 
-    /** $notify: the box "Eltern per E-Mail informieren" (ticked, unless it was unticked when the form was sent with an error). */
     /**
      * "Tag bearbeiten" with the same fields as a new day (expert review P2-3): times, breaks and the preview, which
      * also counts the bookings that would no longer fit. $input: as sent, after an error.
+     * $notify: the box "Eltern per E-Mail informieren" (ticked, unless it was unticked when the form was sent with an error).
      */
     private function dayForm(int $id, array $errors = [], bool $notify = true, ?array $input = null): void
     {
@@ -998,8 +1012,8 @@ final class AdminController
                 'start' => fmt_time($day['start_time']), 'end' => fmt_time($day['end_time']), 'minutes' => (int) $day['slot_minutes'],
                 'breaks' => array_map(static fn (array $b): array => [fmt_time($b['start_time']), fmt_time($b['end_time']), (string) $b['label']], $breaks),
             ],
-            'bookedSlots' => array_map(static fn (array $s): string => fmt_time($s['start_time']) . '-' . fmt_time($s['end_time']),
-                Db::all('SELECT s.start_time, s.end_time FROM slots s JOIN bookings b ON b.slot_id = s.id WHERE s.day_id = ? ORDER BY s.start_time', [$id])),
+            'bookedSlots' => array_map(static fn (array $s): string => fmt_time($s['start_time']),
+                Db::all('SELECT s.start_time FROM slots s JOIN bookings b ON b.slot_id = s.id WHERE s.day_id = ? ORDER BY s.start_time', [$id])),
         ]);
     }
 
@@ -1024,12 +1038,20 @@ final class AdminController
             $this->dayForm($id, $errors, Http::post('notify') === '1', $breaks === null ? null : [
                 'dates' => [], 'date' => Http::post('day_date'), 'location' => $in['location'],
                 'start' => $in['start'] ? fmt_time($in['start']) : Http::post('start_time'), 'end' => $in['end'] ? fmt_time($in['end']) : Http::post('end_time'),
-                'minutes' => $in['minutes'], 'breaks' => array_map(static fn (array $b): array => [fmt_time($b[0]), fmt_time($b[1]), $b[2]], $breaks),
+                'minutes' => $in['minutes'], 'breaks' => self::breakRowsAsSent(),
             ]);
             return;
         }
+        // Breaks as they are: left alone (no locks for nothing, and no entry about them in the log)
+        $before = Db::all('SELECT start_time, end_time, label FROM day_breaks WHERE day_id = ? ORDER BY start_time, end_time', [$id]);
+        $breaksBefore = array_map(static fn (array $b): array => [$b['start_time'], $b['end_time'], (string) $b['label']], $before);
+        $breaksAfter = $breaks;
+        if ($breaksAfter !== null) {
+            usort($breaksAfter, static fn (array $a, array $b): int => [$a[0], $a[1]] <=> [$b[0], $b[1]]);
+        }
+        $breaksChanged = $breaksAfter !== null && $breaksAfter !== $breaksBefore;
         // New date, times, breaks or location; the slots are recalculated, parents with a new appointment are told
-        $parents = ScheduleService::changeDay($id, $in, Http::post('notify') === '1', $breaks);
+        $parents = ScheduleService::changeDay($id, $in, Http::post('notify') === '1', $breaksChanged ? $breaks : null);
         // As with "Tag hinzufügen": a day from today on lifts the expiry (otherwise the round including
         // its bookings would be deleted after the deletion period)
         if ($in['date'] >= Time::today()) {
@@ -1037,7 +1059,9 @@ final class AdminController
         }
         $this->audit(fn () => ($in['date'] !== $day['day_date']
             ? __('Tag {date} bearbeitet (jetzt {new})', ['date' => self::when($day['day_date']), 'new' => self::when($in['date'])])
-            : __('Tag {date} bearbeitet', ['date' => self::when($day['day_date'])])) . self::parentsAudit($parents), (int) $day['round_id']);
+            : __('Tag {date} bearbeitet', ['date' => self::when($day['day_date'])]))
+            . ($breaksChanged ? ', ' . __('Pausen jetzt: {breaks}', ['breaks' => $breaksAfter ? implode(', ', array_map(static fn (array $b): string => fmt_range($b[0], $b[1]), $breaksAfter)) : __('keine')]) : '')
+            . self::parentsAudit($parents), (int) $day['round_id']);
         $this->afterSync((int) $day['round_id'], $id, __('Tag gespeichert.'), $parents);
     }
 

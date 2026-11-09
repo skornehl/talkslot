@@ -65,10 +65,10 @@ $action = $round ? url('/admin/round/' . (int) $round['id'] . '/edit') : url('/a
   <?php if (!$round): ?>
     <?php require __DIR__ . '/_day_fields.php'; ?>
   <?php else: ?>
-  <fieldset class="form-section">
-    <legend><?= e(__('Wann?')) ?></legend>
+  <div class="form-section">
+    <p class="form-section-title"><?= e(__('Wann?')) ?></p>
     <p class="hint"><?= __h('Tage, Zeiten und Pausen bearbeiten Sie auf der {link}.', ['link' => '<a href="' . e(url('/admin/round/' . (int) $round['id'])) . '">' . e(__('Seite der Runde')) . '</a>']) ?></p>
-  </fieldset>
+  </div>
   <?php endif; ?>
 
   <fieldset class="form-section">
@@ -112,7 +112,7 @@ $action = $round ? url('/admin/round/' . (int) $round['id'] . '/edit') : url('/a
     <?php endif; ?>
     <div class="check">
       <input type="checkbox" id="random_suffix" name="random_suffix" value="1"<?= !empty($data['random_suffix']) ? ' checked' : '' ?>>
-      <label for="random_suffix"><?= e($round ? __('Neuen Zufallsanteil an die Adresse anhängen (erzeugt auch einen neuen Rundencode; bisherige Links und Codes gelten nicht mehr)') : __('Zufallsanteil an die Adresse anhängen (empfohlen, damit die Runde nicht durch Ausprobieren gefunden wird)')) ?></label>
+      <label for="random_suffix"><?= e($round ? __('Neuen Zufallsanteil an die Webadresse anhängen (erzeugt auch einen neuen Rundencode; bisherige Links und Codes gelten nicht mehr)') : __('Zufallsanteil an die Webadresse anhängen (empfohlen, damit die Runde nicht durch Ausprobieren gefunden wird)')) ?></label>
     </div>
     <?php if ($round && (string) ($round['code'] ?? '') !== ''): ?>
     <div class="check">

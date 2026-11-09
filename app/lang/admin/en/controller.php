@@ -70,7 +70,7 @@ return [
     'Pause hinzugefügt.' => 'Break added.',
     'Pause entfernt.' => 'Break removed.',
     'Achtung: {count} gebuchte(r) Termin(e) passen nicht mehr zum Zeitplan und sind als Konflikt markiert. Bitte umbuchen oder löschen.' => 'Attention: {count} booked appointment(s) no longer fit the schedule and are marked as a conflict. Please rebook or delete them.',
-    'Die Termine wurden neu berechnet.' => 'Slots have been updated.',
+    'Die Termine wurden neu berechnet.' => 'Slots have been recalculated.',
     'Termin freigegeben.' => 'Slot released.',
     'Termin gesperrt.' => 'Slot blocked.',
     'Pause' => 'Break',

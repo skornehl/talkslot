@@ -32,12 +32,6 @@ sind unter *Erweitert* eingeklappt:
   Geschwister buchen jeweils mit dem Namen des Kindes. Ihre eigenen Einträge sind nicht begrenzt.
 - **Fristen**: Buchungen sind bis *N* Stunden vor einem Termin möglich (*Buchungsschluss*), Eltern können
   bis *N* Stunden vorher ändern oder absagen (*Ändern/Absagen bis*).
-- ***Runde löschen nach Ablauf*** (unter *Erweitert*): Tage nach dem letzten Tag, standardmäßig 1, leer = nie. Buchungen werden in jedem Fall am Tag nach dem Termin gelöscht.
-  Ablaufen kann nur eine Runde, die in Gebrauch war: die irgendwann aktiv war oder in die Sie etwas
-  eingetragen haben. Eine Runde, die nie aktiv war, etwa eine Kopie mit den alten Daten, bleibt, bis Sie
-  sie nutzen oder löschen (*Noch nie aktiv: wird nicht automatisch gelöscht*). Die Seite der Runde nennt
-  das Datum der Löschung (*Runde wird am … gelöscht*); eine abgelaufene Runde sagt außerdem, wie Sie sie
-  behalten: einen Tag ab heute hinzufügen oder dieses Feld leeren.
 - **Erinnerung** (*Eltern am Vorabend an ihren Termin erinnern*, standardmäßig an): Eltern mit
   E-Mail-Adresse bekommen am Vorabend eine Erinnerung mit dem Link zum Absagen. Wer am selben Tag eine
   Bestätigung oder Änderungsmitteilung bekommen hat, bekommt keine (eine Namenskorrektur ohne E-Mail zählt
@@ -45,6 +39,12 @@ sind unter *Erweitert* eingeklappt:
   bekommen sie erst, wenn die Eltern eine Bestätigung oder Änderungsmitteilung per E-Mail erhalten haben.
 - **Zufallsanteil in der Adresse** (empfohlen, unter *Erweitert*), damit die Runde nicht durch Ausprobieren
   gefunden wird, und optional *Nur mit Rundencode*. Beim Bearbeiten steht dort auch die *Webadresse* selbst.
+- ***Runde löschen nach Ablauf*** (unter *Erweitert*): Tage nach dem letzten Tag, standardmäßig 1, leer = nie. Buchungen werden in jedem Fall am Tag nach dem Termin gelöscht.
+  Ablaufen kann nur eine Runde, die in Gebrauch war: die irgendwann aktiv war oder in die Sie etwas
+  eingetragen haben. Eine Runde, die nie aktiv war, etwa eine Kopie mit den alten Daten, bleibt, bis Sie
+  sie nutzen oder löschen (*Noch nie aktiv: wird nicht automatisch gelöscht*). Die Seite der Runde nennt
+  das Datum der Löschung (*Runde wird am … gelöscht*); eine abgelaufene Runde sagt außerdem, wie Sie sie
+  behalten: einen Tag ab heute hinzufügen oder dieses Feld leeren.
 - **Aktiv**: Eltern können buchen. Inaktive Runden nehmen keine Buchungen an, Eltern können aber weiterhin
   absagen. Solange sich noch keine Runde aktivieren lässt (z. B. weil die Admins noch Platzhalter in den
   Rechtstexten ausfüllen müssen), sagt das Formular unter dem Häkchen, warum, und eine neue Runde ist

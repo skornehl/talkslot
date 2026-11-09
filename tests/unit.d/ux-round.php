@@ -26,9 +26,12 @@ check('round form: the hint on the round code right under its checkbox, the dele
 $dfForm = App\View::capture('admin/day_form', ['title' => 'Tag bearbeiten', 'errors' => [], 'notify' => true, 'parents' => ['upcoming' => 0, 'mailable' => 0],
     'day' => ['id' => 7, 'day_date' => '2026-12-01', 'location' => ''], 'round' => ['id' => 3, 'title' => 'Runde', 'location' => ''],
     'dayData' => ['dates' => [], 'date' => '2026-12-01', 'location' => '', 'start' => '14:00', 'end' => '16:00', 'minutes' => 15, 'breaks' => [['15:00', '15:15', 'Pause']]],
-    'bookedSlots' => ['14:00-14:15', '15:30-15:45']]);
+    'bookedSlots' => ['14:00', '15:30']]);
 check('day form like a new day: the same fields and preview, breaks editable, the booked slots for the preview',
-    str_contains($dfForm, 'data-day-fields data-booked="14:00-14:15,15:30-15:45"') && str_contains($dfForm, '<label for="start_time">Erster Termin ab</label>')
+    str_contains($dfForm, 'data-day-fields data-booked="14:00,15:30"') && str_contains($dfForm, 'data-slot-conflicts') && str_contains($dfForm, 'role="status" data-slot-status') && !str_contains($dfForm, 'aria-live') && str_contains($dfForm, '<label for="start_time">Erster Termin ab</label>')
     && str_contains($dfForm, 'step="5" value="15"') && str_contains($dfForm, 'name="break_start[]" value="15:00"') && str_contains($dfForm, 'name="breaks_field" value="1"')
-    && str_contains($dfForm, 'data-slot-preview') && !str_contains($dfForm, 'name="day_dates[]"') && str_contains($dfForm, 'name="day_date" required value="2026-12-01"'));
+    && str_contains($dfForm, 'data-slot-preview') && !str_contains($dfForm, 'name="day_dates[]"') && (bool) preg_match('#<legend>Wann\?</legend>\s*<div class="field"><label for="day_date">#', $dfForm) && str_contains($dfForm, 'name="day_date" required value="2026-12-01"'));
+$dfOld = App\View::capture('admin/day_form', ['title' => 'x', 'errors' => [], 'notify' => true, 'parents' => ['upcoming' => 0, 'mailable' => 0], 'day' => ['id' => 7, 'day_date' => '2026-12-01', 'location' => ''], 'round' => ['id' => 3, 'title' => 'R', 'location' => ''],
+    'dayData' => ['dates' => [], 'start' => '14:00', 'end' => '16:00', 'minutes' => 12, 'breaks' => []], 'bookedSlots' => []]);
+check('day form: a length from before the steps of five stays valid', str_contains($dfOld, 'step="1" value="12"'));
 $_SESSION = [];

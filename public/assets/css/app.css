@@ -234,6 +234,12 @@ form.inline { display: inline; }
 .pin-display { font-family: var(--mono); font-size: 1.2rem; letter-spacing: .15em; }
 .pin-fieldset { border: 1px solid var(--border); border-radius: 8px; padding: .75rem 1rem 0; }
 .pin-fieldset legend { font-weight: 600; padding: 0 .3rem; }
+/* Sections of the round form */
+.form-section { border: 1px solid var(--border); border-radius: 8px; padding: .75rem 1rem; min-width: 0; display: grid; gap: .75rem; }
+.form-section > legend { font-weight: 600; padding: 0 .3rem; }
+.form-section-title { font-weight: 600; margin: 0; }
+details.form-section:not([open]) { display: block; }
+details.form-section > summary { margin: 0; }
 .invitation { white-space: pre-wrap; font-family: var(--mono); font-size: .85rem; background: var(--field-soft); border: 1px solid var(--border); border-radius: 6px; padding: .75rem; }
 details summary { cursor: pointer; color: var(--primary); margin: .5rem 0; }
 /* Admin round page: links to the days, the form for a break folded away (expert review P2-3) */

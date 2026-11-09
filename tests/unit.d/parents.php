@@ -211,6 +211,7 @@ check('edit form: hint that the mail also goes out without a change, not for a n
 $dayForm = static fn (int $upcoming, int $mailable = 0): string => App\View::capture('admin/day_form', [
     'day' => ['id' => 3, 'day_date' => '2030-01-07', 'start_time' => '14:00:00', 'end_time' => '16:00:00', 'slot_minutes' => 15, 'location' => null],
     'round' => ['id' => 1, 'title' => 'Elternsprechtag', 'location' => 'Raum 1.12'], 'parents' => ['upcoming' => $upcoming, 'mailable' => $mailable], 'errors' => [],
+    'dayData' => ['dates' => [], 'start' => '14:00', 'end' => '16:00', 'minutes' => 15, 'breaks' => []], 'bookedSlots' => [],
 ]);
 $notifyBox = '<input type="checkbox" id="notify" name="notify" value="1" checked>';
 check('day form: parents with an address get the new details (box ticked), the others are counted',

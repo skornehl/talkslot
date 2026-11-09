@@ -3,7 +3,7 @@
  * "Tag bearbeiten": the same fields as for a new day (_day_fields.php, expert review P2-3), plus date and location.
  * @var array $day @var array $round @var array $parents upcoming bookings, how many can be mailed @var array $errors
  * @var bool $notify the box as sent (ticked by default) @var array $dayData times and breaks, as stored or as sent
- * @var list<string> $bookedSlots booked slots as "HH:MM-HH:MM" (the preview counts those that would no longer fit)
+ * @var list<string> $bookedSlots start times of the bookings as "HH:MM" (the preview counts those that would no longer fit)
  */
 use App\Csrf; ?>
 <p class="breadcrumb"><a href="<?= e(url('/admin')) ?>"><?= e(__('Runden')) ?></a> › <a href="<?= e(url('/admin/round/' . (int) $round['id'])) ?>"><?= e($round['title']) ?></a></p>
@@ -18,8 +18,7 @@ use App\Csrf; ?>
 <form method="post" action="<?= e(url('/admin/day/' . (int) $day['id'] . '/edit')) ?>" class="card form-grid">
   <?= Csrf::adminField() ?>
   <input type="hidden" name="breaks_field" value="1">
-  <div class="field"><label for="day_date"><?= e(__('Datum')) ?></label><input type="date" data-de-date id="day_date" name="day_date" required value="<?= e($dayData['date'] ?? $day['day_date']) ?>"></div>
-  <?php $withDates = false; require __DIR__ . '/_day_fields.php'; ?>
+  <?php $withDates = false; $singleDate = $dayData['date'] ?? $day['day_date']; require __DIR__ . '/_day_fields.php'; ?>
   <div class="field">
     <label for="location"><?= e(__('Ort an diesem Tag (optional)')) ?></label>
     <input type="text" id="location" name="location" maxlength="200" value="<?= e($dayData['location'] ?? ($day['location'] ?? '')) ?>" placeholder="<?= e(trim((string) ($round['location'] ?? '')) !== '' ? __('wie die Runde: {location}', ['location' => trim((string) $round['location'])]) : __('z. B. Raum 2.14')) ?>" aria-describedby="dloc-hint">

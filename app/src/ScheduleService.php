@@ -119,10 +119,10 @@ final class ScheduleService
     }
 
     /**
-     * New date, times, slot length or location of a day ($in: date, start, end, minutes, location as from the
-     * day form); the slots are recalculated.
+     * New date, times, slot length, breaks or location of a day ($in: date, start, end, minutes, location as from
+     * the day form); the slots are recalculated.
+     * @param ?list<array{0: string, 1: string, 2: string}> $breaks the day's breaks as [start, end, label] (null = unchanged)
      */
-    /** @param ?list<array{0: string, 1: string, 2: string}> $breaks the day's breaks as [start, end, label] (null = unchanged) */
     public static function changeDay(int $dayId, array $in, bool $notify, ?array $breaks = null): ScheduleChange
     {
         return self::change('day', $dayId, $notify, static function () use ($dayId, $in, $breaks): int {

@@ -24,6 +24,8 @@ $notifyBox = static fn (array $p): string => $p['mailable'] > 0
 $roundBookings = array_sum(array_map(static fn ($d) => count(array_filter($d['slots'], static fn ($s) => $s['booking_id'] !== null)), $days));
 // When the clean-up deletes the round (null = not automatically)
 $deletionText = $deletion ? __('{date}, {time} Uhr', ['date' => fmt_date($deletion->format('Y-m-d')), 'time' => $deletion->format('H:i')]) : '';
+// The deletion period in days, for reading: "1,5" in German
+$deleteDays = App\AdminI18n::lang() === 'de' ? str_replace('.', ',', days_from_hours($round['delete_after_hours'])) : days_from_hours($round['delete_after_hours']);
 ?>
 <p class="breadcrumb"><a href="<?= e(url('/admin')) ?>"><?= e(__('Runden')) ?></a> › <?= e($round['title']) ?></p>
 <div class="page-head">
@@ -32,7 +34,7 @@ $deletionText = $deletion ? __('{date}, {time} Uhr', ['date' => fmt_date($deleti
   <?php if ($round['is_active']): ?><span class="status status-on"><?= e(__('aktiv')) ?></span><?php else: ?><span class="status status-off"><?= e($round['expired_at'] ? __('abgelaufen') : __('inaktiv')) ?></span><?php endif; ?>
 </div>
 <?php if ($round['expired_at'] && $deletion): ?>
-  <div class="alert alert-warning" role="status"><p><?= e(__('Abgelaufen: Die Runde wird am {date} automatisch gelöscht, mit allen Tagen und Einstellungen. Zum Behalten einen Tag ab heute hinzufügen oder unter „Bearbeiten“ das Feld „Runde löschen nach Ablauf“ leeren.', ['date' => $deletionText])) ?></p></div>
+  <div class="alert alert-warning" role="status"><p><?= e(__('Abgelaufen: Die Runde wird am {date} automatisch gelöscht, mit allen Tagen und Einstellungen. Zum Behalten einen Tag ab heute hinzufügen oder unter „Bearbeiten“ → „Erweitert“ das Feld „Runde löschen nach Ablauf“ leeren.', ['date' => $deletionText])) ?></p></div>
 <?php endif; ?>
 
 <div class="card">
@@ -49,7 +51,7 @@ $deletionText = $deletion ? __('{date}, {time} Uhr', ['date' => fmt_date($deleti
   <?php if (App\RoundAccess::required($round)): ?>
     <p class="small"><span class="badge"><?= e(__('Nur mit Rundencode')) ?></span> <?= e(__('Wer den Link öffnet, muss den Rundencode eingeben; über die Startseite reicht der Code allein.')) ?></p>
   <?php else: ?>
-    <p class="small muted"><?= e(__('Ohne Schutz – jeder mit dem Link sieht die freien Termine (Schutz: „Bearbeiten“ → „Nur mit Rundencode“).')) ?></p>
+    <p class="small muted"><?= e(__('Ohne Schutz – jeder mit dem Link sieht die freien Termine (Schutz: „Bearbeiten“ → „Erweitert“ → „Nur mit Rundencode“).')) ?></p>
   <?php endif; ?>
   <div class="actions">
     <button type="button" class="button" data-copy="<?= e($invitation) ?>"><?= e(__('Einladungstext kopieren')) ?></button>
@@ -63,9 +65,9 @@ $deletionText = $deletion ? __('{date}, {time} Uhr', ['date' => fmt_date($deleti
   <p class="small muted"><?= e(['round' => __('Ein Termin pro Person'), 'day' => __('Ein Termin pro Person und Tag')][$round['booking_limit'] ?? 'none'] ?? __('Mehrfachbuchungen erlaubt')) ?><?= !empty($round['remind_parents']) ? ' · ' . e(__('Erinnerung am Vorabend')) : '' ?> · <?= e(__('Buchungsschluss {hours} h vorher', ['hours' => (int) $round['booking_deadline_hours']])) ?> · <?= e(__('Ändern/Absagen bis {hours} h vorher', ['hours' => (int) $round['cancel_deadline_hours']])) ?> ·
     <?= e(match (true) {
         $round['delete_after_hours'] === null => __('Runde wird nicht automatisch gelöscht'),
-        $deletion !== null => __('Runde wird am {date} gelöscht ({days} Tag(e) nach Ablauf)', ['date' => $deletionText, 'days' => days_from_hours($round['delete_after_hours'])]),
+        $deletion !== null => __('Runde wird am {date} gelöscht ({days} Tag(e) nach Ablauf)', ['date' => $deletionText, 'days' => $deleteDays]),
         $days !== [] => __('Noch nie aktiv: wird nicht automatisch gelöscht'),
-        default => __('Runde wird {days} Tag(e) nach Ablauf gelöscht', ['days' => days_from_hours($round['delete_after_hours'])]),
+        default => __('Runde wird {days} Tag(e) nach Ablauf gelöscht', ['days' => $deleteDays]),
     }) ?></p>
   <div class="actions">
     <a class="button" href="<?= e(url('/admin/round/' . $rid . '/edit')) ?>"><?= e(__('Bearbeiten')) ?></a>
@@ -169,8 +171,8 @@ $deletionText = $deletion ? __('{date}, {time} Uhr', ['date' => fmt_date($deleti
             $note = match (true) {
                 !$s['upcoming'] => '',
                 $s['mailable'] => "\n\n" . __('Die Eltern erhalten eine Absage per E-Mail.'),
-                (string) $s['email'] !== '' => "\n\n" . __('Die Eltern haben zu diesem Eintrag nie eine E-Mail erhalten und werden deshalb nicht benachrichtigt – bitte persönlich informieren.'),
-                default => "\n\n" . __('Die Eltern werden NICHT automatisch benachrichtigt. Für diesen Eintrag ist keine E-Mail-Adresse hinterlegt – bitte persönlich informieren.'),
+                (string) $s['email'] !== '' => "\n\n" . __('Die Eltern haben zu dieser Buchung nie eine E-Mail erhalten und werden deshalb nicht benachrichtigt – bitte persönlich informieren.'),
+                default => "\n\n" . __('Die Eltern werden NICHT automatisch benachrichtigt. Für diese Buchung ist keine E-Mail-Adresse hinterlegt – bitte persönlich informieren.'),
             };
             ?>
             <form method="post" action="<?= e(url('/admin/booking/' . (int) $s['booking_id'] . '/delete')) ?>" class="inline-delete" data-confirm="<?= e($question . $note) ?>"<?= $s['mailable'] ? ' data-confirm-off="' . e($question . $notNotified) . '"' : '' ?>><?= $csrf ?>
@@ -197,7 +199,7 @@ $deletionText = $deletion ? __('{date}, {time} Uhr', ['date' => fmt_date($deleti
 $states = array_count_values(array_column($translations, 'status'));
 $behind = array_keys(array_filter($translations, static fn ($t) => !in_array($t['status'], ['auto', 'manual', 'none'], true))); ?>
 <details class="card" id="translations">
-  <summary><strong><?= e(__('Übersetzungen von Titel und Beschreibung')) ?></strong>
+  <summary><h2><?= e(__('Übersetzungen von Titel und Beschreibung')) ?></h2>
     <span class="small muted" data-bt-counter><?= e(__('({ok} von {all} aktuell)', ['ok' => count($translations) - ($states['missing'] ?? 0) - ($states['outdated'] ?? 0), 'all' => count($translations)])) ?></span><?php if ($behind): ?>
     <span class="small muted" data-bt-behind><?= e(__('– fehlt oder veraltet: {languages}', ['languages' => implode(', ', array_map(static fn ($l) => App\I18n::name($l), $behind))])) ?></span><?php endif; ?></summary>
   <p class="small"><?= e(__('Original: {lang}. Eltern sehen Titel und Beschreibung in ihrer Sprache, auch in E-Mails. Ohne Übersetzung oder wenn sie veraltet ist, erscheint das Original. Titel leeren = diese Sprache bewusst ohne Übersetzung (bleibt so, bis sich das Original ändert); ohne übersetzte Beschreibung erscheint die Original-Beschreibung.', ['lang' => App\I18n::name($round['source_lang'])])) ?></p>
@@ -220,7 +222,7 @@ $behind = array_keys(array_filter($translations, static fn ($t) => !in_array($t[
   </form>
   <form method="post" action="<?= e(url('/admin/round/' . $rid . '/translations')) ?>" class="form-grid"><?= $csrf ?>
     <?php foreach ($translations as $lang => $t): ?>
-    <fieldset class="field pin-fieldset" lang="<?= e($lang) ?>">
+    <fieldset class="field pin-fieldset" lang="<?= e($lang) ?>" data-lang-name="<?= e(App\I18n::name($lang)) ?>">
       <legend><img src="<?= e(asset('flags/' . $lang . '.svg')) ?>" alt="" class="flag flag-inline"> <?= e(App\I18n::name($lang)) ?>
         <span class="status <?= in_array($t['status'], ['auto', 'manual', 'none'], true) ? 'status-on' : 'status-off' ?>"><?= e(['auto' => __('automatisch'), 'manual' => __('von Hand'), 'none' => __('bewusst ohne Übersetzung (Original)'), 'outdated' => __('veraltet – Original geändert'), 'missing' => __('fehlt')][$t['status']]) ?></span></legend>
       <input type="hidden" name="t_seen[<?= e($lang) ?>]" value="<?= e($t['seen']) ?>">

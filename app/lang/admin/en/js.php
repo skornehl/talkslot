@@ -29,5 +29,7 @@ return [
     'Sa' => 'Sat',
     '{weekday}, {d}.{m}.{y}' => '{weekday}, {d}/{m}/{y}',
     'Datum {n}' => 'Date {n}',
+    '{count} Termine pro Tag' => '{count} slots per day',
+    '– fehlt oder veraltet: {languages}' => '– missing or out of date: {languages}',
     '{count} gebuchte(r) Termin(e) passen nicht mehr in diesen Zeitplan und würden als Konflikt markiert.' => '{count} booked appointment(s) no longer fit this schedule and would be marked as a conflict.',
 ];

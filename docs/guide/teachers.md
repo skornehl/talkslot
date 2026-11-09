@@ -30,13 +30,6 @@ Eltern* (rules for parents), and the technical options folded away under *Erweit
   Your own entries are not limited.
 - **Deadlines**: booking closes *N* hours before a slot (*Buchungsschluss*), parents can change or cancel
   until *N* hours before (*Ändern/Absagen bis*).
-- **Delete after** (*Runde löschen nach Ablauf*, under *Erweitert*): days after the last day, 1 by default,
-  empty = never.
-  Bookings are deleted the day after the appointment either way. Only a round that was in use expires:
-  one that was active at some point or got an entry from you. A round that was never active, e.g. a copy
-  that still has the old dates, is kept until you use or delete it (*Noch nie aktiv: wird nicht
-  automatisch gelöscht*). The round page shows the date of the deletion (*Runde wird am … gelöscht*); an
-  expired round also says how to keep it: add a day from today on, or clear this field.
 - **Reminder** (*Eltern am Vorabend an ihren Termin erinnern*, on by default): parents who gave an e-mail
   address get a reminder the evening before, with the link to cancel. Who got a confirmation or change
   notice on that same day gets none (editing a name without a mail does not count). It applies to bookings
@@ -45,6 +38,13 @@ Eltern* (rules for parents), and the technical options folded away under *Erweit
 - **Random part in the address** (recommended, under *Erweitert*) so the round cannot be found by guessing,
   and optionally **round code required** (*Nur mit Rundencode*). When you edit a round, the address itself
   (*Webadresse*) is there too.
+- **Delete after** (*Runde löschen nach Ablauf*, under *Erweitert*): days after the last day, 1 by default,
+  empty = never.
+  Bookings are deleted the day after the appointment either way. Only a round that was in use expires:
+  one that was active at some point or got an entry from you. A round that was never active, e.g. a copy
+  that still has the old dates, is kept until you use or delete it (*Noch nie aktiv: wird nicht
+  automatisch gelöscht*). The round page shows the date of the deletion (*Runde wird am … gelöscht*); an
+  expired round also says how to keep it: add a day from today on, or clear this field.
 - **Active**: parents can book. Inactive rounds take no bookings, but parents can still cancel. While no
   round can be activated yet (for example because the admins still have to fill in the placeholders of the
   legal texts), the form says why below the checkbox and a new round starts inactive. Save it like that,
