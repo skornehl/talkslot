@@ -9,7 +9,7 @@ $action = $booking ? url('/admin/booking/' . (int) $booking['id'] . '/edit') : u
 <p><strong><?= e(fmt_slot($slot['day_date'], $slot['start_time'], $slot['end_time'])) ?></strong></p>
 <?php require __DIR__ . '/_errors.php'; ?>
 
-<form method="post" action="<?= e($action) ?>" class="card form-grid">
+<form method="post" action="<?= e($action) ?>" class="card form-grid" novalidate>
   <?= Csrf::adminField() ?>
   <div class="field">
     <label for="name"><?= e(__('Name(n)')) ?></label>

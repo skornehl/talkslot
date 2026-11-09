@@ -8,6 +8,7 @@ use App\BookingService;
 use App\Csrf;
 use App\Config;
 use App\Db;
+use App\Email;
 use App\Http;
 use App\I18n;
 use App\IcsExport;
@@ -287,7 +288,7 @@ final class PublicController
         }
 
         try {
-            [$id, $token] = BookingService::book($round, (int) $old['slot_id'], self::cleanName($old['name']), $old['email'] ?: null, I18n::lang());
+            [$id, $token] = BookingService::book($round, (int) $old['slot_id'], self::cleanName($old['name']), Email::normalize($old['email']), I18n::lang());
         } catch (BookingException $e) {
             // Hits of the multiple-booking limit count like bookings: slows down probing
             // whether a name already has an appointment
@@ -435,8 +436,8 @@ final class PublicController
      */
     private function mailConfirmation(array $booking, #[\SensitiveParameter] string $token): void
     {
-        $email = Http::post('email');
-        if (!is_valid_email($email)) {
+        $email = Email::normalize(Http::post('email'));
+        if ($email === null) {
             $this->manage($token, [t('err.email')]);
             return;
         }
@@ -472,8 +473,9 @@ final class PublicController
             // The name appears in emails: no links (otherwise phishing via the school's sender address)
             $errors[] = t('err.name_link');
         }
-        $email = (string) ($in['email'] ?? '');
-        if ($email !== '' && !is_valid_email($email)) {
+        // An address with umlauts in the domain counts in its ASCII form (App\Email); the form keeps what was typed
+        $email = trim((string) ($in['email'] ?? ''));
+        if ($email !== '' && Email::normalize($email) === null) {
             $errors[] = t('err.email');
         }
         return $errors;

@@ -110,13 +110,31 @@ prüfen.
 | Option | Standard | Bedeutung | Deployment |
 |---|---|---|---|
 | `mail.transport` | `mail` | `mail` (PHP `mail()`), `smtp` (mitgeliefertes PHPMailer) oder `none` | `MAIL_TRANSPORT` |
-| `mail.from_address` | – | Absenderadresse (Domain mit SPF/DKIM) | `MAIL_FROM` |
+| `mail.from_address` | – | Absenderadresse (Domain mit SPF/DKIM); zugleich der Envelope-Absender, Unzustellbarkeitsmeldungen landen also in diesem Postfach (siehe [Unzustellbare E-Mails](#bounces)); verwenden Sie ein Postfach, das jemand liest, keine No-Reply-Adresse | `MAIL_FROM` |
 | `mail.from_name` | `TalkSlot` | Absendername; folgt beim Deployment `APP_NAME` | `MAIL_FROM_NAME` |
 | `mail.reply_to` | – | optional; E-Mails an Eltern nutzen die Antwortadresse der Lehrkraft (*Mein Profil*) oder sonst ihre E-Mail-Adresse als Antwortadresse | `MAIL_REPLY_TO` |
 | `mail.smtp.host` / `port` | – / `587` | | `SMTP_HOST` / `SMTP_PORT` |
 | `mail.smtp.encryption` | `tls` | `tls` (STARTTLS), `ssl` oder `none` | `SMTP_ENCRYPTION` |
 | `mail.smtp.user` / `pass` | – | | `SMTP_USER` / `SMTP_PASS` (Secrets) |
 | `alert_email` | – | Empfänger von Fehlermeldungen; leer = Adresse des Admins (nicht verfügbar, solange die Datenbank ausgefallen ist) | `ALERT_EMAIL` |
+
+### Unzustellbare E-Mails (Bounces) {#bounces}
+
+Eine E-Mail, die der Mailserver angenommen hat, kann sich später noch als unzustellbar erweisen, etwa wegen
+eines Tippfehlers in der Adresse von Eltern. Der empfangende Server schickt dann eine Unzustellbarkeitsmeldung
+an den Envelope-Absender, und das ist `mail.from_address` (`-f` bei `mail()`, der Absender bei SMTP). TalkSlot
+erfährt davon nichts: Die Buchungsliste markiert nur E-Mails, die der Mailserver gleich abgelehnt hat (*E-Mail
+nicht zugestellt*). Sorgen Sie dafür, dass jemand dieses Postfach liest, und geben Sie der Lehrkraft Bescheid,
+wenn eine Meldung die Adresse von Eltern nennt, damit sie die Eltern auf anderem Weg erreicht.
+
+### Adressen mit Umlauten
+
+Adressen mit Umlauten in der Domain (`eltern@müller.de`) werden in allen Formularen und in der
+Konfiguration angenommen. Gespeichert und verschickt werden sie in ihrer ASCII-Form (`eltern@xn--mller-kva.de`,
+Punycode), die Mailserver verwenden; Buchungsliste, Druckansicht, Benutzerliste und Profil zeigen diese Form,
+und auch der Benutzername eines neuen Kontos ist diese Form (Anmelden und *Passwort vergessen* nehmen auch die
+Adresse mit Umlauten). Umlaute oder andere Sonderbuchstaben (ß, é) vor dem `@` werden nicht angenommen: Nur
+wenige Mailserver können an solche Adressen zustellen.
 
 ## Rechtsseiten
 
@@ -146,7 +164,7 @@ Auftragsverarbeiter nach Art. 28 DSGVO. Die Server stehen in Deutschland.*
 | Option | Standard | Bedeutung | Deployment |
 |---|---|---|---|
 | `summary_names` | `false` | die Schule erlaubt Namen in den Zusammenfassungen für Lehrkräfte, mit einer Kalenderdatei der Termine (selbst ohne Namen); jedes Konto wählt dann im Profil *Mit Namen*, neue Konten beginnen ohne. `false`: je Tag nur die Zahl der Termine, Auffälliges und der Link zur Liste ([Anleitung für Lehrkräfte]({{ '/de/guide/teachers/' | relative_url }}#zusammenfassungen-per-e-mail)) | `SUMMARY_NAMES` (`1`) |
-| `allowed_account_domains` | `[]` | Konten dürfen nur Adressen bei diesen Domains verwenden, z. B. `['schule.example.org']`: genau die Domain, Umlaute als Punycode (`xn--…`). Eine neue oder geänderte Adresse anderswo (Konto, Antwortadresse für Eltern, Installer) wird abgelehnt; an eine Adresse von vorher bei einer anderen Domain gehen keine Zusammenfassungen und keine Antworten der Eltern, bis sie geändert ist (statt einer solchen Antwortadresse gilt die E-Mail-Adresse des Kontos, wenn sie erlaubt ist). `[]` = jede Adresse | `ALLOWED_ACCOUNT_DOMAINS` (durch Kommas getrennt) |
+| `allowed_account_domains` | `[]` | Konten dürfen nur Adressen bei diesen Domains verwenden, z. B. `['schule.example.org']`: genau die Domain (Umlaute so, wie sie sind, oder als Punycode, `xn--…`). Eine neue oder geänderte Adresse anderswo (Konto, Antwortadresse für Eltern, Installer) wird abgelehnt; an eine Adresse von vorher bei einer anderen Domain gehen keine Zusammenfassungen und keine Antworten der Eltern, bis sie geändert ist (statt einer solchen Antwortadresse gilt die E-Mail-Adresse des Kontos, wenn sie erlaubt ist). `[]` = jede Adresse | `ALLOWED_ACCOUNT_DOMAINS` (durch Kommas getrennt) |
 
 Setzen Sie `summary_names` nur, wenn alle Konten dienstliche Adressen verwenden, deren Löschregeln die
 Schule in der Hand hat, etwa zusammen mit `allowed_account_domains`: Zusammenfassungen bleiben in

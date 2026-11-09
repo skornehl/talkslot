@@ -54,10 +54,10 @@ final class IcsExport
      */
     public static function cancelForParent(array $booking): string
     {
-        $from = (string) Config::get('mail.from_address', '');
+        $from = Email::normalize((string) Config::get('mail.from_address', ''));
         return self::calendar($booking['title'], [self::parentEvent($booking, max(0, strtotime(Time::nowSql()) - strtotime((string) ($booking['created_at'] ?? 'now'))) + 1) + [
             'status' => 'CANCELLED',
-            'organizer' => filter_var($from, FILTER_VALIDATE_EMAIL) ? 'ORGANIZER;CN="' . preg_replace('/[\x00-\x1F\x7F"]/', '', app_name()) . '":mailto:' . $from : '',
+            'organizer' => $from !== null ? 'ORGANIZER;CN="' . preg_replace('/[\x00-\x1F\x7F"]/', '', app_name()) . '":mailto:' . $from : '',
         ]], 'CANCEL');
     }
 

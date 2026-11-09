@@ -62,7 +62,7 @@ final class Notifier
     public static function replyTo(array $b): ?string
     {
         foreach ([(string) ($b['teacher_reply_to'] ?? ''), (string) ($b['teacher_email'] ?? '')] as $address) {
-            if (filter_var($address, FILTER_VALIDATE_EMAIL) && AccountDomains::permits($address)) {
+            if (Email::isValid($address) && AccountDomains::permits($address)) {
                 return $address;
             }
         }

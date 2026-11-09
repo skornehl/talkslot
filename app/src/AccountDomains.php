@@ -8,7 +8,8 @@ namespace App;
  * password links and the replies of parents go to these addresses, so a school can require its own mailboxes,
  * where its deletion rules apply. An empty list allows every address. A domain matches exactly and regardless
  * of case: "schule.example.org" allows "a@schule.example.org", but neither "a@lehrer.schule.example.org" nor
- * "a@example.org". Domains with umlauts are written as punycode ("xn--…"), as mail addresses carry them.
+ * "a@example.org". A domain with umlauts may be written as it is or as punycode ("xn--…"); it is compared in
+ * the ASCII form addresses are stored in (App\Email).
  */
 final class AccountDomains
 {
@@ -16,7 +17,19 @@ final class AccountDomains
     public static function allowed(): array
     {
         $domains = Config::get('allowed_account_domains', []);
-        $domains = array_map(static fn ($d): string => is_string($d) ? strtolower(ltrim(trim($d), '@')) : '', is_array($domains) ? $domains : []);
+        $domains = array_map(static fn ($d): string => is_string($d) ? self::ascii($d) : '', is_array($domains) ? $domains : []);
+        return array_values(array_unique(array_filter($domains, self::valid(...))));
+    }
+
+    /**
+     * The configured domains for messages: in lower case, umlauts as the admin wrote them (allowed() has the
+     * punycode form that addresses are compared in).
+     * @return list<string>
+     */
+    public static function shown(): array
+    {
+        $domains = Config::get('allowed_account_domains', []);
+        $domains = array_map(static fn ($d): string => is_string($d) ? mb_strtolower(ltrim(trim($d), '@'), 'UTF-8') : '', is_array($domains) ? $domains : []);
         return array_values(array_unique(array_filter($domains, self::valid(...))));
     }
 
@@ -32,12 +45,21 @@ final class AccountDomains
     public static function error(string $email): ?string
     {
         return $email === '' || self::permits($email) ? null
-            : __('Bitte eine Adresse bei {domains} angeben: Die Schule erlaubt für Konten nur ihre dienstlichen Adressen.', ['domains' => implode(', ', self::allowed())]);
+            : __('Bitte eine Adresse bei {domains} angeben: Die Schule erlaubt für Konten nur ihre dienstlichen Adressen.', ['domains' => implode(', ', self::shown())]);
     }
 
-    /** An entry of the list: a domain name with at least one dot (letters, digits, hyphens), "@" in front allowed. */
+    /**
+     * An entry of the list: a domain name with at least one dot (letters, digits, hyphens; umlauts as they are
+     * or as punycode), "@" in front allowed.
+     */
     public static function valid(string $domain): bool
     {
-        return preg_match('/^@?(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z][a-z0-9-]{0,61}[a-z0-9]$/i', trim($domain)) === 1;
+        return preg_match('/^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z][a-z0-9-]{0,61}[a-z0-9]\z/', self::ascii($domain)) === 1;
+    }
+
+    /** An entry in the form addresses are compared in: lower case, without "@", umlauts as punycode. */
+    private static function ascii(string $domain): string
+    {
+        return strtolower(Email::domainToAscii(ltrim(trim($domain), '@')) ?? '');
     }
 }
