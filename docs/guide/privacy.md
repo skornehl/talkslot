@@ -127,6 +127,29 @@ ask how long they are kept and state it in the privacy policy.
   informs (Art. 13). The required checkbox is worded as *having read* the notice, and the notice states
   that it is not consent.
 
+## Requests for access {#requests-for-access}
+
+Parents can ask what is stored about them (Art. 15 GDPR). An admin finds the data for such a request under
+*Protokoll → Auskunft zu einer E-Mail-Adresse* (request for access by email address): enter the exact address and
+confirm that you are answering a request for access. The page lists, across all teachers, the bookings with that address (appointment, round,
+teacher, the name as booked, language, when and by whom it was entered, reminder and delivery status) and
+cancellation mails that are still waiting to be sent. Upper and lower case do not matter; parts of an address
+are not searched for, and the search is a form post, so the address appears in no URL.
+
+Every search is entered in the [log]({{ '/guide/admin/' | relative_url }}#log) with who searched, when and how
+many entries were found, not the address. Only admins can use it.
+
+The page does not cover mails that were already sent (the teachers' mailboxes, summaries, the mail server),
+backups and the web host's logs, and it cannot find a booking without an e-mail address; there, the teacher can
+look in the round's booking list. As bookings are deleted at midnight after the appointment, the answer will
+often be that nothing is stored in TalkSlot any more.
+
+To answer the request: make sure it really comes from the person the address belongs to (reply only to that
+address, or check their identity first, Art. 12(6) GDPR), and answer within one month (Art. 12(3)), also if
+nothing was found. Copy the result into your reply and refer to the privacy policy for purposes, recipients and
+retention periods. Ask the teachers and the web host about what the page does not cover. If the parents want a
+booking deleted, delete it in the round's booking list.
+
 ## Legal templates
 
 Imprint and privacy policy templates in German and English are copied into the database at installation
