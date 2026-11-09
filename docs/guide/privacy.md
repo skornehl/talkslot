@@ -86,6 +86,8 @@ ask how long they are kept and state it in the privacy policy.
   for the sign-in, the teacher gets an e-mail (if the account has an address; otherwise the admin is told) and the log records it. This is the technical measure against unnecessary disclosure
   (Art. 5(1)(c), (f), Art. 25 GDPR), for example where a parent is the volunteer admin; it does not replace
   instructing admins and committing them to confidentiality.
+  The one exception is the search for an access request (*Auskunft zu einer E-Mail-Adresse*): it shows the bookings of
+  one given address across all rounds, only with the box that it answers such a request, and it is logged.
 - **Admin log without monitoring teachers:** only changes made by admin accounts are logged, so it shows
   who among several admins did what. What teachers do in their own rounds is not recorded, and bookings
   appear with their date only: with the time, an entry together with a summary mail or a printed list would
