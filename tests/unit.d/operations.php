@@ -414,6 +414,16 @@ $p6Pdo->setValue(null, new class () extends PDO {
 $p6Nested = $p6Run([1213]);
 $p6Pdo->setValue(null, $p6Was);
 check('Db::retrying(): inside an open transaction nothing is repeated (a deadlock has rolled back all of it)', $p6Nested === [1213, 1]);
+$p6Taken = new ReflectionMethod(App\Controller\AdminController::class, 'takenByAnother');
+$p6Admin = (new ReflectionClass(App\Controller\AdminController::class))->newInstanceWithoutConstructor();
+$p6Other = false;
+try {
+    $p6Taken->invoke($p6Admin, $p6Error(1062));
+    $p6Taken->invoke($p6Admin, $p6Error(1205));
+} catch (PDOException $e) {
+    $p6Other = (int) $e->errorInfo[1] === 1205;
+}
+check('forms: a duplicate key is the message of the form, any other database error goes on', $p6Other);
 check('Db::isRetryable(): only PDO errors with those codes', App\Db::isRetryable($p6Error(1020)) && !App\Db::isRetryable($p6Error(1062)) && !App\Db::isRetryable(new RuntimeException('x')));
 $p6Schema = (string) file_get_contents(dirname(__DIR__, 2) . '/app/schema.sql');
 $p6Code = (string) file_get_contents(dirname(__DIR__, 2) . '/app/src/Migrations.php');
