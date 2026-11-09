@@ -833,7 +833,7 @@ final class AdminController
         $mailed = (bool) $this->withoutSession(static fn (): bool => AccountSecurity::substitution($round, $owner, $me));
         // Logged before access is granted: no access without an entry
         $this->audit(fn () => __('Vertretung übernommen, Namen und E-Mail-Adressen der Eltern sichtbar') . ($mailed ? '' : ', ' . __('Lehrkraft nicht per E-Mail erreicht')),
-            $id, 'substitution', ['mailed' => (int) $mailed]);
+            $id, 'substitution', ['reached' => (int) $mailed]);
         Substitution::start($id, (int) $round['user_id']);
         $this->flash('success', __('Vertretung übernommen: Sie sehen die Namen und E-Mail-Adressen der Eltern dieser Runde bis zum Ende dieser Anmeldung.') . ' '
             . ($mailed ? __('Die Lehrkraft wurde per E-Mail informiert.') : __('Die Lehrkraft konnte nicht per E-Mail informiert werden; bitte sagen Sie ihr selbst Bescheid.')));
