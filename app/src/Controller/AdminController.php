@@ -26,6 +26,7 @@ use App\ParentContact;
 use App\RateLimiter;
 use App\Readiness;
 use App\RoundCode;
+use App\RoundTrash;
 use App\ScheduleChange;
 use App\ScheduleService;
 use App\SlotGenerator;
@@ -62,6 +63,9 @@ final class AdminController
         ['POST', '#^/round/(\d+)/toggle$#', 'roundToggle', 'teacher'],
         ['POST', '#^/round/(\d+)/duplicate$#', 'roundDuplicate', 'teacher'],
         ['POST', '#^/round/(\d+)/delete$#', 'roundDelete', 'teacher'],
+        ['GET', '#^/trash$#', 'trash', 'teacher'],
+        ['POST', '#^/trash/(\d+)/restore$#', 'trashRestore', 'teacher'],
+        ['POST', '#^/trash/(\d+)/delete$#', 'trashDelete', 'teacher'],
         ['POST', '#^/round/(\d+)/day$#', 'dayAdd', 'teacher'],
         ['GET', '#^/round/(\d+)/print$#', 'printView', 'teacher'],
         ['POST', '#^/round/(\d+)/translations$#', 'translationsSave', 'teacher'],
@@ -283,6 +287,7 @@ final class AdminController
         unset($r);
         $legalHints = Auth::isAdmin() ? array_merge(self::operatorHints(), self::legalHints(LegalTexts::outdated())) : [];
         $this->render('admin/dashboard', [
+            'trashCount' => RoundTrash::count($all ? null : (int) Auth::id()),
             'title' => $all ? __('Alle Terminrunden') : __('Meine Terminrunden'),
             'rounds' => $rounds,
             'showOwner' => $all,
@@ -811,11 +816,66 @@ final class AdminController
             Http::redirect('/admin/round/' . $id, [], 'delete-round');
         }
         $label = self::roundLabel($id); // for the log: the round is gone afterwards
+        // Without bookings: into the trash, restorable for a while. Booked in the meantime: ask again
+        if ($booked === 0) {
+            if (RoundTrash::put($id) === null) {
+                $this->flash('error', __('Inzwischen hat sich an dieser Runde etwas geändert (z. B. eine neue Buchung). Bitte prüfen und erneut löschen.'));
+                Http::redirect('/admin/round/' . $id, [], 'delete-round');
+            }
+            $this->audit(fn () => __('in den Papierkorb gelegt'), $label);
+            $this->flash('success', __('Runde in den Papierkorb gelegt. Sie lässt sich {days} Tage lang wiederherstellen (Link „Papierkorb“ oben auf dieser Seite).', ['days' => RoundTrash::KEEP_DAYS]));
+            Http::redirect('/admin');
+        }
         $parents = ScheduleService::cancelRound($id, Http::post('notify') === '1');
-        $this->audit(fn () => ($booked ? __('gelöscht (mit {count} Buchung(en))', ['count' => $booked]) : __('gelöscht')) . self::parentsAudit($parents), $label);
+        $this->audit(fn () => __('gelöscht (mit {count} Buchung(en))', ['count' => $booked]) . self::parentsAudit($parents), $label);
         $this->flash('success', __('Runde mit allen Tagen und Buchungen gelöscht.'));
         $this->parentsFlash($parents);
         Http::redirect('/admin');
+    }
+
+    // ---------------------------------------------------------------- Trash (rounds without bookings)
+
+    private function trash(): void
+    {
+        $this->render('admin/trash', ['title' => __('Papierkorb'), 'rows' => RoundTrash::entries(Auth::isAdmin() ? null : (int) Auth::id()),
+            'showOwner' => Auth::isAdmin(), 'days' => RoundTrash::KEEP_DAYS]);
+    }
+
+    /** An entry of the trash the signed-in account may act on, else 404 (own entries; admins all). */
+    private function trashEntry(int $id): array
+    {
+        $entry = RoundTrash::find($id);
+        return $entry && self::mayAccess((int) $entry['user_id']) ? $entry : $this->notFound();
+    }
+
+    private function trashRestore(int $id): void
+    {
+        $entry = $this->trashEntry($id);
+        // As when activating: a round only goes public if what that requires is (still) there
+        $blocker = $this->publishBlocker($this->userById((int) $entry['user_id']));
+        $restored = RoundTrash::restore($id, $blocker === null);
+        if ($restored === null) {
+            $this->flash('error', __('Dieser Eintrag ist nicht mehr im Papierkorb.'));
+            Http::redirect('/admin/trash');
+        }
+        $this->audit(fn () => __('aus dem Papierkorb wiederhergestellt'), $restored['id']);
+        $this->flash('success', $restored['same_address']
+            ? __('Runde wiederhergestellt, mit ihrer bisherigen Adresse und ihrem Rundencode. War sie aktiv, ist sie wieder buchbar.')
+            : __('Runde wiederhergestellt. Ihre bisherige Adresse oder ihr Rundencode war vergeben, deshalb hat sie neue: Schon verteilte Links oder Codes führen nicht mehr zu dieser Runde, bitte geben Sie die neuen weiter.'));
+        if ($restored['deactivated']) {
+            $this->flash('error', __('Die Runde bleibt deaktiviert: {hint}', ['hint' => (string) $blocker]));
+        }
+        Http::redirect('/admin/round/' . $restored['id']);
+    }
+
+    private function trashDelete(int $id): void
+    {
+        $entry = $this->trashEntry($id);
+        RoundTrash::remove($id);
+        $owner = Db::one("SELECT COALESCE(NULLIF(display_name, ''), username) AS owner FROM users WHERE id = ?", [$entry['user_id']]);
+        $this->audit(fn () => __('aus dem Papierkorb endgültig gelöscht'), ['title' => $entry['title'], 'owner' => $owner['owner'] ?? '?']);
+        $this->flash('success', __('Runde endgültig gelöscht.'));
+        Http::redirect('/admin/trash');
     }
 
     // ---------------------------------------------------------------- Days & breaks

@@ -184,7 +184,6 @@ return [
     'Übersetzungen bearbeitet ({changes})' => 'translations edited ({changes})',
     'dupliziert' => 'duplicated',
     'dupliziert mit erstem Tag am {date}' => 'duplicated with first day on {date}',
-    'gelöscht' => 'deleted',
     'gelöscht (mit {count} Buchung(en))' => 'deleted (with {count} booking(s))',
     'Tag(e) hinzugefügt: {dates}' => 'day(s) added: {dates}',
     'Tag {date} bearbeitet' => 'day {date} edited',

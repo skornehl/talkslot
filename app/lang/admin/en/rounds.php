@@ -36,7 +36,6 @@ return [
     'Druckansicht / PDF' => 'Print view / PDF',
     'Duplizieren …' => 'Duplicate …',
     'Als Vorlage speichern' => 'Save as template',
-    'Runde „{title}“ mit allen Tagen und Buchungen endgültig löschen?' => 'Permanently delete the round “{title}” with all days and bookings?',
     'Löschen' => 'Delete',
     'Runde duplizieren' => 'Duplicate round',
     'Erster Tag der Kopie' => 'First day of the copy',

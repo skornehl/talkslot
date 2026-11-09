@@ -108,6 +108,9 @@ final class Cleanup
         // 9. Give up mails in the outbox that could not be sent within 48 hours
         $stats['mails_expired'] = Outbox::expire();
 
+        // 10. Delete rounds that have been in the trash for longer than RoundTrash::KEEP_DAYS
+        $stats['trash_deleted'] = RoundTrash::purge();
+
         Settings::set('last_cleanup', (string) time());
         return $stats;
     }

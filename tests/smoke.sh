@@ -28,7 +28,7 @@ check "CLI installer after installation: abort" 'dcx exec -T app php /srv/app/bi
 # Reinstall, this time via the web installer (same credentials as dev/reset.sh). It deletes
 # itself after success; the file is restored afterwards.
 INSTALL_BAK=$(mktemp); cp "$ROOT/public/install.php" "$INSTALL_BAK"
-dcx exec -T db mariadb -uapp -papp-dev-only talkslot -e "SET FOREIGN_KEY_CHECKS=0; DROP TABLE IF EXISTS tp_mail_outbox, tp_round_templates, tp_audit_log, tp_round_translations, tp_sent_summaries, tp_bookings, tp_slots, tp_day_breaks, tp_round_days, tp_rounds, tp_pages, tp_rate_limits, tp_settings, tp_users, tp_admin_users; CREATE TABLE tp_users (id INT)"
+dcx exec -T db mariadb -uapp -papp-dev-only talkslot -e "SET FOREIGN_KEY_CHECKS=0; DROP TABLE IF EXISTS tp_round_trash, tp_mail_outbox, tp_round_templates, tp_audit_log, tp_round_translations, tp_sent_summaries, tp_bookings, tp_slots, tp_day_breaks, tp_round_days, tp_rounds, tp_pages, tp_rate_limits, tp_settings, tp_users, tp_admin_users; CREATE TABLE tp_users (id INT)"
 dcx exec -T app php -r '@unlink("/srv/app/app/var/installed.lock");'
 check "installer reachable while not installed" 'curl -s "$B/install.php" | grep -q "name=\"install_key\""'
 check "CLI installer: different passwords, no operator type → abort, the usage names the three input lines" 'O=$(printf "Sehr-Sicheres-Pw-1\nanderes-Passwort-2\n" | dcx exec -T app php /srv/app/bin/install.php sabrina 2>&1); echo "$O" | grep -q "Passwörter stimmen nicht überein" && echo "$O" | grep -q "Bitte wählen Sie die Betriebsart" && echo "$O" | grep -qF "Input: password, password again, operator type (school or private), one per line"'
@@ -730,7 +730,7 @@ check "own round cannot be activated without display name" 'curl -s -L -b "$J" -
 DBQ "UPDATE tp_users SET display_name = UNHEX('${ACC0%%:*}'), email = UNHEX('${ACC0##*:}') WHERE role='admin'; UPDATE tp_settings SET value = UNHEX('$(echo "$ACC0" | cut -d: -f2)') WHERE name='controller_contact'"
 R=$(curl -s -b "$J" --data-urlencode "csrf=$T" -d "display_name=&email=kaputt" "$B/admin/profile")
 check "profile: missing display name and invalid email rejected" 'echo "$R" | has "Bitte einen Anzeigenamen angeben" && echo "$R" | has "Die E-Mail-Adresse ist ungültig"'
-check "delete round" 'curl -s -L -b "$J" -d "csrf=$T" "$B/admin/round/$RN/delete" | has "Runde mit allen Tagen und Buchungen gelöscht" && [ -z "$(DBQ "SELECT id FROM tp_rounds WHERE id=$RN")" ]'
+check "delete round" 'curl -s -L -b "$J" -d "csrf=$T" "$B/admin/round/$RN/delete" | has "Runde in den Papierkorb gelegt" && [ -z "$(DBQ "SELECT id FROM tp_rounds WHERE id=$RN")" ]'
 
 # Change password (profile) and forced change
 PW() { curl -s -L -c "$J" -b "$J" -d "csrf=$T" --data-urlencode "current_password=$1" --data-urlencode "new_password=$2" --data-urlencode "new_password2=$3" "$B/admin/${4:-password}"; }

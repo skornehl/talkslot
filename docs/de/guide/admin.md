@@ -150,7 +150,8 @@ Rundenformular). Die Runde erscheint dann bei dieser Lehrkraft, die Eltern sehen
 Zusammenfassungen gehen an sie. Eltern, die schon gebucht haben, erhalten eine Änderungsmitteilung mit der
 neuen Lehrkraft, wenn *Eltern per E-Mail informieren* angehakt bleibt; die Meldung nach dem Speichern nennt
 diejenigen, die keine E-Mail bekommen konnten. Lehrkräfte sehen immer nur
-ihre eigenen Runden; das wird zentral durchgesetzt und ist durch Tests abgesichert.
+ihre eigenen Runden; das wird zentral durchgesetzt und ist durch Tests abgesichert. Im *Papierkorb* sehen Admins
+auch die gelöschten Runden ohne Buchungen aller Lehrkräfte.
 
 Wie Runden funktionieren, steht in der [Anleitung für Lehrkräfte]({{ '/de/guide/teachers/' | relative_url }}).
 

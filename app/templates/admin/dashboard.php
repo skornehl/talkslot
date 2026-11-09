@@ -70,7 +70,10 @@
 <?php endif; ?>
 <div class="page-head">
   <h1><?= e($title) ?></h1>
-  <a class="button button-primary" href="<?= e(url('/admin/round/new')) ?>"><?= e(__('+ Neue Runde')) ?></a>
+  <div class="actions">
+    <?php if (!empty($trashCount)): ?><a class="button" href="<?= e(url('/admin/trash')) ?>" data-trash-link><?= e(__('Papierkorb ({count})', ['count' => (int) $trashCount])) ?></a><?php endif; ?>
+    <a class="button button-primary" href="<?= e(url('/admin/round/new')) ?>"><?= e(__('+ Neue Runde')) ?></a>
+  </div>
 </div>
 <?php if (App\Auth::isAdmin()): ?><p class="small"><a href="<?= e(url('/admin/start')) ?>"><?= e(__('Einrichtung prüfen: Bereit für den Start?')) ?></a></p><?php endif; ?>
 
