@@ -185,6 +185,15 @@ final class Migrations
         23 => [
             'ALTER TABLE users ADD COLUMN IF NOT EXISTS parent_contact VARCHAR(300) NULL AFTER reply_to',
         ],
+        // 24: trash for rounds without bookings (RoundTrash); additive, the previous version ignores the table
+        24 => [
+            "CREATE TABLE IF NOT EXISTS round_trash (
+                id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, user_id INT UNSIGNED NOT NULL, title VARCHAR(200) NOT NULL,
+                data MEDIUMTEXT NOT NULL, deleted_at DATETIME NOT NULL,
+                KEY idx_trash_user (user_id), KEY idx_trash_deleted (deleted_at),
+                CONSTRAINT fk_trash_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        ],
         // 26: PHP step only (addInvariants): indexes for the date filters, rules of days and rounds in the database
         26 => [],
     ];
@@ -200,10 +209,10 @@ final class Migrations
         // Unchanged since v1.5.0: the legal notice of a "private, non-commercial service"
         'imprint-private.de' => '036e210b629357dfbf768868e3a5f249c888d3052f301170703b196336058f43',
         'imprint-private.en' => 'f15521ceaa18e97c98190e448cc95eb6130c4cf571164b09819bb40dd7af22c8',
-        'privacy.de' => '6d3917ebd6668be5ef53fd3d9215db22ffaf526a7e2db0aaad2c195c3bb873ef',
-        'privacy.en' => '89197fcf4e398d4e5de638b5efcbf0c3624f6dbf7d8b0a9fafa0a1803997c2c6',
-        'privacy-private.de' => 'f6a1a0488c648b7d524f41d6406718938fad59cb934a5c0a6d8b1631d9700d34',
-        'privacy-private.en' => '859517c15d6f539cf9d8506404abb6171bd7e8f46eb727e5b43826e738dcddca',
+        'privacy.de' => 'e7928743e27c7350503e2a1355ca9470734455f2aeaa9e0c729c96ebf2c12c5d',
+        'privacy.en' => 'a438a0928308672f6808e7b6947baba2c228697d84688f8d6eada1a4f5da90b2',
+        'privacy-private.de' => '1bb552694fa8214a0d84763856268adc5c2b9f61699cdb90ab9f0800f3d12a9e',
+        'privacy-private.en' => 'be51145bd45b19d97dd1a290dcf9e11d30196c1d3ae89850370202233cd3a3d5',
     ];
 
     /**
@@ -214,6 +223,9 @@ final class Migrations
      */
     public const OLD_PAGE_HASHES = [
         'private' => [
+            // Without the limit of the mails parents trigger per address (up to schema version 22)
+            'f6a1a0488c648b7d524f41d6406718938fad59cb934a5c0a6d8b1631d9700d34',
+            '859517c15d6f539cf9d8506404abb6171bd7e8f46eb727e5b43826e738dcddca',
             // Summary mails with time and name, the recommendation to delete them after 15 months (up to schema
             // version 21, before the summaries without names)
             '41e56d82edcfea69af044fbef9639ab5f3e0667d831450fa1f593bce0b6623a1',
@@ -298,6 +310,9 @@ final class Migrations
             'f1ac0f64ece1e1ce11b4322831f8d121b6d5a3ea450183d6a277cf26d9c0f3b1',
         ],
         'school' => [
+            // Without the limit of the mails parents trigger per address (up to schema version 22)
+            '6d3917ebd6668be5ef53fd3d9215db22ffaf526a7e2db0aaad2c195c3bb873ef',
+            '89197fcf4e398d4e5de638b5efcbf0c3624f6dbf7d8b0a9fafa0a1803997c2c6',
             // Summary mails with time and name, kept as a record of the meetings for 15 months (up to schema
             // version 21, before the summaries without names)
             '6a3e56b92970cd83352b6d4fbff9ff64fbb6765bf8d622c9c66cd5bb8812f374',

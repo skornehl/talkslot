@@ -14,7 +14,7 @@ You received a link or a **round code** from your child's teacher. You do not ne
    link above the page offers it; the page does not switch by itself. Invitations from the teacher usually
    contain a direct link for each language.
 3. **Pick a free time slot.** Only free slots are shown, grouped by day.
-4. **Enter a name**, usually your child's first and last name. An **e-mail address is optional**: with it,
+4. **Enter your child's name**, first and last name, with the class if needed; no other details are needed. An **e-mail address is optional**: with it,
    you get a confirmation with your personal link and a calendar file, and usually a reminder the
    evening before. If the confirmation cannot be sent at that moment, the page says so and it follows
    automatically (with a personal link of its own; the one on the page stays valid).
@@ -54,15 +54,19 @@ in person, the teacher contacts you directly.
 ## Good to know
 
 - **Siblings:** book once per child, with the child's name. Some rounds allow only one appointment per
-  person. If you remembered an appointment on this device, the round shows it instead of the slot list;
+  child. If you remembered an appointment on this device, the round shows it instead of the slot list;
   *Book another appointment (e.g. for a sibling)* brings the form back without forgetting anything.
 - **Remember on this device:** an optional checkbox saves the link to your appointment, its label and its
   date in your browser, so you see it when you open the round again. Each booking gets its own entry. Nothing
   is sent to the server. You can delete an entry any time (your appointment stays booked); after a
-  cancellation and after the day of the appointment it disappears by itself.
+  cancellation and after the day of the appointment it disappears by itself. The start page and the page that asks for the code of a protected round list all appointments saved on this device (*My appointments on this device*), the next one
+  first, so that you can reach them without their links.
 - **Stuck?** If a link does not work, the page offers the code input of the start page right away. If no
   slot is free, the page says why: all slots are taken, or the booking deadline has passed. Where the
   teacher or the school has given a contact for questions (for example the school office with its phone
   number), the booking page, the page of your appointment and the "not found" page show it.
+- **Too many requests from your network:** many parents on the same Wi-Fi (e.g. at school) can use up a
+  limit together. Try again later or over another connection, such as mobile data; otherwise contact the
+  teacher.
 - **Privacy:** the booking site sets no cookies and does not track you. Your details are deleted
   automatically the day after the appointment.
