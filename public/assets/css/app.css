@@ -184,6 +184,7 @@ code { font-family: var(--mono); font-size: .9em; background: var(--neutral-soft
 .location { margin-top: -.6rem; color: var(--muted); }
 /* Who parents can ask (App\ParentContact): under the teacher and location, or inside a notice where they are stuck */
 .contact { margin: -.4rem 0 1rem; }
+.card .contact { margin: .6rem 0 0; }
 .alert .contact { margin: .5rem 0 0; }
 .muted { color: var(--muted); }
 .small { font-size: .9rem; }
@@ -244,8 +245,17 @@ form.inline { display: inline; }
 .pin-display { font-family: var(--mono); font-size: 1.2rem; letter-spacing: .15em; }
 .pin-fieldset { border: 1px solid var(--border); border-radius: 8px; padding: .75rem 1rem 0; }
 .pin-fieldset legend { font-weight: 600; padding: 0 .3rem; }
+/* Sections of the round form */
+.form-section { border: 1px solid var(--border); border-radius: 8px; padding: .75rem 1rem; min-width: 0; display: grid; gap: .75rem; }
+.form-section > legend { font-weight: 600; padding: 0 .3rem; }
+.form-section-title { font-weight: 600; margin: 0; }
+details.form-section:not([open]) { display: block; }
+details.form-section > summary { margin: 0; }
 .invitation { white-space: pre-wrap; font-family: var(--mono); font-size: .85rem; background: var(--field-soft); border: 1px solid var(--border); border-radius: 6px; padding: .75rem; }
 details summary { cursor: pointer; color: var(--primary); margin: .5rem 0; }
+/* Admin round page: links to the days, the form for a break folded away (expert review P2-3) */
+.day-nav ul { list-style: none; display: flex; flex-wrap: wrap; gap: .25rem 1rem; padding: 0; margin: 0 0 1rem; }
+.add-break { margin: 0 0 1rem; }
 /* Changes of a legal template (page form): lines removed and added, as Markdown */
 .legal-diff ul { list-style: none; padding: 0; margin: 0 0 .75rem; font-family: var(--mono); font-size: .85rem; }
 .legal-diff li { white-space: pre-wrap; overflow-wrap: anywhere; padding: .2rem .5rem; border-radius: 4px; margin: .15rem 0; }

@@ -385,7 +385,7 @@ final class AdminController
     private function roundSave(?int $id = null): void
     {
         $round = $id ? $this->round($id) : null;
-        $deleteAfter = Http::post('delete_after_hours');
+        [$deleteAfter, $deleteError] = self::deleteAfterInput();
         $data = [
             'title' => Http::post('title'),
             'slug' => Http::post('slug'),
@@ -397,6 +397,7 @@ final class AdminController
             'booking_deadline_hours' => Http::post('booking_deadline_hours'),
             'cancel_deadline_hours' => Http::post('cancel_deadline_hours'),
             'delete_after_hours' => $deleteAfter,
+            'delete_after_days' => isset($_POST['delete_after_days']) ? Http::post('delete_after_days') : null,
             'random_suffix' => Http::post('random_suffix') === '1' ? 1 : 0,
             // Only take over the switch if the form knows it (otherwise keep the previous value, e.g. for
             // a form opened before the update)
@@ -440,8 +441,8 @@ final class AdminController
                 $errors[] = $error;
             }
         }
-        if ($deleteAfter !== '' && (!ctype_digit($deleteAfter) || (int) $deleteAfter > 8760)) {
-            $errors[] = __('Löschfrist: leer lassen (nie löschen) oder 0–8760 Stunden.');
+        if ($deleteError !== null) {
+            $errors[] = $deleteError;
         }
         // Block publishing only if the round would (newly) become public as a result: when
         // activating it or reassigning an active round – not on every change to it
@@ -957,6 +958,41 @@ final class AdminController
         return [$dayData, $errors];
     }
 
+    /**
+     * The deletion period from the form, in days (expert review P2-3; a decimal comma is fine). A form opened before
+     * the update or a script sends hours (delete_after_hours). Stored in hours as before.
+     * @return array{0: string, 1: ?string} [hours, '' = never delete; error message]
+     */
+    private static function deleteAfterInput(): array
+    {
+        if (!isset($_POST['delete_after_days'])) {
+            $hours = Http::post('delete_after_hours');
+            return [$hours, $hours !== '' && (!ctype_digit($hours) || (int) $hours > 8760) ? __('Löschfrist: leer lassen (nie löschen) oder 0–8760 Stunden.') : null];
+        }
+        $days = str_replace(',', '.', trim(Http::post('delete_after_days')));
+        if ($days === '') {
+            return ['', null];
+        }
+        if (!is_numeric($days) || (float) $days < 0 || (float) $days > 365) {
+            return [$days, __('Runde löschen nach Ablauf: leer lassen (nie löschen) oder 0 bis 365 Tage.')];
+        }
+        return [(string) (int) round((float) $days * 24), null];
+    }
+
+    /** The break rows as sent, for the form after an error: a row with a typo must not vanish from it. */
+    private static function breakRowsAsSent(): array
+    {
+        $field = static fn (string $name, int $i): string => is_string($_POST[$name][$i] ?? null) ? trim($_POST[$name][$i]) : '';
+        $rows = [];
+        foreach (array_keys(is_array($_POST['break_start'] ?? null) ? $_POST['break_start'] : []) as $i) {
+            $row = [$field('break_start', $i), $field('break_end', $i), $field('break_label', $i)];
+            if ($row[0] !== '' || $row[1] !== '') {
+                $rows[] = $row;
+            }
+        }
+        return $rows;
+    }
+
     private static function noSlots(): string
     {
         return __('Mit diesen Zeiten und Pausen entsteht kein einziger Termin.');
@@ -1031,10 +1067,15 @@ final class AdminController
         });
     }
 
-    /** $notify: the box "Eltern per E-Mail informieren" (ticked, unless it was unticked when the form was sent with an error). */
-    private function dayForm(int $id, array $errors = [], bool $notify = true): void
+    /**
+     * "Tag bearbeiten" with the same fields as a new day (expert review P2-3): times, breaks and the preview, which
+     * also counts the bookings that would no longer fit. $input: as sent, after an error.
+     * $notify: the box "Eltern per E-Mail informieren" (ticked, unless it was unticked when the form was sent with an error).
+     */
+    private function dayForm(int $id, array $errors = [], bool $notify = true, ?array $input = null): void
     {
         $day = $this->day($id);
+        $breaks = Db::all('SELECT start_time, end_time, label FROM day_breaks WHERE day_id = ? ORDER BY start_time', [$id]);
         $this->render('admin/day_form', [
             'title' => __('Tag bearbeiten'),
             'day' => $day,
@@ -1042,6 +1083,13 @@ final class AdminController
             'parents' => self::parentCounts(ScheduleService::concerned('day', $id)),
             'errors' => $errors,
             'notify' => $notify,
+            'dayData' => $input ?? [
+                'dates' => [], 'date' => $day['day_date'], 'location' => (string) ($day['location'] ?? ''),
+                'start' => fmt_time($day['start_time']), 'end' => fmt_time($day['end_time']), 'minutes' => (int) $day['slot_minutes'],
+                'breaks' => array_map(static fn (array $b): array => [fmt_time($b['start_time']), fmt_time($b['end_time']), (string) $b['label']], $breaks),
+            ],
+            'bookedSlots' => array_map(static fn (array $s): string => fmt_time($s['start_time']),
+                Db::all('SELECT s.start_time FROM slots s JOIN bookings b ON b.slot_id = s.id WHERE s.day_id = ? ORDER BY s.start_time', [$id])),
         ]);
     }
 
@@ -1049,21 +1097,37 @@ final class AdminController
     {
         $day = $this->day($id);
         [$in, $errors] = $this->dayInput();
+        // The breaks are part of the form; one opened before the update has none and leaves them as they are
+        [$breaks, $breakErrors] = Http::post('breaks_field') === '1' ? self::breaksInput() : [null, []];
+        $errors = array_merge($errors, $breakErrors);
         if (!$errors && $this->dateTaken((int) $day['round_id'], $in['date'], $id)) {
             $errors[] = __('Diesen Tag gibt es in der Runde bereits.');
         }
         if (!$errors) {
-            $breaks = Db::all('SELECT start_time, end_time FROM day_breaks WHERE day_id = ?', [$id]);
-            if (!SlotGenerator::compute($in['start'], $in['end'], $in['minutes'], $breaks)) {
+            $slotBreaks = $breaks !== null ? array_map(static fn (array $b): array => ['start_time' => $b[0], 'end_time' => $b[1]], $breaks)
+                : Db::all('SELECT start_time, end_time FROM day_breaks WHERE day_id = ?', [$id]);
+            if (!SlotGenerator::compute($in['start'], $in['end'], $in['minutes'], $slotBreaks)) {
                 $errors[] = self::noSlots();
             }
         }
         if ($errors) {
-            $this->dayForm($id, $errors, Http::post('notify') === '1');
+            $this->dayForm($id, $errors, Http::post('notify') === '1', $breaks === null ? null : [
+                'dates' => [], 'date' => Http::post('day_date'), 'location' => $in['location'],
+                'start' => $in['start'] ? fmt_time($in['start']) : Http::post('start_time'), 'end' => $in['end'] ? fmt_time($in['end']) : Http::post('end_time'),
+                'minutes' => $in['minutes'], 'breaks' => self::breakRowsAsSent(),
+            ]);
             return;
         }
-        // New date, times or location; the slots are recalculated, parents with a new appointment are told
-        $parents = ScheduleService::changeDay($id, $in, Http::post('notify') === '1');
+        // Breaks as they are: left alone (no locks for nothing, and no entry about them in the log)
+        $before = Db::all('SELECT start_time, end_time, label FROM day_breaks WHERE day_id = ? ORDER BY start_time, end_time', [$id]);
+        $breaksBefore = array_map(static fn (array $b): array => [$b['start_time'], $b['end_time'], (string) $b['label']], $before);
+        $breaksAfter = $breaks;
+        if ($breaksAfter !== null) {
+            usort($breaksAfter, static fn (array $a, array $b): int => [$a[0], $a[1]] <=> [$b[0], $b[1]]);
+        }
+        $breaksChanged = $breaksAfter !== null && $breaksAfter !== $breaksBefore;
+        // New date, times, breaks or location; the slots are recalculated, parents with a new appointment are told
+        $parents = ScheduleService::changeDay($id, $in, Http::post('notify') === '1', $breaksChanged ? $breaks : null);
         // As with "Tag hinzufügen": a day from today on lifts the expiry (otherwise the round including
         // its bookings would be deleted after the deletion period)
         if ($in['date'] >= Time::today()) {
@@ -1071,7 +1135,9 @@ final class AdminController
         }
         $this->audit(fn () => ($in['date'] !== $day['day_date']
             ? __('Tag {date} bearbeitet (jetzt {new})', ['date' => self::when($day['day_date']), 'new' => self::when($in['date'])])
-            : __('Tag {date} bearbeitet', ['date' => self::when($day['day_date'])])) . self::parentsAudit($parents), (int) $day['round_id']);
+            : __('Tag {date} bearbeitet', ['date' => self::when($day['day_date'])]))
+            . ($breaksChanged ? ', ' . __('Pausen jetzt: {breaks}', ['breaks' => $breaksAfter ? implode(', ', array_map(static fn (array $b): string => fmt_range($b[0], $b[1]), $breaksAfter)) : __('keine')]) : '')
+            . self::parentsAudit($parents), (int) $day['round_id']);
         $this->afterSync((int) $day['round_id'], $id, __('Tag gespeichert.'), $parents);
     }
 
@@ -1201,7 +1267,7 @@ final class AdminController
             $this->flash('warning', $message . ' ' . __('Achtung: {count} gebuchte(r) Termin(e) passen nicht mehr zum Zeitplan und sind als Konflikt markiert. Bitte umbuchen oder löschen.', ['count' => $parents->conflicts])
                 . self::movedNote($parents) . ' ' . self::conflictHint());
         } else {
-            $this->flash('success', $message . ' ' . __('Slots wurden aktualisiert.'));
+            $this->flash('success', $message . ' ' . __('Die Termine wurden neu berechnet.'));
         }
         $this->parentsFlash($parents, true);
         Http::redirect('/admin/round/' . $roundId, [], 'day-' . $dayId);
@@ -1243,7 +1309,7 @@ final class AdminController
         $this->audit(fn () => $slot['is_blocked']
             ? __('Termin {slot} freigegeben', ['slot' => self::when($slot['day_date'], $slot['start_time'])])
             : __('Termin {slot} gesperrt', ['slot' => self::when($slot['day_date'], $slot['start_time'])]), (int) $slot['round_id']);
-        $this->flash('success', $slot['is_blocked'] ? __('Slot freigegeben.') : __('Slot gesperrt.'));
+        $this->flash('success', $slot['is_blocked'] ? __('Termin freigegeben.') : __('Termin gesperrt.'));
         Http::redirect('/admin/round/' . $slot['round_id'], [], 'slot-' . $id);
     }
 
@@ -1275,7 +1341,7 @@ final class AdminController
         try {
             [$id, $token] = BookingService::adminBook($round, $slotId, PublicController::cleanName($old['name']), $old['email'] ?: null, $old['lang']);
         } catch (BookingException) {
-            $this->flash('error', __('Dieser Slot ist bereits belegt.'));
+            $this->flash('error', __('Dieser Termin ist bereits gebucht.'));
             Http::redirect('/admin/round/' . $round['id'], [], 'slot-' . $slotId);
         }
         if (!$round['was_used']) {
@@ -1332,7 +1398,7 @@ final class AdminController
                 BookingService::move($booking, (int) $old['move_to'], true);
                 $moved = true;
             } catch (BookingException) {
-                $this->bookingEdit($id, [__('Der gewählte Slot ist nicht mehr frei. Es wurde nichts geändert.')], $old);
+                $this->bookingEdit($id, [__('Der gewählte Termin ist nicht mehr frei. Es wurde nichts geändert.')], $old);
                 return;
             }
         }
@@ -1367,7 +1433,7 @@ final class AdminController
         $mail = $this->withoutSession(static fn () => ScheduleService::deleteBooking($booking, $notify));
         $this->audit(fn () => __('Buchung am {date} gelöscht', ['date' => self::when($booking['day_date'])])
             . ($mail !== null ? ', ' . __('Eltern per E-Mail informiert') : ''), (int) $booking['round_id']);
-        $this->flash('success', __('Eintrag gelöscht – der Slot ist wieder frei.') . match ($mail) {
+        $this->flash('success', __('Buchung gelöscht – der Termin ist wieder frei.') . match ($mail) {
             Notifier::SENT => ' ' . __('Absage per E-Mail an die Eltern gesendet.'),
             Notifier::QUEUED => ' ' . __('Die Absage per E-Mail konnte gerade nicht gesendet werden. Sie wird automatisch erneut versucht.'),
             default => '',
@@ -2442,7 +2508,7 @@ final class AdminController
         $end = Time::normalizeTime(Http::post('end_time'));
         $minutes = Http::post('slot_minutes');
         [$breaks, $errors] = self::breaksInput();
-        $deleteAfter = Http::post('delete_after_hours');
+        [$deleteAfter, $deleteError] = self::deleteAfterInput();
         $data = [
             'name' => trim(Http::post('name')),
             'start' => $start ? fmt_time($start) : Http::post('start_time'),
@@ -2452,6 +2518,7 @@ final class AdminController
             'booking_deadline_hours' => Http::post('booking_deadline_hours'),
             'cancel_deadline_hours' => Http::post('cancel_deadline_hours'),
             'delete_after_hours' => $deleteAfter,
+            'delete_after_days' => isset($_POST['delete_after_days']) ? Http::post('delete_after_days') : null,
             'booking_limit' => in_array(Http::post('booking_limit'), BookingService::LIMITS, true) ? Http::post('booking_limit') : 'round',
             'code_required' => Http::post('code_required') === '1' ? 1 : 0,
             'remind_parents' => Http::post('remind_parents') === '1' ? 1 : 0,
@@ -2477,8 +2544,8 @@ final class AdminController
                 $errors[] = $error;
             }
         }
-        if ($deleteAfter !== '' && (!ctype_digit($deleteAfter) || (int) $deleteAfter > 8760)) {
-            $errors[] = __('Löschfrist: leer lassen (nie löschen) oder 0–8760 Stunden.');
+        if ($deleteError !== null) {
+            $errors[] = $deleteError;
         }
         if (mb_strlen($data['location']) > 200) {
             $errors[] = __('Ort: höchstens 200 Zeichen.');
@@ -2493,7 +2560,7 @@ final class AdminController
         $settings = ['start' => $data['start'], 'end' => $data['end'], 'minutes' => $data['minutes'], 'breaks' => $data['breaks'],
             'booking_deadline_hours' => (int) $data['booking_deadline_hours'], 'cancel_deadline_hours' => (int) $data['cancel_deadline_hours'],
             'delete_after_hours' => $deleteAfter === '' ? null : (int) $deleteAfter] + $data;
-        unset($settings['name']);
+        unset($settings['name'], $settings['delete_after_days']);
         $json = json_encode($settings, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
         if ($row) {
             Db::run('UPDATE round_templates SET name = ?, data = ?, updated_at = ? WHERE id = ?', [$data['name'], $json, Time::nowSql(), $id]);

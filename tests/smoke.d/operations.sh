@@ -18,7 +18,7 @@ OPE=$(op_round "Betrieb Eintrag" 0 "$OP_PAST"); op_entry "$OPE" "Betrieb Eintrag
 OPX=$(op_round "Betrieb deaktiviert" 1 "$OP_NEXT")
 OPB=$(op_round "Betrieb gebucht" 0 "$OP_NEXT"); op_entry "$OPB" "Betrieb Buchung"
 OPX_PAGE=$(curl -s -b "$J" "$B/admin/round/$OPX")
-check "active round: the round page says when it will be deleted (0:00 after the last day + 24 h)" 'echo "$OPX_PAGE" | grep -q "Runde wird am [A-Za-z]*, $(date -d "$OP_NEXT +2 day" +%d.%m.%Y), 00:00 Uhr gelöscht (24 h nach Ablauf)"'
+check "active round: the round page says when it will be deleted (0:00 after the last day + 24 h)" 'echo "$OPX_PAGE" | grep -q "Runde wird am [A-Za-z]*, $(date -d "$OP_NEXT +2 day" +%d.%m.%Y), 00:00 Uhr gelöscht (1 Tag(e) nach Ablauf)"'
 curl -s -o /dev/null -b "$J" -d "csrf=$T" "$B/admin/round/$OPX/toggle"
 DBQ "UPDATE tp_round_days SET day_date = '$OP_PAST' WHERE round_id = $OPX"
 # Deactivated accounts unused for 15 months: a draft must not keep them forever (it no longer expires)
@@ -36,7 +36,7 @@ check "deactivated account unused for 15 months: deleted with its draft; a round
 DBQ "DELETE FROM tp_users WHERE id IN ($OPU1, $OPU2)"
 OP_DEL=$(DBQ "SELECT DATE_FORMAT(expired_at + INTERVAL 24 HOUR, '%d.%m.%Y, %H:%i') FROM tp_rounds WHERE id=$OPA")
 OPA_PAGE=$(curl -s -b "$J" "$B/admin/round/$OPA")
-check "expired round: notice with the date of deletion and how to keep the round ($OP_DEL)" 'echo "$OPA_PAGE" | grep -q "Abgelaufen: Die Runde wird am [A-Za-z]*, $OP_DEL Uhr automatisch gelöscht, mit allen Tagen und Einstellungen. Zum Behalten einen Tag ab heute hinzufügen" && echo "$OPA_PAGE" | grep -q "Runde wird am [A-Za-z]*, $OP_DEL Uhr gelöscht (24 h nach Ablauf)"'
+check "expired round: notice with the date of deletion and how to keep the round ($OP_DEL)" 'echo "$OPA_PAGE" | grep -q "Abgelaufen: Die Runde wird am [A-Za-z]*, $OP_DEL Uhr automatisch gelöscht, mit allen Tagen und Einstellungen. Zum Behalten einen Tag ab heute hinzufügen" && echo "$OPA_PAGE" | grep -q "Runde wird am [A-Za-z]*, $OP_DEL Uhr gelöscht (1 Tag(e) nach Ablauf)"'
 OP_DASH=$(curl -s -b "$J" "$B/admin")
 check "overview: expired round with the date of deletion, nothing for the draft" 'echo "$OP_DASH" | sed -n "/>Betrieb aktiv</,/<\/tr>/p" | grep -q "wird am ${OP_DEL%%,*} gelöscht" && ! echo "$OP_DASH" | sed -n "/>Betrieb Entwurf</,/<\/tr>/p" | grep -q "gelöscht"'
 
