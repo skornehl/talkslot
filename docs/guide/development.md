@@ -223,6 +223,7 @@ sends the outbox; page requests run the same database steps as a fallback. What 
 | Rate limits (HMACs of truncated IP addresses, of account names and IDs) | after 24 hours |
 | Summary delivery log | after 60 days |
 | Admin log | after `audit_log_days` (default 90) |
+| Rounds without bookings in the trash (`round_trash`: what the teacher entered, no data of parents) | after 14 days (`RoundTrash::KEEP_DAYS`), or restored |
 | Deactivated teacher accounts without rounds in use | after 15 months without login |
 
 New personal data needs its deletion step in `Cleanup::run()` (with a test), a line in this table and in

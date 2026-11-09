@@ -33,7 +33,7 @@ check "CLI installer after installation: abort" 'dcx exec -T app php /srv/app/bi
 # Reinstall, this time via the web installer (same credentials as dev/reset.sh). It deletes
 # itself after success; the file is restored afterwards.
 INSTALL_BAK=$(mktemp); cp "$ROOT/public/install.php" "$INSTALL_BAK"
-dcx exec -T db mariadb -uapp -papp-dev-only talkslot -e "SET FOREIGN_KEY_CHECKS=0; DROP TABLE IF EXISTS tp_mail_outbox, tp_round_templates, tp_audit_log, tp_round_translations, tp_sent_summaries, tp_bookings, tp_slots, tp_day_breaks, tp_round_days, tp_rounds, tp_pages, tp_rate_limits, tp_settings, tp_users, tp_admin_users; CREATE TABLE tp_users (id INT)"
+dcx exec -T db mariadb -uapp -papp-dev-only talkslot -e "SET FOREIGN_KEY_CHECKS=0; DROP TABLE IF EXISTS tp_round_trash, tp_mail_outbox, tp_round_templates, tp_audit_log, tp_round_translations, tp_sent_summaries, tp_bookings, tp_slots, tp_day_breaks, tp_round_days, tp_rounds, tp_pages, tp_rate_limits, tp_settings, tp_users, tp_admin_users; CREATE TABLE tp_users (id INT)"
 dcx exec -T app php -r '@unlink("/srv/app/app/var/installed.lock");'
 check "installer reachable while not installed" 'curl -s "$B/install.php" | grep -q "name=\"install_key\""'
 check "CLI installer: different passwords, no operator type → abort, the usage names the three input lines" 'O=$(printf "Sehr-Sicheres-Pw-1\nanderes-Passwort-2\n" | dcx exec -T app php /srv/app/bin/install.php sabrina 2>&1); echo "$O" | grep -q "Passwörter stimmen nicht überein" && echo "$O" | grep -q "Bitte wählen Sie die Betriebsart" && echo "$O" | grep -qF "Input: password, password again, operator type (school or private), one per line"'
@@ -120,7 +120,7 @@ check "duplicate date rejected, input kept" 'echo "$DUP" | grep -q "gibt es in d
 echo "Parents"
 P=$(curl -s -D - "$B/$SLUG")
 check "round page without cookie" '! echo "$P" | grep -qi "^set-cookie"'
-check "new round: one appointment per person (default), notice for parents" 'echo "$P" | grep -q "Pro Person ist nur ein Termin möglich. Für Geschwister" && curl -s -b "$J" "$B/admin/round/$RID" | grep -q "Ein Termin pro Person ·"'
+check "new round: one appointment per person (default), notice for parents" 'echo "$P" | grep -q "Pro Kind ist nur ein Termin möglich. Für Geschwister" && curl -s -b "$J" "$B/admin/round/$RID" | grep -q "Ein Termin pro Person ·"'
 PC=$(echo "$P" | csrf)
 SLOT=$(echo "$P" | grep -o 'name="slot_id" id="slot-[0-9]*" value="[0-9]*"' | head -1 | grep -o 'value="[0-9]*"' | grep -o '[0-9]*')
 code=$(curl -s -o /dev/null -w '%{http_code}' --data-urlencode "csrf=$PC" -d "slot_id=$SLOT&name=Max&privacy=1&website=spam" "$B/$SLUG")
@@ -397,7 +397,7 @@ check "code assigned right when creating/duplicating (not only when viewing)" '[
 AR=$(curl -s -b "$J" "$B/admin/round/$RID"); RCODE=$(rcode "$RID")
 check "round code shown + in the invitation text ($RCODE)" '[[ "$RCODE" =~ ^[2-9A-HJKMNP-Z]{4}-[2-9A-HJKMNP-Z]{4}$ ]] && echo "$AR" | grep -q "den Code der Terminvergabe $RCODE eingeben"'
 check "home page with code field" 'curl -s "$B/" | grep -q "name=\"code\""'
-check "without language choice always German (the browser language does not switch)" 'curl -s -H "Accept-Language: en-US,en;q=0.9" "$B/" | grep -q "<html lang=\"de\">" && curl -s -H "Accept-Language: tr" "$B/$SLUG" | grep -q ">Name <"'
+check "without language choice always German (the browser language does not switch)" 'curl -s -H "Accept-Language: en-US,en;q=0.9" "$B/" | grep -q "<html lang=\"de\">" && curl -s -H "Accept-Language: tr" "$B/$SLUG" | grep -q ">Name des Kindes <"'
 r=$(curl -s -o /dev/null -w '%{http_code} %{redirect_url}' -G --data-urlencode "code=$(echo "$RCODE" | tr A-Z a-z | tr - ' ')" -d lang=tr "$B/")
 check "code (lower case, with spaces) → round, language kept ($r)" '[[ "$r" == "303 "*"/$SLUG?lang=tr" ]]'
 CYR=$(echo "$RCODE" | sed 's/A/А/g;s/B/В/g;s/C/С/g;s/E/Е/g;s/H/Н/g;s/K/К/g;s/M/М/g;s/P/Р/g;s/T/Т/g;s/X/Х/g;s/Y/У/g;s/3/З/g;s/-/–/')
@@ -634,7 +634,7 @@ check "round: siblings (other name, same email) allowed" '[[ "$(book "$LRS" "Eri
 check "round: same name, other email (other family) allowed" '[[ "$(book "$LRS" "Max Muster" "eltern-b@example.org")" == 303* ]]'
 check "round: teacher's entry not limited" 'curl -s -o /dev/null -b "$J" -d "csrf=$T&name=Max+Muster&lang=de" "$B$(curl -s -b "$J" "$B/admin/round/$LR" | grep -o "/admin/slot/[0-9]*/book" | head -1)" && [ "$(DBQ "SELECT COUNT(*) FROM tp_bookings b JOIN tp_slots s ON s.id=b.slot_id JOIN tp_round_days d ON d.id=s.day_id WHERE d.round_id=$LR AND b.name=\"Max Muster\"")" = 3 ]'
 LT=$(mkround Sperre+Tag day); LTS=$(slugof "$LT")
-check "day: notice 'one appointment per person and day'" 'curl -s "$B/$LTS" | grep -q "Pro Person ist nur ein Termin pro Tag möglich" && curl -s -b "$J" "$B/admin/round/$LT" | grep -q "Ein Termin pro Person und Tag ·"'
+check "day: notice 'one appointment per person and day'" 'curl -s "$B/$LTS" | grep -q "Pro Kind ist nur ein Termin pro Tag möglich" && curl -s -b "$J" "$B/admin/round/$LT" | grep -q "Ein Termin pro Person und Tag ·"'
 TOM1=$(book "$LTS" "Tom" "")
 check "day: second appointment on the same day rejected" '[[ "$(book "$LTS" "Tom" "")" == 422* ]] && P=$(curl -s "$B/$LTS"); curl -s --data-urlencode "csrf=$(echo "$P" | csrf)" -d "name=Tom&privacy=1&slot_id=$(echo "$P" | grep -o "value=\"[0-9]*\" required" | head -1 | grep -o "[0-9]*")" "$B/$LTS" | grep -q "an diesem Tag bereits einen Termin"'
 TOM2=$(book "$LTS" "Tom" "" 4)
@@ -645,7 +645,7 @@ check "day: moving to a day with an own appointment rejected" 'curl -s --data-ur
 DAY2SLOT=$(DBQ "SELECT s.id FROM tp_slots s JOIN tp_round_days d ON d.id=s.day_id LEFT JOIN tp_bookings b ON b.slot_id=s.id WHERE d.round_id=$LT AND d.day_date=\"$LD2\" AND b.id IS NULL ORDER BY s.start_time LIMIT 1")
 check "day: moving on the same day allowed" 'curl -s -o /dev/null -w "%{redirect_url}" --data-urlencode "csrf=$MC2" -d "action=move&slot_id=$DAY2SLOT" "${TOM2#* }" | grep -q "done=changed"'
 LN=$(mkround Ohne+Sperre none); LNS=$(slugof "$LN")
-check "no limit: old notice, same name possible multiple times" 'curl -s "$B/$LNS" | grep -q "Bitte buchen Sie nur einen Termin." && [[ "$(book "$LNS" "Ida" "")" == 303* ]] && [[ "$(book "$LNS" "Ida" "")" == 303* ]]'
+check "no limit: old notice, same name possible multiple times" 'curl -s "$B/$LNS" | grep -qF "Bitte buchen Sie nur einen Termin pro Kind." && [[ "$(book "$LNS" "Ida" "")" == 303* ]] && [[ "$(book "$LNS" "Ida" "")" == 303* ]]'
 # Concurrent: 10 parallel bookings with the same name for different slots → exactly one
 LP=$(mkround Sperre+parallel round); LPS=$(slugof "$LP"); PP=$(curl -s "$B/$LPS"); PPC=$(echo "$PP" | csrf)
 for i in $(seq 1 8); do
@@ -735,7 +735,7 @@ check "own round cannot be activated without display name" 'curl -s -L -b "$J" -
 DBQ "UPDATE tp_users SET display_name = UNHEX('${ACC0%%:*}'), email = UNHEX('${ACC0##*:}') WHERE role='admin'; UPDATE tp_settings SET value = UNHEX('$(echo "$ACC0" | cut -d: -f2)') WHERE name='controller_contact'"
 R=$(curl -s -b "$J" --data-urlencode "csrf=$T" -d "display_name=&email=kaputt" "$B/admin/profile")
 check "profile: missing display name and invalid email rejected" 'echo "$R" | has "Bitte einen Anzeigenamen angeben" && echo "$R" | has "Die E-Mail-Adresse ist ungültig"'
-check "delete round" 'curl -s -L -b "$J" -d "csrf=$T" "$B/admin/round/$RN/delete" | has "Runde mit allen Tagen und Buchungen gelöscht" && [ -z "$(DBQ "SELECT id FROM tp_rounds WHERE id=$RN")" ]'
+check "delete round" 'curl -s -L -b "$J" -d "csrf=$T" "$B/admin/round/$RN/delete" | has "Runde in den Papierkorb gelegt" && [ -z "$(DBQ "SELECT id FROM tp_rounds WHERE id=$RN")" ]'
 
 # Change password (profile) and forced change
 PW() { curl -s -L -c "$J" -b "$J" -d "csrf=$T" --data-urlencode "current_password=$1" --data-urlencode "new_password=$2" --data-urlencode "new_password2=$3" "$B/admin/${4:-password}"; }

@@ -33,3 +33,6 @@ parameters:
   rememberPossiblyImpureFunctionValues: false
   ignoreErrors:
     - identifier: missingType.iterableValue
+    # The routes are called as $this->$action(...$arguments): PHPStan cannot count the spread arguments
+    - message: '#^Method App\\Controller\\AdminController::\w+\(\) invoked with 0 parameters, #'
+      path: ../app/src/Controller/AdminController.php

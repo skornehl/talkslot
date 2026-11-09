@@ -16,7 +16,8 @@ Benutzerkonto brauchen Sie nicht.
    bietet ein Link über der Seite sie an; von selbst wechselt die Seite nicht. Einladungen der Lehrkraft
    enthalten meist für jede Sprache einen direkten Link.
 3. **Wählen Sie einen freien Termin.** Es werden nur freie Termine angezeigt, nach Tagen geordnet.
-4. **Geben Sie einen Namen ein**, meist den Vor- und Nachnamen Ihres Kindes. Die **E-Mail-Adresse ist
+4. **Geben Sie den Namen Ihres Kindes ein**, Vor- und Nachname, bei Bedarf mit Klasse; weitere Angaben sind nicht
+   nötig. Die **E-Mail-Adresse ist
    freiwillig**: Wenn Sie eine angeben, erhalten Sie eine Bestätigung mit Ihrem persönlichen Link und
    einer Kalenderdatei und meist am Vorabend eine Erinnerung. Kann die Bestätigung gerade nicht verschickt
    werden, sagt die Seite das, und sie kommt automatisch nach (mit einem eigenen persönlichen Link; der Link
@@ -58,17 +59,21 @@ oder wenn die Lehrkraft Sie lieber selbst informiert, meldet sie sich persönlic
 ## Gut zu wissen
 
 - **Geschwister:** Buchen Sie für jedes Kind einzeln, jeweils mit dem Namen des Kindes. Bei manchen
-  Terminvergaben ist nur ein Termin pro Person möglich. Haben Sie einen Termin auf diesem Gerät gemerkt,
+  Terminvergaben ist nur ein Termin pro Kind möglich. Haben Sie einen Termin auf diesem Gerät gemerkt,
   zeigt die Terminvergabe ihn statt der Terminliste; *Weiteren Termin buchen (z. B. für ein
   Geschwisterkind)* holt das Formular zurück, ohne etwas zu vergessen.
 - **Auf diesem Gerät merken:** Mit einem freiwilligen Häkchen werden der Link zu Ihrem Termin, seine
   Bezeichnung und sein Datum in Ihrem Browser gespeichert. So sehen Sie ihn, wenn Sie die Terminvergabe
   erneut öffnen. Jede Buchung bekommt einen eigenen Eintrag. Dabei wird nichts an den Server übertragen. Sie
   können einen Eintrag jederzeit löschen (Ihr Termin bleibt bestehen); nach einer Absage und nach dem Tag
-  des Termins verschwindet er von selbst.
+  des Termins verschwindet er von selbst. Die Startseite und die Seite, die bei einer geschützten Terminvergabe nach dem Code fragt, zeigen alle auf diesem
+  Gerät gemerkten Termine (*Meine Termine auf diesem Gerät*), den nächsten zuerst, damit Sie sie ohne die Links erreichen.
 - **Nicht weitergekommen?** Funktioniert ein Link nicht, bietet die Seite gleich die Code-Eingabe der
   Startseite an. Ist kein Termin frei, steht dort, warum: Alle Termine sind vergeben, oder die Buchungsfrist
   ist abgelaufen. Haben Lehrkraft oder Schule einen Kontakt für Fragen angegeben (z. B. das Sekretariat mit
   Telefonnummer), zeigen ihn die Buchungsseite, die Seite Ihres Termins und die Seite „Nicht gefunden“.
+- **Zu viele Anfragen aus Ihrem Netzwerk:** Viele Eltern im selben WLAN (z. B. in der Schule) können
+  gemeinsam ein Limit aufbrauchen. Versuchen Sie es später oder über eine andere Verbindung, etwa mobile
+  Daten; sonst wenden Sie sich an die Lehrkraft.
 - **Datenschutz:** Die Buchungsseite setzt keine Cookies und verfolgt Sie nicht. Ihre Angaben werden am Tag
   nach dem Termin automatisch gelöscht.
