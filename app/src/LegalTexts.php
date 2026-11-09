@@ -748,12 +748,14 @@ final class LegalTexts
         $stored = self::stored()['privacy'] ?? [];
         $template = $type !== null ? self::template('privacy', $type, 'de') : null;
         $de = $stored['de'] ?? '';
-        if ($template === null || trim($de) === '' || self::fills($de, $template)) {
+        // Blank lines at the end are no difference (a text from the form need not end like its template)
+        $isTemplate = static fn (string $text, string $of): bool => self::fills(rtrim($text) . "\n", rtrim($of) . "\n");
+        if ($template === null || trim($de) === '' || $isTemplate($de, $template)) {
             return [];
         }
-        $listed = array_keys(array_filter($stored, static function (string $text, int|string $lang) use ($type): bool {
+        $listed = array_keys(array_filter($stored, static function (string $text, int|string $lang) use ($type, $isTemplate): bool {
             $own = self::template('privacy', (string) $type, (string) $lang);
-            return $lang !== 'de' && $own !== null && trim($text) !== '' && self::fills($text, $own)
+            return $lang !== 'de' && $own !== null && trim($text) !== '' && $isTemplate($text, $own)
                 && self::placeholders(self::render($text, (string) $lang, '')) === [];
         }, ARRAY_FILTER_USE_BOTH));
         sort($listed);
