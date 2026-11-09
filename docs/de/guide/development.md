@@ -232,6 +232,7 @@ Rückfallebene aus. Was wann gelöscht wird:
 | Rate-Limits (HMACs gekürzter IP-Adressen, von Kontonamen und IDs) | nach 24 Stunden |
 | Versandprotokoll der Zusammenfassungen | nach 60 Tagen |
 | Admin-Protokoll | nach `audit_log_days` (Standard 90) |
+| Runden ohne Buchungen im Papierkorb (`round_trash`: Eingaben der Lehrkraft, keine Daten von Eltern) | nach 14 Tagen (`RoundTrash::KEEP_DAYS`) oder beim Wiederherstellen |
 | Deaktivierte Lehrkraft-Konten ohne Runden in Gebrauch | nach 15 Monaten ohne Anmeldung |
 
 Neue personenbezogene Daten brauchen ihren Löschschritt in `Cleanup::run()` (mit Test), eine Zeile in dieser

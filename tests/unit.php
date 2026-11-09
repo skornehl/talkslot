@@ -458,6 +458,7 @@ echo "Security (audit)\n";
 $allowed = [
     'BookingService.php:$perDay' => 'boolean, selects a fixed clause',
     'Installer.php:$stmt' => 'statements from app/schema.sql',
+    'RoundTrash.php:$columns' => 'a filtered copy of the constant RoundTrash::ROUND_COLUMNS',
     'Migrations.php:$sql' => 'fixed statements from Migrations::STEPS',
     'Summaries.php:$where' => 'fixed conditions from callers in the same class',
     'ScheduleService.php:$where' => 'fixed conditions from ScheduleService::SCOPES',

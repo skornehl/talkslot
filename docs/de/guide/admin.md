@@ -37,6 +37,19 @@ des deutschen Admin-Bereichs; jedes Konto kann ihn unter *Mein Profil* auf Engli
 6. ***Vorlagen*** (optional): die üblichen Formate einmal anlegen, z. B. Ihren Elternsprechtag.
 7. **Lehrkräfte einladen** und bei Bedarf weitere Admins (*Benutzer*).
 
+***Bereit für den Start?*** (verlinkt unter der Überschrift von *Alle Runden* und oben unter *Texte*) zeigt
+all das auf einer Seite, jeden Punkt als *Erledigt*, *Bitte prüfen* oder *Noch offen*, mit dem Weg zur Lösung:
+Impressum und Datenschutzerklärung, die bzw. der Datenschutzbeauftragte der Schule (nur bei Betrieb durch die
+Schule), der Kontakt für Eltern, E-Mail-Versand, Cronjob, Server und Konfiguration sowie die Rechte der Konfigurationsdatei. Der
+E-Mail-Versand gilt als erledigt, sobald sich ein eingeladenes Konto angemeldet hat: Seine Einladung ist
+angekommen. Bis die erste Runde aktiv war, zeigt *Alle Runden* diese Liste statt der einzelnen Warnungen zu
+diesen Punkten; danach erscheinen die Warnungen wie bisher.
+
+***Neu seit dem letzten Update***: Nach einem Update nennt *Alle Runden*, was sich für Admins und Lehrkräfte
+geändert hat, z. B. eine neue Einstellung im Profil, damit das nicht wie ein Fehler wirkt. *Verstanden*
+blendet die Hinweise für Ihr Konto aus. Nach dem Update angelegte Konten und eine neue Installation bekommen
+die älteren Hinweise nicht.
+
 Warnt die Übersicht, dass die Konfiguration für alle Benutzer des Servers lesbar ist, setzen Sie die
 Rechte der genannten Dateien auf `600` oder geben Sie die Warnung an die technische Betreuung weiter: Sie
 enthalten die Passwörter für Datenbank und Mailversand. Könnten diese inzwischen in falsche Hände gelangt
@@ -137,7 +150,8 @@ Rundenformular). Die Runde erscheint dann bei dieser Lehrkraft, die Eltern sehen
 Zusammenfassungen gehen an sie. Eltern, die schon gebucht haben, erhalten eine Änderungsmitteilung mit der
 neuen Lehrkraft, wenn *Eltern per E-Mail informieren* angehakt bleibt; die Meldung nach dem Speichern nennt
 diejenigen, die keine E-Mail bekommen konnten. Lehrkräfte sehen immer nur
-ihre eigenen Runden; das wird zentral durchgesetzt und ist durch Tests abgesichert.
+ihre eigenen Runden; das wird zentral durchgesetzt und ist durch Tests abgesichert. Im *Papierkorb* sehen Admins
+auch die gelöschten Runden ohne Buchungen aller Lehrkräfte.
 
 Wie Runden funktionieren, steht in der [Anleitung für Lehrkräfte]({{ '/de/guide/teachers/' | relative_url }}).
 
@@ -165,8 +179,11 @@ Vorlagen ersetzt wurden. Der Admin, der die Betriebsart danach speichert, steht 
 im Protokoll, ein Rechtstext, der nach dem Abgleich mit einer neueren Vorlage gespeichert wurde, mit „… mit
 dem aktuellen Stand der Vorlage … abgeglichen“.
 
-Was Lehrkräfte in ihren eigenen Runden tun, erfasst das Protokoll **nicht**, und es enthält nie Daten von
-Eltern: Eine Buchung erscheint nur mit Datum und Uhrzeit (z. B. „Buchung 12.11.2026 14:00 gelöscht“).
+Was Lehrkräfte in ihren eigenen Runden tun, erfasst das Protokoll **nicht**, und es enthält nie Namen oder
+E-Mail-Adressen von Eltern: Eine Buchung erscheint nur mit ihrem Datum (z. B. „Buchung am 12.11.2026
+gelöscht“), ohne Uhrzeit, mit der sie sich zusammen mit einer Zusammenfassung oder einem Ausdruck einer Person
+zuordnen ließe; Runde, Lehrkraft und Datum können trotzdem auf eine Familie deuten, deshalb sehen das Protokoll
+nur Admins.
 Einträge werden nach 90 Tagen gelöscht (einstellbar, `audit_log_days`). Nur Admins sehen das Protokoll.
 
 ## Rechtstexte

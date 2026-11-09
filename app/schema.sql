@@ -37,6 +37,18 @@ CREATE TABLE IF NOT EXISTS users (
   UNIQUE KEY uq_users_access_token (access_token_hash)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Rounds without bookings, deleted by the teacher: a copy as JSON for RoundTrash::KEEP_DAYS days (see RoundTrash).
+CREATE TABLE IF NOT EXISTS round_trash (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  user_id INT UNSIGNED NOT NULL,
+  title VARCHAR(200) NOT NULL,
+  data MEDIUMTEXT NOT NULL,
+  deleted_at DATETIME NOT NULL,
+  KEY idx_trash_user (user_id),
+  KEY idx_trash_deleted (deleted_at),
+  CONSTRAINT fk_trash_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- location: where the meetings take place (e.g. a room); a day can override it.
 -- was_used: activated at least once or booked by the teacher. Only such rounds expire after their last
 -- day (see Cleanup); a draft that was never used, e.g. a copy with the old dates, is kept.
