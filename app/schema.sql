@@ -191,7 +191,7 @@ CREATE TABLE IF NOT EXISTS audit_log (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Security events of an account, shown only to the account holder (App\SecurityEvents): password, e-mail address,
--- username, admin rights, sign-in limit reached. No IP, no device; by_admin: an admin made the change (not who).
+-- admin rights, sign-in limit reached. No IP, no device; by_admin: an admin made the change (not who).
 -- Deleted after security_events_days (default 30) and with the account.
 CREATE TABLE IF NOT EXISTS security_events (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,

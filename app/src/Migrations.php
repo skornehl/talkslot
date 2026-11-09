@@ -195,7 +195,7 @@ final class Migrations
              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
         ],
         // 25: security events of an account, for the account holder only (expert review P2-9): password,
-        //     address, username, admin rights, sign-in limit; no IP.
+        //     address, admin rights, sign-in limit; no IP.
         25 => [
             "CREATE TABLE IF NOT EXISTS security_events (
                 id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, user_id INT UNSIGNED NOT NULL, event VARCHAR(30) NOT NULL,
