@@ -23,7 +23,8 @@ itself, otherwise the private person, association or independent provider whose 
    both legal pages and is shared by all admins. Without it **no round is publicly reachable**.
 3. **Legal texts** (*Texte*): imprint and privacy policy come from the templates of the operator type.
    Review them for every language and replace the remaining `[PLACEHOLDERS]`. Until then no round can be
-   activated. Details in [Privacy and legal]({{ '/guide/privacy/' | relative_url }}).
+   activated (in the translations of the privacy policy, open placeholders only mean that parents get the
+   English text). Details in [Privacy and legal]({{ '/guide/privacy/' | relative_url }}).
 4. **Mail check:** *Texte → E-Mail-Versand* shows the transport and sender. Make a test booking with your
    own e-mail address and check that the confirmation arrives (and is not marked as spam).
 5. **Contact for parents** (*Texte → Kontakt für Eltern bei Fragen*, optional): for example the school
@@ -191,6 +192,10 @@ the time, which together with a summary mail or a printed list would tell whose 
 and date can still point to a family, so the log stays for admins only. Entries are deleted
 after 90 days (configurable, `audit_log_days`). Only admins can see the log.
 
+From the log page, *Auskunft zu einer E-Mail-Adresse* (request for access by email address) finds the data for a
+parent's request for access: see [Requests for access]({{ '/guide/privacy/' | relative_url }}#requests-for-access).
+These searches are in the log as well, without the address.
+
 ## Legal texts
 
 *Texte* lists imprint (*Impressum*) and privacy policy (*Datenschutz*) per language. They are written in
@@ -201,7 +206,14 @@ simple Markdown (headings with `#`, lists, bold, links). Two placeholders are fi
 | `[[VERANTWORTLICHE]]` | the details for imprint and privacy policy (*Angaben für Impressum und Datenschutz*, at the top of *Texte*) |
 | `[[HOSTER]]` | the web host from the configuration (`hosting`) |
 
-Languages without their own version fall back to English. Both texts have one template per **operator
+The privacy policy has templates in all six parent languages; the translations say that the German
+version is authoritative and contain the same placeholders as the German one, so you enter the same details
+there. The imprint exists in German and English. A language without a text, with an empty one or with a
+translation whose placeholders are still open falls back to English, then German, then the default language
+(English and German only if they are offered), with a notice to parents in their language. If none of these has a
+text for a page, no round can be activated. Fill in the translations before you invite parents in these languages.
+When you save the German privacy policy after a complete translation, the dashboard asks you to check that
+translation (the German version is authoritative); saving it again confirms it. Both texts have one template per **operator
 type** (*Von der Schule betrieben* / *Operated by the school*, *Privat betrieben* / *Operated privately*).
 *Vorlage laden* (*Load template*) on the text form puts one of them into the form, the one of the operator
 type first; the stored text only changes when you save. If you change the operator type at the top of
@@ -250,10 +262,13 @@ If no operator type is chosen (installations from before it, with edited texts),
 *Bitte Betriebsart wählen* (*Please choose the operator type*), and no round can be activated until an
 admin chooses one; rounds that are already active stay online.
 
-Details only you can provide are `[PLACEHOLDERS]` in square brackets. As long as a text of an offered
-language still contains one, no round can be activated; rounds that are already active stay online. Hints
-on the dashboard and under *Texte* list the open placeholders per text and tell you when a text is missing
-a placeholder, is outdated or does not fit the operator type (e.g. the legal bases of the school template
+Details only you can provide are `[PLACEHOLDERS]` in square brackets. As long as a text in English or the
+default language still contains one, no round can be activated; rounds that are already active stay online.
+Open placeholders in a translation of the privacy policy do not stop activation; the dashboard and *Texte*
+show *Übersetzungen noch nicht vollständig* (*Translations not complete yet*) instead, until you fill them in
+or empty the translation. Hints on the dashboard and under *Texte* list the open placeholders per text and
+tell you when a text is missing a placeholder, is outdated (e.g. still mentions the required checkbox the
+booking form no longer has) or does not fit the operator type (e.g. the legal bases of the school template
 when TalkSlot is operated privately).
 
 ## Notifications

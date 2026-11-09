@@ -43,7 +43,7 @@ Es gibt keine Benutzerkonten, keine Werbung, kein Tracking und keine Analyse des
 - **Zusammenfassungs-E-Mails an die Lehrkraft:** Art. 6 Abs. 1 lit. b DSGVO (Durchführung des vereinbarten Termins) und Art. 6 Abs. 1 lit. f DSGVO. Das berechtigte Interesse liegt in einer zuverlässigen Terminplanung der Lehrkraft. Für die Aufbewahrung im Postfach der Lehrkraft ist nicht der Betreiber verantwortlich (siehe Abschnitt 1).
 - **Speicherung im Browser („Termin merken“):** § 25 Abs. 1 TDDDG und Art. 6 Abs. 1 lit. a DSGVO (Ihre Einwilligung durch Ankreuzen), siehe Abschnitt 7.
 
-Mit dem Pflicht-Häkchen im Buchungsformular bestätigen Sie nur, dass Sie diese Hinweise zur Kenntnis genommen haben. Es handelt sich nicht um eine Einwilligung; die Verarbeitung Ihrer Buchungsdaten beruht auf den oben genannten Rechtsgrundlagen.
+Für die Terminbuchung brauchen Sie keine Einwilligung zu erteilen; die Verarbeitung Ihrer Buchungsdaten beruht auf den oben genannten Rechtsgrundlagen. Eine Einwilligung betrifft nur die freiwillige Speicherung im Browser („Termin merken“).
 
 # 5. Speicherdauer und Löschung
 

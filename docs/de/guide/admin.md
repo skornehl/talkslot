@@ -23,7 +23,8 @@ des deutschen Admin-Bereichs; jedes Konto kann ihn unter *Mein Profil* auf Engli
    **keine Runde öffentlich erreichbar**.
 3. **Rechtstexte** (*Texte*): Impressum und Datenschutzerklärung stammen aus den Vorlagen der Betriebsart.
    Prüfen Sie sie für jede Sprache und ersetzen Sie die verbleibenden Platzhalter in eckigen Klammern.
-   Vorher lässt sich keine Runde aktivieren. Details unter
+   Vorher lässt sich keine Runde aktivieren (in den Übersetzungen der Datenschutzerklärung bedeuten offene
+   Platzhalter nur, dass Eltern den englischen Text bekommen). Details unter
    [Datenschutz und Recht]({{ '/de/guide/privacy/' | relative_url }}).
 4. **E-Mail-Versand prüfen:** *Texte → E-Mail-Versand* zeigt Versandweg und Absender. Machen Sie eine
    Testbuchung mit Ihrer eigenen E-Mail-Adresse und prüfen Sie, ob die Bestätigung ankommt (und nicht als
@@ -209,6 +210,10 @@ zuordnen ließe; Runde, Lehrkraft und Datum können trotzdem auf eine Familie de
 nur Admins.
 Einträge werden nach 90 Tagen gelöscht (einstellbar, `audit_log_days`). Nur Admins sehen das Protokoll.
 
+Von der Protokoll-Seite aus findet *Auskunft zu einer E-Mail-Adresse* die Daten für eine Auskunftsanfrage von Eltern:
+siehe [Auskunftsanfragen]({{ '/de/guide/privacy/' | relative_url }}#requests-for-access). Auch diese Suchen stehen im
+Protokoll, ohne die Adresse.
+
 ## Rechtstexte
 
 Unter *Texte* stehen *Impressum* und Datenschutzerklärung (*Datenschutz*) je Sprache. Sie
@@ -220,8 +225,16 @@ Platzhalter werden automatisch gefüllt:
 | `[[VERANTWORTLICHE]]` | die *Angaben für Impressum und Datenschutz* (oben unter *Texte*) |
 | `[[HOSTER]]` | den Hoster aus der Konfiguration (`hosting`) |
 
-Für Sprachen ohne eigene Fassung wird die englische verwendet. Für beide Texte gibt es je eine Vorlage pro
-**Betriebsart** (*Von der Schule betrieben*, *Privat betrieben*). *Vorlage laden* im Formular eines Textes
+Die Datenschutzerklärung gibt es als Vorlage in allen sechs Elternsprachen; die Übersetzungen sagen, dass
+die deutsche Fassung maßgeblich ist, und enthalten dieselben Platzhalter wie die deutsche, Sie tragen dort
+also dieselben Angaben ein. Das Impressum gibt es auf Deutsch und Englisch. Für eine Sprache ohne Text, mit
+leerem Text oder mit einer Übersetzung, deren Platzhalter noch offen sind, wird die englische Fassung
+verwendet, danach die deutsche, danach die der Standardsprache (Englisch und Deutsch nur, wenn sie angeboten
+werden), mit einem Hinweis an die Eltern in ihrer Sprache. Hat keine davon einen Text für eine Seite, lässt
+sich keine Runde aktivieren. Füllen Sie die Übersetzungen aus, bevor Sie Eltern in diesen Sprachen einladen.
+Speichern Sie die deutsche Datenschutzerklärung nach einer vollständigen Übersetzung, bittet das Dashboard,
+diese Übersetzung zu prüfen (maßgeblich ist die deutsche Fassung); erneutes Speichern bestätigt sie. Für beide Texte
+gibt es je eine Vorlage pro **Betriebsart** (*Von der Schule betrieben*, *Privat betrieben*). *Vorlage laden* im Formular eines Textes
 setzt eine davon ein, die zur Betriebsart passende steht zuerst; der gespeicherte Text ändert sich erst beim
 Speichern. Ändern Sie die Betriebsart oben unter *Texte*, ersetzt TalkSlot alle Texte, die noch unverändert
 einer Vorlage entsprechen, durch die Vorlagen der neuen Betriebsart und nennt die Anzahl; bearbeitete Texte
@@ -272,10 +285,13 @@ Ist keine Betriebsart gewählt (Installationen aus der Zeit davor mit bearbeitet
 Dashboard „Bitte Betriebsart wählen“, und bis ein Admin sie wählt, lässt sich keine Runde aktivieren;
 bereits aktive Runden bleiben erreichbar.
 
-Angaben, die nur Sie kennen, stehen als Platzhalter in eckigen Klammern im Text. Solange ein Text einer
-angebotenen Sprache noch einen enthält, lässt sich keine Runde aktivieren; bereits aktive Runden bleiben
-erreichbar. Hinweise im Dashboard und unter *Texte* nennen die offenen Platzhalter je Text und zeigen an,
-wenn einem Text ein Platzhalter fehlt, er veraltet ist oder nicht zur Betriebsart passt (z. B. die
+Angaben, die nur Sie kennen, stehen als Platzhalter in eckigen Klammern im Text. Solange der englische Text
+oder der der Standardsprache noch einen enthält, lässt sich keine Runde aktivieren; bereits aktive Runden
+bleiben erreichbar. Offene Platzhalter in einer Übersetzung der Datenschutzerklärung halten die Aktivierung
+nicht auf; Dashboard und *Texte* zeigen dann *Übersetzungen noch nicht vollständig*, bis Sie sie ausfüllen
+oder die Übersetzung leeren. Hinweise im Dashboard und unter *Texte* nennen die offenen Platzhalter je Text
+und zeigen an, wenn einem Text ein Platzhalter fehlt, er veraltet ist (z. B. noch das Pflicht-Häkchen
+erwähnt, das das Buchungsformular nicht mehr hat) oder nicht zur Betriebsart passt (z. B. die
 Rechtsgrundlagen der Vorlage für Schulen bei privatem Betrieb).
 
 ## Benachrichtigungen

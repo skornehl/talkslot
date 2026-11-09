@@ -39,15 +39,19 @@ final class LegalTexts
      * "anytime" only the last of these, "private" the legal bases of a private operator (Art. 6(1)(b), (f)),
      * "school" the school template (Art. 6(1)(e), state school act, the school's data protection officer),
      * "scope" a private template up to talkslot PR #39: the operator named as controller "for all appointments
-     * booked through it", i.e. also for the meeting and the summary mails in the teacher's mailbox.
+     * booked through it", i.e. also for the meeting and the summary mails in the teacher's mailbox. "checkbox"
+     * the required checkbox in the booking form that the texts up to expert review P1-9 described
+     * ("acknowledgement, not consent"); the form no longer has it. The translations into the other parent
+     * languages cite the GDPR as "6(1)(e)" or, in Polish, "art. 6 ust. 1 lit. e RODO".
      */
     private const MARKERS = [
         'old' => '/für dieses private Angebot nicht bestellt|appointed for this private service|privates, nicht kommerzielles Angebot'
             . '|private, non-commercial service|jederzeit selbst über Ihren persönlichen Link absagen|cancel your appointment yourself at any time/iu',
         'anytime' => '/jederzeit selbst über Ihren persönlichen Link absagen|cancel your appointment yourself at any time/iu',
-        'private' => '/Art\. 6 Abs\. 1 lit\. [bf] DSGVO|Art\. 6\(1\)\([bf]\) GDPR/iu',
-        'school' => '/Art\. 6 Abs\. 1 lit\. e\b|Art\. 6\(1\)\(e\)|Schulgesetz|school act|Datenschutzbeauftragte[nr]? der Schule|school\'s data protection officer/iu',
+        'private' => '/Art\. 6 Abs\. 1 lit\. [bf] DSGVO|\b6\(1\)\([bf]\)|\bart\. 6 ust\. 1 lit\. [bf]\b/iu',
+        'school' => '/Art\. 6 Abs\. 1 lit\. e\b|\b6\(1\)\(e\)|\bart\. 6 ust\. 1 lit\. e\b|Schulgesetz|school act|Datenschutzbeauftragte[nr]? der Schule|school\'s data protection officer/iu',
         'scope' => '/alle darüber gebuchten Termine ist:|all appointments booked through it is:/iu',
+        'checkbox' => '/Pflicht-?Häkchen|Häkchen im Buchungsformular|required (?:check)?box/iu',
     ];
 
     /**
@@ -81,13 +85,14 @@ final class LegalTexts
                 $re .= preg_quote($part, '/');
                 break;
             }
-            $alone = preg_match('/(?:^|\n)\h*$/', $part) === 1 && preg_match('/^\h*(?:\n|$)/', $parts[$i + 1]) === 1;
+            $alone = preg_match('/(?:^|\n)\h*\z/', $part) === 1 && preg_match('/^\h*(?:\n|$)/', $parts[$i + 1]) === 1;
             $re .= match (true) {
                 $alone && str_contains($text, $found[0][$i]) => preg_quote($part . $found[0][$i], '/'),
                 $alone => preg_quote(rtrim($part), '/') . '\s*.*?',
                 default => preg_quote(rtrim($part, " \t"), '/') . '\h*[^\n]*?',
             };
         }
+        // $ on purpose, not \z: a line break at the very end of the stored text does not make it a different text
         return $text === $template || ($last > 0 && preg_match('/^' . $re . '$/su', $text) === 1);
     }
 
@@ -102,7 +107,7 @@ final class LegalTexts
         $sections = ['' => ['heading' => null, 'lines' => []]];
         $key = '';
         foreach (preg_split('/\r\n|\r|\n/', $text) ?: [] as $line) {
-            if (preg_match('/^#\s+(?:\d+\.\s*)?(.*?)\s*$/u', trim($line), $m)) {
+            if (preg_match('/^#\s+(?:\d+\.\s*)?(.*?)\s*\z/u', trim($line), $m)) {
                 for ($key = $m[1], $n = 2; isset($sections[$key]); $n++) {
                     $key = $m[1] . " ($n)"; // the same heading twice
                 }
@@ -497,7 +502,8 @@ final class LegalTexts
 
     /**
      * The stored texts of the offered languages that are behind the current template of the operator type
-     * (updates()), legal notice first.
+     * (updates()), legal notice first. Emptied texts are left out: they count as missing (pick()), e.g. a
+     * translation the admins do not offer.
      * @return list<array{key: string, lang: string, type: string, known: bool, base: ?string, changes: list<array{key: string, heading: ?string, dropped: bool, diff: list<array{0: string, 1: string}>}>}>
      */
     public static function outdated(): array
@@ -505,7 +511,8 @@ final class LegalTexts
         $outdated = [];
         foreach (self::stored() as $key => $texts) {
             foreach ($texts as $lang => $content) {
-                if (($update = self::updates($key, (string) $lang, $content, Operator::type())) !== null) {
+                // An emptied text counts as missing (pick()): admins emptied a translation they do not offer
+                if (trim($content) !== '' && ($update = self::updates($key, (string) $lang, $content, Operator::type())) !== null) {
                     $outdated[] = ['key' => $key, 'lang' => (string) $lang] + $update;
                 }
             }
@@ -544,7 +551,7 @@ final class LegalTexts
     {
         $name = self::VARIANTS[$key][$type] ?? null;
         $file = APP_ROOT . "/app/templates/pages/$name.$lang.md";
-        return $name !== null && preg_match('/^[a-z]{2}$/', $lang) && is_file($file) ? (string) file_get_contents($file) : null;
+        return $name !== null && preg_match('/^[a-z]{2}\z/', $lang) && is_file($file) ? (string) file_get_contents($file) : null;
     }
 
     /**
@@ -556,7 +563,7 @@ final class LegalTexts
         $hash = hash('sha256', $content);
         $types = array_flip(self::VARIANTS[$key] ?? []);
         foreach (Migrations::CURRENT_PAGE_HASHES as $file => $current) {
-            $type = $types[(string) preg_replace('/\.[a-z]{2}$/', '', $file)] ?? null;
+            $type = $types[(string) preg_replace('/\.[a-z]{2}\z/', '', $file)] ?? null;
             if ($type !== null && $current === $hash) {
                 return $type;
             }
@@ -582,8 +589,9 @@ final class LegalTexts
 
     /**
      * Operator type of an installation from before the type was asked for, from its stored texts: "private"
-     * if every text with a template is an unedited template of a private service (what the templates up to
-     * v1.6 described), otherwise null – the admins have to choose.
+     * if every text in German or English that has a template is an unedited template of a private service (what
+     * the templates up to v1.6 described), otherwise null – the admins have to choose. Texts in other languages
+     * do not count: up to v1.6 there were no templates for them.
      * @param array<string, array<string, string>> $stored page key => language => text
      */
     public static function detectType(array $stored): ?string
@@ -591,7 +599,7 @@ final class LegalTexts
         $types = [];
         foreach ($stored as $key => $texts) {
             foreach ($texts as $lang => $content) {
-                if (self::template($key, 'private', (string) $lang) !== null) {
+                if (in_array((string) $lang, ['de', 'en'], true) && self::template($key, 'private', (string) $lang) !== null) {
                     $types[] = self::templateType($key, $content);
                 }
             }
@@ -613,6 +621,156 @@ final class LegalTexts
             return $has('old') ? ['old'] : ($has('private') ? ['private'] : []);
         }
         return array_values(array_filter($type === 'private' ? ['school', 'scope', 'anytime'] : ['anytime'], $has));
+    }
+
+    /**
+     * Wording that no longer fits whatever the operator type, for the notes to admins: "checkbox" (the required
+     * checkbox in the booking form, which the form no longer has since expert review P1-9).
+     * @return list<string>
+     */
+    public static function obsolete(string $content): array
+    {
+        return preg_match(self::MARKERS['checkbox'], $content) ? ['checkbox'] : [];
+    }
+
+    /**
+     * Languages whose texts parents get when there is no complete one in their own language (the order of
+     * forParents() after their own language): English and German if they are offered (German is the
+     * authoritative version the translations refer to), and the default language (always offered). Only offered
+     * languages: open() checks only those and admins can only edit those, so a text left from a language no
+     * longer offered never reaches parents unchecked. Open placeholders in these texts keep rounds from being
+     * activated; in any other language they only mean that parents get one of these instead until the admins
+     * have filled them in.
+     * @return list<string>
+     */
+    public static function fallbackLanguages(): array
+    {
+        return array_values(array_unique([...array_intersect(['en', 'de'], I18n::languages()), I18n::defaultLanguage()]));
+    }
+
+    /**
+     * Pages parents would get no text of at all: every fallback language's text is empty or missing (pick() then
+     * has nothing complete to show). Like open placeholders in these texts, this keeps rounds from being
+     * activated.
+     * @return list<string> page keys (LegalTexts::KEYS order)
+     */
+    public static function missing(): array
+    {
+        $stored = self::stored();
+        return array_values(array_filter(self::KEYS, static fn (string $key): bool => array_filter(self::fallbackLanguages(),
+            static fn (string $lang): bool => trim($stored[$key][$lang] ?? '') !== '') === []));
+    }
+
+    /**
+     * open() split into the texts that keep rounds from being activated (a fallback language) and the others,
+     * e.g. a translated privacy policy whose placeholders are still open.
+     * @param list<array{key: string, lang: string, placeholders: list<string>}> $open
+     * @return array{0: list<array{key: string, lang: string, placeholders: list<string>}>, 1: list<array{key: string, lang: string, placeholders: list<string>}>}
+     */
+    public static function splitOpen(array $open): array
+    {
+        $fallback = self::fallbackLanguages();
+        $blocking = static fn (array $t): bool => in_array($t['lang'], $fallback, true);
+        return [array_values(array_filter($open, $blocking)), array_values(array_filter($open, static fn (array $t): bool => !$blocking($t)))];
+    }
+
+    /**
+     * Which of the stored texts of a page parents get, as they see them ($texts: language => text with the
+     * operator's details and the web host filled in): the first in $order (their language, then the fallback
+     * languages) that is not empty and either complete (no open placeholders) or in a fallback language. A
+     * translation with open placeholders is thus skipped; an incomplete text in English or the default language
+     * is shown as before (it keeps rounds from being activated, see splitOpen()). If only incomplete
+     * translations are there, the first of them; null if there is no text. An emptied text counts as missing, so
+     * admins who do not want to keep a translation can empty it.
+     * @param array<string, string> $texts
+     * @param list<string> $order
+     * @param list<string> $fallback the fallback languages (fallbackLanguages())
+     */
+    public static function pick(array $texts, array $order, array $fallback): ?string
+    {
+        $present = array_values(array_filter(array_unique($order), static fn (string $l): bool => trim($texts[$l] ?? '') !== ''));
+        foreach ($present as $lang) {
+            if (in_array($lang, $fallback, true) || self::placeholders($texts[$lang]) === []) {
+                return $lang;
+            }
+        }
+        return $present[0] ?? null;
+    }
+
+    /**
+     * The text of a page that parents in $lang get (pick()), as they see it: [text, its language], or null if
+     * there is none ($fallback: see render()).
+     * @return array{0: string, 1: string}|null
+     */
+    public static function forParents(string $key, string $lang, string $fallback): ?array
+    {
+        $languages = self::fallbackLanguages();
+        $order = array_values(array_unique([$lang, ...$languages]));
+        $texts = [];
+        foreach (Db::all('SELECT lang, content FROM pages WHERE page_key = ?', [$key]) as $row) {
+            if (in_array($row['lang'], $order, true)) {
+                $texts[(string) $row['lang']] = self::render((string) $row['content'], (string) $row['lang'], $fallback);
+            }
+        }
+        $chosen = self::pick($texts, $order, $languages);
+        return $chosen !== null ? [$texts[$chosen], $chosen] : null;
+    }
+
+    /**
+     * Languages whose privacy policy parents get (offered, not emptied, no open placeholders; see pick()) but
+     * that was last saved before the German one, the authoritative version: a change made there since may be
+     * missing. Saving the text again (also unchanged) confirms it. Empty without an offered German text.
+     * @return list<string>
+     */
+    public static function behindGerman(): array
+    {
+        $rows = array_column(Db::all("SELECT lang, content, updated_at FROM pages WHERE page_key = 'privacy'"), null, 'lang');
+        $de = $rows['de'] ?? null;
+        if ($de === null || trim((string) $de['content']) === '' || !in_array('de', I18n::languages(), true)) {
+            return [];
+        }
+        $behind = array_keys(array_filter($rows, static fn (array $r): bool => $r['lang'] !== 'de' && in_array($r['lang'], I18n::languages(), true)
+            && trim((string) $r['content']) !== '' && (string) $r['updated_at'] < (string) $de['updated_at']
+            && self::placeholders(self::render((string) $r['content'], (string) $r['lang'], '')) === []));
+        sort($behind);
+        return array_map('strval', $behind);
+    }
+
+    /**
+     * Languages whose privacy policy parents get (see behindGerman()) and that are still the template of the operator
+     * type with its placeholders filled in, while the German text, the authoritative version, says more than its
+     * template: the school's own changes are missing there, however recently the translation was saved. A
+     * translation the admins have adapted is not listed.
+     * @return list<string>
+     */
+    public static function behindEditedGerman(): array
+    {
+        $type = Operator::type();
+        $stored = self::stored()['privacy'] ?? [];
+        $template = $type !== null ? self::template('privacy', $type, 'de') : null;
+        $de = $stored['de'] ?? '';
+        // Blank lines at the end are no difference (a text from the form need not end like its template)
+        $isTemplate = static fn (string $text, string $of): bool => self::fills(rtrim($text) . "\n", rtrim($of) . "\n");
+        if ($template === null || trim($de) === '' || $isTemplate($de, $template)) {
+            return [];
+        }
+        $listed = array_keys(array_filter($stored, static function (string $text, int|string $lang) use ($type, $isTemplate): bool {
+            $own = self::template('privacy', (string) $type, (string) $lang);
+            return $lang !== 'de' && $own !== null && trim($text) !== '' && $isTemplate($text, $own)
+                && self::placeholders(self::render($text, (string) $lang, '')) === [];
+        }, ARRAY_FILTER_USE_BOTH));
+        sort($listed);
+        return array_map('strval', $listed);
+    }
+
+    /**
+     * Whether the German privacy policy is empty although German is offered and parents have another text
+     * (missing() covers none at all): the translations refer to it as the authoritative version.
+     */
+    public static function germanEmpty(): bool
+    {
+        return in_array('de', I18n::languages(), true) && trim(self::stored()['privacy']['de'] ?? '') === ''
+            && !in_array('privacy', self::missing(), true);
     }
 
     /** @return array<string, array<string, string>> stored texts of the offered languages: page key => language => text */

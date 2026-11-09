@@ -79,6 +79,14 @@ Passt etwas nicht, antwortet die Seite wie bei jedem anderen Datenbankproblem mi
 *Cannot connect to MySQL using SSL* (falsche oder nicht lesbare Datei, Zertifikat für einen anderen Namen) oder
 *MySQL server has gone away* (der Server bietet kein TLS an), gefolgt von einem Hinweis auf `db.ssl_ca`.
 
+**Eine Datenbank teilen.** Jede Tabelle und jeder Fremdschlüssel bekommt das Präfix, sodass eine andere
+Anwendung oder ein zweites TalkSlot (Test- und Live-Seite, zwei Schulen) dieselbe Datenbank mit einem eigenen
+Präfix nutzen kann. Der Installer lehnt Tabellen- oder Fremdschlüsselnamen ab, die schon vergeben sind, und löscht
+nach einem Abbruch mitten in der Installation die angelegten Tabellen wieder, sodass er einfach erneut laufen
+kann. Ältere Installationen haben ihre Fremdschlüssel ohne Präfix angelegt (`fk_…`); neben einer solchen braucht
+eine zweite Installation ein Präfix, das nicht leer ist. Ist eine ältere Version in einer geteilten Datenbank
+mitten in der Installation abgebrochen, löschen Sie zuerst die Tabellen mit diesem Präfix.
+
 ## Sprachen {#languages}
 
 | Option | Standard | Bedeutung | Deployment |
@@ -141,6 +149,7 @@ wenige Mailserver können an solche Adressen zustellen.
 | Option | Bedeutung | Deployment |
 |---|---|---|
 | `hosting.de` / `hosting.en` | Ihr Hoster, ersetzt `[[HOSTER]]` in der Datenschutzerklärung | `HOSTING_DE` / `HOSTING_EN` |
+| `hosting.pl`, `hosting.ru`, … | optional: dasselbe in der Sprache einer übersetzten Datenschutzerklärung; ohne Eintrag nimmt die Übersetzung `hosting.en` (danach `hosting.de`) | – |
 
 Beispiel für `hosting.de`: *Beispiel Hosting GmbH, Musterweg 1, 12345 Musterstadt, als
 Auftragsverarbeiter nach Art. 28 DSGVO. Die Server stehen in Deutschland.*

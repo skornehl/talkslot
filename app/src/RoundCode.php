@@ -39,7 +39,7 @@ final class RoundCode
                 return $code;
             }
         }
-        throw new \RuntimeException('Kein freier Rundencode gefunden.');
+        throw new \RuntimeException('No free round code found.');
     }
 
     /**

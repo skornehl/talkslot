@@ -9,8 +9,8 @@ return [
     'Erlaubt (nur Hinweis „Bitte buchen Sie nur einen Termin pro Kind.“)' => 'Allowed (only the note “Please book only one appointment per child.”)',
     'Stand: {time} Uhr · Vertraulich – nur Organisatorisches notieren, keine Gesprächsinhalte; nach dem Termin vernichten.'
         => 'As of {time} · Confidential – organisational notes only, nothing about the conversation; destroy after the appointment.',
-    'Änderungen durch Admins: wer wann welche Runde, welches Konto oder welchen Text geändert hat. Änderungen von Lehrkräften an ihren eigenen Runden werden nicht erfasst, Namen und E-Mail-Adressen von Eltern nie, Buchungen nur mit ihrem Datum. Einträge werden nach {days} Tagen gelöscht.'
-        => 'Changes made by admins: who changed which round, account or text, and when. Changes made by teachers to their own rounds are not recorded, names and email addresses of parents never, bookings with their date only. Entries are deleted after {days} days.',
+    'Änderungen durch Admins: wer wann welche Runde, welches Konto oder welchen Text geändert hat. Änderungen von Lehrkräften an ihren eigenen Runden werden nicht erfasst, Namen und E-Mail-Adressen von Eltern nie, Buchungen nur mit ihrem Datum. Auch Suchen zu Auskunftsanfragen stehen hier, ohne die Adresse. Einträge werden nach {days} Tagen gelöscht.'
+        => 'Changes made by admins: who changed which round, account or text, and when. Changes made by teachers to their own rounds are not recorded, names and email addresses of parents never, bookings with their date only. Searches for requests for access are listed as well, without the address. Entries are deleted after {days} days.',
     'Buchung am {date} eingetragen' => 'booking on {date} entered',
     'Buchung am {date} geändert' => 'booking on {date} changed',
     'Buchung am {date} geändert, auf eine andere Uhrzeit am selben Tag umgebucht' => 'booking on {date} changed, rebooked to another time on the same day',
@@ -54,4 +54,32 @@ return [
         => 'Taking them over puts your text into the form with these sections as worded in the template; your details in lines the template did not change are kept. Nothing is stored until you click “Save”. Or adjust the text below yourself and confirm the reconciliation when saving.',
     'Abgleich erledigt: Der Text berücksichtigt den aktuellen Stand der Vorlage „{name}“ (der Hinweis oben verschwindet nach dem Speichern).'
         => 'Reconciled: the text takes the current state of the template “{name}” into account (the notice above disappears once you save).',
+    // Legal texts in the parent languages (expert review P1-9). Translated privacy policies with open placeholders
+    // (AdminController::operatorHints())
+    'Übersetzungen noch nicht vollständig: {texts}. Bitte ersetzen Sie dort die Platzhalter in eckigen Klammern durch dieselben Angaben wie in der deutschen Fassung. Bis dahin sehen Eltern in diesen Sprachen die englische bzw. deutsche Fassung mit einem Hinweis in ihrer Sprache; Runden lassen sich trotzdem aktivieren. Wenn Sie eine Übersetzung nicht anbieten möchten, leeren Sie den Text.'
+        => 'Translations not complete yet: {texts}. Please replace the placeholders in square brackets there with the same details as in the German version. Until then, parents in these languages see the English or German version with a notice in their language; rounds can be activated all the same. If you do not want to offer a translation, empty the text.',
+    // Texts page (texts.php)
+    'Die Datenschutzerklärung gibt es als Vorlage auch in den anderen Elternsprachen (maßgeblich ist die deutsche Fassung). Diese Übersetzungen enthalten dieselben Platzhalter wie die deutsche Fassung. Solange darin noch welche offen sind, sehen Eltern in dieser Sprache die englische bzw. deutsche Fassung mit einem Hinweis in ihrer Sprache; Runden lassen sich trotzdem aktivieren. Das Impressum gibt es nur auf Deutsch und Englisch.'
+        => 'The privacy policy template also exists in the other parent languages (the German version is authoritative). These translations have the same placeholders as the German version. As long as any of them are still open, parents in that language see the English or German version with a notice in their language; rounds can be activated all the same. The legal notice exists in German and English only.',
+    // An edited privacy policy that still mentions the required checkbox (AdminController::legalHints())
+    'Die Datenschutzerklärung ({languages}) erwähnt noch das Pflicht-Häkchen im Buchungsformular. Das gibt es nicht mehr: Eltern werden informiert, bestätigen müssen sie nichts – bitte den letzten Absatz in Abschnitt 4 an die Vorlage anpassen.'
+        => 'The privacy policy ({languages}) still mentions the required checkbox in the booking form. It no longer exists: parents are informed and do not have to confirm anything – please adjust the last paragraph of section 4 to the template.',
+    // A page without a text in any fallback language, translations saved before the German text (AdminController)
+    'Bevor Runden aktiviert werden können, hinterlegen Sie bitte unter „Texte“ {texts} in mindestens einer dieser Sprachen: {languages}.'
+        => 'Before rounds can be activated, please enter the {texts} under “Texts” in at least one of these languages: {languages}.',
+    'Runden können erst aktiviert werden, wenn ein Admin Impressum und Datenschutzerklärung hinterlegt hat.'
+        => 'Rounds can only be activated once an admin has entered the legal notice and the privacy policy.',
+    'Für {texts} gibt es in keiner dieser Sprachen einen Text: {languages}. Eltern bekommen dann keinen, und es lassen sich keine Runden aktivieren.'
+        => 'There is no {texts} in any of these languages: {languages}. Parents then get none, and no round can be activated.',
+    'Die deutsche Datenschutzerklärung wurde geändert, nachdem diese Fassungen zuletzt gespeichert wurden: {languages}. Maßgeblich ist die deutsche Fassung – bitte prüfen Sie, ob sie dieselben Angaben enthalten, und speichern Sie sie danach (auch unverändert).'
+        => 'The German privacy policy was changed after these versions were last saved: {languages}. The German version is authoritative – please check that they contain the same details and save them afterwards (also unchanged).',
+    'und' => 'and',
+    'Bevor Runden aktiviert werden können, hinterlegen Sie bitte unter „Texte“ die deutsche Datenschutzerklärung: Auf sie verweisen alle Übersetzungen als maßgebliche Fassung.'
+        => 'Before rounds can be activated, please enter the German privacy policy under “Texts”: all translations refer to it as the authoritative version.',
+    'Die deutsche Datenschutzerklärung ist leer. Auf sie verweisen alle Übersetzungen als maßgebliche Fassung; bis sie hinterlegt ist, lassen sich keine Runden aktivieren.'
+        => 'The German privacy policy is empty. All translations refer to it as the authoritative version; until it is entered, no round can be activated.',
+    'Ihre deutsche Datenschutzerklärung weicht von der Vorlage ab. Diese Fassungen sind noch die Vorlage mit Ihren Angaben: {languages}. Maßgeblich ist die deutsche Fassung – bitte übertragen Sie Ihre Änderungen dorthin.'
+        => 'Your German privacy policy differs from the template. These versions are still the template with your details: {languages}. The German version is authoritative – please carry your changes over to them.',
+    'Impressum bzw. Datenschutzerklärung sind noch nicht vollständig (Aufgabe der Admins). Bis dahin lassen sich keine Runden aktivieren; bereits aktive Runden bleiben erreichbar.'
+        => 'The legal notice or privacy policy is not complete yet (a task for the admins). Until then no round can be activated; rounds that are already active stay online.',
 ];

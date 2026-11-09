@@ -97,7 +97,7 @@ final class I18n
         $bestQ = 0.0;
         foreach (explode(',', (string) ($_SERVER['HTTP_ACCEPT_LANGUAGE'] ?? '')) as $range) {
             // e.g. "tr-TR", "uk;q=0.8"; "*" and malformed ranges are skipped, q=0 means "not wanted"
-            if (!preg_match('/^\s*([a-z]{2,3})(?:-[a-z0-9]{1,8})*\s*(?:;\s*q\s*=\s*(0(?:\.\d{0,3})?|1(?:\.0{0,3})?))?\s*$/i', $range, $m)) {
+            if (!preg_match('/^\s*([a-z]{2,3})(?:-[a-z0-9]{1,8})*\s*(?:;\s*q\s*=\s*(0(?:\.\d{0,3})?|1(?:\.0{0,3})?))?\s*\z/i', $range, $m)) {
                 continue;
             }
             $code = strtolower($m[1]);
@@ -131,6 +131,33 @@ final class I18n
     {
         $s = self::load($lang)[$key] ?? self::load(self::defaultLanguage())[$key] ?? $key;
         return is_string($s) ? $s : $key;
+    }
+
+    /**
+     * A number with the plural form of the current language: $key holds the forms with {n} (app/lang/*.php,
+     * e.g. 'hours'), 'plural' the rule that picks one of them (pluralForm()).
+     */
+    public static function plural(string $key, int $n): string
+    {
+        $forms = array_values((array) (self::raw($key) ?? [$key]));
+        $form = $forms[min(self::pluralForm((string) (self::raw('plural') ?? 'one'), $n), count($forms) - 1)];
+        return str_replace('{n}', (string) $n, (string) $form);
+    }
+
+    /**
+     * Index of the plural form for $n: "one" (German, English: 1 / other), "pl" (Polish: 1 / 2–4, 22–24 … / other),
+     * "east-slavic" (Russian, Ukrainian: 1, 21 … / 2–4, 22–24 … / other), "none" (Turkish: one form only).
+     */
+    public static function pluralForm(string $rule, int $n): int
+    {
+        $n = abs($n);
+        $few = $n % 10 >= 2 && $n % 10 <= 4 && ($n % 100 < 12 || $n % 100 > 14);
+        return match ($rule) {
+            'none' => 0,
+            'pl' => $n === 1 ? 0 : ($few ? 1 : 2),
+            'east-slavic' => $n % 10 === 1 && $n % 100 !== 11 ? 0 : ($few ? 1 : 2),
+            default => $n === 1 ? 0 : 1,
+        };
     }
 
     public static function raw(string $key): mixed
