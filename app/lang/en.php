@@ -54,6 +54,7 @@ return [
     'round.remembered.forget' => 'Remove saved appointment from this device',
     'round.remembered.forget_hint' => 'This only removes the saved entry from this device. Your appointment stays booked.',
     'round.remembered.another' => 'Book another appointment (e.g. for a sibling)',
+    'home.mine.title' => 'My appointments on this device',
 
     'form.required' => 'required',
     'form.name' => 'Name',

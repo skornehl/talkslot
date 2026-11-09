@@ -65,7 +65,8 @@ oder wenn die Lehrkraft Sie lieber selbst informiert, meldet sie sich persönlic
   Bezeichnung und sein Datum in Ihrem Browser gespeichert. So sehen Sie ihn, wenn Sie die Terminvergabe
   erneut öffnen. Jede Buchung bekommt einen eigenen Eintrag. Dabei wird nichts an den Server übertragen. Sie
   können einen Eintrag jederzeit löschen (Ihr Termin bleibt bestehen); nach einer Absage und nach dem Tag
-  des Termins verschwindet er von selbst.
+  des Termins verschwindet er von selbst. Die Startseite und die Seite mit der Code-Eingabe zeigen alle auf diesem
+  Gerät gemerkten Termine (*Meine Termine auf diesem Gerät*), den nächsten zuerst, damit Sie sie ohne die Links erreichen.
 - **Nicht weitergekommen?** Funktioniert ein Link nicht, bietet die Seite gleich die Code-Eingabe der
   Startseite an. Ist kein Termin frei, steht dort, warum: Alle Termine sind vergeben, oder die Buchungsfrist
   ist abgelaufen. Haben Lehrkraft oder Schule einen Kontakt für Fragen angegeben (z. B. das Sekretariat mit

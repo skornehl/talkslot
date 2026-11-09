@@ -57,6 +57,7 @@ return [
     'round.remembered.forget' => 'Merker auf diesem Gerät löschen',
     'round.remembered.forget_hint' => 'Das löscht nur den Merker auf diesem Gerät. Ihr Termin bleibt bestehen.',
     'round.remembered.another' => 'Weiteren Termin buchen (z. B. für ein Geschwisterkind)',
+    'home.mine.title' => 'Meine Termine auf diesem Gerät',
 
     'form.required' => 'Pflichtfeld',
     'form.name' => 'Name',

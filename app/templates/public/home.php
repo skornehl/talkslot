@@ -3,4 +3,5 @@
 <p><?= e(t('home.text')) ?></p>
 <?php require __DIR__ . '/_errors.php'; ?>
 <?php require __DIR__ . '/_code_form.php'; ?>
+<?php require __DIR__ . '/_my_appointments.php'; ?>
 <?php if (!empty($errors)): $contactFallback = true; require __DIR__ . '/_contact.php'; endif; ?>
