@@ -111,6 +111,11 @@ return [
     // Log of the changes made by admins (Protokoll): entries are deleted after this many days
     'audit_log_days' => 90,
 
+    // Security events of an account (password, e-mail address, admin rights, sign-in limit; no IP), shown only
+    // to the account holder under "Mein Profil": deleted after this many days (at most 90). Agree on it with the
+    // staff council (Personalrat)
+    'security_events_days' => 30,
+
     // Rate limits: [max. count, time window in seconds] per truncated IP (IPv4 /24, IPv6 /48), unless noted.
     // Generous, because many parents may share a truncated IP (mobile network, school Wi-Fi).
     'rate_limits' => [
@@ -129,6 +134,7 @@ return [
         'login_user' => [20, 3600], // failed logins per account from devices that never signed in to it
         'login_device' => [20, 3600], // failed logins per known device (instead of login_user)
         'login_notice' => [1, 86400], // e-mails to an account whose login_user limit was reached
+        'login_alarm' => [3, 3600], // not a limit: the login_user limit reached for more accounts than this within the window sends all admins one alarm a day (no names)
         'reauth' => [5, 900],       // wrong passwords when confirming admin rights, e-mail changes, ending all sessions and changing the own password (per sign-in)
         'invite' => [20, 3600],     // invalid invitation and password links
         'forgot' => [5, 3600],      // "Passwort vergessen" requests

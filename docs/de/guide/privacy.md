@@ -15,10 +15,11 @@ TDDDG. Diese Seite erläutert die Designentscheidungen; sie ist keine Rechtsbera
 | Eintrag der Mail-Warteschlange: welche E-Mail für welche Buchung oder welches Konto aussteht (ohne Adresse, Text oder Link) | Datenbank | nach dem Versand, spätestens nach 48 Stunden, mit der Buchung |
 | Absage durch die Lehrkraft in der Mail-Warteschlange: Adresse, Sprache, Name, Termin und Lehrkraft (Name und Adresse für Antworten; keine Adresse, wenn das Konto gelöscht wurde) der gelöschten Buchung (ohne Link) | Datenbank | nach dem Versand, spätestens nach 48 Stunden |
 | Gekürzte, per HMAC gehashte IP-Adressen; HMAC-Hashes von Konto-IDs und Geräte-Cookies mit fehlgeschlagenen Anmeldungen; HMAC-Hashes von E-Mail-Adressen mit der Zahl der E-Mails, die Eltern an sie ausgelöst haben | Datenbank (Rate Limiting) | spätestens nach 24 Stunden |
-| Geräte-Cookie eines Admin- oder Lehrkraft-Kontos (Zufallszahl, Zeitpunkt, Signatur) | Browser der Person | nach 365 Tagen, bei jeder Anmeldung erneuert |
+| Geräte-Cookie eines Admin- oder Lehrkraft-Kontos (Zufallszahl, Zeitpunkt, Signatur) | Browser der Person | nach 365 Tagen, bei jeder Anmeldung erneuert; ungültig nach einem neuen Passwort oder wenn alle Sitzungen beendet werden; höchstens 20 pro Browser |
 | Konten der Lehrkräfte | Datenbank | durch einen Admin; inaktive Konten ohne Runden in Gebrauch 15 Monate nach der letzten Anmeldung, zusammen mit ihren Entwürfen |
 | Zusammenfassungen per E-Mail an Lehrkräfte (standardmäßig die Zahl der Termine und der Link, keine Namen; Uhrzeit und Name nur, wo die Schule sie erlaubt; nie E-Mail-Adressen) | Postfach der Lehrkraft | mit Namen: spätestens zum Ende des Schuljahres (Vorlage der Datenschutzerklärung; bei privatem Betrieb empfiehlt die Vorlage das, es gelten die Regeln der Schule) |
 | Protokoll der Änderungen durch Admins (wer, wann, was; keine Namen oder E-Mail-Adressen von Eltern, Buchungen nur mit Datum) | Datenbank | nach 90 Tagen (`audit_log_days`) |
+| Sicherheitsereignisse eines Kontos (Passwort, E-Mail-Adresse, Admin-Rechte, angeforderte Links zum Zurücksetzen, Anmeldelimit; Zeitpunkt, ob ein Admin die Änderung vorgenommen hat; keine IP-Adresse, kein Gerät), nur für den Kontoinhaber sichtbar | Datenbank | nach 30 Tagen (`security_events_days`) und mit dem Konto |
 
 TalkSlot führt **keine** eigenen Zugriffsprotokolle. Für die Logs des Webservers ist der Hoster
 zuständig; fragen Sie nach, wie lange sie aufbewahrt werden, und nennen Sie die Dauer in der
@@ -96,6 +97,11 @@ Datenschutzerklärung.
   verlieren ihre Uhrzeit beim nächsten Aufräumlauf. Je nach Bundesland kann ein
   Protokoll von Handlungen der Beschäftigten trotzdem den Personalrat betreffen; die Aufbewahrung lässt
   sich mit `audit_log_days` verkürzen.
+- **Sicherheitsereignisse nur für den Kontoinhaber:** Nach einem Vorfall kann eine Lehrkraft sehen, was mit
+  ihrem Konto geschehen ist (*Mein Profil → Sicherheit*), ohne dass eine Einrichtung zur Überwachung entsteht:
+  keine Anmeldungen, keine IP-Adresse, nichts für Admins in der Anwendung sichtbar (nur für alle, die die Datenbank
+  oder Backups lesen können), fehlgeschlagene Anmeldungen nur als Zahl. Beteiligen Sie vor der Einführung den
+  Personalrat und stimmen Sie die Aufbewahrung ab (standardmäßig 30 Tage, `security_events_days`, höchstens 90).
 - **Anmeldezeiten nur grob:** Der Zeitpunkt der letzten Anmeldung wird gespeichert (um ungenutzte Konten
   aufzuräumen), die Benutzerliste zeigt aber nur *nie*, *in den letzten 12 Monaten* oder *vor über 12
   Monaten*. Admins sehen also nicht, wann Kolleginnen und Kollegen arbeiten. Sicherheitsmails zu

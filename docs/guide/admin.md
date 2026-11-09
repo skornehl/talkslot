@@ -110,10 +110,25 @@ A taken-over session or a misused admin account must not be able to take over ot
   (password links go there; this applies to your own address too). After 5 wrong entries in 15 minutes
   (wrong current passwords when changing your own password count too) the confirmation is refused for a
   while; signing out and in again starts afresh.
-- **Security mails:** the account holder gets a mail when its password was changed or set; the previous
-  address when an admin changed the e-mail address or the username; all active admins (you included) and
-  the person concerned when admin rights change or an admin account is deactivated, reactivated or
-  deleted. Please do not filter these mails away: they are often the only way to notice misuse.
+- **Security mails** (please do not filter them away: they are often the only way to notice misuse), in the
+  language of the recipient:
+
+  | Mail (German, English) | Goes to | When |
+  |---|---|---|
+  | *Ihr Passwort wurde geändert* / *festgelegt* (*Your password has been changed* / *set*) | the account | its password was changed in the profile, or set through an invitation or reset link |
+  | *Ihre E-Mail-Adresse wurde geändert*, *Ihr Benutzername wurde geändert* (*Your email address has been changed*, *Your username has been changed*) | the previous address | the person (in *Mein Profil*) or an admin changed it |
+  | *Sicherheitshinweis: Änderung im Verwaltungsbereich von …* (*Security notice: change in the admin area of …*) | all active admins (you included) and the person concerned; an invited admin gets the invitation instead | an admin was invited, admin rights were given or taken away, an admin account was deactivated, reactivated or deleted |
+  | the same, *Alle Sitzungen wurden beendet* (*All sessions have been ended*) | all active admins | somebody ended all sessions |
+  | *Viele fehlgeschlagene Anmeldeversuche bei …* (*Many failed sign-in attempts at …*) | the account | strangers used up its sign-in limit; at most one a day. It may arrive later (at once with PHP-FPM or LiteSpeed, otherwise with the next cron run) and gives the time |
+  | *Sicherheitshinweis: viele fehlgeschlagene Anmeldungen bei …* (*Security notice: many failed sign-ins at …*) | all active admins | the sign-in limit of more than 3 accounts was reached within an hour; at most one a day, without names |
+  | *Passwort festlegen für …* (*Set password for …*), for an account that never signed in *Einladung zu …* (*Invitation to …*) | the account | an admin reset its password (*Link zum Zurücksetzen senden*) or sent the invitation again |
+- **Security events** (*Mein Profil → Sicherheit*): every account sees its own: changes of the password, the
+  e-mail address and admin rights, requested reset links, that its sign-in limit was reached, and the number of
+  failed sign-ins since the previous one. No IP address or device is stored, and sign-ins themselves are not
+  recorded. **In the application only the account holder sees them**, admins do not: there is no page for it
+  (whoever has access to the database or its backups could read them). Admins only get an alarm without names
+  when the sign-in limit of more than 3 accounts is reached within an hour (at most one a day). Entries are
+  deleted after 30 days (`security_events_days`, at most 90); agree on the period with the staff council.
 - **Password links** are only sent by mail and never shown on screen. A reset by an admin tells the person
   that their previous password no longer works.
 - **Misuse of the public pages:** when more than 5 bookings of a round come from one network within 5
@@ -124,7 +139,8 @@ A taken-over session or a misused admin account must not be able to take over ot
   such mails per hour go out (see [Security]({{ '/guide/security/' | relative_url }}#built-in-protections)).
 - **Alle Sitzungen beenden** (end all sessions, at the bottom of *Benutzer*) signs out every account on
   every device except your current session, e.g. after a lost device or a suspected break-in. It needs
-  your password, and all admins get a mail. What else to do in such a case is described under
+  your password, and all admins get a mail. All known devices count as new afterwards: anyone whose sign-in
+  limit strangers have used up then needs *Passwort vergessen?*. What else to do in such a case is described under
   [Security]({{ '/guide/security/' | relative_url }}#if-you-suspect-misuse).
 
 ### When somebody leaves

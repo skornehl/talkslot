@@ -194,6 +194,16 @@ final class Migrations
                 CONSTRAINT fk_trash_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
         ],
+        // 25: security events of an account, for the account holder only (expert review P2-9): password,
+        //     address, admin rights, sign-in limit; no IP.
+        25 => [
+            "CREATE TABLE IF NOT EXISTS security_events (
+                id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, user_id INT UNSIGNED NOT NULL, event VARCHAR(30) NOT NULL,
+                by_admin TINYINT(1) NOT NULL DEFAULT 0, created_at DATETIME NOT NULL,
+                KEY idx_security_events_user (user_id, created_at), KEY idx_security_events_created (created_at),
+                CONSTRAINT fk_security_events_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        ],
         // 26: PHP step only (addInvariants): indexes for the date filters, rules of days and rounds in the database
         26 => [],
     ];

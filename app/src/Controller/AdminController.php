@@ -30,6 +30,7 @@ use App\RoundCode;
 use App\RoundTrash;
 use App\ScheduleChange;
 use App\ScheduleService;
+use App\SecurityEvents;
 use App\SlotGenerator;
 use App\Slug;
 use App\Summaries;
@@ -195,6 +196,9 @@ final class AdminController
         Http::redirect('/admin/login', ['next' => $target]);
     }
 
+    /** From this many failed attempts since the previous sign-in the account holder is told on signing in. */
+    private const FAILED_NOTICE = 3;
+
     /** Query parameter of the address the interim page opens (signInFirst()). */
     private const REOPENED = 'reopened';
 
@@ -258,6 +262,12 @@ final class AdminController
         // A new account's username is its address, with umlauts in the domain as punycode (App\Email)
         $result = Auth::attempt(Email::input(Http::post('username')), Http::postRaw('password'));
         if ($result === true) {
+            // Failed attempts since the previous sign-in: only the account holder learns of them (P2-9)
+            // Not after a typo or two
+            $failed = (int) ($_SESSION['failed_before'] ?? 0);
+            if ($failed >= self::FAILED_NOTICE) {
+                $this->flash('warning', __('Fehlgeschlagene Anmeldeversuche seit Ihrer vorigen Anmeldung: {count}. Falls Sie das nicht waren und dieses Passwort auch anderswo verwenden, ändern Sie es bitte. Mehr unter „Mein Profil“.', ['count' => $failed]));
+            }
             self::redirectTo(Auth::returnPath(Http::post('next')));
         }
         http_response_code(401);
@@ -1660,12 +1670,21 @@ final class AdminController
 
     private function profile(array $errors = [], ?array $data = null): void
     {
+        $me = Auth::user();
         $this->render('admin/profile', [
             'title' => __('Mein Profil'),
-            'user' => Auth::user(),
-            'data' => $data ?? Auth::user(),
+            'user' => $me,
+            'data' => $data ?? $me,
             'errors' => $errors,
             'generalContact' => ParentContact::general(),
+            // Only the account's own (SecurityEvents): the previous sign-in and the failed attempts since
+            'security' => [
+                'events' => SecurityEvents::of((int) $me['id']),
+                'days' => SecurityEvents::retentionDays(),
+                'known' => array_key_exists('previous_login', $_SESSION), // not for a session from before this feature
+                'previous' => $_SESSION['previous_login'] ?? null,
+                'failed' => (int) ($_SESSION['failed_before'] ?? 0) + (int) $me['failed_logins'],
+            ],
         ]);
     }
 
@@ -1718,13 +1737,13 @@ final class AdminController
             $this->profile($errors, $data);
             return;
         }
-        // To the previous address, in the language of the account (as it was before this change)
-        $this->withoutSession(static fn () => AccountSecurity::contactChanged($me, ['email' => $data['email']] + $me, $me));
         Db::run(
             'UPDATE users SET display_name = ?, email = ?, reply_to = ?, parent_contact = ?, summary_evening = ?, summary_deadline = ?, summary_names = ?, lang = ? WHERE id = ?',
             [$data['display_name'], $data['email'] !== '' ? $data['email'] : null, $data['reply_to'] !== '' ? $data['reply_to'] : null,
                 $data['parent_contact'] !== '' ? $data['parent_contact'] : null, $data['summary_evening'], $data['summary_deadline'], $data['summary_names'], $data['lang'], Auth::id()]
         );
+        // To the previous address, in the language of the account (as it was before this change)
+        $this->withoutSession(static fn () => AccountSecurity::contactChanged($me, ['email' => $data['email']] + $me, $me));
         AdminI18n::set($data['lang']); // the confirmation already in the new language
         $this->flash('success', __('Profil gespeichert.'));
         Http::redirect('/admin/profile');
@@ -1887,6 +1906,10 @@ final class AdminController
                 $this->userForm($id, [__('Es muss mindestens ein aktives Admin-Konto geben.')], $data);
                 return;
             }
+            // Deactivated: its sessions and known devices do not come back with a reactivation
+            if (!$data['is_active'] && $user['is_active']) {
+                Auth::endOtherSessions((int) $id, false);
+            }
             // A closure, so that the log gets its own language (see audit())
             $changes = static fn (): array => array_filter([
                 $data['role'] !== $user['role'] ? __('Rolle jetzt {role}', ['role' => self::roleLabel($data['role'])]) : '',
@@ -1941,6 +1964,9 @@ final class AdminController
         }
         Db::run('UPDATE users SET password_hash = ? WHERE id = ?', [AccountLinks::unusablePasswordHash(), $id]);
         Auth::endOtherSessions($id, false);
+        if ($user['last_login_at'] !== null) {
+            SecurityEvents::record($id, SecurityEvents::RESET_BY_ADMIN, true);
+        }
         $this->audit(fn () => $user['last_login_at'] === null
             ? __('Konto {account}: Einladung erneut gesendet', ['account' => self::accountLabel($user)])
             : __('Konto {account}: Link zum Zurücksetzen des Passworts gesendet', ['account' => self::accountLabel($user)]));
@@ -1996,8 +2022,9 @@ final class AdminController
         }
         AccountLinks::consume((int) $user['id'], $new);
         // Whoever can use the link may sign in on this device even while strangers have used up the
-        // account's login limit ("forgot password" would not help against a lockout otherwise)
-        TrustedDevice::remember((int) $user['id']);
+        // account's login limit ("forgot password" would not help against a lockout otherwise). The new
+        // password revoked the other devices (new epoch), this one gets a cookie of the new epoch
+        TrustedDevice::remember((int) $user['id'], Auth::deviceEpochOf((int) $user['id']));
         Auth::startSession(true);
         $this->flash('success', __('Ihr Passwort ist gespeichert. Bitte melden Sie sich jetzt an.'));
         $_SESSION['login_user'] = $user['username']; // not in the URL (access logs)
@@ -2057,6 +2084,7 @@ final class AdminController
         if ($user) {
             // The previous password stays valid until the link is used
             AccountLinks::send($user, AccountLinks::RESET);
+            SecurityEvents::resetRequested((int) $user['id']);
         }
     }
 
@@ -2137,6 +2165,8 @@ final class AdminController
         Auth::endAllSessions();
         $this->audit(fn () => __('Alle Sitzungen beendet'));
         $me = Auth::user();
+        // The new epoch revoked all known devices; the admin's own browser stays known
+        TrustedDevice::remember((int) $me['id'], Auth::deviceEpoch($me));
         $this->withoutSession(static fn () => AccountSecurity::adminChange(AccountSecurity::SESSIONS_ENDED, null, $me));
         $this->flash('success', __('Alle Sitzungen beendet: Alle Konten müssen sich auf allen Geräten neu anmelden, nur diese Sitzung bleibt bestehen.'));
         Http::redirect('/admin/users');

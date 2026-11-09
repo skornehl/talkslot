@@ -1,3 +1,3 @@
 <div class="field"><label for="current_password"><?= e(__('Aktuelles Passwort')) ?></label><input type="password" id="current_password" name="current_password" required autocomplete="current-password"></div>
-<div class="field"><label for="new_password"><?= e(__('Neues Passwort (mind. 12 Zeichen)')) ?></label><input type="password" id="new_password" name="new_password" required minlength="12" autocomplete="new-password"></div>
+<div class="field"><label for="new_password"><?= e(__('Neues Passwort (mind. 12 Zeichen)')) ?></label><input type="password" id="new_password" name="new_password" required minlength="12" autocomplete="new-password" aria-describedby="password-hint"><?php require __DIR__ . '/_password_hint.php'; ?></div>
 <div class="field"><label for="new_password2"><?= e(__('Neues Passwort wiederholen')) ?></label><input type="password" id="new_password2" name="new_password2" required minlength="12" autocomplete="new-password"></div>
