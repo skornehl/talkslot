@@ -41,8 +41,8 @@ final class Outbox
     private const MAX_FAILURES_IN_A_ROW = 3;
     /** Seconds the cron job waits for a run in progress (e.g. one after a page request) before it gives up. */
     public const CRON_WAIT = 15;
-    /** Lock of a run, per database and table prefix: installations on one database server do not block each other. */
-    private const LOCK = "SHA1(CONCAT(DATABASE(), '.', ?))";
+    /** Lock of a run (Db::lock(), per database and table prefix): installations on one server do not block each other. */
+    private const LOCK = 'outbox';
     /** Fallback after the response of a page request: at most this many mails and seconds. */
     private const REQUEST_MAILS = 10;
     private const REQUEST_SECONDS = 10;
@@ -108,7 +108,7 @@ final class Outbox
         $stats = ['mails_sent' => 0, 'mails_failed' => 0, 'mails_dropped' => 0];
         $limit ??= max(1, (int) Config::get('mail_queue.batch', 100));
         $seconds ??= max(1.0, (float) Config::get('mail_queue.seconds', 20));
-        if ((int) Db::value('SELECT GET_LOCK(' . self::LOCK . ', ?)', [Db::table('outbox'), max(0, $wait)]) !== 1) {
+        if (!Db::lock(self::LOCK, $wait)) {
             return $stats;
         }
         try {
@@ -159,7 +159,7 @@ final class Outbox
                 Settings::set('mail_hour', $hour . '|' . $count);
             }
         } finally {
-            Db::value('SELECT RELEASE_LOCK(' . self::LOCK . ')', [Db::table('outbox')]);
+            Db::unlock(self::LOCK);
         }
         return $stats;
     }

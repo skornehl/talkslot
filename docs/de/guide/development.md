@@ -117,6 +117,10 @@ Syntaxfehlers.
   Releases werden daraus abgeleitet.
 - **Datenbank:** ausschließlich Prepared Statements; das SQL-Audit im Unit-Test schlägt bei
   eingesetzten (verketteten) Variablen fehl.
+- **Tabellenpräfix:** SQL nennt die Tabellen ohne Präfix, `Db::prefix()` setzt es davor. Eine neue Tabelle kommt in
+  `Db::TABLES`, ein Fremdschlüssel heißt `fk_…` (er bekommt das Präfix ebenfalls; zum Löschen den Namen mit
+  `Db::foreignKey()` nachschlagen, da ältere Installationen ihn ohne Präfix haben), kein Alias heißt wie eine
+  Tabelle, und eine benannte Sperre läuft über `Db::lock()`. Unit-Tests prüfen alle vier Regeln.
 - **Reguläre Ausdrücke auf Text** bekommen den Modifikator `u`, wo Bytes und Zeichen sich unterscheiden: ein
   Nicht-ASCII-Zeichen im Muster, `\R`, `\h`, `\v`, `\X`, `\p{…}`, `\x{…}`. Ohne ihn zerteilen sie UTF-8-Zeichen
   (polnische, russische, ukrainische Namen und Mails). Ein Unit-Test prüft jedes Muster im Code.
