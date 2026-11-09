@@ -55,6 +55,7 @@ if (strlen($env('APP_SECRET')) < 32 || ($allowInstall && strlen($env('INSTALL_KE
 }
 
 // Domains the addresses of accounts must use (ALLOWED_ACCOUNT_DOMAINS, comma-separated, e.g. schule.example.org)
+require dirname(__DIR__) . '/app/src/Email.php';
 require dirname(__DIR__) . '/app/src/AccountDomains.php';
 $domains = array_values(array_unique(array_filter(array_map(static fn (string $d): string => ltrim(trim($d), '@'), explode(',', strtolower($env('ALLOWED_ACCOUNT_DOMAINS')))))));
 foreach ($domains as $domain) {

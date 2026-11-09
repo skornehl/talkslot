@@ -233,6 +233,8 @@ other up; the cron job waits up to 15 seconds for a run in progress.
   mails have waited longer than `cron_alert_hours` (at least two hours), usually because the cron job does not run or the mail server
   keeps refusing. Cancellations are the exception: their booking is gone, so one that is given up after
   48 hours leaves no mark at an entry, only the notice on the overview while it waits.
+- **Bounces** of mails the mail server accepted but could not deliver later go to `mail.from_address`, not to
+  TalkSlot; see [Bounces]({{ '/guide/configuration/' | relative_url }}#bounces).
 - **Without a cron job** mails can only go out on page views if PHP runs as PHP-FPM or LiteSpeed: the page
   is delivered first, then up to 10 due mails are sent (`mail_queue.after_response`). With Apache's
   mod_php that is not possible, so set up the cron job; the included `cron.yml` runs it hourly. Without it,

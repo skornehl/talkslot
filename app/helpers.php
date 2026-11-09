@@ -134,13 +134,8 @@ function app_name(): string
     return (string) Config::get('app_name', 'TalkSlot');
 }
 
-/**
- * Valid email address for input: FILTER_VALIDATE_EMAIL, at most 254 characters and without
- * special forms (quotes, whitespace/control characters, angle brackets) that are formally allowed
- * but fail on sending or disrupt output.
- */
+/** Valid e-mail address in its stored form (ASCII, a domain with umlauts as "xn--…"); see App\Email. */
 function is_valid_email(string $email): bool
 {
-    return $email !== '' && strlen($email) <= 254 && filter_var($email, FILTER_VALIDATE_EMAIL) !== false
-        && !preg_match('/[\x00-\x20\x7F"\\\\<>()\[\],;:]/', $email);
+    return \App\Email::isValid($email);
 }

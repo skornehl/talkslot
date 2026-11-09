@@ -14,6 +14,7 @@ use App\BookingService;
 use App\Cleanup;
 use App\Csrf;
 use App\Db;
+use App\Email;
 use App\Http;
 use App\I18n;
 use App\Invitation;
@@ -241,7 +242,8 @@ final class AdminController
             $this->login(__('Das Formular ist abgelaufen. Bitte erneut versuchen.'));
             return;
         }
-        $result = Auth::attempt(Http::post('username'), Http::postRaw('password'));
+        // A new account's username is its address, with umlauts in the domain as punycode (App\Email)
+        $result = Auth::attempt(Email::input(Http::post('username')), Http::postRaw('password'));
         if ($result === true) {
             self::redirectTo(Auth::returnPath(Http::post('next')));
         }
@@ -1271,7 +1273,7 @@ final class AdminController
         $lang = Http::post('lang');
         return [
             'name' => Http::post('name'),
-            'email' => Http::post('email'),
+            'email' => Email::input(Http::post('email')),
             'lang' => in_array($lang, I18n::languages(), true) ? $lang : I18n::defaultLanguage(),
             'send_mail' => Http::post('send_mail') === '1',
         ];
@@ -1392,11 +1394,11 @@ final class AdminController
         if ((string) $u['email'] === '' && ($u['summary_evening'] || $u['summary_deadline'])) {
             $hints[] = __('Keine E-Mail-Adresse hinterlegt – Zusammenfassungen können nicht versendet werden.');
         } elseif ((string) $u['email'] !== '' && !AccountDomains::permits((string) $u['email'])) {
-            $hints[] = __('Ihre E-Mail-Adresse ist keine dienstliche Adresse bei {domains}, wie die Schule es vorgibt – bitte ändern. Bis dahin erhalten Sie keine Zusammenfassungen.', ['domains' => implode(', ', AccountDomains::allowed())]);
+            $hints[] = __('Ihre E-Mail-Adresse ist keine dienstliche Adresse bei {domains}, wie die Schule es vorgibt – bitte ändern. Bis dahin erhalten Sie keine Zusammenfassungen.', ['domains' => implode(', ', AccountDomains::shown())]);
         }
         // A reply address from before allowed_account_domains: not used (Notifier::replyTo())
         if ((string) $u['reply_to'] !== '' && !AccountDomains::permits((string) $u['reply_to'])) {
-            $hints[] = __('Ihre Antwortadresse für Eltern ist keine dienstliche Adresse bei {domains}, wie die Schule es vorgibt – bitte ändern. Bis dahin gehen Antworten der Eltern nicht an diese Adresse.', ['domains' => implode(', ', AccountDomains::allowed())]);
+            $hints[] = __('Ihre Antwortadresse für Eltern ist keine dienstliche Adresse bei {domains}, wie die Schule es vorgibt – bitte ändern. Bis dahin gehen Antworten der Eltern nicht an diese Adresse.', ['domains' => implode(', ', AccountDomains::shown())]);
         }
         return $hints;
     }
@@ -1417,8 +1419,8 @@ final class AdminController
         $me = Auth::user();
         $data = [
             'display_name' => mb_substr(Http::post('display_name'), 0, 200),
-            'email' => Http::post('email'),
-            'reply_to' => Http::post('reply_to'),
+            'email' => Email::input(Http::post('email')),
+            'reply_to' => Email::input(Http::post('reply_to')),
             // Shown to parents (ParentContact); if the form does not know the field yet, the previous value stays
             'parent_contact' => isset($_POST['parent_contact']) ? ParentContact::clean(Http::post('parent_contact')) : (string) $me['parent_contact'],
             'summary_evening' => Http::post('summary_evening') === '1' ? 1 : 0,
@@ -1556,7 +1558,7 @@ final class AdminController
         $isSelf = $user && (int) $user['id'] === Auth::id();
         $data = [
             'display_name' => mb_substr(Http::post('display_name'), 0, 200),
-            'email' => mb_strtolower(Http::post('email')),
+            'email' => mb_strtolower(Email::input(Http::post('email'))),
             // Admins can make others admins and take the role away again, but not change their own
             'role' => $isSelf ? $user['role'] : (Http::post('role') === 'admin' ? 'admin' : 'teacher'),
             'is_active' => $user ? (Http::post('is_active') === '1' ? 1 : 0) : 1,
@@ -1652,7 +1654,7 @@ final class AdminController
             $this->flash('error', __('Ihr eigenes Passwort ändern Sie unter „Mein Profil“.'));
             Http::redirect('/admin/users');
         }
-        if (!filter_var((string) $user['email'], FILTER_VALIDATE_EMAIL)) {
+        if (!Email::isValid((string) $user['email'])) {
             $this->flash('error', __('Für dieses Konto ist keine E-Mail-Adresse hinterlegt.'));
             Http::redirect('/admin/users/' . $id . '/edit');
         }
@@ -1753,7 +1755,7 @@ final class AdminController
         [$limit, $window] = RateLimiter::limits('forgot', 5, 3600);
         $user = null;
         if (self::checkFormToken('forgot') && RateLimiter::hit('forgot', $limit, $window)) {
-            $input = mb_strtolower(Http::post('email'));
+            $input = mb_strtolower(Email::input(Http::post('email')));
             // Username before email (unique); with multiple matches the oldest account
             $user = $input !== '' ? Db::one(
                 'SELECT * FROM users WHERE (LOWER(email) = ? OR LOWER(username) = ?) AND is_active = 1 AND email IS NOT NULL

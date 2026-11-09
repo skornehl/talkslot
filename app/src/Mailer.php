@@ -46,11 +46,13 @@ final class Mailer
      */
     public static function send(string $to, string $subject, #[\SensitiveParameter] string $body, array $attachments = [], ?string $replyTo = null): bool
     {
-        if (!filter_var($to, FILTER_VALIDATE_EMAIL)) {
+        // Addresses with umlauts in the domain (also in the configuration) go out in their ASCII form
+        $to = Email::normalize($to);
+        if ($to === null) {
             return false;
         }
-        $from = (string) Config::get('mail.from_address', '');
-        if (!filter_var($from, FILTER_VALIDATE_EMAIL)) {
+        $from = Email::normalize((string) Config::get('mail.from_address', ''));
+        if ($from === null) {
             ErrorPage::writeLog('Mailer: mail.from_address is not set – no mail sent');
             return false;
         }
@@ -85,8 +87,8 @@ final class Mailer
             'Content-Transfer-Encoding' => 'quoted-printable',
             'Auto-Submitted' => 'auto-generated',
         ];
-        $replyTo = $replyTo ?: (string) Config::get('mail.reply_to', '');
-        if (filter_var($replyTo, FILTER_VALIDATE_EMAIL)) {
+        $replyTo = Email::normalize($replyTo ?: (string) Config::get('mail.reply_to', ''));
+        if ($replyTo !== null) {
             $headers['Reply-To'] = $replyTo;
         }
         // Only real line breaks: '/\R/' without /u would also split at the byte 0x85, which is part of
@@ -125,8 +127,8 @@ final class Mailer
         $m->clearAttachments();
         $m->clearCustomHeaders();
         $m->setFrom($from, (string) Config::get('mail.from_name', ''));
-        $replyTo = $replyTo ?: (string) Config::get('mail.reply_to', '');
-        if (filter_var($replyTo, FILTER_VALIDATE_EMAIL)) {
+        $replyTo = Email::normalize($replyTo ?: (string) Config::get('mail.reply_to', ''));
+        if ($replyTo !== null) {
             $m->addReplyTo($replyTo);
         }
         $m->addAddress($to);
