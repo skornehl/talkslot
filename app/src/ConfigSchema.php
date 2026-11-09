@@ -227,7 +227,7 @@ final class ConfigSchema
         return match ($spec[0]) {
             'string', 'language' => is_string($value),
             'url' => is_string($value) && preg_match('~^https?://[^/\s?#]+(/\S*)?$~i', $value) === 1,
-            'email' => is_string($value) && ($value === '' || is_valid_email($value)),
+            'email' => is_string($value) && ($value === '' || Email::normalize($value) !== null),
             'bool' => is_bool($value) || $value === 0 || $value === 1,
             'int' => $int !== null && $int >= $spec[2] && ($spec[3] === null || $int <= $spec[3]),
             'enum' => in_array($value, $spec[2], true),
