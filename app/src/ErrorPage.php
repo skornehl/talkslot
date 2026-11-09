@@ -40,13 +40,23 @@ final class ErrorPage
         error_log($line);
     }
 
+    /**
+     * A file of the app relative to the project root (/app/src/Db.php), for the log and error reports; other
+     * paths unchanged. Only the leading root is removed: with the project in /app (Docker), str_replace() would
+     * also cut the app/ directory out of /app/app/src/Db.php, and tests/php-errors.sh would miss the line.
+     */
+    public static function relativePath(string $file): string
+    {
+        return str_starts_with($file, APP_ROOT . '/') ? substr($file, strlen(APP_ROOT)) : $file;
+    }
+
     public static function log(\Throwable $e): void
     {
         self::writeLog(sprintf(
             '[%s] %s (%s:%d)',
             get_class($e),
             self::sanitize($e->getMessage()),
-            str_replace(APP_ROOT, '', $e->getFile()),
+            self::relativePath($e->getFile()),
             $e->getLine()
         ));
     }
