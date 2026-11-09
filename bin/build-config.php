@@ -122,6 +122,15 @@ if ($env('CRON_ALERT_HOURS') !== '') {
     }
     $config['cron_alert_hours'] = (int) $env('CRON_ALERT_HOURS');
 }
+// Successful bookings per round and truncated IP and hour (App\Abuse; empty = default of the sample). Generous:
+// parents in one school Wi-Fi share an IP
+if ($env('ROUND_BOOKING_LIMIT') !== '') {
+    if (!ctype_digit($env('ROUND_BOOKING_LIMIT')) || (int) $env('ROUND_BOOKING_LIMIT') < 1) {
+        fwrite(STDERR, "ROUND_BOOKING_LIMIT must be a whole number of at least 1\n");
+        exit(1);
+    }
+    $config['rate_limits']['round'] = [(int) $env('ROUND_BOOKING_LIMIT'), 3600];
+}
 $config['languages'] = $languages;
 $config['default_language'] = $default;
 $config['app_name'] = $env('APP_NAME', (string) $config['app_name']);

@@ -57,6 +57,7 @@ return [
     'round.remembered.forget' => 'Merker auf diesem Gerät löschen',
     'round.remembered.forget_hint' => 'Das löscht nur den Merker auf diesem Gerät. Ihr Termin bleibt bestehen.',
     'round.remembered.another' => 'Weiteren Termin buchen (z. B. für ein Geschwisterkind)',
+    'home.mine.title' => 'Meine Termine auf diesem Gerät',
 
     'form.required' => 'Pflichtfeld',
     'form.name' => 'Name des Kindes',
@@ -101,7 +102,8 @@ return [
     'err.deadline' => 'Dieser Termin kann nicht mehr gebucht werden, die Buchungsfrist ist abgelaufen.',
     'err.csrf' => 'Das Formular ist abgelaufen. Bitte versuchen Sie es erneut.',
     'err.too_fast' => 'Das ging zu schnell. Bitte senden Sie das Formular in einigen Sekunden erneut.',
-    'err.rate' => 'Zu viele Anfragen. Bitte versuchen Sie es später erneut.',
+    'err.rate' => 'Zu viele Anfragen aus Ihrem Netzwerk (das kommt vor, wenn viele Personen dasselbe WLAN nutzen). Bitte versuchen Sie es später erneut oder über eine andere Verbindung, etwa mobile Daten statt WLAN. Klappt es auch dann nicht, wenden Sie sich bitte direkt an die Lehrkraft.',
+    'err.rate_move' => 'Dieser Termin wurde in der letzten Stunde schon sehr oft umgebucht. Bitte versuchen Sie es später erneut oder wenden Sie sich direkt an die Lehrkraft.',
     'err.spam' => 'Die Buchung konnte nicht gespeichert werden.',
 
     'manage.title' => 'Ihr Termin',
@@ -111,6 +113,8 @@ return [
     'manage.link_label' => 'Ihr persönlicher Link',
     'manage.mail_sent' => 'Eine Bestätigung mit diesem Link wurde an Ihre E-Mail-Adresse gesendet.',
     'manage.mail_queued' => 'Die Bestätigung konnte gerade nicht gesendet werden. Sie wird automatisch an Ihre E-Mail-Adresse gesendet, sobald das wieder möglich ist. Bewahren Sie Ihren Link bitte trotzdem auf.',
+    'manage.mail_limited' => 'Es wurde keine E-Mail gesendet: An diese Adresse gingen in kurzer Zeit schon zu viele E-Mails. Bitte bewahren Sie Ihren Link auf andere Weise auf, z. B. als Lesezeichen.',
+    'manage.mail_limited_booked' => 'Es wurde keine Bestätigung per E-Mail gesendet, und zu diesem Termin kommen auch später keine E-Mails: An diese Adresse gingen in kurzer Zeit schon zu viele E-Mails. Bitte bewahren Sie Ihren Link auf andere Weise auf, z. B. als Lesezeichen.',
     'manage.copy' => 'Link kopieren',
     'manage.copied' => 'Kopiert ✓',
     'manage.copy.prompt' => 'Link kopieren:',
