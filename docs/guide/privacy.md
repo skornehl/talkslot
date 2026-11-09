@@ -18,7 +18,7 @@ This page explains the design decisions; it is not legal advice.
 | Known-device cookie of an admin or teacher account (random number, time, signature) | that person's browser | after 365 days, renewed at every sign-in; invalid after a new password or when all sessions are ended; at most 20 per browser |
 | Teacher accounts | database | by an admin; inactive accounts without rounds in use 15 months after the last login, together with their drafts |
 | Summary mails to teachers (by default the number of appointments and the link, no names; time and name only where the school allows them; never e-mail addresses) | teacher's mailbox | with names: by the end of the school year at the latest (privacy template; operated privately the template recommends it, the school's rules apply) |
-| Log of admin changes (who, when, what; no data of parents) | database | after 90 days (`audit_log_days`) |
+| Log of admin changes (who, when, what; no names or e-mail addresses of parents, bookings with their date only) | database | after 90 days (`audit_log_days`) |
 | Security events of an account (password, e-mail address, admin rights, requested reset links, sign-in limit; time, whether an admin made the change; no IP address or device), visible only to the account holder | database | after 30 days (`security_events_days`), and with the account |
 
 TalkSlot keeps **no** access logs of its own. The web server's logs are the web host's responsibility;
@@ -26,7 +26,16 @@ ask how long they are kept and state it in the privacy policy.
 
 ## Design decisions
 
-- **Data minimisation:** a free-text name and an optional e-mail address, nothing else.
+- **Data minimisation:** a free-text name and an optional e-mail address, nothing else. The field asks for the
+  **child's name** (*Name des Kindes*), first and last name, with the class if needed, so that teachers can
+  match the booking and parents do not enter their own name for two children; the info box of a round with a
+  booking limit says one appointment per child and how to book siblings. The round form asks teachers for
+  **neutral titles** (e.g. "Elternsprechtag 7b"): title and description appear in the mails to parents and in
+  calendar files, the title also in the log and, when the round is created, in its address (and so in the web
+  server's logs), and with a round such as "consultation on special needs" every booking could come close to a
+  hint at health data (Art. 9 GDPR). The column for notes in the print view is labelled
+  *Organisatorisches* (organisational notes only, nothing about the conversation), since the list is meant
+  to be destroyed after the appointment.
 - **E-mail address only for the appointment:** confirmation, changes, cancellation and, if the teacher
   turned it on for the round, a reminder the evening before. The privacy template names all of these.
 - **Mail queue with references only:** reminders, summaries and mails the mail server refused wait in a
@@ -75,7 +84,10 @@ ask how long they are kept and state it in the privacy policy.
   both before), so that the teacher can tell them in person, ideally from the school's mail account.
 - **Admin log without monitoring teachers:** only changes made by admin accounts are logged, so it shows
   who among several admins did what. What teachers do in their own rounds is not recorded, and bookings
-  appear only as date and time. Depending on your state, a log of staff actions may still be a matter for
+  appear with their date only: with the time, an entry together with a summary mail or a printed list would
+  tell whose booking it was, 90 days after the booking itself was deleted. Round, teacher and date can still
+  point to a family (one booking on a day), so the entries remain pseudonymous data, visible to admins only.
+  Entries from before this change lose their time on the next clean-up run. Depending on your state, a log of staff actions may still be a matter for
   the staff council (*Personalrat*); you can shorten the retention with `audit_log_days`.
 - **Security events only for the account holder:** after an incident a teacher can see what happened to the
   account (*Mein Profil → Sicherheit*), without a means to monitor the staff: no sign-ins, no IP address, nothing
@@ -208,10 +220,17 @@ Before going live:
    school the provisions of your state (school act, data protection act), the retention of the web server
    logs (ask your web host) and the competent supervisory authority. At a school, its data protection
    officer can tell you the provisions.
-5. **Data processing agreement** (DPA, *AVV*) with your web host.
+5. **Data processing agreement** (DPA, *AVV*) with your web host (and, if separate, your mail provider), and
+   your **documentation**: record of processing, TOMs, DPIA check, procedures for data breaches and requests,
+   information sheet for teachers. [Documents for the operator]({{ '/guide/operator-documents/' | relative_url }})
+   has templates for all of them, for both operator types.
 6. **Admin accounts** only for staff of the operator (at a school: school staff) or for persons bound to
    confidentiality in writing: the privacy policy tells parents that, apart from the teacher, only such
    persons can see their bookings.
+7. **Students of age:** whether and on what teachers may talk with the parents of students aged 18 or over
+   is a matter of your state's school law (often only with the student's consent or in cases the law names).
+   If rounds are meant for such classes, clarify this with the school management or the data protection
+   officer first; TalkSlot does not check it.
 
 ### No activation while placeholders are open
 
