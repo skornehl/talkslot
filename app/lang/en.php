@@ -98,7 +98,8 @@ return [
     'err.deadline' => 'This time slot can no longer be booked; the booking deadline has passed.',
     'err.csrf' => 'The form has expired. Please try again.',
     'err.too_fast' => 'That was too fast. Please submit the form again in a few seconds.',
-    'err.rate' => 'Too many requests. Please try again later.',
+    'err.rate' => 'Too many requests from your network (this happens when many people share the same Wi-Fi). Please try again later or use another connection, such as mobile data instead of Wi-Fi. If that does not work, please contact the teacher directly.',
+    'err.rate_move' => 'This appointment has already been moved very often in the last hour. Please try again later or contact the teacher directly.',
     'err.spam' => 'The booking could not be saved.',
 
     'manage.title' => 'Your appointment',
@@ -108,6 +109,8 @@ return [
     'manage.link_label' => 'Your personal link',
     'manage.mail_sent' => 'A confirmation with this link has been sent to your e-mail address.',
     'manage.mail_queued' => 'The confirmation could not be sent just now. It will be sent to your e-mail address automatically as soon as that is possible again. Please keep your link anyway.',
+    'manage.mail_limited' => 'No e-mail was sent: this address has received too many e-mails in a short time. Please keep your link another way, e.g. as a bookmark.',
+    'manage.mail_limited_booked' => 'No confirmation was sent by e-mail, and no e-mails about this appointment will follow later either: this address has received too many e-mails in a short time. Please keep your link another way, e.g. as a bookmark.',
     'manage.copy' => 'Copy link',
     'manage.copied' => 'Copied ✓',
     'manage.copy.prompt' => 'Copy link:',
