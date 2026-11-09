@@ -25,4 +25,5 @@
     </form>
     <?php $contactFallback = true; require __DIR__ . '/_contact.php'; ?>
   </div>
+  <?php require __DIR__ . '/_my_appointments.php'; ?>
 </article>

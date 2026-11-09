@@ -107,6 +107,7 @@ jobs:
           SUMMARY_NAMES: ${{ vars.SUMMARY_NAMES }}
           ALLOWED_ACCOUNT_DOMAINS: ${{ vars.ALLOWED_ACCOUNT_DOMAINS }}
           CRON_ALERT_HOURS: ${{ vars.CRON_ALERT_HOURS }}
+          ROUND_BOOKING_LIMIT: ${{ vars.ROUND_BOOKING_LIMIT }}
           APP_NAME: ${{ vars.APP_NAME }}
           LANGUAGES: ${{ vars.LANGUAGES }}
           DEFAULT_LANGUAGE: ${{ vars.DEFAULT_LANGUAGE }}

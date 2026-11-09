@@ -6,7 +6,8 @@ namespace App;
 /**
  * Mail queue (outbox) for mails that do not go out within the page request: reminders, summaries for
  * teachers, the notice about many failed sign-ins (Auth, sent after the response so that its time tells
- * nothing), and confirmations or change notices whose immediate sending failed (Notifier::sendOrQueue()).
+ * nothing), the warning about a burst of bookings (Abuse, not in the request of whoever booked), and
+ * confirmations or change notices whose immediate sending failed (Notifier::sendOrQueue()).
  * The cron job sends them (bin/cron.php, web cron); on PHP-FPM or LiteSpeed a page request also sends a few
  * after its response has gone out (afterResponse()), for installations whose cron job runs rarely.
  *
@@ -28,7 +29,7 @@ namespace App;
 final class Outbox
 {
     /** Kind of mail => priority (lower goes first). */
-    public const KINDS = ['booked' => 1, 'changed' => 1, 'cancelled' => 1, 'login_notice' => 1, 'summary_deadline' => 2, 'summary_evening' => 2, 'reminder' => 3];
+    public const KINDS = ['booked' => 1, 'changed' => 1, 'cancelled' => 1, 'login_notice' => 1, 'burst_warning' => 1, 'summary_deadline' => 2, 'summary_evening' => 2, 'reminder' => 3];
     /** Priority of bulk mails: after single mails, so they respect the hourly limit (spread over hours), before reminders. */
     public const BULK = 2;
     /** Mails not sent after this long are given up (the booking shows "mail not delivered"). */
@@ -83,7 +84,7 @@ final class Outbox
         );
     }
 
-    /** Queues a mail to an account (summaries, the notice about failed sign-ins; $ref: the day it is about). */
+    /** Queues a mail to an account (summaries and the notice about failed sign-ins, $ref: the day it is about; the warning about a burst, $ref: the round). */
     public static function queueAccount(int $userId, string $kind, string $ref): void
     {
         Db::run('INSERT IGNORE INTO mail_outbox (kind, user_id, ref, priority, next_attempt_at, created_at) VALUES (?, ?, ?, ?, ?, ?)',
@@ -251,8 +252,11 @@ final class Outbox
             return isset($data['day_date'], $data['start_time']) && ScheduleService::upcoming($data) ? Notifier::teacherCancelled($data) : null;
         }
         if ($row['booking_id'] === null) {
-            return $row['kind'] === 'login_notice' ? Auth::deliverLockoutNotice((int) $row['user_id'], (string) $row['created_at'])
-                : Summaries::deliver((string) $row['kind'], (int) $row['user_id'], (string) $row['ref']);
+            return match ((string) $row['kind']) {
+                'login_notice' => Auth::deliverLockoutNotice((int) $row['user_id'], (string) $row['created_at']),
+                'burst_warning' => Abuse::deliverWarning((int) $row['user_id'], (string) $row['ref']),
+                default => Summaries::deliver((string) $row['kind'], (int) $row['user_id'], (string) $row['ref']),
+            };
         }
         $b = BookingService::findById((int) $row['booking_id']);
         if (!$b || (string) $b['email'] === '' || $b['day_date'] < Time::today()) {

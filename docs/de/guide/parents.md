@@ -66,10 +66,14 @@ oder wenn die Lehrkraft Sie lieber selbst informiert, meldet sie sich persönlic
   Bezeichnung und sein Datum in Ihrem Browser gespeichert. So sehen Sie ihn, wenn Sie die Terminvergabe
   erneut öffnen. Jede Buchung bekommt einen eigenen Eintrag. Dabei wird nichts an den Server übertragen. Sie
   können einen Eintrag jederzeit löschen (Ihr Termin bleibt bestehen); nach einer Absage und nach dem Tag
-  des Termins verschwindet er von selbst.
+  des Termins verschwindet er von selbst. Die Startseite und die Seite, die bei einer geschützten Terminvergabe nach dem Code fragt, zeigen alle auf diesem
+  Gerät gemerkten Termine (*Meine Termine auf diesem Gerät*), den nächsten zuerst, damit Sie sie ohne die Links erreichen.
 - **Nicht weitergekommen?** Funktioniert ein Link nicht, bietet die Seite gleich die Code-Eingabe der
   Startseite an. Ist kein Termin frei, steht dort, warum: Alle Termine sind vergeben, oder die Buchungsfrist
   ist abgelaufen. Haben Lehrkraft oder Schule einen Kontakt für Fragen angegeben (z. B. das Sekretariat mit
   Telefonnummer), zeigen ihn die Buchungsseite, die Seite Ihres Termins und die Seite „Nicht gefunden“.
+- **Zu viele Anfragen aus Ihrem Netzwerk:** Viele Eltern im selben WLAN (z. B. in der Schule) können
+  gemeinsam ein Limit aufbrauchen. Versuchen Sie es später oder über eine andere Verbindung, etwa mobile
+  Daten; sonst wenden Sie sich an die Lehrkraft.
 - **Datenschutz:** Die Buchungsseite setzt keine Cookies und verfolgt Sie nicht. Ihre Angaben werden am Tag
   nach dem Termin automatisch gelöscht.

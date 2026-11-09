@@ -133,6 +133,13 @@ können:
   | *Passwort festlegen für …*, bei einem Konto, das sich nie angemeldet hat, *Einladung zu …* | das Konto | ein Admin hat sein Passwort zurückgesetzt (*Link zum Zurücksetzen senden*) oder die Einladung erneut gesendet |
 - **Passwortlinks** gehen nur per E-Mail hinaus und werden nie angezeigt. Setzt ein Admin ein Passwort
   zurück, erfährt die Person, dass ihr bisheriges Passwort nicht mehr gilt.
+- **Missbrauch der öffentlichen Seiten:** Kommen innerhalb von 5 Minuten mehr als 5 Buchungen einer Runde
+  aus einem Netzwerk, erhalten die Lehrkraft der Runde und alle Admins eine E-Mail (*Auffällig viele
+  Buchungen in der Runde …*), höchstens eine pro Runde und Stunde. Prüfen Sie die Buchungen; *Mehrere
+  Buchungen löschen …* unter jedem Tag löscht die eines Zeitraums auf einmal, und *Nur mit Rundencode*
+  verhindert eine Wiederholung. Der Betreiber (`alert_email`) erhält eine Warnmeldung, wenn Eltern in einer
+  Stunde mehr als 100 E-Mails auslösen; an eine Adresse gehen höchstens 10 solcher E-Mails pro Stunde (siehe
+  [Sicherheit]({{ '/de/guide/security/' | relative_url }})).
 - **Alle Sitzungen beenden** (unten auf der Seite *Benutzer*) meldet alle Konten auf allen Geräten ab, nur
   Ihre aktuelle Sitzung bleibt bestehen, z. B. nach einem verlorenen Gerät oder bei Verdacht auf einen
   Einbruch. Es braucht Ihr Passwort, und alle Admins erhalten eine E-Mail. Alle bekannten Geräte gelten

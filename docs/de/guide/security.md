@@ -36,6 +36,18 @@ GitHub Security Advisory und wird zusammen mit dem Release veröffentlicht, das 
   geprüft: Wegen `Referrer-Policy: no-referrer` senden Browser auch bei den Formularen von TalkSlot selbst
   `Origin: null`. Browser ohne diesen Header schützen weiterhin die Tokens.
 - Spamschutz: Honeypot-Feld, Mindestzeit zum Ausfüllen eines Formulars, Rate-Limits.
+- Belegen aller Termine (eine Person bucht alle Termine einer Runde mit Fantasienamen): Erfolgreiche
+  Buchungen sind pro Runde und gekürzter IP-Adresse begrenzt (standardmäßig 15 pro Stunde, großzügig wegen
+  des Schul-WLANs). Mehr als 5 Buchungen einer Runde aus einem Netzwerk innerhalb von 5 Minuten schicken der
+  Lehrkraft der Runde und allen Admins eine Warnung; unter jedem Tag löscht *Mehrere Buchungen löschen …*
+  die Buchungen eines Zeitraums auf einmal. Eine Runde mit *Nur mit Rundencode* ist nur für die offen, die
+  den Code bekommen haben – der beste Schutz für Runden, die sich an eine Klasse richten.
+- E-Mails unter dem Absender der Schule: Die E-Mails, die Eltern selbst auslösen (Bestätigung,
+  Änderungsmitteilung, Absage, die nachträglich gesendete Bestätigung), gehen an eine Adresse höchstens
+  10-mal pro Stunde und 20-mal pro Tag; darüber klappt die Aktion trotzdem, nur ohne E-Mail. Die Adresse
+  wird dafür nur als HMAC-Hash gezählt und spätestens nach 24 Stunden gelöscht. Umbuchungen sind zusätzlich
+  pro gekürzter IP-Adresse begrenzt, und der Betreiber erhält eine Warnmeldung, wenn Eltern in einer Stunde
+  mehr als 100 E-Mails auslösen (`mail_alert_hourly`).
 
 **Tokens**
 - Persönliche Änderungslinks, Einladungs- und Passwortlinks sind 256-Bit-Zufallstokens; gespeichert wird
@@ -207,7 +219,13 @@ ihre Dokumentation nutzen (siehe [Unterlagen für Schule und Betreiber]({{ '/de/
 ## Bekannte Einschränkungen
 
 - Rate-Limits gelten pro gekürzter IP-Adresse. Wer im selben Netz (z. B. Schul-WLAN) immer wieder falsche
-  Passwörter sendet, sperrt die Logins aus diesem Netz für 15 Minuten.
+  Passwörter sendet, sperrt die Logins aus diesem Netz für 15 Minuten. Ebenso verbraucht, wer über das
+  Schul-WLAN viele Termine einer Runde bucht, deren Limit für die anderen Eltern dort für eine Stunde; sie
+  sehen dann den Hinweis, es über eine andere Verbindung (z. B. mobile Daten) zu versuchen oder sich an die
+  Lehrkraft zu wenden.
+- Mit vielen gekürzten IP-Adressen (z. B. IPv6 oder einem Botnetz) kann trotzdem jemand die Termine einer
+  offenen Runde belegen. Warnung und Sammellöschung helfen, das zu bemerken und zu beheben; *Nur mit
+  Rundencode* verhindert es.
 - Wer einen Benutzernamen kennt (bei neuen Konten die E-Mail-Adresse, die Eltern als Antwortadresse sehen,
   sofern das Konto keine eigene Antwortadresse für Eltern angibt), kann das Limit dieses Kontos aufbrauchen. Bis zu einer Stunde lang ist das Konto dann nur auf Geräten
   nutzbar, die sich schon einmal angemeldet haben, oder nachdem in diesem Browser über *Passwort vergessen?*
