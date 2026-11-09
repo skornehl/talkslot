@@ -34,6 +34,19 @@ itself, otherwise the private person, association or independent provider whose 
 6. **Templates** (*Vorlagen*, optional): set up the usual formats once, e.g. your parent-teacher day.
 7. **Invite teachers** and, if you like, further admins (*Benutzer*).
 
+**Ready to start?** (*Bereit für den Start?*, linked below the heading of *Alle Runden* and at the top of
+*Texte*) shows all of this on one page, each item as *Erledigt* (done), *Bitte prüfen* (please check) or *Noch
+offen* (still to do), with the way to fix it: imprint and privacy policy, the school's data protection officer
+(only when operated by the school), the contact for parents, mail delivery, cron job, server and configuration, and the permissions of
+the configuration file. Mail delivery counts as done once an invited account has signed in: its invitation
+arrived. Until the first round has been active, *Alle Runden* shows this checklist instead of the separate
+warnings on these items; after that, the warnings appear as before.
+
+**What's new** (*Neu seit dem letzten Update*): after an update, *Alle Runden* lists what changed in how admins
+and teachers work, for example a new option in the profile, so that it does not look like an error. *Verstanden*
+(got it) hides the notes for your account. Accounts created after the update, and a new installation, do not get
+the older notes.
+
 If the dashboard warns that the configuration can be read by every user of the server, set the
 permissions of the files it lists to `600` or pass the warning on to whoever runs the server: they contain
 the database and mail passwords. If these may have got out in the meantime, see
