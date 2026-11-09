@@ -19,7 +19,7 @@ C=$(SE_LOGIN "$SEJ" "ereignis-$SE@example.org" "Ereignis-Passwort-1")
 D=$(curl -s -b "$SEJ" "$B/admin")
 check "after signing in: the failed attempts since the previous sign-in, once, with the way out" '[ "$C" = 303 ] && echo "$D" | grep -q "Fehlgeschlagene Anmeldeversuche seit Ihrer vorigen Anmeldung: 3." && ! curl -s -b "$SEJ" "$B/admin" | grep -q "Anmeldeversuche seit Ihrer vorigen"'
 P=$(curl -s -b "$SEJ" "$B/admin/profile")
-check "profile: the previous sign-in and the failed attempts since, no events yet, the note who sees them" 'echo "$P" | grep -q "Ihre vorige Anmeldung: 15.01.2026 10:00" && echo "$P" | grep -q "Fehlgeschlagene Anmeldeversuche seitdem: 3." && echo "$P" | grep -q "Keine Sicherheitsereignisse in den letzten 30 Tagen." && echo "$P" | grep -q "Das sehen nur Sie, auch Admins nicht."'
+check "profile: the previous sign-in and the failed attempts since, no events yet, the note who sees them" 'echo "$P" | grep -q "Ihre vorige Anmeldung: 15.01.2026 10:00" && echo "$P" | grep -q "Fehlgeschlagene Anmeldeversuche seitdem: 3." && echo "$P" | grep -q "Keine Sicherheitsereignisse in den letzten 30 Tagen." && echo "$P" | grep -q "In der Anwendung sehen das nur Sie, auch Admins nicht."'
 
 # Single events: own password, e-mail address by an admin, admin rights, reset by an admin, forgotten password
 curl -s -o /dev/null -b "$SEJ" --data-urlencode "csrf=$(curl -s -b "$SEJ" "$B/admin/profile" | csrf)" -d "current_password=Ereignis-Passwort-1&new_password=Kaffee-Wolke-Tisch-2&new_password2=Kaffee-Wolke-Tisch-2" "$B/admin/password"
