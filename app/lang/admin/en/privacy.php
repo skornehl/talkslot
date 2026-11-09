@@ -1,6 +1,21 @@
 <?php
 /** English texts of the admin area: German original => English (see App\AdminI18n). Privacy and legal texts. */
 return [
+    // Data-minimal wording (expert review P2-4): neutral round titles, organisational notes only, the log
+    'Bitte neutral halten: Titel und Beschreibung stehen in den E-Mails an Eltern und in Kalenderdateien, der Titel auch im Protokoll und beim Anlegen in der Adresse der Runde. Keine Hinweise auf Förderbedarf, Gesundheit oder andere sensible Themen.'
+        => 'Please keep it neutral: title and description appear in the emails to parents and in calendar files, the title also in the log and, when the round is created, in its address. No hints at special educational needs, health or other sensitive topics.',
+    'Name des Kindes wie bei der Online-Buchung, bei Bedarf mit Klasse.' => 'The child’s name as in an online booking, with the class if needed.',
+    'Organisatorisches' => 'Organisational notes',
+    'Erlaubt (nur Hinweis „Bitte buchen Sie nur einen Termin pro Kind.“)' => 'Allowed (only the note “Please book only one appointment per child.”)',
+    'Stand: {time} Uhr · Vertraulich – nur Organisatorisches notieren, keine Gesprächsinhalte; nach dem Termin vernichten.'
+        => 'As of {time} · Confidential – organisational notes only, nothing about the conversation; destroy after the appointment.',
+    'Änderungen durch Admins: wer wann welche Runde, welches Konto oder welchen Text geändert hat. Änderungen von Lehrkräften an ihren eigenen Runden werden nicht erfasst, Namen und E-Mail-Adressen von Eltern nie, Buchungen nur mit ihrem Datum. Auch Suchen zu Auskunftsanfragen stehen hier, ohne die Adresse. Einträge werden nach {days} Tagen gelöscht.'
+        => 'Changes made by admins: who changed which round, account or text, and when. Changes made by teachers to their own rounds are not recorded, names and email addresses of parents never, bookings with their date only. Searches for requests for access are listed as well, without the address. Entries are deleted after {days} days.',
+    'Buchung am {date} eingetragen' => 'booking on {date} entered',
+    'Buchung am {date} geändert' => 'booking on {date} changed',
+    'Buchung am {date} geändert, auf eine andere Uhrzeit am selben Tag umgebucht' => 'booking on {date} changed, rebooked to another time on the same day',
+    'Buchung am {date} geändert, umgebucht auf den {target}' => 'booking on {date} changed, rebooked to {target}',
+    'Buchung am {date} gelöscht' => 'booking on {date} deleted',
     // Version markers of the legal texts: newer templates for edited texts
     'Einleitung' => 'Introduction',
     '{count} Abschnitte' => '{count} sections',
