@@ -80,6 +80,10 @@ return [
         'after_response' => true,
     ],
 
+    // More mails than this per hour triggered by parents on the public pages (confirmations, changes,
+    // cancellations): the operator gets an alert (alert_email), as it may be misuse of the school's address. 0 = off
+    'mail_alert_hourly' => 100,
+
     // Cron monitoring: without a completed cron run for this many hours, admins see a warning on the dashboard
     // and the operator gets an alert mail, repeated daily while it lasts. 0 = off. 12 suits the GitHub workflow
     // "Cron", which GitHub often starts only every 4 to 8 hours; with the server's own hourly cron job, 3 fits.
@@ -114,6 +118,11 @@ return [
         'booking' => [30, 3600],    // successful bookings
         'manage' => [300, 3600],    // requests to change links
         'move' => [10, 3600],       // rebookings by parents (each sends a mail), per booking
+        'move_ip' => [30, 3600],    // rebookings by parents of all their bookings
+        'round' => [15, 3600],      // successful bookings of one round (slot squatting: one person booking all slots)
+        'burst' => [5, 300],        // more bookings of one round from one network within the window: the teacher and the admins get a warning (once per hour)
+        'recipient' => [10, 3600],  // mails parents trigger (confirmation, change, cancellation), per address; above it the action still works, only without a mail
+        'recipient_day' => [20, 86400], // the same per address and day
         'confirm' => [2, 86400],    // confirmation mails sent from the appointment page, per booking (at most 24 hours)
         'login' => [5, 900],        // failed admin logins
         'login_user' => [20, 3600], // failed logins per account from devices that never signed in to it
