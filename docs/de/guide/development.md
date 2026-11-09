@@ -179,8 +179,8 @@ Eine Buchung läuft in `Db::transaction()`: Mit Buchungslimit sperrt sie die Run
 schon gebucht ist. Jeder Weg sperrt in dieser Reihenfolge: Runde, Tag, Termine, Buchungen. Der Tag des Termins wird
 vor der Transaktion gelesen, denn ein einfaches Lesen darin würde ihren Snapshot vor den Sperren beginnen. Eine
 Transaktion, die eine Zeilensperre verliert (Deadlock, Sperr-Timeout, Zeile seit dem Snapshot geändert), wird einmal
-wiederholt (`Db::retrying()`); Buchungen melden den Termin danach als vergeben, und `UNIQUE(slot_id)` ist die harte
-Garantie gegen Doppelbuchungen. Änderungen an Tagen, Runden und Konten (`ScheduleService`, `sync()`) laufen über
+von vorn wiederholt (`Db::retrying()`, nie innerhalb einer offenen Transaktion); Buchungen melden den Termin danach als vergeben, und `UNIQUE(slot_id)` ist die harte
+Garantie gegen Doppelbuchungen. Die Änderungen von `ScheduleService`, `sync()` und `keepingAnAdmin()` laufen über
 denselben Wrapper. Auf eine Zeilensperre wird höchstens 5 Sekunden gewartet. Für neuen Code: in dieser Reihenfolge
 sperren und neue Transaktionen in `Db::retrying()` einbetten. Regeln, die das Formular prüft (ein Datum je Runde,
 eindeutige Namen), sind auch Constraints in der Datenbank: Eine Anfrage, die an der Prüfung vorbeikommt, bekommt das
@@ -236,7 +236,7 @@ direkt. Eine bestehende führt beim nächsten Aufruf die fehlenden Schritte aus 
   und kommen in zwei Schritten (erst erweitern, dann zurückbauen, „Expand/Contract“): die neue Spalte ergänzen
   und nutzen, die alte erst in einer späteren Major-Version entfernen. Schritt 3 (Umbenennen von
   `admin_users`, Löschen von Spalten) stammt aus der Zeit vor dieser Regel. Schritt 26 setzt `UNIQUE` und `CHECK` auf bestehenden
-  Spalten als bewusste Ausnahme: nur wo die Zeilen es zulassen (sonst meldet er sie), und die Vorversion lehnt solche
+  Spalten als bewusste Ausnahme: nur wo die Zeilen es zulassen (sonst nennt er dem Betreiber die Runden, und ein späterer Cron-Lauf setzt die Regel, sobald sie in Ordnung sind), und die Vorversion lehnt solche
   Zeilen in ihren Formularen ohnehin ab.
 - Während die Dateien eines Updates hochgeladen werden, kann neuer Code kurz auf das alte Schema treffen. Wo das
   zählt (eine Seite, die nicht scheitern darf), sollte der Code auf das alte Verhalten zurückfallen, bis der

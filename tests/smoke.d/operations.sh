@@ -457,9 +457,12 @@ OP_V=$(OP_SETTING schema_version); OP_H1=$(OP_HAS); OP_C1=$(OP_CK)
 OP_RULES='$q = urlencode("to:betrieb@example.org subject:\"Datenbank: Regel nicht gesetzt\""); $u = "http://mail:8025/api/v1/search?query=$q";'
 OP_AL=$(ALERTS "$OP_RULES"' echo json_decode(file_get_contents($u), true)["messages_count"] ?? "?";')
 check "migration 26 with two entries for one date: everything else set, no unique key, one report ($OP_H1 indexes, $OP_AL)" '[ "$OP_V" = "$OP_LATEST" ] && [ "$OP_H1" = 3 ] && [ "$OP_C1" = 2 ] && [ "$OP_AL" = 1 ]'
-DBQ "DELETE FROM tp_round_days WHERE round_id = $OPR AND id <> $OP_DAY; UPDATE tp_settings SET value = '25' WHERE name = 'schema_version'"
-curl -s -o /dev/null "$B/"
-check "the rows in order: the next run sets it, nothing else changes" '[ "$(OP_HAS)" = 4 ] && [ "$(OP_CK)" = 2 ] && [ "$(OP_SETTING schema_version)" = "$OP_LATEST" ]'
+$DC exec -T app php /srv/app/bin/cron.php > /dev/null
+OP_H2=$(OP_HAS); OP_AL2=$(ALERTS "$OP_RULES"' echo json_decode(file_get_contents($u), true)["messages_count"] ?? "?";')
+check "the rows still break it: the cron job leaves it out, without another report ($OP_H2 indexes, $OP_AL2)" '[ "$OP_H2" = 3 ] && [ "$OP_AL2" = 1 ] && [ "$(OP_SETTING schema_rules_skipped)" = 1 ]'
+DBQ "DELETE FROM tp_round_days WHERE round_id = $OPR AND id <> $OP_DAY"
+$DC exec -T app php /srv/app/bin/cron.php > /dev/null
+check "the rows in order: the next cron job sets it and stops asking, without changing the schema version" '[ "$(OP_HAS)" = 4 ] && [ "$(OP_CK)" = 2 ] && [ "$(OP_SETTING schema_version)" = "$OP_LATEST" ] && [ "$(OP_SETTING schema_rules_skipped)" = 0 ]'
 ALERTS "$OP_RULES"' file_get_contents($u, false, stream_context_create(["http" => ["method" => "DELETE"]]));
   $f = "/srv/app/app/var/alerts.json"; $s = json_decode((string) @file_get_contents($f), true);
   if (is_array($s)) { $n = count($s["keys"] ?? []); $s["keys"] = array_filter($s["keys"] ?? [], fn ($e) => $e["last"] < '"$OP_T1"');

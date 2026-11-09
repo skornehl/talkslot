@@ -107,7 +107,7 @@ final class ScheduleService
     public static function deleteBookings(int $dayId, array $ids, bool $notify): array
     {
         $wanted = array_flip(array_map('intval', $ids));
-        return Db::transaction(static function () use ($dayId, $wanted, $notify): array {
+        return Db::retrying(static fn (): array => Db::transaction(static function () use ($dayId, $wanted, $notify): array {
             foreach (self::LOCKS['day'] as $sql) {
                 Db::all($sql, [$dayId]);
             }
@@ -122,7 +122,7 @@ final class ScheduleService
                 $deleted += (int) BookingService::delete($b);
             }
             return [$deleted, $change];
-        });
+        }));
     }
 
     public static function deleteDay(int $dayId, bool $notify): ScheduleChange

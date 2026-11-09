@@ -399,6 +399,21 @@ $p6Run = static function (array $codes) use ($p6Error): array {
 check('Db::retrying(): a lost row lock (1213, 1205, 1020) is repeated once, other errors at once go on, a second loss goes on',
     $p6Run([1213]) === ['done', 2] && $p6Run([1205]) === ['done', 2] && $p6Run([1020]) === ['done', 2]
     && $p6Run([1062]) === [1062, 1] && $p6Run([1213, 1213]) === [1213, 2] && $p6Run([]) === ['done', 1]);
+$p6Pdo = new ReflectionProperty(App\Db::class, 'pdo');
+$p6Was = $p6Pdo->getValue();
+$p6Pdo->setValue(null, new class () extends PDO {
+    public function __construct()
+    {
+    }
+
+    public function inTransaction(): bool
+    {
+        return true;
+    }
+});
+$p6Nested = $p6Run([1213]);
+$p6Pdo->setValue(null, $p6Was);
+check('Db::retrying(): inside an open transaction nothing is repeated (a deadlock has rolled back all of it)', $p6Nested === [1213, 1]);
 check('Db::isRetryable(): only PDO errors with those codes', App\Db::isRetryable($p6Error(1020)) && !App\Db::isRetryable($p6Error(1062)) && !App\Db::isRetryable(new RuntimeException('x')));
 $p6Schema = (string) file_get_contents(dirname(__DIR__, 2) . '/app/schema.sql');
 $p6Code = (string) file_get_contents(dirname(__DIR__, 2) . '/app/src/Migrations.php');

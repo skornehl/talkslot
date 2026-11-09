@@ -263,16 +263,19 @@ final class Db
 
     /**
      * Runs $fn, a whole transaction, a second time if it lost a row lock (isRetryable()); then the error goes on.
+     * Inside an open transaction it does not repeat: a deadlock has rolled back all of it, so $fn would run alone
+     * and without the locks taken before. Only the outermost transaction can be repeated.
      * @template T
      * @param callable(): T $fn
      * @return T
      */
     public static function retrying(callable $fn): mixed
     {
+        $outermost = self::$pdo === null || !self::$pdo->inTransaction();
         try {
             return $fn();
         } catch (PDOException $e) {
-            if (!self::isRetryable($e)) {
+            if (!$outermost || !self::isRetryable($e)) {
                 throw $e;
             }
             usleep(50000);

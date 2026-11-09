@@ -377,8 +377,8 @@ final class BookingService
     }
 
     /**
-     * A locking read: it sees the latest bookings whatever was read earlier in the transaction (a plain read would
-     * use the snapshot of the first one).
+     * Runs under the lock of the round, with only locking reads before it in the transaction: this plain read starts
+     * the snapshot and so sees the latest bookings. Share locks here would take the bookings before later days.
      * @throws BookingException if the same person already has an appointment in the round or on that day
      */
     private static function assertWithinLimit(array $round, string $dayDate, string $name, ?string $email, int $exceptId = 0): void
@@ -386,7 +386,7 @@ final class BookingService
         $perDay = ($round['booking_limit'] ?? 'none') === 'day';
         $rows = Db::all(
             'SELECT b.id, b.name, b.email FROM bookings b JOIN slots s ON s.id = b.slot_id JOIN round_days d ON d.id = s.day_id
-              WHERE d.round_id = ? AND b.id <> ?' . ($perDay ? ' AND d.day_date = ?' : '') . ' LOCK IN SHARE MODE',
+              WHERE d.round_id = ? AND b.id <> ?' . ($perDay ? ' AND d.day_date = ?' : ''),
             $perDay ? [$round['id'], $exceptId, $dayDate] : [$round['id'], $exceptId]
         );
         foreach ($rows as $r) {
