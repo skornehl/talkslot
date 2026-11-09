@@ -183,6 +183,9 @@ final class AdminController
         Http::redirect('/admin/login', ['next' => $target]);
     }
 
+    /** From this many failed attempts since the previous sign-in the account holder is told on signing in. */
+    private const FAILED_NOTICE = 3;
+
     /** Query parameter of the address the interim page opens (signInFirst()). */
     private const REOPENED = 'reopened';
 
@@ -247,9 +250,10 @@ final class AdminController
         $result = Auth::attempt(Email::input(Http::post('username')), Http::postRaw('password'));
         if ($result === true) {
             // Failed attempts since the previous sign-in: only the account holder learns of them (P2-9)
+            // Not after a typo or two
             $failed = (int) ($_SESSION['failed_before'] ?? 0);
-            if ($failed > 0) {
-                $this->flash('warning', __('Seit Ihrer vorigen Anmeldung gab es {count} fehlgeschlagene Anmeldeversuche für Ihr Konto. Waren Sie das nicht, versucht vermutlich jemand, Ihr Passwort zu erraten; verwenden Sie es auch anderswo, ändern Sie es bitte. Mehr unter „Mein Profil“.', ['count' => $failed]));
+            if ($failed >= self::FAILED_NOTICE) {
+                $this->flash('warning', __('Fehlgeschlagene Anmeldeversuche seit Ihrer vorigen Anmeldung: {count}. Falls Sie das nicht waren und dieses Passwort auch anderswo verwenden, ändern Sie es bitte. Mehr unter „Mein Profil“.', ['count' => $failed]));
             }
             self::redirectTo(Auth::returnPath(Http::post('next')));
         }
@@ -1422,6 +1426,7 @@ final class AdminController
             'security' => [
                 'events' => SecurityEvents::of((int) $me['id']),
                 'days' => SecurityEvents::retentionDays(),
+                'known' => array_key_exists('previous_login', $_SESSION), // not for a session from before this feature
                 'previous' => $_SESSION['previous_login'] ?? null,
                 'failed' => (int) ($_SESSION['failed_before'] ?? 0) + (int) $me['failed_logins'],
             ],
@@ -1477,13 +1482,13 @@ final class AdminController
             $this->profile($errors, $data);
             return;
         }
-        // To the previous address, in the language of the account (as it was before this change)
-        $this->withoutSession(static fn () => AccountSecurity::contactChanged($me, ['email' => $data['email']] + $me, $me));
         Db::run(
             'UPDATE users SET display_name = ?, email = ?, reply_to = ?, parent_contact = ?, summary_evening = ?, summary_deadline = ?, summary_names = ?, lang = ? WHERE id = ?',
             [$data['display_name'], $data['email'] !== '' ? $data['email'] : null, $data['reply_to'] !== '' ? $data['reply_to'] : null,
                 $data['parent_contact'] !== '' ? $data['parent_contact'] : null, $data['summary_evening'], $data['summary_deadline'], $data['summary_names'], $data['lang'], Auth::id()]
         );
+        // To the previous address, in the language of the account (as it was before this change)
+        $this->withoutSession(static fn () => AccountSecurity::contactChanged($me, ['email' => $data['email']] + $me, $me));
         AdminI18n::set($data['lang']); // the confirmation already in the new language
         $this->flash('success', __('Profil gespeichert.'));
         Http::redirect('/admin/profile');
@@ -1677,13 +1682,13 @@ final class AdminController
         }
         Db::run('UPDATE users SET password_hash = ? WHERE id = ?', [AccountLinks::unusablePasswordHash(), $id]);
         Auth::endOtherSessions($id, false);
+        if ($user['last_login_at'] !== null) {
+            SecurityEvents::record($id, SecurityEvents::RESET_BY_ADMIN, true);
+        }
         $this->audit(fn () => $user['last_login_at'] === null
             ? __('Konto {account}: Einladung erneut gesendet', ['account' => self::accountLabel($user)])
             : __('Konto {account}: Link zum Zurücksetzen des Passworts gesendet', ['account' => self::accountLabel($user)]));
         $this->linkFlash($user, $user['last_login_at'] === null ? AccountLinks::INVITE : AccountLinks::RESET);
-        if ($user['last_login_at'] !== null) {
-            SecurityEvents::record($id, SecurityEvents::RESET_BY_ADMIN, true);
-        }
         Http::redirect('/admin/users');
     }
 
@@ -1797,7 +1802,7 @@ final class AdminController
         if ($user) {
             // The previous password stays valid until the link is used
             AccountLinks::send($user, AccountLinks::RESET);
-            SecurityEvents::record((int) $user['id'], SecurityEvents::RESET_REQUESTED);
+            SecurityEvents::resetRequested((int) $user['id']);
         }
     }
 

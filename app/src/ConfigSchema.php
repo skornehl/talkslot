@@ -66,7 +66,7 @@ final class ConfigSchema
         'allowed_account_domains' => ['domains', []],
         'admin_language' => ['enum', 'de', AdminI18n::LANGUAGES],
         'audit_log_days' => ['int', 90, 1, null],
-        'security_events_days' => ['int', 30, 1, null],
+        'security_events_days' => ['int', 30, 1, 90],
         'rate_limits.code' => ['limit', [30, 900]],
         'rate_limits.attempt' => ['limit', [150, 3600]],
         'rate_limits.booking' => ['limit', [30, 3600]],

@@ -48,7 +48,7 @@ final class AccountLinks
     public static function consume(int $userId, #[\SensitiveParameter] string $password): void
     {
         Db::run(
-            'UPDATE users SET password_hash = ?, must_change_password = 0, access_token_hash = NULL, access_token_expires_at = NULL WHERE id = ?',
+            'UPDATE users SET password_hash = ?, must_change_password = 0, access_token_hash = NULL, access_token_expires_at = NULL, failed_logins = 0 WHERE id = ?',
             [password_hash($password, PASSWORD_DEFAULT), $userId]
         );
         Auth::endOtherSessions($userId, false);

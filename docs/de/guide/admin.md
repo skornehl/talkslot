@@ -117,14 +117,16 @@ können:
   | *Sicherheitshinweis: Änderung im Verwaltungsbereich von …* | alle aktiven Admins (auch Sie) und die betroffene Person; ein eingeladener Admin erhält stattdessen die Einladung | ein Admin wurde eingeladen, Admin-Rechte wurden vergeben oder entzogen, ein Admin-Konto wurde deaktiviert, wieder aktiviert oder gelöscht |
   | dieselbe, *Alle Sitzungen wurden beendet* | alle aktiven Admins | jemand hat alle Sitzungen beendet |
   | *Viele fehlgeschlagene Anmeldeversuche bei …* | das Konto | Fremde haben sein Anmeldelimit aufgebraucht; höchstens eine am Tag. Sie kann später eintreffen (mit PHP-FPM oder LiteSpeed sofort, sonst mit dem nächsten Cron-Lauf) und nennt den Zeitpunkt |
+  | *Sicherheitshinweis: viele fehlgeschlagene Anmeldungen bei …* | alle aktiven Admins | das Anmeldelimit von mehr als 3 Konten wurde innerhalb einer Stunde erreicht; höchstens einer am Tag, ohne Namen |
   | *Passwort festlegen für …*, bei einem Konto, das sich nie angemeldet hat, *Einladung zu …* | das Konto | ein Admin hat sein Passwort zurückgesetzt (*Link zum Zurücksetzen senden*) oder die Einladung erneut gesendet |
 - **Sicherheitsereignisse** (*Mein Profil → Sicherheit*): Jedes Konto sieht seine eigenen: Änderungen an
-  Passwort, E-Mail-Adresse, Benutzername und Admin-Rechten, ein Zurücksetzen, sein erreichtes Anmeldelimit und
-  die Zahl der fehlgeschlagenen Anmeldungen seit der vorigen. IP-Adressen oder Geräte werden nicht gespeichert,
-  Anmeldungen selbst nicht erfasst. **Das sieht nur der Kontoinhaber**, Admins nicht: Dafür gibt es keine Seite.
-  Admins erhalten nur einen Alarm ohne Namen, wenn das Anmeldelimit bei mehr als 3 Konten innerhalb einer Stunde
-  erreicht wird (höchstens einmal am Tag). Einträge werden nach 30 Tagen gelöscht (`security_events_days`);
-  stimmen Sie die Frist mit dem Personalrat ab.
+  Passwort, E-Mail-Adresse und Admin-Rechten, angeforderte Links zum Zurücksetzen, dass sein Anmeldelimit erreicht
+  wurde, und die Zahl der fehlgeschlagenen Anmeldungen seit der vorigen. IP-Adressen oder Geräte werden nicht
+  gespeichert, Anmeldungen selbst nicht erfasst. **In der Anwendung sieht das nur der Kontoinhaber**, Admins nicht:
+  Dafür gibt es keine Seite (wer Zugriff auf die Datenbank oder Backups hat, könnte es lesen). Admins erhalten nur
+  einen Alarm ohne Namen, wenn das Anmeldelimit bei mehr als 3 Konten innerhalb einer Stunde erreicht wird
+  (höchstens einmal am Tag). Einträge werden nach 30 Tagen gelöscht (`security_events_days`, höchstens 90); stimmen
+  Sie die Frist mit dem Personalrat ab.
 - **Passwortlinks** gehen nur per E-Mail hinaus und werden nie angezeigt. Setzt ein Admin ein Passwort
   zurück, erfährt die Person, dass ihr bisheriges Passwort nicht mehr gilt.
 - **Alle Sitzungen beenden** (unten auf der Seite *Benutzer*) meldet alle Konten auf allen Geräten ab, nur

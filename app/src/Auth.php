@@ -237,17 +237,24 @@ final class Auth
     {
         [$noticeLimit, $noticeWindow] = RateLimiter::limits('login_notice', 1, 86400);
         $first = RateLimiter::hit('login_notice', $noticeLimit, $noticeWindow, 'notice:' . ($user ? '#' . $user['id'] : strtolower($username)));
-        if (!$first || !$user || !$user['is_active']) {
-            return;
-        }
-        if (is_valid_email((string) $user['email'])) {
+        if ($first && $user && $user['is_active']) {
             Outbox::queueAccount((int) $user['id'], 'login_notice', Time::today());
         }
-        SecurityEvents::record((int) $user['id'], SecurityEvents::LOGIN_LIMIT);
-        // Several accounts within a short time (e.g. passwords from a leak tried out): one alarm a day to all
-        // admins, without names (the accounts' holders got their own notice)
-        [$alarm, $alarmWindow] = RateLimiter::limits('login_alarm', 3, 3600);
-        if (!RateLimiter::hit('login_alarm', $alarm, $alarmWindow, 'accounts') && RateLimiter::hit('login_alarm_sent', 1, 86400, 'admins')) {
+    }
+
+    /**
+     * When more accounts than "login_alarm" reached the limit within its window before $at, all admins get one
+     * alarm a day, without names (the holders got their own notice). Counted from the events, so a run of the
+     * cron job that sends several notices later does not make them look simultaneous.
+     */
+    private static function alarmAdmins(string $at): void
+    {
+        [$alarm, $window] = RateLimiter::limits('login_alarm', 3, 3600);
+        $accounts = (int) Db::value(
+            'SELECT COUNT(DISTINCT user_id) FROM security_events WHERE event = ? AND created_at <= ? AND created_at >= ?',
+            [SecurityEvents::LOGIN_LIMIT, $at, date('Y-m-d H:i:s', (strtotime($at) ?: time()) - $window)]
+        );
+        if ($accounts > $alarm && RateLimiter::hit('login_alarm_sent', 1, 86400, 'admins')) {
             foreach (Db::all("SELECT id FROM users WHERE role = 'admin' AND is_active = 1") as $admin) {
                 Outbox::queueAccount((int) $admin['id'], 'login_alarm', Time::today());
             }
@@ -270,10 +277,10 @@ final class Auth
             return Mailer::send((string) $user['email'], __('Sicherheitshinweis: viele fehlgeschlagene Anmeldungen bei {app}', $vars), implode("\n", [
                 __('Hallo {name},', ['name' => $user['display_name'] ?: $user['username']]),
                 '',
-                __('bei {app} ({url}) haben fehlgeschlagene Anmeldeversuche innerhalb von {minutes} Minuten bei mehr als {count} Konten das Limit pro Konto erreicht. Vermutlich probiert jemand Passwörter durch, z. B. aus einem Datenleck anderer Dienste.', $vars),
+                __('bei {app} ({url}) haben fehlgeschlagene Anmeldeversuche innerhalb von {minutes} Minuten bei mehr als {count} Konten das Limit pro Konto erreicht. Vermutlich probiert jemand über längere Zeit Passwörter aus.', $vars),
                 __('Die betroffenen Konten haben je eine E-Mail erhalten; auf ihren bekannten Geräten können sie sich weiter anmelden. Welche Konten es sind, sehen nur ihre Inhaber.'),
                 '',
-                __('Bitte erinnern Sie die Lehrkräfte daran, für TalkSlot kein Passwort zu verwenden, das sie auch anderswo nutzen. Halten die Versuche an, sprechen Sie mit dem Betreiber über die Zugriffsprotokolle des Hosters.'),
+                __('Bitte erinnern Sie die Lehrkräfte daran, hier kein Passwort zu verwenden, das sie auch anderswo nutzen. Halten die Versuche an, sprechen Sie mit dem Betreiber über die Zugriffsprotokolle des Hosters.'),
                 '',
                 __('Diese Nachricht geht an alle Admins, höchstens einmal am Tag.'),
             ]));
@@ -294,7 +301,13 @@ final class Auth
     public static function deliverLockoutNotice(int $userId, string $queuedAt): ?bool
     {
         $user = Db::one('SELECT * FROM users WHERE id = ? AND is_active = 1', [$userId]);
-        if (!$user || !is_valid_email((string) $user['email'])) {
+        if (!$user) {
+            return null;
+        }
+        // Here, after the response, so that a refused attempt takes the same time for every name
+        SecurityEvents::record($userId, SecurityEvents::LOGIN_LIMIT, false, $queuedAt);
+        self::alarmAdmins($queuedAt);
+        if (!is_valid_email((string) $user['email'])) {
             return null;
         }
         [$limit, $window] = self::accountLimit();

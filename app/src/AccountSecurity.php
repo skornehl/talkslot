@@ -89,9 +89,8 @@ final class AccountSecurity
         $emailChanged = mb_strtolower((string) $after['email']) !== mb_strtolower((string) $before['email']);
         if ($emailChanged || $after['username'] !== $before['username']) {
             $byAdmin = (int) $actor['id'] !== (int) $before['id'];
-            SecurityEvents::record((int) $before['id'], $emailChanged ? SecurityEvents::EMAIL_CHANGED : SecurityEvents::USERNAME_CHANGED, $byAdmin);
-            if ($emailChanged && $after['username'] !== $before['username']) {
-                SecurityEvents::record((int) $before['id'], SecurityEvents::USERNAME_CHANGED, $byAdmin);
+            if ($emailChanged) {
+                SecurityEvents::record((int) $before['id'], SecurityEvents::EMAIL_CHANGED, $byAdmin);
             }
             self::send($before, static fn (): array => self::contactChangedText($before, $after, $actor));
         }

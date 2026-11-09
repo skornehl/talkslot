@@ -136,7 +136,8 @@ change nobody made, or entries in *Protokoll* (log) nobody can explain:
    in again (all known devices count as new, so accounts whose limit strangers have used up need *Passwort
    vergessen?*); changing the app secret alone would not sign anybody out.
 2. **Check the accounts:** under *Benutzer*, unknown admins, changed e-mail addresses and recent changes in
-   *Protokoll*. Deactivate unknown accounts, take away admin rights that are not needed.
+   *Protokoll*. Deactivate unknown accounts, take away admin rights that are not needed. Ask those concerned to
+   look at *Mein Profil → Sicherheit*: only they can see what happened to their accounts.
 3. **New passwords:** change your own password; for affected accounts use *Link zum Zurücksetzen senden*
    (their previous password stops working immediately).
 4. **Access to the server:** if hosting, database, FTP or GitHub may be affected, change those passwords

@@ -151,7 +151,8 @@ erklären kann:
    sich neu anmelden (alle bekannten Geräte gelten als neu, Konten über dem Anmeldelimit brauchen also
    *Passwort vergessen?*); ein neues App-Secret allein würde niemanden abmelden.
 2. **Konten prüfen:** unter *Benutzer* unbekannte Admins und geänderte E-Mail-Adressen, im *Protokoll* die
-   letzten Änderungen. Unbekannte Konten deaktivieren, nicht benötigte Admin-Rechte entziehen.
+   letzten Änderungen. Unbekannte Konten deaktivieren, nicht benötigte Admin-Rechte entziehen. Bitten Sie die
+   Betroffenen, unter *Mein Profil → Sicherheit* nachzusehen: Nur sie sehen, was mit ihren Konten geschehen ist.
 3. **Neue Passwörter:** das eigene Passwort ändern; für betroffene Konten *Link zum Zurücksetzen senden*
    (das bisherige Passwort gilt dann sofort nicht mehr).
 4. **Zugang zum Server:** Wenn Hosting, Datenbank, FTP oder GitHub betroffen sein könnten, diese Passwörter

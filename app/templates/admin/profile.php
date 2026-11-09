@@ -77,9 +77,11 @@
 <?php /* Expert review P2-9: what happened to this account, for its holder only (SecurityEvents), no IP */ ?>
 <section class="card" id="security">
   <h2><?= e(__('Sicherheit')) ?></h2>
-  <p><?= e($security['previous'] !== null
-      ? __('Ihre vorige Anmeldung: {date}. Fehlgeschlagene Anmeldeversuche seitdem: {count}.', ['date' => date('d.m.Y H:i', (int) strtotime((string) $security['previous'])), 'count' => $security['failed']])
-      : __('Fehlgeschlagene Anmeldeversuche seit Ihrer ersten Anmeldung: {count}.', ['count' => $security['failed']])) ?></p>
+  <?php if ($security['known'] && $security['previous'] !== null): ?>
+  <p><?= e(__('Ihre vorige Anmeldung: {date}. Fehlgeschlagene Anmeldeversuche seitdem: {count}.', ['date' => date('d.m.Y H:i', (int) strtotime((string) $security['previous'])), 'count' => $security['failed']])) ?></p>
+  <?php elseif ($security['known'] && $security['failed'] > 0): ?>
+  <p><?= e(__('Fehlgeschlagene Anmeldeversuche vor Ihrer ersten Anmeldung: {count}.', ['count' => $security['failed']])) ?></p>
+  <?php endif; ?>
   <?php if ($security['events']): ?>
   <div class="table-wrap">
   <table class="table">
@@ -95,7 +97,8 @@
   <?php else: ?>
   <p class="muted"><?= e(__('Keine Sicherheitsereignisse in den letzten {days} Tagen.', ['days' => $security['days']])) ?></p>
   <?php endif; ?>
-  <p class="small muted"><?= e(__('Erfasst werden Änderungen an Passwort, E-Mail-Adresse, Benutzername und Admin-Rechten sowie ein erreichtes Anmeldelimit, ohne IP-Adresse oder Gerät. Das sehen nur Sie, auch Admins nicht. Einträge werden nach {days} Tagen gelöscht.', ['days' => $security['days']])) ?></p>
+  <p class="small"><?= e(__('Kommt Ihnen etwas unbekannt vor? Ändern Sie Ihr Passwort und sprechen Sie einen Admin an.')) ?></p>
+  <p class="small muted"><?= e(__('Erfasst werden Änderungen an Passwort, E-Mail-Adresse und Admin-Rechten, angeforderte Links zum Zurücksetzen und wenn die Anmeldung wegen vieler Fehlversuche eingeschränkt wurde, ohne IP-Adresse oder Gerät. Fehlversuche zählen nur, wenn das Passwort geprüft wurde. In der Anwendung sehen das nur Sie, auch Admins nicht. Einträge werden nach {days} Tagen gelöscht.', ['days' => $security['days']])) ?></p>
 </section>
 
 <p class="small muted"><?= __h('Angemeldet als {username} ({role}).', ['username' => '<strong>' . e($user['username']) . '</strong>', 'role' => $user['role'] === 'admin' ? 'Admin' : e(__('Lehrkraft'))]) ?></p>

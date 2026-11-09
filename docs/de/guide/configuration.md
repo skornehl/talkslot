@@ -156,7 +156,7 @@ Auftragsverarbeiter nach Art. 28 DSGVO. Die Server stehen in Deutschland.*
 | `cleanup_interval_minutes` | `15` | … höchstens so oft (nur Datenbankschritte: Zusammenfassungen und Erinnerungen werden dort in die Warteschlange gestellt, nicht verschickt) |
 | `summary_evening_hour` | `18` | ab dieser Stunde erhalten Lehrkräfte die Zusammenfassung für den nächsten Tag und Eltern die Erinnerung |
 | `audit_log_days` | `90` | Einträge im *Protokoll* der Admin-Änderungen werden nach so vielen Tagen gelöscht |
-| `security_events_days` | `30` | Sicherheitsereignisse eines Kontos (siehe [Admin-Handbuch]({{ '/de/guide/admin/' | relative_url }})), die nur der Kontoinhaber sieht, werden nach so vielen Tagen gelöscht. Stimmen Sie die Frist mit dem Personalrat ab; auch 90 Tage sind üblich |
+| `security_events_days` | `30` | Sicherheitsereignisse eines Kontos (siehe [Admin-Handbuch]({{ '/de/guide/admin/' | relative_url }})), die nur der Kontoinhaber sieht, werden nach so vielen Tagen gelöscht. Höchstens 90; stimmen Sie die Frist mit dem Personalrat ab |
 | `cron_alert_hours` | `12` | ohne vollständigen Cron-Lauf seit so vielen Stunden sehen Admins eine Warnung in der Übersicht, und der Betreiber erhält eine Warnmeldung per E-Mail ([Überwachung des Cronjobs]({{ '/de/guide/operations/' | relative_url }}#cron-monitoring); `0` = aus); Deploy-Variable `CRON_ALERT_HOURS` |
 
 ## Zusammenfassungen und Konten {#zusammenfassungen-und-konten}

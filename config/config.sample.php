@@ -107,8 +107,8 @@ return [
     'audit_log_days' => 90,
 
     // Security events of an account (password, e-mail address, admin rights, sign-in limit; no IP), shown only
-    // to the account holder under "Mein Profil": deleted after this many days. Agree on it with the staff council
-    // (Personalrat); 30 by default, 90 is common
+    // to the account holder under "Mein Profil": deleted after this many days (at most 90). Agree on it with the
+    // staff council (Personalrat)
     'security_events_days' => 30,
 
     // Rate limits: [max. count, time window in seconds] per truncated IP (IPv4 /24, IPv6 /48), unless noted.
