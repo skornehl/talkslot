@@ -15,6 +15,10 @@ atomare Deployment um.
 
 Lesen Sie vor dem Update die [Release Notes](https://github.com/skornehl/talkslot/releases).
 
+**Upgrade-Pfad:** Jede 1.x-Version lässt sich direkt auf die neueste 1.x aktualisieren. Eine künftige Version 2.0
+wird nur Installationen ab v1.3.0 aktualisieren; bringen Sie eine ältere Installation daher zuerst auf die neueste
+1.x. Ihre Version steht unten auf jeder Seite (*Powered by TalkSlot v…*).
+
 ## Datenbank-Migrationen
 
 Von Hand ist nichts auszuführen. Bei der ersten Anfrage nach einem Update hebt TalkSlot das Schema Schritt
@@ -43,6 +47,13 @@ aktuellen Vorlagen haben, diese als Vorlagenstand; bei anderen bearbeiteten Text
 abweichenden Abschnitte. Bringt eine
 neue Vorlage neue Platzhalter in eckigen Klammern mit, bleiben bereits aktive Runden erreichbar; das
 Dashboard nennt die Platzhalter, und die nächste Runde lässt sich erst aktivieren, wenn sie ausgefüllt sind.
+
+**Update auf die Version mit übersetzten Datenschutzerklärungen:** Jede angebotene Sprache ohne eigene
+Datenschutzerklärung erhält die Übersetzung der Betriebsart. Deren Platzhalter sind zunächst offen; Eltern in
+dieser Sprache bekommen deshalb weiter den englischen Text (jetzt mit einem Hinweis in ihrer Sprache), bis ein
+Admin sie ausfüllt. Die Aktivierung von Runden hält das nicht auf. Das Dashboard zeigt *Übersetzungen noch
+nicht vollständig*. Bearbeitete Texte, die noch das Pflicht-Häkchen im Buchungsformular erwähnen, das es
+nicht mehr gibt, bekommen einen Hinweis.
 
 **Update auf die Version mit Betriebsart:** Eine Installation, deren Texte alle noch unverändert den
 Vorlagen bis v1.6 entsprechen, wird *privat betrieben* (das beschrieben diese Vorlagen), und das Dashboard

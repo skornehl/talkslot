@@ -22,7 +22,7 @@ app/              Anwendung (außerhalb des Document Roots)
 bin/              cron.php, install.php, build.sh, deploy.sh, build-config.php, …
 config/           config.sample.php → config.php (nicht in Git)
 public/           Document Root: index.php (Front Controller), install.php, .htaccess, assets/
-dev/              Docker-Umgebung, reset.sh, demo.sh
+dev/              Docker-Umgebung, reset.sh, demo.sh, cs.sh
 docs/             diese Website (GitHub Pages, Jekyll)
 tests/            unit.php, smoke.sh, browser.mjs, deploy.sh
 ```
@@ -77,9 +77,16 @@ Syntaxfehlers.
   nutzt, und bei abweichenden Platzhaltern. E-Mails an ein Konto folgen dessen Sprache (`AdminI18n::with()`).
 - **Elterntexte** laufen durch `t('schlüssel')` mit `app/lang/{de,en,pl,ru,tr,uk}.php`; jeder Schlüssel muss
   in jeder Sprache vorhanden sein (ein Unit-Test prüft das). Lassen Sie neue polnische, russische, türkische
-  und ukrainische Texte von Muttersprachlern gegenlesen.
+  und ukrainische Texte von Muttersprachlern gegenlesen und vermerken Sie das im Pull Request. Zahlen mit
+  Einheit laufen über `I18n::plural()` (`fmt_hours()`): Jede Sprachdatei nennt ihre Pluralregel (`'plural'`:
+  `one`, `pl`, `east-slavic` oder `none`) und so viele Formen von `'hours'`, wie die Regel braucht.
 - **Commits:** [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `docs:`, …);
   Releases werden daraus abgeleitet.
+- **Coding-Standard:** PSR-12 für `app/src`, `bin`, `public` und `config` (die Ausnahmen stehen in
+  `.php-cs-fixer.dist.php`). `dev/cs.sh` prüft ihn mit einem festgelegten PHP-CS-Fixer, `dev/cs.sh --fix` wendet ihn
+  an; die CI prüft ihn im Workflow *Coding standard*.
+- **Reguläre Ausdrücke:** Routen und Prüfungen eines ganzen Werts enden auf `\z`, nicht auf `$`, das auch vor einem
+  abschließenden Zeilenumbruch passt (ein Unit-Test prüft die Routen).
 - **Datenbank:** ausschließlich Prepared Statements; das SQL-Audit im Unit-Test schlägt bei
   eingesetzten (verketteten) Variablen fehl.
 - **Tabellenpräfix:** SQL nennt die Tabellen ohne Präfix, `Db::prefix()` setzt es davor. Eine neue Tabelle kommt in
@@ -95,7 +102,10 @@ Syntaxfehlers.
   Major-Version weiter funktioniert; die Regeln stehen unten unter [Migrationen](#migrationen).
 - **Rechtstext-Vorlagen:** Aktualisieren Sie nach einer Änderung an `app/templates/pages/*.md` die
   `CURRENT_PAGE_HASHES` und verschieben Sie die alten Hashes nach `OLD_PAGE_HASHES`, damit unbearbeitete
-  Texte automatisch aktualisiert werden. Der Unit-Test nennt Ihnen die neuen Hashes. Für bearbeitete Texte
+  Texte automatisch aktualisiert werden. Die Datenschutzerklärung gibt es in allen sechs Elternsprachen für beide
+  Betriebsarten (`privacy*.{de,en,pl,ru,uk,tr}.md`): Eine Änderung an der deutschen Vorlage gehört in alle
+  zwölf Dateien, mit denselben Abschnitten und den deutschen Platzhaltern in den Übersetzungen (ein Unit-Test
+  vergleicht sie); markieren Sie geänderte Übersetzungen für eine Prüfung durch Muttersprachler. Der Unit-Test nennt Ihnen die neuen Hashes. Für bearbeitete Texte
   braucht es keinen neuen Hinweis in `AdminController::legalHints()`: Ihr Vorlagenstand zeigt Admins die
   geänderten Abschnitte von selbst (`LegalTexts::outdated()`). Halten Sie die Abschnitte unter Überschriften
   der ersten Ebene (`# 5. …`) und jeden Absatz bzw. Listenpunkt in einer Zeile, damit der Vergleich je
@@ -230,7 +240,10 @@ direkt. Eine bestehende führt beim nächsten Aufruf die fehlenden Schritte aus 
   Zeilen in ihren Formularen ohnehin ab.
 - Während die Dateien eines Updates hochgeladen werden, kann neuer Code kurz auf das alte Schema treffen. Wo das
   zählt (eine Seite, die nicht scheitern darf), sollte der Code auf das alte Verhalten zurückfallen, bis der
-  Schritt gelaufen ist, wie `RoundAccess::required()`.
+  Schritt gelaufen ist, wie `RoundAccess::required()`. Ein solcher Rückfall nennt die Migration, die er
+  überbrückt, und kann mit der nächsten Major-Version nur entfallen, wenn der
+  [Upgrade-Pfad]({{ '/de/guide/operations/' | relative_url }}#updates) nicht mehr unterhalb dieser Migration beginnt: 2.0
+  soll v1.3.0 voraussetzen (Migration 13).
 - Die Schritte nutzen MariaDB-Syntax (10.6 oder neuer); MySQL wird nicht unterstützt.
 - Parallele Branches: Zwei Branches, die einen Schritt unter derselben Nummer hinzufügen, geraten in Git in
   Konflikt, und wer beim Auflösen beide Blöcke behält, verliert einen davon unbemerkt (PHP behält von zwei

@@ -13,7 +13,7 @@ use App\I18n;
 $switchForm = (string) ($langSwitchForm ?? '');
 $switchAccess = $switchForm === '' && !empty($langSwitchAccess) ? $langSwitchAccess : null;
 // Language links only for harmless paths (otherwise e.g. /\\host → foreign domain), else home page
-$langPath = preg_match('#^/(?:[A-Za-z0-9._~-]+(?:/[A-Za-z0-9._~-]+)*)?$#', Http::path()) ? Http::path() : '/';
+$langPath = preg_match('#^/(?:[A-Za-z0-9._~-]+(?:/[A-Za-z0-9._~-]+)*)?\z#', Http::path()) ? Http::path() : '/';
 $langRound = in_array(Http::path(), ['/datenschutz', '/privacy'], true) ? ($privacyRound ?? null) : null;
 $langControl = static function (string $code, string $label) use ($switchForm, $switchAccess, $langPath, $langRound): string {
     $attrs = ' lang="' . e($code) . '"' . ($code === I18n::lang() ? ' aria-current="true"' : '');
