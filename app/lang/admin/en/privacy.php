@@ -9,8 +9,8 @@ return [
     'Erlaubt (nur Hinweis „Bitte buchen Sie nur einen Termin pro Kind.“)' => 'Allowed (only the note “Please book only one appointment per child.”)',
     'Stand: {time} Uhr · Vertraulich – nur Organisatorisches notieren, keine Gesprächsinhalte; nach dem Termin vernichten.'
         => 'As of {time} · Confidential – organisational notes only, nothing about the conversation; destroy after the appointment.',
-    'Änderungen durch Admins: wer wann welche Runde, welches Konto oder welchen Text geändert hat. Änderungen von Lehrkräften an ihren eigenen Runden werden nicht erfasst, Namen und E-Mail-Adressen von Eltern nie, Buchungen nur mit ihrem Datum. Einträge werden nach {days} Tagen gelöscht.'
-        => 'Changes made by admins: who changed which round, account or text, and when. Changes made by teachers to their own rounds are not recorded, names and email addresses of parents never, bookings with their date only. Entries are deleted after {days} days.',
+    'Änderungen durch Admins: wer wann welche Runde, welches Konto oder welchen Text geändert hat. Änderungen von Lehrkräften an ihren eigenen Runden werden nicht erfasst, Namen und E-Mail-Adressen von Eltern nie, Buchungen nur mit ihrem Datum. Auch Suchen zu Auskunftsanfragen stehen hier, ohne die Adresse. Einträge werden nach {days} Tagen gelöscht.'
+        => 'Changes made by admins: who changed which round, account or text, and when. Changes made by teachers to their own rounds are not recorded, names and email addresses of parents never, bookings with their date only. Searches for requests for access are listed as well, without the address. Entries are deleted after {days} days.',
     'Buchung am {date} eingetragen' => 'booking on {date} entered',
     'Buchung am {date} geändert' => 'booking on {date} changed',
     'Buchung am {date} geändert, auf eine andere Uhrzeit am selben Tag umgebucht' => 'booking on {date} changed, rebooked to another time on the same day',
