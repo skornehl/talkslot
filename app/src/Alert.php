@@ -225,7 +225,7 @@ final class Alert
 
     private static function relative(string $file): string
     {
-        return ltrim(str_replace(APP_ROOT, '', $file), '/');
+        return ltrim(ErrorPage::relativePath($file), '/');
     }
 
     /** Name from the configuration (without line breaks, it appears in the subject). */
