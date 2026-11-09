@@ -121,6 +121,19 @@ final class AccountSecurity
         }
     }
 
+    /** An admin took over a round to see the parents' data (Substitution): to the teacher of the round. false: not sent. */
+    public static function substitution(array $round, array $owner, array $actor): bool
+    {
+        return self::send($owner, static function () use ($round, $actor): array {
+            $vars = self::vars(['title' => (string) $round['title'], 'actor' => self::name($actor)]);
+            return [__('Vertretung für Ihre Runde „{title}“', $vars), [
+                __('{actor} (Admin) hat bei {app} ({url}) die Vertretung für Ihre Runde „{title}“ übernommen und kann die Namen und E-Mail-Adressen der Eltern sehen und Buchungen bearbeiten, bis diese Anmeldung endet. Der Vorgang wird protokolliert.', $vars),
+                '',
+                __('Haben Sie das nicht erwartet, sprechen Sie bitte {actor} an oder wenden Sie sich an die Schulleitung.', $vars),
+            ]];
+        });
+    }
+
     /** @return array{0:string,1:list<string>} [subject, lines] */
     private static function passwordChangedText(array $user): array
     {
@@ -193,17 +206,17 @@ final class AccountSecurity
     }
 
     /** Sends to $user (if it has a valid address) in its language; $content returns [subject, lines]. */
-    private static function send(array $user, \Closure $content): void
+    private static function send(array $user, \Closure $content): bool
     {
         $to = (string) ($user['email'] ?? '');
         if (!is_valid_email($to)) {
-            return;
+            return false;
         }
         [$subject, $body] = AdminI18n::with(AdminI18n::of($user), static function () use ($user, $content): array {
             [$subject, $lines] = $content();
             return [$subject, implode("\n", [__('Hallo {name},', ['name' => self::name($user)]), '', ...$lines])];
         });
-        Mailer::send($to, $subject, $body);
+        return Mailer::send($to, $subject, $body);
     }
 
     private static function vars(array $vars): array

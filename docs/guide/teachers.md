@@ -161,6 +161,10 @@ When a later change (of the day or a break) makes a conflict fit again, its pare
 the current details, if these changed since their last mail. Saving an entry with *Änderung per E-Mail
 mitteilen* also sends the current details without a change (at most 30 mails per hour from your account).
 
+**If an admin stands in for you**, they can see the parents' names and addresses of a round only after choosing
+*Vertretung übernehmen* (take over as substitute) for it; you get an e-mail then, and the log records it. Otherwise admins see how your
+rounds are booked, not who booked.
+
 Further actions on the round: edit, deactivate, **print view / PDF** (*Druckansicht / PDF*; its last column,
 *Organisatorisches* (*organisational notes*), is for organisational notes only, nothing about the conversation), and
 **duplicate** (*Duplizieren …*): a copy with new link and code, including times, breaks, blocked slots,

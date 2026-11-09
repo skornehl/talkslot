@@ -31,6 +31,7 @@ use App\RoundTrash;
 use App\ScheduleChange;
 use App\ScheduleService;
 use App\SecurityEvents;
+use App\Substitution;
 use App\SlotGenerator;
 use App\Slug;
 use App\Summaries;
@@ -65,6 +66,7 @@ final class AdminController
         ['POST', '#^/round/(\d+)/toggle\z#', 'roundToggle', 'teacher'],
         ['POST', '#^/round/(\d+)/duplicate\z#', 'roundDuplicate', 'teacher'],
         ['POST', '#^/round/(\d+)/delete\z#', 'roundDelete', 'teacher'],
+        ['POST', '#^/round/(\d+)/substitute\z#', 'roundSubstitute', 'admin'],
         ['GET', '#^/trash\z#', 'trash', 'teacher'],
         ['POST', '#^/trash/(\d+)/restore\z#', 'trashRestore', 'teacher'],
         ['POST', '#^/trash/(\d+)/delete\z#', 'trashDelete', 'teacher'],
@@ -459,6 +461,10 @@ final class AdminController
         $publishing = $owner && $data['is_active'] && (!$round || !$round['is_active'] || (int) $owner['id'] !== (int) $round['user_id']);
         if (!$owner) {
             $errors[] = __('Bitte eine aktive Lehrkraft für die Runde wählen.');
+        } elseif ($round && (int) $owner['id'] !== (int) $round['user_id'] && !self::seesParents($round)
+            && Db::value('SELECT 1 FROM bookings b JOIN slots s ON s.id = b.slot_id JOIN round_days d ON d.id = s.day_id WHERE d.round_id = ? LIMIT 1', [$round['id']]) !== null) {
+            // Whoever gets the round sees its parents: no way around taking over (e.g. to oneself)
+            $errors[] = __('Zum Übergeben einer Runde mit Buchungen bitte zuerst die Vertretung übernehmen.');
         } elseif ($publishing && ($hint = $this->publishBlocker($owner)) !== null) {
             // A round that is online stays so with its previous teacher; any other can be saved inactive meanwhile
             $errors[] = $hint . ' ' . ($round && $round['is_active'] ? __('Behalten Sie bis dahin die bisherige Lehrkraft, dann bleibt die Runde aktiv.') : self::saveInactiveHint());
@@ -522,14 +528,15 @@ final class AdminController
                 . ($round['title'] !== $data['title'] ? ' (' . __('bisher „{title}“', ['title' => $round['title']]) . ')' : '')
                 . ((int) $round['is_active'] !== $data['is_active'] ? ', ' . ($data['is_active'] ? __('aktiviert') : __('deaktiviert')) : '')
                 . ($ownerChanged ? ', ' . __('Lehrkraft bisher {account}', ['account' => self::accountLabel($this->userById((int) $round['user_id']))]) : '')
-                . ($newCode ? ', ' . __('neuer Rundencode') : '') . self::parentsAudit($parents), $id);
+                . ($newCode ? ', ' . __('neuer Rundencode') : '') . self::parentsAudit($parents), $id, $ownerChanged ? 'round_reassigned' : null);
             if ($ownerChanged) {
+                Substitution::end($id);
                 $booked = (int) Db::value('SELECT COUNT(*) FROM bookings b JOIN slots s ON s.id = b.slot_id JOIN round_days d ON d.id = s.day_id WHERE d.round_id = ?', [$id]);
                 $this->flash('info', __('Die Runde gehört jetzt {name}.', ['name' => $owner['display_name'] ?: $owner['username']])
                     . ($booked ? ' ' . __('Die {count} bestehende(n) Buchung(en) sieht ab jetzt diese Lehrkraft; Zusammenfassungen gehen an sie.', ['count' => $booked]) : ''));
             }
             // Told: parents whose teacher or location changed (days with a location of their own keep it)
-            $this->parentsFlash($parents, true);
+            $this->parentsFlash($parents, true, $round);
             if ($parents->movedConflicts > 0) {
                 $this->flash('warning', __('Achtung: {count} gebuchte(r) Termin(e) sind als Konflikt markiert und haben jetzt einen anderen Ort oder eine andere Lehrkraft; die Eltern kennen die neuen Daten noch nicht.', ['count' => $parents->movedConflicts])
                     . ' ' . self::conflictHint());
@@ -595,9 +602,21 @@ final class AdminController
             $day['parents'] = self::parentCounts($upcoming);
         }
         unset($day);
+        // Parents' data of another teacher's round only after taking over (Substitution); the rest stays
+        $seesParents = self::seesParents($round);
+        foreach ($days as &$day) {
+            foreach ($day['slots'] as &$s) {
+                if (!$seesParents && $s['booking_id'] !== null) {
+                    $s['name'] = $s['email'] = '';
+                }
+            }
+            unset($s);
+        }
+        unset($day);
         $this->render('admin/round', [
             'title' => $round['title'],
             'round' => $round,
+            'seesParents' => $seesParents,
             'days' => $days,
             'parents' => ['upcoming' => array_sum(array_column(array_column($days, 'parents'), 'upcoming')), 'mailable' => array_sum(array_column(array_column($days, 'parents'), 'mailable'))],
             'conflicts' => $conflicts,
@@ -834,10 +853,41 @@ final class AdminController
         Http::redirect('/admin/round/' . $newId);
     }
 
+    /**
+     * Admin: takes over a round of another teacher (Substitution) to see its parents' data, for this sign-in.
+     * Asks for the password, is logged and tells the teacher by e-mail.
+     */
+    private function roundSubstitute(int $id): void
+    {
+        $round = $this->round($id);
+        if (self::seesParents($round)) {
+            Http::redirect('/admin/round/' . $id);
+        }
+        $error = Auth::confirmPassword(Http::postRaw('current_password'), __('Zum Übernehmen der Vertretung bitte Ihr Passwort eingeben.'));
+        if ($error !== null) {
+            $this->flash('error', $error);
+            Http::redirect('/admin/round/' . $id);
+        }
+        $owner = $this->userById((int) $round['user_id']);
+        $me = Auth::user();
+        $mailed = (bool) $this->withoutSession(static fn (): bool => AccountSecurity::substitution($round, $owner, $me));
+        // Logged before access is granted: no access without an entry
+        $this->audit(fn () => __('Vertretung übernommen, Namen und E-Mail-Adressen der Eltern sichtbar') . ($mailed ? '' : ', ' . __('Lehrkraft nicht per E-Mail erreicht')),
+            $id, 'substitution', ['reached' => (int) $mailed]);
+        Substitution::start($id, (int) $round['user_id']);
+        $this->flash('success', __('Vertretung übernommen: Sie sehen die Namen und E-Mail-Adressen der Eltern dieser Runde bis zum Ende dieser Anmeldung.') . ' '
+            . ($mailed ? __('Die Lehrkraft wurde per E-Mail informiert.') : __('Die Lehrkraft konnte nicht per E-Mail informiert werden; bitte sagen Sie ihr selbst Bescheid.')));
+        Http::redirect('/admin/round/' . $id);
+    }
+
     private function roundDelete(int $id): void
     {
-        $this->round($id);
+        $round = $this->round($id);
         $booked = (int) Db::value('SELECT COUNT(*) FROM bookings b JOIN slots s ON s.id = b.slot_id JOIN round_days d ON d.id = s.day_id WHERE d.round_id = ?', [$id]);
+        // Afterwards the message names the parents of upcoming appointments: not for an admin who has not taken over
+        if (ScheduleService::concerned('round', $id)) {
+            $this->requireParents($round);
+        }
         // As with a day: bookings are only deleted with the box ticked (the dialog alone needs JavaScript)
         if ($booked > 0 && Http::post('confirm') !== '1') {
             $this->flash('error', __('In dieser Runde gibt es {count} Buchung(en). Bitte das Löschen ausdrücklich bestätigen.', ['count' => $booked]));
@@ -855,7 +905,7 @@ final class AdminController
             Http::redirect('/admin');
         }
         $parents = ScheduleService::cancelRound($id, Http::post('notify') === '1');
-        $this->audit(fn () => __('gelöscht (mit {count} Buchung(en))', ['count' => $booked]) . self::parentsAudit($parents), $label);
+        $this->audit(fn () => __('gelöscht (mit {count} Buchung(en))', ['count' => $booked]) . self::parentsAudit($parents), $label, 'round_deleted', ['count' => $booked]);
         $this->flash('success', __('Runde mit allen Tagen und Buchungen gelöscht.'));
         $this->parentsFlash($parents);
         Http::redirect('/admin');
@@ -1192,6 +1242,9 @@ final class AdminController
     {
         $day = $this->day($id);
         $bookings = $this->dayBookings($id);
+        if (ScheduleService::concerned('day', $id)) {
+            $this->requireParents($this->round((int) $day['round_id']));
+        }
         if ($bookings > 0 && Http::post('confirm') !== '1') {
             $this->flash('error', __('An diesem Tag gibt es {count} Buchung(en). Bitte das Löschen ausdrücklich bestätigen.', ['count' => $bookings]));
             Http::redirect('/admin/round/' . $day['round_id'], [], 'day-' . $id);
@@ -1199,7 +1252,7 @@ final class AdminController
         $parents = ScheduleService::deleteDay($id, Http::post('notify') === '1');
         $this->audit(fn () => ($bookings
             ? __('Tag {date} gelöscht (mit {count} Buchung(en))', ['date' => self::when($day['day_date']), 'count' => $bookings])
-            : __('Tag {date} gelöscht', ['date' => self::when($day['day_date'])])) . self::parentsAudit($parents), (int) $day['round_id']);
+            : __('Tag {date} gelöscht', ['date' => self::when($day['day_date'])])) . self::parentsAudit($parents), (int) $day['round_id'], 'day_deleted', ['count' => $bookings, 'date' => $day['day_date']]);
         $this->flash('success', $bookings ? __('Tag gelöscht (inkl. {count} Buchung(en)).', ['count' => $bookings]) : __('Tag gelöscht.'));
         $this->parentsFlash($parents);
         Http::redirect('/admin/round/' . $day['round_id']);
@@ -1215,6 +1268,7 @@ final class AdminController
     {
         $day = $this->day($id);
         $round = $this->round((int) $day['round_id']);
+        $this->requireParents($round);
         $span = Http::query('from') === '' && Http::query('to') === '';
         $from = $span ? (string) $day['start_time'] : Time::normalizeTime(Http::query('from'));
         $to = $span ? (string) $day['end_time'] : Time::normalizeTime(Http::query('to'));
@@ -1247,6 +1301,7 @@ final class AdminController
     private function dayBookingsDelete(int $id): void
     {
         $day = $this->day($id);
+        $this->requireParents($this->round((int) $day['round_id']));
         $ids = is_array($_POST['booking'] ?? null) ? array_filter($_POST['booking'], static fn ($v): bool => is_string($v) && ctype_digit($v)) : [];
         if (!$ids) {
             $this->flash('error', __('Keine Buchung ausgewählt – es wurde nichts gelöscht.'));
@@ -1260,7 +1315,7 @@ final class AdminController
             Http::redirect('/admin/round/' . $day['round_id'], [], 'day-' . $id);
         }
         $this->audit(fn () => __('Tag {date}: {count} Buchung(en) auf einmal gelöscht', ['date' => self::when($day['day_date']), 'count' => $deleted])
-            . self::parentsAudit($parents), (int) $day['round_id']);
+            . self::parentsAudit($parents), (int) $day['round_id'], 'bookings_deleted', ['count' => $deleted, 'date' => $day['day_date']]);
         $this->flash('success', __('{count} Buchung(en) gelöscht – die Slots sind wieder frei.', ['count' => $deleted]));
         // Without the box nobody is told on purpose (made-up names): no list of people to inform
         $notify ? $this->parentsFlash($parents) : $this->flash('info', __('Es wurden keine Absagen per E-Mail versendet.'));
@@ -1315,7 +1370,7 @@ final class AdminController
         } else {
             $this->flash('success', $message . ' ' . __('Die Termine wurden neu berechnet.'));
         }
-        $this->parentsFlash($parents, true);
+        $this->parentsFlash($parents, true, $this->round($roundId));
         Http::redirect('/admin/round/' . $roundId, [], 'day-' . $dayId);
     }
 
@@ -1362,6 +1417,7 @@ final class AdminController
     private function bookingNew(int $slotId, array $errors = [], array $old = []): void
     {
         $slot = $this->slot($slotId);
+        $this->requireParents($this->round((int) $slot['round_id']));
         $this->render('admin/booking_form', [
             'title' => __('Eintrag anlegen'),
             'slot' => $slot,
@@ -1378,6 +1434,7 @@ final class AdminController
     {
         $slot = $this->slot($slotId);
         $round = $this->round((int) $slot['round_id']);
+        $this->requireParents($round);
         $old = $this->bookingInput();
         $errors = PublicController::validate($old, false);
         if ($errors) {
@@ -1410,6 +1467,7 @@ final class AdminController
     {
         $booking = $this->booking($id);
         $round = $this->round((int) $booking['round_id']);
+        $this->requireParents($round);
         $moveOptions = Db::all(
             'SELECT s.id, s.start_time, s.end_time, s.is_blocked, d.day_date
                FROM slots s JOIN round_days d ON d.id = s.day_id LEFT JOIN bookings b ON b.slot_id = s.id
@@ -1431,6 +1489,7 @@ final class AdminController
     private function bookingUpdate(int $id): void
     {
         $booking = $this->booking($id);
+        $this->requireParents($this->round((int) $booking['round_id']));
         $old = $this->bookingInput() + ['move_to' => Http::post('move_to')];
         $errors = PublicController::validate($old, false);
         if ($errors) {
@@ -1474,11 +1533,12 @@ final class AdminController
     private function bookingDelete(int $id): void
     {
         $booking = $this->booking($id);
+        $this->requireParents($this->round((int) $booking['round_id']));
         $notify = Http::post('notify') === '1';
         // The cancellation goes out right away (session closed meanwhile), or from the outbox if the server refuses
         $mail = $this->withoutSession(static fn () => ScheduleService::deleteBooking($booking, $notify));
         $this->audit(fn () => __('Buchung am {date} gelöscht', ['date' => self::when($booking['day_date'])])
-            . ($mail !== null ? ', ' . __('Eltern per E-Mail informiert') : ''), (int) $booking['round_id']);
+            . ($mail !== null ? ', ' . __('Eltern per E-Mail informiert') : ''), (int) $booking['round_id'], 'booking_deleted', ['date' => $booking['day_date']]);
         $this->flash('success', __('Buchung gelöscht – der Termin ist wieder frei.') . match ($mail) {
             Notifier::SENT => ' ' . __('Absage per E-Mail an die Eltern gesendet.'),
             Notifier::QUEUED => ' ' . __('Die Absage per E-Mail konnte gerade nicht gesendet werden. Sie wird automatisch erneut versucht.'),
@@ -1536,6 +1596,7 @@ final class AdminController
     private function printView(int $roundId): void
     {
         $round = $this->round($roundId);
+        $this->requireParents($round);
         $dayFilter = (int) Http::query('day');
         $days = Db::all(
             'SELECT * FROM round_days WHERE round_id = ? AND (? = 0 OR id = ?) ORDER BY day_date, start_time',
@@ -2104,6 +2165,12 @@ final class AdminController
             $this->flash('error', $error);
             Http::redirect('/admin/users/' . $id . '/edit');
         }
+        // The message afterwards names the parents of upcoming appointments (nobody else can tell them any more)
+        if ($user['role'] !== 'admin' && ScheduleService::concerned('account', $id)
+            && ($error = Auth::confirmPassword(Http::postRaw('current_password'), __('Zum Löschen eines Kontos mit anstehenden Buchungen bitte Ihr Passwort eingeben: Die Meldung danach nennt die Eltern.'))) !== null) {
+            $this->flash('error', $error);
+            Http::redirect('/admin/users/' . $id . '/edit');
+        }
         $rounds = (int) Db::value('SELECT COUNT(*) FROM rounds WHERE user_id = ?', [$id]);
         // At least one active admin must remain (checked under a lock, see AccountSecurity); the parents of
         // upcoming bookings in the account's rounds get a cancellation
@@ -2114,7 +2181,7 @@ final class AdminController
         }
         $this->audit(fn () => ($rounds
             ? __('Konto {account} gelöscht (mit {count} Runde(n))', ['account' => self::accountLabel($user), 'count' => $rounds])
-            : __('Konto {account} gelöscht', ['account' => self::accountLabel($user)])) . self::parentsAudit($parents));
+            : __('Konto {account} gelöscht', ['account' => self::accountLabel($user)])) . self::parentsAudit($parents), null, 'account_deleted', ['count' => $parents->bookings]);
         if ($user['role'] === 'admin') {
             $me = Auth::user();
             $this->withoutSession(static fn () => AccountSecurity::adminChange(AccountSecurity::DELETED, $user, $me));
@@ -2765,26 +2832,27 @@ final class AdminController
      * $message is a closure so that the entry is written in the default language of the installation,
      * whatever the language of the admin (one language in the log).
      */
-    private function audit(\Closure $message, int|array|null $round = null): void
+    private function audit(\Closure $message, int|array|null $round = null, ?string $action = null, array $params = []): void
     {
         if (!Auth::isAdmin()) {
             return;
         }
         $round = is_int($round) ? self::roundLabel($round) : $round;
+        $roundId = isset($round['id']) ? (int) $round['id'] : null;
         Audit::log(AdminI18n::with(AdminI18n::default(), static function () use ($message, $round): string {
             $text = $message();
             if ($round === null) {
                 return $text;
             }
             return __('Runde „{title}“ ({owner}): {message}', ['title' => $round['title'] ?? '?', 'owner' => $round['owner'] ?? '?', 'message' => $text]);
-        }));
+        }), $action, $roundId, $params);
     }
 
     /** Title and teacher of a round, for the log. */
     private static function roundLabel(int $roundId): array
     {
         return Db::one(
-            "SELECT r.title, COALESCE(NULLIF(u.display_name, ''), u.username) AS owner FROM rounds r JOIN users u ON u.id = r.user_id WHERE r.id = ?",
+            "SELECT r.id, r.title, COALESCE(NULLIF(u.display_name, ''), u.username) AS owner FROM rounds r JOIN users u ON u.id = r.user_id WHERE r.id = ?",
             [$roundId]
         ) ?? [];
     }
@@ -2827,13 +2895,21 @@ final class AdminController
      * person, named once with the address (after a deletion nothing shows them any more), so nobody relies on
      * the system having informed them. Nothing if no upcoming booking is concerned.
      * $resend: the bookings still exist (new details), so their parents can also be sent them from the entry.
+     * $round: an admin who has not taken it over (Substitution) gets the number instead of the names.
      */
-    private function parentsFlash(ScheduleChange $parents, bool $resend = false): void
+    private function parentsFlash(ScheduleChange $parents, bool $resend = false, ?array $round = null): void
     {
         if ($parents->mailed > 0) {
             $this->flash('info', $resend
                 ? __('Die Eltern von {count} Buchung(en) erhalten die neuen Termindaten per E-Mail in ihrer Sprache.', ['count' => $parents->mailed])
                 : __('Die Eltern von {count} Buchung(en) erhalten eine Absage per E-Mail in ihrer Sprache.', ['count' => $parents->mailed]));
+        }
+        if ($round !== null && !self::seesParents($round)) {
+            $count = count($parents->held) + count($parents->inPerson);
+            if ($count > 0) {
+                $this->flash('warning', __('Die Eltern von {count} Buchung(en) werden nicht automatisch benachrichtigt. Die Lehrkraft sieht die Buchungen in ihrer Runde: Bitte sagen Sie ihr Bescheid, oder übernehmen Sie die Vertretung, um die Namen zu sehen.', ['count' => $count]));
+            }
+            return;
         }
         $names = static fn (array $persons): string => implode('; ', array_map(
             static fn (array $p): string => $p['name'] . ($p['email'] !== '' ? ', ' . $p['email'] : '') . ' (' . self::when($p['day_date'], $p['start_time']) . ')',
@@ -2881,6 +2957,21 @@ final class AdminController
 
     // Access control: all records are only loaded if the round belongs to the logged-in
     // person (the admin may access all). Foreign IDs behave like non-existent ones (404).
+
+    /** May the signed-in account see the parents' data of this round? Its teacher always, an admin after taking over. */
+    private static function seesParents(array $round): bool
+    {
+        return (int) $round['user_id'] === Auth::id() || Substitution::active((int) $round['id'], (int) $round['user_id']);
+    }
+
+    /** Pages with the parents' data of a round: to the offer to take it over if the account may not see them yet. */
+    private function requireParents(array $round): void
+    {
+        if (!self::seesParents($round)) {
+            $this->flash('error', __('Bitte übernehmen Sie zuerst die Vertretung für diese Runde.'));
+            Http::redirect('/admin/round/' . $round['id']);
+        }
+    }
 
     /** May the logged-in user see and edit rounds of this teacher? Admin: all. */
     private static function mayAccess(int $ownerId): bool

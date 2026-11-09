@@ -356,6 +356,7 @@ final class Auth
         if (session_status() === PHP_SESSION_ACTIVE) {
             session_regenerate_id(true);
             $_SESSION['global_epoch'] = self::globalEpoch();
+            Substitution::clear();
         }
     }
 
@@ -438,6 +439,7 @@ final class Auth
             [password_hash($newPassword, PASSWORD_DEFAULT), $userId]
         );
         session_regenerate_id(true);
+        Substitution::clear();
         self::endOtherSessions($userId, true);
         SecurityEvents::record($userId, SecurityEvents::PASSWORD_CHANGED);
         // The new epoch revoked the account's known devices; this browser proved the password, it stays known

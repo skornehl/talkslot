@@ -66,7 +66,7 @@ schools (GDPR/DSGVO, TDDDG) and multilingual families.
 
 **Teachers and admins (`/admin`, German or English user interface)**
 - Admins (one or more): invite teachers and further admins by e-mail (one-time link, no passwords in
-  mails), change roles, deactivate, reset or delete accounts, see and edit all rounds, create rounds for a
+  mails), change roles, deactivate, reset or delete accounts, see and edit all rounds (parents' names only after a logged *Vertretung übernehmen*), create rounds for a
   teacher, maintain templates and the details for the legal pages. A log (*Protokoll*) shows which admin
   changed what (no names or e-mail addresses of parents, bookings with their date only; deleted after 90 days); from
   there, a logged search finds the data for a parent's request for access (Art. 15 GDPR) by one exact email address.

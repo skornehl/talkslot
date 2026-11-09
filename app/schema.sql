@@ -185,13 +185,18 @@ CREATE TABLE IF NOT EXISTS round_templates (
 
 -- Log of the changes made by admins (who, when, what), without data of parents.
 -- Deleted after audit_log_days (default 90). actor: name at the time of the change.
+-- action, round_id, params: what the entry is about, structured (App\Audit::PARAM_KEYS, no data of parents).
 CREATE TABLE IF NOT EXISTS audit_log (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   created_at DATETIME NOT NULL,
   user_id INT UNSIGNED NULL,
   actor VARCHAR(254) NOT NULL,
   message VARCHAR(1000) NOT NULL,
+  action VARCHAR(40) NULL,
+  round_id INT UNSIGNED NULL,
+  params VARCHAR(500) NULL,
   KEY idx_audit_created (created_at),
+  KEY idx_audit_round (round_id),
   CONSTRAINT fk_audit_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

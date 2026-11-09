@@ -10,7 +10,7 @@ namespace App;
  */
 final class Migrations
 {
-    public const LATEST = 26;
+    public const LATEST = 27;
 
     /** Version => SQL statements */
     private const STEPS = [
@@ -206,6 +206,15 @@ final class Migrations
         ],
         // 26: PHP step only (addInvariants): indexes for the date filters, rules of days and rounds in the database
         26 => [],
+        // 27: the log says in a structured form what an entry is about (expert review P2-10): kind of change, round
+        //     (no foreign key: the entry outlives the round), a few values without data of parents. Entries from
+        //     before keep their text. 25 belongs to another change.
+        27 => [
+            'ALTER TABLE audit_log ADD COLUMN IF NOT EXISTS action VARCHAR(40) NULL AFTER message,
+                ADD COLUMN IF NOT EXISTS round_id INT UNSIGNED NULL AFTER action,
+                ADD COLUMN IF NOT EXISTS params VARCHAR(500) NULL AFTER round_id,
+                ADD KEY IF NOT EXISTS idx_audit_round (round_id)',
+        ],
     ];
 
     /**
