@@ -41,9 +41,9 @@ return [
 
     'round.teacher' => 'Görüşme randevuları: {name}',
     'round.location' => 'Yer: {location}',
-    'round.one_only' => 'Lütfen yalnızca bir randevu alın.',
-    'round.limit_round' => 'Kişi başına yalnızca bir randevu alınabilir. Kardeşler için lütfen her çocuğun adıyla ayrı randevu alın.',
-    'round.limit_day' => 'Kişi başına günde yalnızca bir randevu alınabilir. Kardeşler için lütfen her çocuğun adıyla ayrı randevu alın.',
+    'round.one_only' => 'Lütfen her çocuk için yalnızca bir randevu alın.',
+    'round.limit_round' => 'Çocuk başına yalnızca bir randevu alınabilir. Kardeşler için lütfen her çocuğun adıyla ayrı randevu alın.',
+    'round.limit_day' => 'Çocuk başına günde yalnızca bir randevu alınabilir. Kardeşler için lütfen her çocuğun adıyla ayrı randevu alın.',
     'round.auto_translated' => 'Başlık ve açıklama otomatik olarak çevrildi (orijinal: {source}). Şüphe durumunda orijinal metin geçerlidir.',
     'round.choose' => '1. Boş bir saat seçin',
     'round.no_slots' => 'Şu anda boş randevu yok.',
@@ -56,8 +56,8 @@ return [
     'round.remembered.another' => 'Başka bir randevu al (ör. kardeş için)',
 
     'form.required' => 'zorunlu alan',
-    'form.name' => 'Ad',
-    'form.name.hint' => 'Örneğin çocuğun adı ve soyadı.',
+    'form.name' => 'Çocuğun adı ve soyadı',
+    'form.name.hint' => 'Ad ve soyad, gerekirse sınıfıyla birlikte (örneğin “Mia Schmidt, 7b”). Başka bilgi gerekmez.',
     'form.email' => 'E-posta adresi (isteğe bağlı)',
     'form.email.hint' => 'Yalnızca kişisel bağlantınızı içeren onayı göndermek için kullanılır. Adres vermezseniz bağlantıyı yalnızca bir sonraki sayfada görürsünüz.',
     'form.email.hint_reminder' => 'Yalnızca kişisel bağlantınızı içeren onayı ve bir gün önce akşam bir hatırlatmayı göndermek için kullanılır. Adres vermezseniz bağlantıyı yalnızca bir sonraki sayfada görürsünüz.',

@@ -18,7 +18,7 @@ TDDDG. Diese Seite erläutert die Designentscheidungen; sie ist keine Rechtsbera
 | Geräte-Cookie eines Admin- oder Lehrkraft-Kontos (Zufallszahl, Zeitpunkt, Signatur) | Browser der Person | nach 365 Tagen, bei jeder Anmeldung erneuert |
 | Konten der Lehrkräfte | Datenbank | durch einen Admin; inaktive Konten ohne Runden in Gebrauch 15 Monate nach der letzten Anmeldung, zusammen mit ihren Entwürfen |
 | Zusammenfassungen per E-Mail an Lehrkräfte (standardmäßig die Zahl der Termine und der Link, keine Namen; Uhrzeit und Name nur, wo die Schule sie erlaubt; nie E-Mail-Adressen) | Postfach der Lehrkraft | mit Namen: spätestens zum Ende des Schuljahres (Vorlage der Datenschutzerklärung; bei privatem Betrieb empfiehlt die Vorlage das, es gelten die Regeln der Schule) |
-| Protokoll der Änderungen durch Admins (wer, wann, was; keine Daten von Eltern) | Datenbank | nach 90 Tagen (`audit_log_days`) |
+| Protokoll der Änderungen durch Admins (wer, wann, was; keine Namen oder E-Mail-Adressen von Eltern, Buchungen nur mit Datum) | Datenbank | nach 90 Tagen (`audit_log_days`) |
 
 TalkSlot führt **keine** eigenen Zugriffsprotokolle. Für die Logs des Webservers ist der Hoster
 zuständig; fragen Sie nach, wie lange sie aufbewahrt werden, und nennen Sie die Dauer in der
@@ -26,7 +26,15 @@ Datenschutzerklärung.
 
 ## Designentscheidungen
 
-- **Datenminimierung:** ein frei eingegebener Name und eine optionale E-Mail-Adresse, sonst nichts.
+- **Datenminimierung:** ein frei eingegebener Name und eine optionale E-Mail-Adresse, sonst nichts. Das Feld
+  fragt nach dem **Namen des Kindes** (Vor- und Nachname, bei Bedarf mit Klasse), damit die Lehrkraft die
+  Buchung zuordnen kann und Eltern nicht für zwei Kinder ihren eigenen Namen eintragen; der Infokasten einer
+  Runde mit Buchungsbegrenzung sagt „ein Termin pro Kind“ und wie Geschwister buchen. Das Rundenformular
+  bittet Lehrkräfte um **neutrale Titel** (z. B. „Elternsprechtag 7b“): Titel und Beschreibung stehen in den
+  E-Mails an Eltern und in Kalenderdateien, der Titel auch im Protokoll und beim Anlegen in der Adresse der
+  Runde (und damit in den Logs des Webservers), und bei einer Runde wie „Beratung Förderbedarf“ könnte jede
+  Buchung einem Hinweis auf Gesundheitsdaten (Art. 9 DSGVO) nahekommen. Die Spalte für Notizen in der Druckansicht heißt *Organisatorisches* (nur Organisatorisches,
+  keine Gesprächsinhalte), weil die Liste nach dem Termin vernichtet werden soll.
 - **E-Mail-Adresse nur für den Termin:** Bestätigung, Änderung, Absage und, wenn die Lehrkraft sie für die
   Runde vorgesehen hat, eine Erinnerung am Vorabend. Die Vorlage der Datenschutzerklärung nennt all das.
 - **Mail-Warteschlange nur mit Verweisen:** Erinnerungen, Zusammenfassungen und E-Mails, die der Mailserver
@@ -86,7 +94,11 @@ Datenschutzerklärung.
   Admin ist; sie ersetzt nicht die Weisung und die Verpflichtung der Admins auf Vertraulichkeit.
 - **Protokoll ohne Kontrolle der Lehrkräfte:** Erfasst werden nur Änderungen durch Admin-Konten, damit bei
   mehreren Admins nachvollziehbar ist, wer was getan hat. Was Lehrkräfte in ihren eigenen Runden tun,
-  wird nicht aufgezeichnet, Buchungen erscheinen nur mit Datum und Uhrzeit. Je nach Bundesland kann ein
+  wird nicht aufgezeichnet, Buchungen erscheinen nur mit ihrem Datum: Mit der Uhrzeit ließe sich ein Eintrag
+  zusammen mit einer Zusammenfassung oder einem Ausdruck noch 90 Tage nach dem Löschen der Buchung einer
+  Person zuordnen. Runde, Lehrkraft und Datum können trotzdem auf eine Familie deuten (eine Buchung an einem
+  Tag), die Einträge bleiben also pseudonyme Daten, die nur Admins sehen. Einträge von vor dieser Änderung
+  verlieren ihre Uhrzeit beim nächsten Aufräumlauf. Je nach Bundesland kann ein
   Protokoll von Handlungen der Beschäftigten trotzdem den Personalrat betreffen; die Aufbewahrung lässt
   sich mit `audit_log_days` verkürzen.
 - **Anmeldezeiten nur grob:** Der Zeitpunkt der letzten Anmeldung wird gespeichert (um ungenutzte Konten
@@ -228,10 +240,18 @@ Vor dem Start:
    einer Schule die Vorschriften Ihres Landes (Schulgesetz, Landesdatenschutzgesetz), die Speicherdauer der
    Webserver-Logs (fragen Sie Ihren Hoster) und die zuständige Aufsichtsbehörde. An einer Schule nennt
    Ihnen die oder der Datenschutzbeauftragte die Vorschriften.
-5. **Auftragsverarbeitungsvertrag** (AVV) mit Ihrem Hoster.
+5. **Auftragsverarbeitungsvertrag** (AVV) mit Ihrem Hoster (und, falls getrennt, Ihrem Mailanbieter), und Ihre
+   **Dokumentation**: Verzeichnis von Verarbeitungstätigkeiten, TOM, DSFA-Prüfung, Abläufe für Datenpannen und
+   Betroffenenanfragen, Informationsblatt für Lehrkräfte. [Unterlagen für Schule und Betreiber]({{ '/de/guide/operator-documents/' | relative_url }})
+   enthält Vorlagen für all das, für beide Betriebsarten.
 6. **Admin-Konten** nur für Personal des Betreibers (an einer Schule: Personal der Schule) oder für
    schriftlich zur Vertraulichkeit verpflichtete Personen: Die Datenschutzerklärung sagt Eltern zu, dass
    außer der Lehrkraft nur solche Personen ihre Buchungen sehen.
+7. **Volljährige Schülerinnen und Schüler:** Ob und worüber Lehrkräfte mit den Eltern volljähriger
+   Schülerinnen und Schüler sprechen dürfen, regelt das Schulrecht Ihres Landes (oft nur mit Einwilligung
+   der Schülerin bzw. des Schülers oder in den gesetzlich genannten Fällen). Sind Runden für solche Klassen
+   gedacht, klären Sie das vorher mit der Schulleitung oder der bzw. dem Datenschutzbeauftragten; TalkSlot
+   prüft das nicht.
 
 ### Keine Aktivierung bei offenen Platzhaltern
 

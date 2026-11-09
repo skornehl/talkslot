@@ -41,9 +41,9 @@ return [
 
     'round.teacher' => 'Appointments with {name}',
     'round.location' => 'Location: {location}',
-    'round.one_only' => 'Please book only one appointment.',
-    'round.limit_round' => 'Only one appointment per person. For siblings, please book with each child’s name.',
-    'round.limit_day' => 'Only one appointment per person and day. For siblings, please book with each child’s name.',
+    'round.one_only' => 'Please book only one appointment per child.',
+    'round.limit_round' => 'Only one appointment per child. For siblings, please book with each child’s name.',
+    'round.limit_day' => 'Only one appointment per child and day. For siblings, please book with each child’s name.',
     'round.auto_translated' => 'The title and description were translated automatically (original: {source}). If in doubt, the original applies.',
     'round.choose' => '1. Choose a free time slot',
     'round.no_slots' => 'There are currently no free appointments.',
@@ -56,8 +56,8 @@ return [
     'round.remembered.another' => 'Book another appointment (e.g. for a sibling)',
 
     'form.required' => 'required',
-    'form.name' => 'Name',
-    'form.name.hint' => 'For example the child’s first and last name.',
+    'form.name' => 'Child’s name',
+    'form.name.hint' => 'First and last name, with the class if needed (e.g. “Mia Schmidt, 7b”). No other details are needed.',
     'form.email' => 'E-mail address (optional)',
     'form.email.hint' => 'Only used to send you a confirmation with your personal link. Without an address you will only see the link on the next page.',
     'form.email.hint_reminder' => 'Only used for a confirmation with your personal link and a reminder the evening before. Without an address you will only see the link on the next page.',

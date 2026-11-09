@@ -9,8 +9,9 @@ namespace App;
  *
  * Only actions of admins are recorded, not those of teachers in their own rounds (no monitoring
  * of the teaching staff), plus changes the application makes itself on an update (system()).
- * Entries contain no data of parents (e.g. "Buchung 12.11.2026 14:00 gelöscht", without the
- * name) and are deleted after audit_log_days (default 90, see Cleanup).
+ * Entries contain no names or e-mail addresses of parents; a booking appears with its date only (e.g.
+ * "Buchung am 12.11.2026 gelöscht"), which makes it harder to match to a person. Entries are deleted after
+ * audit_log_days (default 90, see Cleanup).
  *
  * Besides the text an entry can carry what it is about in a structured form (expert review P2-10, ARCH-14): the
  * kind of change (action), the round and a few values (params). Only the keys in PARAM_KEYS are stored, so

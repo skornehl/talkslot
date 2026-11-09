@@ -185,9 +185,18 @@ final class Migrations
         23 => [
             'ALTER TABLE users ADD COLUMN IF NOT EXISTS parent_contact VARCHAR(300) NULL AFTER reply_to',
         ],
+        // 24: trash for rounds without bookings (RoundTrash); additive, the previous version ignores the table
+        24 => [
+            "CREATE TABLE IF NOT EXISTS round_trash (
+                id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, user_id INT UNSIGNED NOT NULL, title VARCHAR(200) NOT NULL,
+                data MEDIUMTEXT NOT NULL, deleted_at DATETIME NOT NULL,
+                KEY idx_trash_user (user_id), KEY idx_trash_deleted (deleted_at),
+                CONSTRAINT fk_trash_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        ],
         // 27: the log says in a structured form what an entry is about (expert review P2-10): kind of change, round
         //     (no foreign key: the entry outlives the round), a few values without data of parents. Entries from
-        //     before keep their text. 24 to 26 belong to other changes.
+        //     before keep their text. 25 and 26 belong to other changes.
         27 => [
             'ALTER TABLE audit_log ADD COLUMN IF NOT EXISTS action VARCHAR(40) NULL AFTER message,
                 ADD COLUMN IF NOT EXISTS round_id INT UNSIGNED NULL AFTER action,
