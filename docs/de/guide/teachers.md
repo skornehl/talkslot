@@ -14,7 +14,12 @@ Englisch umstellen.
 - ***Vorlage*** (falls Ihre Admins welche angelegt haben): *Übernehmen* trägt Zeiten, Pausen und
   Einstellungen ein, z. B. „Elternsprechtag: 08:00–16:00, 15 Minuten, Mittagspause“. Alles bleibt
   änderbar; nur Titel und Datum fehlen dann noch.
-- **Titel** und optional ein ***Beschreibungstext***, die den Eltern angezeigt werden. Reiner Text.
+- **Titel** und optional ein ***Beschreibungstext***, die den Eltern angezeigt werden. Reiner Text. Bitte
+  neutral halten, z. B. „Elternsprechtag 7b“: Beide stehen in den E-Mails an Eltern und in Kalenderdateien,
+  der Titel auch im Protokoll und beim Anlegen in der Adresse der Runde. Ein Titel wie „Beratung
+  Förderbedarf“ verriete jedem, der eine Buchung sieht, mehr als den Termin.
+- **Volljährige Schülerinnen und Schüler:** Bei Klassen mit Schülerinnen und Schülern ab 18 klären Sie vorher
+  mit Ihrer Schule, ob und worüber Sie mit deren Eltern sprechen dürfen (Schulrecht des Landes).
 - ***Ort*** (optional), z. B. „Raum 1.12“. Er steht auf der Buchungsseite, auf der Bestätigungsseite, in
   der Bestätigungsmail, in der Kalenderdatei, in der Druckansicht und im Einladungstext. Findet ein Tag
   woanders statt, tragen Sie das unter *Tag bearbeiten* ein.
@@ -145,7 +150,8 @@ aktuellen Daten, wenn sich diese seit ihrer letzten E-Mail geändert haben. Ein 
 *Änderung per E-Mail mitteilen* speichern, schickt die aktuellen Daten auch ohne Änderung (höchstens 30
 E-Mails pro Stunde aus Ihrem Konto).
 
-Weitere Aktionen für die Runde: bearbeiten, deaktivieren, ***Druckansicht / PDF*** und
+Weitere Aktionen für die Runde: bearbeiten, deaktivieren, ***Druckansicht / PDF*** (die letzte Spalte,
+*Organisatorisches*, ist nur für Organisatorisches gedacht, nicht für Gesprächsinhalte) und
 ***Duplizieren …***: eine Kopie mit neuem Link und Code, mit Zeiten, Pausen, gesperrten Terminen,
 Einstellungen und Übersetzungen, aber ohne Buchungen; die Kopie ist inaktiv. Geben Sie den **ersten Tag
 der Kopie** an, verschieben sich alle Tage um denselben Abstand (Tage am Dienstag und Donnerstag bleiben
