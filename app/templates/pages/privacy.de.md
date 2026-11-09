@@ -26,7 +26,7 @@ Wenn Sie eine E-Mail-Adresse angeben, erhalten Sie Bestätigungen mit Ihrem Term
 
 **Beim Aufruf der Seite:**
 
-- **Schutz vor Missbrauch:** Um automatisierte Massenanfragen und das Ausprobieren von Codes zu verhindern, wird Ihre IP-Adresse gekürzt (die letzten Stellen werden entfernt) und anschließend mit einem geheimen Schlüssel unumkehrbar verschlüsselt (gehasht) gespeichert, zusammen mit der Anzahl der Anfragen. Diese Einträge werden spätestens nach 24 Stunden gelöscht.
+- **Schutz vor Missbrauch:** Um automatisierte Massenanfragen und das Ausprobieren von Codes zu verhindern, wird Ihre IP-Adresse gekürzt (die letzten Stellen werden entfernt) und anschließend mit einem geheimen Schlüssel unumkehrbar verschlüsselt (gehasht) gespeichert, zusammen mit der Anzahl der Anfragen. Damit über diese Seiten nicht massenhaft E-Mails an eine Adresse gehen, wird auch Ihre E-Mail-Adresse nur auf diese Weise gehasht gespeichert, zusammen mit der Zahl der E-Mails an sie. Diese Einträge werden spätestens nach 24 Stunden gelöscht.
 - **Server-Protokolle:** Der Webhoster speichert beim Aufruf der Seite technisch bedingt Zugriffsdaten (u. a. IP-Adresse, Datum und Uhrzeit, aufgerufene Adresse, Browsertyp) in Protokolldateien. [SPEICHERDAUER BEIM HOSTER ERFRAGEN UND HIER ANGEBEN.]
 
 Es gibt keine Benutzerkonten, keine Werbung, kein Tracking und keine Analyse des Nutzungsverhaltens. Es werden keine externen Dienste eingebunden (keine externen Schriftarten, Skripte, Karten oder Videos). Diese Seite setzt keine Cookies.
@@ -44,7 +44,7 @@ Für die Terminbuchung brauchen Sie keine Einwilligung zu erteilen; die Verarbei
 - **In der Terminvergabe** (Datenbank) werden Ihre Buchung mit Name und E-Mail-Adresse **am Tag nach dem Termin automatisch gelöscht** (ab 0:00 Uhr).
 - Sagen Sie einen Termin über Ihren persönlichen Link ab, werden Ihre Angaben in der Terminvergabe **sofort** gelöscht.
 - Sagt die Lehrkraft Ihren Termin ab oder löscht sie einen Termintag oder die Terminrunde, werden die betroffenen Buchungen sofort gelöscht. Haben Sie eine E-Mail-Adresse angegeben, erhalten Sie eine Absage per E-Mail.
-- Gekürzte und gehashte IP-Adressen werden spätestens nach 24 Stunden gelöscht.
+- Gekürzte und gehashte IP-Adressen sowie gehashte E-Mail-Adressen (Schutz vor Missbrauch) werden spätestens nach 24 Stunden gelöscht.
 - **E-Mails, die noch versendet werden** (z. B. die Erinnerung am Vorabend oder eine Bestätigung, die nicht sofort zugestellt werden konnte): Bis zum Versand wird nur vermerkt, welche E-Mail zu welcher Buchung aussteht, ohne Adresse und Inhalt; beides entsteht erst beim Versand aus Ihrer Buchung. Der Vermerk wird nach dem Versand gelöscht, spätestens nach 48 Stunden und mit Ihrer Buchung. Einzige Ausnahme ist die Absage durch die Lehrkraft: Ihre Buchung ist dann schon gelöscht, deshalb werden für diese E-Mail Adresse, Sprache, Name und Termin (ohne Link) bis zum Versand aufbewahrt und danach gelöscht, ebenfalls spätestens nach 48 Stunden.
 - **Zusammenfassungs-E-Mails an die Lehrkraft** (siehe Abschnitt 6) enthalten je Tag die Zahl der Termine und einen Link zur Terminliste in der Terminvergabe, aber keine Namen und keine E-Mail-Adressen. Nur wenn die Schule es freigegeben hat, enthalten sie zusätzlich Uhrzeit und Namen; die Lehrkraft löscht sie dann, sobald sie sie nicht mehr braucht, **spätestens zum Ende des Schuljahres**.
 - Möchten Sie, dass auch diese Einträge früher gelöscht werden, genügt eine kurze Nachricht an die Schule (Abschnitt 1) oder an die Lehrkraft (Art. 17 DSGVO).

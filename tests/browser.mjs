@@ -633,6 +633,21 @@ try {
   await goto(`/b/${'B'.repeat(43)}`);
   check('a link that leads nowhere any more (booking deleted) removes its entry', await js(`localStorage.getItem('${KEY}')`) === null);
 
+  section('Parents: my appointments on this device');
+  await goto('/');
+  check('start page: no list without saved appointments', await js(`document.getElementById('my-appointments').hidden`));
+  await js(`localStorage.setItem('${KEY}', JSON.stringify({ '1': [{ u: '/b/${'C'.repeat(43)}', l: 'spaeter', d: '${day(20)}' }], '2': [{ u: '/b/${'D'.repeat(43)}', l: 'bald', d: '${day(10)}' }, { u: 'https://evil.example/x', l: '<img src=x onerror=alert(1)>', d: '${day(15)}' }], '3': [{ u: '/b/${'E'.repeat(43)}', l: 'vorbei', d: '${day(-1)}' }] }))`);
+  await goto('/');
+  check('start page lists the saved appointments of all rounds, the next one first; past days are left out', await js(`!document.getElementById('my-appointments').hidden
+    && [...document.querySelectorAll('#my-appointments [data-remembered-label]')].map(p => p.textContent).join('|') === 'bald|<img src=x onerror=alert(1)>|spaeter'`));
+  check('links to the own appointments only; a foreign link is not shown, the label stays text', await js(`(() => { const a = document.querySelectorAll('#my-appointments [data-remembered-link]');
+    return a[0].getAttribute('href') === '/b/${'D'.repeat(43)}' && a[1].hidden && !a[2].hidden && !document.querySelector('#my-appointments img'); })()`));
+  await js(`document.querySelector('#my-appointments [data-remembered-forget]').click()`);
+  check('removing one keeps the others and moves the focus to the next', await js(`document.querySelectorAll('#my-appointments li').length === 2
+    && document.activeElement === document.querySelector('#my-appointments [data-remembered-forget]')`) && await js(`!localStorage.getItem('${KEY}').includes('bald')`));
+  await js(`document.querySelector('#my-appointments [data-remembered-forget]').click(); document.querySelector('#my-appointments [data-remembered-forget]').click()`);
+  check('the last one removed: the list is gone, nothing stored any more, the focus in the code field', await js(`document.getElementById('my-appointments').hidden && document.activeElement.id === 'code'`) && await js(`localStorage.getItem('${KEY}')`) === null);
+
   section('Parents: language choice at the top (phone width)');
   await cdp.send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
   const ua = await js('navigator.userAgent');

@@ -207,20 +207,20 @@ final class Migrations
         // Unchanged since v1.5.0: the legal notice of a "private, non-commercial service"
         'imprint-private.de' => '036e210b629357dfbf768868e3a5f249c888d3052f301170703b196336058f43',
         'imprint-private.en' => 'f15521ceaa18e97c98190e448cc95eb6130c4cf571164b09819bb40dd7af22c8',
-        'privacy.de' => '0e9337c8a3a72445dea3dc97a7da4326510231924c918be4e921a625f40fa883',
-        'privacy.en' => 'b9c46fa92a0065f9f78e2235b7802b45a1d00b7bdf4c7e8374669e632e6ffeec',
-        'privacy-private.de' => '39cbde3d5fb6673783bb2acc57dd1c75ed187abd1f63f040d96fed09721f7114',
-        'privacy-private.en' => '86d19cfaeb9889bfe812a316a2a30e58f4fe4c3c3dbfd5b86b38642978a5f36a',
+        'privacy.de' => '219561177b423e1df31a96ceceafa3acd5e056fd3ed83848dce76a9d824447ed',
+        'privacy.en' => 'ff37cb7ccf06e8f80829034c503f6a044f34386b3e7e3cef09bbce5a031ee0fb',
+        'privacy-private.de' => 'fe18ddafc7b4d6e23ea1b833a4dcda799bf32b6a6019bedcad7af39220e9809d',
+        'privacy-private.en' => '95f293c9aa18afa794180605535808408bbd62a1f128c26805f7f21bc7664dfe',
         // Translations of the privacy policy for the other parent languages (German placeholders, the German
         // version is authoritative); the legal notice has none, it falls back to English
-        'privacy.pl' => '81a5d7f0ef6f93452b985a07e78eb0bc79237223d71f64688ca0c038f11a65b6',
-        'privacy.ru' => '2844f9a3da91a4501e848a122c546633d17cff6cbf7905dcd1e0e29d7f651779',
-        'privacy.tr' => '07ae0741aab3cfd1debd7f580c908df8e4585f8155f7982df2cca9ae6069e5ab',
-        'privacy.uk' => 'cc96bc4485e3580972615e763f2add0bb9836b6c6b0f95e0b161bae53ff4fcbd',
-        'privacy-private.pl' => '4cb692916def585030204b4b9a770dd51d1897aadd117fd5e0933e42a1ae6efa',
-        'privacy-private.ru' => '6616d23de1c55063ba3c7eeba6b86d2fbf2c8d31dfdea05fd36f838029859932',
-        'privacy-private.tr' => 'd58fdfa2193ebd9c9675179753572f10f258929818672944fb834bcf2a5d381f',
-        'privacy-private.uk' => '0f2a0a58ab1b1e7854e3130de0f310ff3a3243933feaa3c3f02fcc09740df4be',
+        'privacy.pl' => 'b1207d9957e7c1807452e03211326db7192cd011f22443aaae7a19120c57b3fa',
+        'privacy.ru' => 'a98412c7d4b007b346ffd7aa069fbd5734c99232610bcf204396e3c1de3afe97',
+        'privacy.tr' => 'a1d90420d68845cd38ba2276e23a110fd0ea2b8b34f38299304b0f999a60220b',
+        'privacy.uk' => '280e59189730622d74d01f8489383afba82a1d128e6c301847ae9c193a8f5971',
+        'privacy-private.pl' => '08e4390a3fe6e0664f56cd874ec1e83b8a8e5b434ce399a5fb626e580dc27dd3',
+        'privacy-private.ru' => '298f1ab98c9099864ee254cd3a06a5a103038797e2f9c901e4547b8c1da05ef8',
+        'privacy-private.tr' => 'f82100ed20a9c9cf3ad6b4d5a915ea665c84e89ae38f92e90f43a6919e6d6ded',
+        'privacy-private.uk' => '5e2f673b01f9ad72fa21b247be29467a9f3ee643d30267b53d6d4a2c8e00434f',
     ];
 
     /**
@@ -231,9 +231,11 @@ final class Migrations
      */
     public const OLD_PAGE_HASHES = [
         'private' => [
-            // Privacy policy de/en with the required checkbox in the booking form ("acknowledgement, not consent"),
-            // after the summaries without names and before the translations into the other parent languages (schema
-            // version 22 up to expert review P1-9)
+            // Privacy policy de/en with the required checkbox in the booking form, with the limit of mails per address and
+            // before the translations into the other parent languages (up to expert review P1-9)
+            '1bb552694fa8214a0d84763856268adc5c2b9f61699cdb90ab9f0800f3d12a9e',
+            'be51145bd45b19d97dd1a290dcf9e11d30196c1d3ae89850370202233cd3a3d5',
+            // Without the limit of the mails parents trigger per address (up to schema version 22)
             'f6a1a0488c648b7d524f41d6406718938fad59cb934a5c0a6d8b1631d9700d34',
             '859517c15d6f539cf9d8506404abb6171bd7e8f46eb727e5b43826e738dcddca',
             // Summary mails with time and name, the recommendation to delete them after 15 months (up to schema
@@ -320,9 +322,11 @@ final class Migrations
             'f1ac0f64ece1e1ce11b4322831f8d121b6d5a3ea450183d6a277cf26d9c0f3b1',
         ],
         'school' => [
-            // Privacy policy de/en for public schools with the required checkbox in the booking form, after the
-            // summaries without names and before the translations into the other parent languages (schema version 22
-            // up to expert review P1-9)
+            // Privacy policy de/en with the required checkbox in the booking form, with the limit of mails per address and
+            // before the translations into the other parent languages (up to expert review P1-9)
+            'e7928743e27c7350503e2a1355ca9470734455f2aeaa9e0c729c96ebf2c12c5d',
+            'a438a0928308672f6808e7b6947baba2c228697d84688f8d6eada1a4f5da90b2',
+            // Without the limit of the mails parents trigger per address (up to schema version 22)
             '6d3917ebd6668be5ef53fd3d9215db22ffaf526a7e2db0aaad2c195c3bb873ef',
             '89197fcf4e398d4e5de638b5efcbf0c3624f6dbf7d8b0a9fafa0a1803997c2c6',
             // Summary mails with time and name, kept as a record of the meetings for 15 months (up to schema

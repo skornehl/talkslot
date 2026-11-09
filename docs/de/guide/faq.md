@@ -51,6 +51,14 @@ Eltern und die Vorlage der Datenschutzerklärung sind in sechs Sprachen überset
 unterschiedlicher Herkunft sind; bei der Datenschutzerklärung ist die deutsche Fassung maßgeblich, und Admins
 tragen in die Übersetzungen dieselben Angaben ein wie in den deutschen Text.
 
+## Jemand hat alle Termine mit Fantasienamen belegt. Was nun?
+
+Unter jedem Tag der Runde listet *Mehrere Buchungen löschen …* die Buchungen eines Zeitraums, jede angehakt:
+Nehmen Sie bei den echten den Haken heraus und löschen Sie den Rest auf einmal. Schützen Sie die Runde danach
+mit *Nur mit Rundencode* (unter *Bearbeiten*) und geben Sie den Code nur den Eltern. Kommen innerhalb weniger
+Minuten viele Buchungen einer Runde aus einem Netzwerk, erhalten die Lehrkraft und die Admins eine
+Warn-E-Mail; meist fällt es also früh auf. Siehe [Sicherheit]({{ '/de/guide/security/' | relative_url }}).
+
 ## Eine Lehrkraft kann sich nicht anmelden, obwohl das Passwort stimmt
 
 Nach zu vielen Fehlversuchen lehnt TalkSlot weitere eine Zeit lang ab, auch mit dem richtigen Passwort: aus

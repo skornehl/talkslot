@@ -45,6 +45,14 @@ teachers (invitation, password link, summaries) follow it. Before signing in, th
 six languages, because parents come from many backgrounds; for the privacy policy the German version is
 authoritative, and admins fill in the translations with the same details as the German text.
 
+## Somebody took all slots with made-up names. What now?
+
+Under each day of the round, *Mehrere Buchungen löschen …* (delete several bookings) lists the bookings of a
+time span, each ticked: untick the genuine ones and delete the rest at once. Then protect the round with
+*Nur mit Rundencode* (round code required, under *Bearbeiten*) and give the code only to the parents. When
+many bookings of a round come from one network within minutes, the teacher and the admins get a warning
+mail, so it is usually noticed early; see [Security]({{ '/guide/security/' | relative_url }}#built-in-protections).
+
 ## A teacher cannot sign in, although the password is right
 
 After too many failed attempts TalkSlot refuses further ones for a while, even with the right password:

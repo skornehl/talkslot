@@ -28,7 +28,7 @@ Jeśli podadzą Państwo adres e-mail, otrzymają Państwo potwierdzenia z termi
 
 **Przy odwiedzaniu strony:**
 
-- **Ochrona przed nadużyciami:** aby zapobiec automatycznym masowym zapytaniom i odgadywaniu kodów, Państwa adres IP jest skracany (usuwane są ostatnie cyfry), a następnie nieodwracalnie szyfrowany tajnym kluczem (hashowany) i zapisywany wraz z liczbą zapytań. Te wpisy są usuwane najpóźniej po 24 godzinach.
+- **Ochrona przed nadużyciami:** aby zapobiec automatycznym masowym zapytaniom i odgadywaniu kodów, Państwa adres IP jest skracany (usuwane są ostatnie cyfry), a następnie nieodwracalnie szyfrowany tajnym kluczem (hashowany) i zapisywany wraz z liczbą zapytań. Aby przez te strony nie można było wysyłać masowo wiadomości e-mail na jeden adres, również Państwa adres e-mail jest zapisywany wyłącznie w takiej zahashowanej postaci, wraz z liczbą wysłanych na niego wiadomości. Te wpisy są usuwane najpóźniej po 24 godzinach.
 - **Logi serwera:** przy wywołaniu strony firma hostingowa ze względów technicznych zapisuje dane dostępowe (m.in. adres IP, datę i godzinę, wywołany adres, typ przeglądarki) w plikach logów. [SPEICHERDAUER BEIM HOSTER ERFRAGEN UND HIER ANGEBEN.]
 
 Nie ma kont użytkowników, reklam, śledzenia ani analizy zachowań użytkowników. Nie są osadzane żadne usługi zewnętrzne (żadne zewnętrzne czcionki, skrypty, mapy ani filmy). Ta strona nie używa plików cookie.
@@ -46,7 +46,7 @@ Do rezerwacji terminu nie jest potrzebna Państwa zgoda; przetwarzanie danych re
 - **W systemie rezerwacji** (baza danych) Państwa rezerwacja wraz z imieniem i nazwiskiem oraz adresem e-mail jest **automatycznie usuwana w dniu następującym po terminie** (od godz. 0:00).
 - Jeśli odwołają Państwo termin przez swój osobisty link, Państwa dane są **natychmiast** usuwane z systemu rezerwacji.
 - Jeśli nauczyciel odwoła Państwa termin albo usunie dzień z terminami lub cały harmonogram terminów, rezerwacje, których to dotyczy, są natychmiast usuwane. Jeśli podali Państwo adres e-mail, otrzymają Państwo wiadomość o odwołaniu.
-- Skrócone i zahashowane adresy IP są usuwane najpóźniej po 24 godzinach.
+- Skrócone i zahashowane adresy IP oraz zahashowane adresy e-mail (ochrona przed nadużyciami) są usuwane najpóźniej po 24 godzinach.
 - **Wiadomości e-mail oczekujące na wysłanie** (np. przypomnienie wieczorem w dniu poprzedzającym lub potwierdzenie, którego nie udało się od razu doręczyć): do momentu wysłania zapisywana jest tylko informacja, która wiadomość jest należna dla której rezerwacji, bez adresu i treści; oba powstają dopiero przy wysyłce na podstawie Państwa rezerwacji. Ta informacja jest usuwana po wysłaniu, najpóźniej po 48 godzinach, oraz razem z Państwa rezerwacją. Jedynym wyjątkiem jest odwołanie terminu przez nauczyciela: Państwa rezerwacja jest wtedy już usunięta, dlatego na potrzeby tej wiadomości adres, język, imię i nazwisko oraz termin (bez linku) są przechowywane do momentu wysłania, a następnie usuwane, również najpóźniej po 48 godzinach.
 - **Zestawienia e-mail dla nauczyciela** (zob. punkt 6) zawierają liczbę terminów w danym dniu oraz link do listy terminów w systemie rezerwacji, ale bez imion i nazwisk i bez adresów e-mail. Tylko jeśli szkoła na to zezwoliła, zawierają dodatkowo godzinę oraz imię i nazwisko; nauczyciel usuwa je wtedy, gdy tylko nie są mu już potrzebne, **najpóźniej z końcem roku szkolnego**.
 - Jeśli chcą Państwo, aby również te wpisy zostały usunięte wcześniej, wystarczy krótka wiadomość do szkoły (punkt 1) lub do nauczyciela (art. 17 RODO).

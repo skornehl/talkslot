@@ -28,7 +28,7 @@ Bir e-posta adresi girerseniz, randevunuzu takvim dosyası (.ics) olarak içeren
 
 **Sayfayı ziyaret ederken:**
 
-- **Kötüye kullanıma karşı koruma:** Otomatik toplu istekleri ve kodların denenmesini önlemek için IP adresiniz kısaltılır (son haneleri silinir), ardından gizli bir anahtarla geri döndürülemez şekilde şifrelenir (hash'lenir) ve istek sayısıyla birlikte kaydedilir. Bu kayıtlar en geç 24 saat sonra silinir.
+- **Kötüye kullanıma karşı koruma:** Otomatik toplu istekleri ve kodların denenmesini önlemek için IP adresiniz kısaltılır (son haneleri silinir), ardından gizli bir anahtarla geri döndürülemez şekilde şifrelenir (hash'lenir) ve istek sayısıyla birlikte kaydedilir. Bu sayfalar üzerinden tek bir adrese toplu e-posta gönderilememesi için e-posta adresiniz de yalnızca bu şekilde hash'lenmiş olarak, kendisine gönderilen e-posta sayısıyla birlikte kaydedilir. Bu kayıtlar en geç 24 saat sonra silinir.
 - **Sunucu kayıtları:** Sayfa ziyaret edildiğinde barındırma (hosting) hizmeti sağlayıcısı teknik nedenlerle erişim verilerini (IP adresi, tarih ve saat, açılan adres, tarayıcı türü vb.) kayıt dosyalarında saklar. [SPEICHERDAUER BEIM HOSTER ERFRAGEN UND HIER ANGEBEN.]
 
 Kullanıcı hesabı, reklam, izleme ve kullanım davranışı analizi yoktur. Hiçbir harici hizmet kullanılmaz (harici yazı tipi, betik, harita veya video yoktur). Bu sayfa çerez kullanmaz.
@@ -46,7 +46,7 @@ Randevu almak için rıza vermeniz gerekmez; randevu verilerinizin işlenmesi yu
 - **Randevu sisteminde** (veritabanı) ad ve e-posta adresi içeren randevunuz **randevudan sonraki gün otomatik olarak silinir** (saat 0:00'dan itibaren).
 - Randevunuzu kişisel bağlantınız üzerinden iptal ederseniz, bilgileriniz randevu sisteminden **hemen** silinir.
 - Öğretmen randevunuzu iptal ederse veya bir randevu gününü ya da randevu takviminin tamamını silerse, ilgili randevular hemen silinir. Bir e-posta adresi girdiyseniz, iptal bildirimini e-posta ile alırsınız.
-- Kısaltılmış ve hash'lenmiş IP adresleri en geç 24 saat sonra silinir.
+- Kısaltılmış ve hash'lenmiş IP adresleri ile hash'lenmiş e-posta adresleri (kötüye kullanıma karşı koruma) en geç 24 saat sonra silinir.
 - **Henüz gönderilecek e-postalar** (örneğin bir önceki akşamki hatırlatma veya hemen teslim edilemeyen bir onay): Gönderilene kadar yalnızca hangi e-postanın hangi randevu için beklediği not edilir; adres ve içerik saklanmaz, ikisi de ancak gönderim sırasında randevunuzdan oluşturulur. Bu not gönderimden sonra, en geç 48 saat sonra ve randevunuzla birlikte silinir. Tek istisna öğretmenin randevuyu iptal etmesidir: Bu durumda randevunuz zaten silinmiş olduğundan, bu e-posta için adres, dil, ad ve randevu saati (bağlantı olmadan) gönderilene kadar saklanır ve ardından silinir; bu da en geç 48 saat sonra gerçekleşir.
 - **Öğretmene gönderilen özet e-postalar** (bkz. bölüm 6) her gün için randevu sayısını ve randevu sistemindeki randevu listesine bir bağlantı içerir, ancak ad ve e-posta adresi içermez. Yalnızca okul buna izin verdiyse ayrıca saat ve adları da içerir; öğretmen bu durumda bunları artık ihtiyaç duymadığı anda, **en geç öğretim yılının sonunda** siler.
 - Bu kayıtların da daha önce silinmesini istiyorsanız, okula (bölüm 1) veya öğretmene kısa bir mesaj göndermeniz yeterlidir (GDPR madde 17).

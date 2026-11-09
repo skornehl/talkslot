@@ -54,7 +54,7 @@ check('nothing to do: the current template with its placeholders filled in (with
 // With a marker: the private template of v1.7.0 → the current one (talkslot PRs #38, #39 and the outbox)
 $pvKnown = $pvChanges($pvFill($pvV17), $pvV17, $pvPrivate);
 check('marker of v1.7.0, text filled in: exactly the sections the template changed since, with its old and new lines',
-    $pvTitles($pvKnown) === ['1. Verantwortliche', '2. Zweck der Verarbeitung', '4. Rechtsgrundlagen', '5. Speicherdauer und Löschung', '6. Empfänger', '9. Ihre Rechte']
+    $pvTitles($pvKnown) === ['1. Verantwortliche', '2. Zweck der Verarbeitung', '3. Welche Daten verarbeitet werden', '4. Rechtsgrundlagen', '5. Speicherdauer und Löschung', '6. Empfänger', '9. Ihre Rechte']
     && in_array(['-', 'Verantwortlich im Sinne der DSGVO für diese Terminvergabe und alle darüber gebuchten Termine ist:'], $pvKnown[0]['diff'], true)
     && in_array(['+', 'Verantwortlich im Sinne der DSGVO für diese Terminvergabe ist:'], $pvKnown[0]['diff'], true)
     && !array_filter(array_merge(...array_column($pvKnown, 'diff')), static fn (array $d): bool => $d[0] === ' ' || str_contains($d[1], 'Testangabe')));
@@ -141,10 +141,10 @@ check('marker of an earlier template without a placeholder the current one has (
 // Without a marker (edited before them): where the text differs from the current template
 $pvUnknown = $pvChanges($pvOwn, null, $pvPrivate);
 check('no marker: the sections that differ from the template (also own changes and own sections), lines only in the text and only in the template',
-    $pvTitles($pvUnknown) === ['1. Verantwortliche', '2. Zweck der Verarbeitung', '4. Rechtsgrundlagen', '5. Speicherdauer und Löschung', '6. Empfänger', '8. Sicherheit', '9. Ihre Rechte', '12. Kontakt']
-    && $pvUnknown[5]['diff'][0][0] === '-' && str_starts_with($pvUnknown[5]['diff'][0][1], 'Unsere Verbindung ist per TLS') && $pvUnknown[5]['diff'][1][0] === '+'
+    $pvTitles($pvUnknown) === ['1. Verantwortliche', '2. Zweck der Verarbeitung', '3. Welche Daten verarbeitet werden', '4. Rechtsgrundlagen', '5. Speicherdauer und Löschung', '6. Empfänger', '8. Sicherheit', '9. Ihre Rechte', '12. Kontakt']
+    && $pvUnknown[6]['diff'][0][0] === '-' && str_starts_with($pvUnknown[6]['diff'][0][1], 'Unsere Verbindung ist per TLS') && $pvUnknown[6]['diff'][1][0] === '+'
     && end($pvUnknown)['diff'] === [['-', '# 12. Kontakt'], ['-', 'Eigener Abschnitt.']]
-    && !array_filter($pvUnknown[6]['diff'], static fn (array $d): bool => str_contains($d[1], 'Aufsichtsbehörde zu beschweren'))); // filled in, the same
+    && !array_filter($pvUnknown[7]['diff'], static fn (array $d): bool => str_contains($d[1], 'Aufsichtsbehörde zu beschweren'))); // filled in, the same
 check('no marker: a text of the other operator type differs in the sections that differ between both templates',
     $pvTitles($pvChanges($pvFill($pvTpl('privacy.de')), null, $pvPrivate)) === ['1. Verantwortliche', '2. Zweck der Verarbeitung', '4. Rechtsgrundlagen', '5. Speicherdauer und Löschung', '6. Empfänger', '9. Ihre Rechte']);
 check('a text with the wording of the current template follows it (placeholders filled in), an outdated one does not',
@@ -166,7 +166,7 @@ check('taken over: the text then has the wording of the template, filled-in line
     && App\LegalTexts::placeholders($pvMerged) === ['[[VERANTWORTLICHE]]', '[BITTE PRÜFEN UND DANN DIESE KLAMMER LÖSCHEN: IST EINE ODER EINER BENANNT (Z. B. BEI EINEM VEREIN ODER FREIEN TRÄGER), STATT DES SATZES DAVOR DEREN KONTAKTDATEN ANGEBEN.]']
     && !str_contains($pvMerged, 'alle darüber gebuchten Termine'));
 check('taken over without a marker: a section only the text has stays (it may be the operator\'s own); with a marker that has it, the template dropped it: removed',
-    str_ends_with($pvMerged, "# 12. Kontakt\n\nEigener Abschnitt.\n") && $pvUnknown[7]['dropped'] && !$pvUnknown[0]['dropped']
+    str_ends_with($pvMerged, "# 12. Kontakt\n\nEigener Abschnitt.\n") && $pvUnknown[8]['dropped'] && !$pvUnknown[0]['dropped']
     && !str_contains($pvMerge($pvFill($pvPrivate), $pvDropped, ['Sicherheit'], $pvPrivate), '# 8. Sicherheit')
     && str_contains($pvMerge($pvFill($pvPrivate), $pvDropped, ['Sicherheit']), '# 8. Sicherheit')
     && str_ends_with($pvMerge($pvOwn, $pvPrivate, array_column($pvKnown, 'key'), $pvV17), "# 12. Kontakt\n\nEigener Abschnitt.\n"));
@@ -232,7 +232,7 @@ check('taken over: the lines of the text the sections taken over no longer have 
     && $pvLost($pvFill($pvV17), $pvMerge($pvFill($pvV17), $pvPrivate, array_column($pvKnown, 'key'), $pvV17), array_column($pvKnown, 'key'), $pvV17) === ['**Datenschutzbeauftragte bzw. Datenschutzbeauftragter:** Testangabe']);
 $pvPartial = $pvMerge($pvOwn, $pvPrivate, ['Rechtsgrundlagen']);
 check('taken over: only the sections chosen, the others as they were (own sections too)',
-    $pvTitles($pvChanges($pvPartial, null, $pvPrivate)) === ['1. Verantwortliche', '2. Zweck der Verarbeitung', '5. Speicherdauer und Löschung', '6. Empfänger', '8. Sicherheit', '9. Ihre Rechte', '12. Kontakt']
+    $pvTitles($pvChanges($pvPartial, null, $pvPrivate)) === ['1. Verantwortliche', '2. Zweck der Verarbeitung', '3. Welche Daten verarbeitet werden', '5. Speicherdauer und Löschung', '6. Empfänger', '8. Sicherheit', '9. Ihre Rechte', '12. Kontakt']
     && str_contains($pvPartial, 'Unsere Verbindung ist per TLS') && str_ends_with($pvPartial, "# 12. Kontakt\n\nEigener Abschnitt.\n")
     && $pvMerge($pvPrivate, $pvPrivate, []) === $pvPrivate && $pvMerge($pvFill($pvTpl('imprint.de')), $pvTpl('imprint.de'), []) === $pvFill($pvTpl('imprint.de')));
 $pvOld = "Intro\n\n# 1. Eins\n\nA\n\n# 2. Drei\n\nC\n";
@@ -301,8 +301,8 @@ $pvTexts = static fn (array $texts): string => (string) (new ReflectionMethod(Ap
 check('note on the dashboard: per text its sections, more than three as their number, in the admin language',
     $pvTexts([['key' => 'privacy', 'lang' => 'de', 'changes' => array_slice($pvKnown, 0, 2)], ['key' => 'imprint', 'lang' => 'en', 'changes' => [['heading' => null]]]])
         === 'Datenschutzerklärung (DE): 1. Verantwortliche, 2. Zweck der Verarbeitung; Impressum (EN): Einleitung'
-    && $pvTexts([['key' => 'privacy', 'lang' => 'en', 'changes' => $pvUnknown]]) === 'Datenschutzerklärung (EN): 8 Abschnitte'
-    && App\AdminI18n::with('en', static fn () => $pvTexts([['key' => 'privacy', 'lang' => 'en', 'changes' => $pvUnknown]])) === 'Privacy policy (EN): 8 sections');
+    && $pvTexts([['key' => 'privacy', 'lang' => 'en', 'changes' => $pvUnknown]]) === 'Datenschutzerklärung (EN): 9 Abschnitte'
+    && App\AdminI18n::with('en', static fn () => $pvTexts([['key' => 'privacy', 'lang' => 'en', 'changes' => $pvUnknown]])) === 'Privacy policy (EN): 9 sections');
 check('privacy templates: the same numbered first-level sections for both operator types in German and English (compared per section)',
     count(array_unique(array_map(static fn (string $n): string => implode(',', preg_match_all('/^# (\d+)\. /m', $pvTpl($n), $m) ? $m[1] : []),
         ['privacy.de', 'privacy.en', 'privacy-private.de', 'privacy-private.en']))) === 1 && preg_match_all('/^# \d+\. /m', $pvPrivate) >= 10);
