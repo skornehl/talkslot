@@ -48,7 +48,7 @@ return [
     // Changes by the teacher that nobody mails about: the box unticked, no address or nothing to mail (round.php,
     // day_form.php, round_form.php, user_form.php); see notifications.php for the mails
     'Die Eltern werden NICHT automatisch benachrichtigt – bitte selbst informieren.' => 'Parents are NOT notified automatically – please inform them yourself.',
-    'Die Eltern werden NICHT automatisch benachrichtigt. Für diesen Eintrag ist keine E-Mail-Adresse hinterlegt – bitte persönlich informieren.' => 'Parents are NOT notified automatically. No email address is stored for this entry – please inform them in person.',
+    'Die Eltern werden NICHT automatisch benachrichtigt. Für diese Buchung ist keine E-Mail-Adresse hinterlegt – bitte persönlich informieren.' => 'Parents are NOT notified automatically. No email address is stored for this booking – please inform them in person.',
     'Vorher in der Druckansicht nachsehen, wer gebucht hat – nach dem Löschen ist das nicht mehr möglich.' => 'Check the print view first to see who booked – after deleting, this is no longer possible.',
     'Runde „{title}“ mit allen Tagen und {count} Buchung(en) endgültig löschen?' => 'Permanently delete the round “{title}” with all days and {count} booking(s)?',
     'An diesem Tag sind {count} Termin(e) gebucht. Die Eltern werden über Änderungen an Datum, Zeiten oder Ort NICHT automatisch benachrichtigt – bitte selbst informieren.' => '{count} appointment(s) booked on this day. Parents are NOT notified automatically about changes to the date, times or location – please inform them yourself.',

@@ -9,12 +9,14 @@ the German ones, with the English label in brackets.
 
 ## Create a round
 
-*+ Neue Runde* (new round) opens the form. The appointments are created together with the round:
+*+ Neue Runde* (new round) opens the form. The appointments are created together with the round. The form
+goes from what matters most to the details: *Worum geht es?* (what is it about), *Wann?* (when), *Regeln für
+Eltern* (rules for parents), and the technical options folded away under *Erweitert* (advanced):
 
 - **Template** (*Vorlage*, if your admins have set up any): *Übernehmen* fills in times, breaks and
   settings, e.g. "parent-teacher day: 08:00–16:00, 15 minutes, lunch break". Everything stays editable;
   only title and date are left to fill in.
-- **Title** and optional **description** (*Beschreibungstext*), shown to parents. Plain text. Keep them
+- **Title** and optional **description** (*Beschreibung*), shown to parents. Plain text. Keep them
   neutral, e.g. "Elternsprechtag 7b": they appear in the mails to parents and in calendar files, the title
   also in the admin log and, when the round is created, in its address. A title such as "consultation on
   special needs" would tell everyone who sees a booking more than the appointment.
@@ -35,19 +37,21 @@ the German ones, with the English label in brackets.
   until *N* hours before (*Ändern/Absagen bis*). Parents see both on the round page before they book (a
   deadline of 0 is not mentioned), and the date and time of the second on their appointment page and in the
   confirmation, change and reminder mails (a reminder after the deadline asks them to contact you instead).
-- **Delete after** (*Runde löschen nach Ablauf*): hours after the last day, 24 by default, empty = never.
-  Bookings are deleted the day after the appointment either way. Only a round that was in use expires:
-  one that was active at some point or got an entry from you. A round that was never active, e.g. a copy
-  that still has the old dates, is kept until you use or delete it (*Noch nie aktiv: wird nicht
-  automatisch gelöscht*). The round page shows the date of the deletion (*Runde wird am … gelöscht*); an
-  expired round also says how to keep it: add a day from today on, or clear this field.
 - **Reminder** (*Eltern am Vorabend an ihren Termin erinnern*, on by default): parents who gave an e-mail
   address get a reminder the evening before, with the link to cancel. Who got a confirmation or change
   notice on that same day gets none (editing a name without a mail does not count). It applies to bookings
   made while it is on; your own entries only get it once their parents received a confirmation or change
   notice by mail.
-- **Random part in the address** (recommended) so the round cannot be found by guessing, and optionally
-  **round code required** (*Nur mit Rundencode*).
+- **Random part in the address** (recommended, under *Erweitert*) so the round cannot be found by guessing,
+  and optionally **round code required** (*Nur mit Rundencode*). When you edit a round, the address itself
+  (*Webadresse*) is there too.
+- **Delete after** (*Runde löschen nach Ablauf*, under *Erweitert*): days after the last day, 1 by default,
+  empty = never.
+  Bookings are deleted the day after the appointment either way. Only a round that was in use expires:
+  one that was active at some point or got an entry from you. A round that was never active, e.g. a copy
+  that still has the old dates, is kept until you use or delete it (*Noch nie aktiv: wird nicht
+  automatisch gelöscht*). The round page shows the date of the deletion (*Runde wird am … gelöscht*); an
+  expired round also says how to keep it: add a day from today on, or clear this field.
 - **Active**: parents can book. Inactive rounds take no bookings, but parents can still cancel. While no
   round can be activated yet (for example because the admins still have to fill in the placeholders of the
   legal texts), the form says why below the checkbox and a new round starts inactive. Save it like that,
@@ -106,8 +110,10 @@ Per day you see all slots with the bookings:
 - **Addresses like `eltern@xn--mller-kva.de`** are addresses with umlauts in the domain (`eltern@müller.de`),
   written the way mail servers need them. They work as they are, also when you copy them.
 - **Block** (*Sperren*) a slot so nobody can book it, and release it again.
-- **Days**: edit times and the location of a single day (*Tag bearbeiten*), add breaks, print a day (*Tag drucken*), add more days
-  (*+ Tag hinzufügen*) or delete a day.
+- **Days**: edit times, breaks and the location of a single day (*Tag bearbeiten*; as for a new day the
+  preview shows the resulting slots, and also how many bookings would no longer fit), add a break right on
+  the page (*+ Pause hinzufügen*), print a day (*Tag drucken*), add more days (*+ Tag hinzufügen*) or delete
+  a day. With several days, the links at the top jump to each of them.
 
 If you change times or breaks, **booked appointments are never deleted**; slots that no longer fit are
 marked with ⚠ so you can move them.
@@ -175,7 +181,8 @@ and parents can still cancel.
 ## Translations
 
 Parents see the title and description in their language when a translation exists. Under *Übersetzungen
-von Titel und Beschreibung* you can:
+von Titel und Beschreibung*, folded away below the days (it names the languages that are missing or out of
+date), you can:
 
 - **translate in the browser** (*Im Browser übersetzen*): Chrome 138+ or Edge 148+ on a computer translate
   with a local model on your device. The text is not sent to any service; only the language model is

@@ -100,6 +100,15 @@ function fmt_time(string $time): string
     return substr($time, 0, 5);
 }
 
+/** A period stored in hours as days for a form field: 24 → "1", 36 → "1.5", null or '' → '' (expert review P2-3). */
+function days_from_hours(int|string|null $hours): string
+{
+    if ($hours === null || $hours === '' || !ctype_digit((string) $hours)) {
+        return (string) $hours;
+    }
+    return rtrim(rtrim(number_format((int) $hours / 24, 2, '.', ''), '0'), '.');
+}
+
 /** "14:00–14:15" */
 function fmt_range(string $start, string $end): string
 {
