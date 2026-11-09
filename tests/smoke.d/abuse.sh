@@ -38,7 +38,10 @@ check "… the last one below the limit is booked and counted" '[[ "$R2" == 303*
 ABP=$(ab_round "Missbrauch Parallel"); ABPS=$(slugof "$ABP"); ABPF=$(mktemp)
 ab_fill round "$(ab_hm "round:$ABP|$CK")" 999
 P=$(curl -s "$B/$ABPS"); PC=$(echo "$P" | csrf)
+# Each request waits between the early check and counting, so that all of them have passed that check, however the machine schedules them
+DBQ "CREATE TRIGGER tp_ab_wait BEFORE INSERT ON tp_rate_limits FOR EACH ROW DO SLEEP(IF(NEW.bucket = 'booking', 1, 0))"
 for n in 1 2 3 4 5 6 7 8; do curl -s -o /dev/null -w '%{http_code}\n' --data-urlencode "csrf=$PC" -d "name=Parallel+$n&privacy=1&slot_id=$(ab_free "$P" "$n")" "$B/$ABPS" >> "$ABPF" & done; wait
+DBQ "DROP TRIGGER tp_ab_wait"
 check "parallel bookings one below the limit: exactly one gets through, the others get 429 and give their count back ($(sort "$ABPF" | uniq -c | tr -s ' \n' ' '))" '[ "$(grep -c "^303$" "$ABPF")" = 1 ] && [ "$(grep -c "^429$" "$ABPF")" = 7 ] && [ "$(DBQ "SELECT COUNT(*) FROM tp_bookings b JOIN tp_slots s ON s.id = b.slot_id JOIN tp_round_days d ON d.id = s.day_id WHERE d.round_id = $ABP")" = 1 ] && [ "$(ab_hits round "$(ab_hm "round:$ABP|$CK")")" = 1000 ]'
 rm -f "$ABPF"
 
