@@ -14,6 +14,21 @@ use App\SlotGenerator;
 use App\Slug;
 use App\Token;
 
+// Warnings, notices and deprecations fail the run (expert review P1-14): the app only logs them, so they
+// would pass unnoticed. Places suppressed with @ stay quiet, as in the app. Each one is also noted in
+// $unitWarnings, which must be empty at the end: app code that catches every Throwable (Mailer, Alert, Outbox …)
+// would otherwise swallow the exception. The app's handler stays callable as $appErrorHandler
+// (tests/unit.d/quality.php).
+$unitWarnings = [];
+$appErrorHandler = set_error_handler(static function (int $type, string $message, string $file, int $line): bool {
+    if (!(error_reporting() & $type)) {
+        return false;
+    }
+    $place = App\ErrorPage::relativePath($file) . ':' . $line;
+    $GLOBALS['unitWarnings'][] = "$message ($place)";
+    throw new ErrorException("$message in $place", 0, $type, $file, $line);
+});
+
 $fail = 0;
 function check(string $name, bool $ok): void
 {
@@ -89,7 +104,7 @@ check('every table of schema.sql gets the prefix (Db::TABLES)', $m[1] && !array_
 preg_match_all('/^  ([a-z_]+) [A-Z]/m', (string) file_get_contents(dirname(__DIR__) . '/app/schema.sql'), $m);
 check('no column is named like a table (the prefix would rewrite it)', $m[1] && !array_intersect($m[1], App\Db::TABLES));
 check('tables get prefixed', App\Db::prefix('SELECT b.* FROM bookings b JOIN slots s ON s.id = b.slot_id JOIN round_days d ON d.id = s.day_id') === 'SELECT b.* FROM tp_bookings b JOIN tp_slots s ON s.id = b.slot_id JOIN tp_round_days d ON d.id = s.day_id');
-check('columns/constraints stay unchanged', App\Db::prefix('ALTER TABLE rounds ADD CONSTRAINT fk_rounds_user FOREIGN KEY (user_id) REFERENCES users (id)') === 'ALTER TABLE tp_rounds ADD CONSTRAINT fk_rounds_user FOREIGN KEY (user_id) REFERENCES tp_users (id)');
+check('columns stay unchanged, foreign keys get the prefix (their names are unique per database)', App\Db::prefix('ALTER TABLE rounds ADD CONSTRAINT fk_rounds_user FOREIGN KEY (user_id) REFERENCES users (id)') === 'ALTER TABLE tp_rounds ADD CONSTRAINT tp_fk_rounds_user FOREIGN KEY (user_id) REFERENCES tp_users (id)');
 check('quoted values unchanged', App\Db::prefix("SELECT value FROM settings WHERE name = 'users'") === "SELECT value FROM tp_settings WHERE name = 'users'");
 
 echo "Language files\n";
@@ -329,12 +344,17 @@ foreach (App\I18n::languages() as $lang) {
     @unlink($mailFile); @unlink($mailFile . '.expected'); @unlink($sendmail);
 }
 
+// PHP 8.5 adds a warning of its own for the failing sendmail: provoked here, so it goes to a log of its own
+// (tests/php-errors.sh would count it in app/var/php-error.log)
+$mailLog = tempnam(sys_get_temp_dir(), 'log');
 [$rc, , $err] = $run(['-d', 'sendmail_path=/bin/false', '-r', '
     require "app/bootstrap.php";
+    ini_set("error_log", ' . var_export($mailLog, true) . ');
     App\Alert::$stateFile = tempnam(sys_get_temp_dir(), "alert");
     App\Config::load(["alert_email" => "b@example.org", "mail" => ["transport" => "mail", "from_address" => "absender@example.org", "from_name" => "", "reply_to" => ""]] + (require "config/config.php"));
     App\Alert::$transport = static function ($to, $s, $b) { fwrite(STDERR, "ALERT:$to|$s|$b\n"); return true; };
     exit(App\Mailer::send("eltern@example.org", "Termin", "Hallo") ? 0 : 1);']);
+@unlink($mailLog);
 check('mail() fails: reported as failed, admin alerted without the recipient', $rc === 1
     && str_contains($err, 'ALERT:b@example.org|[TalkSlot] Mailversand fehlgeschlagen') && !str_contains($err, 'eltern@example.org'));
 
@@ -438,6 +458,7 @@ echo "Security (audit)\n";
 $allowed = [
     'BookingService.php:$perDay' => 'boolean, selects a fixed clause',
     'Installer.php:$stmt' => 'statements from app/schema.sql',
+    'RoundTrash.php:$columns' => 'a filtered copy of the constant RoundTrash::ROUND_COLUMNS',
     'Migrations.php:$sql' => 'fixed statements from Migrations::STEPS',
     'Summaries.php:$where' => 'fixed conditions from callers in the same class',
     'ScheduleService.php:$where' => 'fixed conditions from ScheduleService::SCOPES',
@@ -463,16 +484,7 @@ foreach (array_merge(glob(dirname(__DIR__) . '/app/src/*.php'), glob(dirname(__D
 }
 $unexpected = array_diff_key($found, $allowed);
 check('SQL text without embedded variables (only reviewed exceptions' . ($unexpected ? '; new: ' . implode(', ', array_map(static fn ($k, $l) => "$k line $l", array_keys($unexpected), $unexpected)) : '') . ')', !$unexpected);
-$badR = [];
-foreach (array_merge(glob(dirname(__DIR__) . '/app/src/*.php'), glob(dirname(__DIR__) . '/app/src/Controller/*.php'), [dirname(__DIR__) . '/app/helpers.php'], glob(dirname(__DIR__) . '/bin/*.php')) as $f) {
-    foreach (token_get_all((string) file_get_contents($f)) as $tok) {
-        // A pattern literal with \R but without the u modifier splits UTF-8 characters at the byte 0x85
-        if (is_array($tok) && $tok[0] === T_CONSTANT_ENCAPSED_STRING && preg_match('@^[\'"]([/#~]).*\\\\R.*\1([a-zA-Z]*)[\'"]$@s', $tok[1], $m) === 1 && !str_contains($m[2], 'u')) {
-            $badR[] = basename($f) . ':' . $tok[2];
-        }
-    }
-}
-check('no regex with \R without the u modifier' . ($badR ? ' (' . implode(', ', $badR) . ')' : ''), !$badR);
+// Regular expressions without the u modifier: tests/unit.d/quality.php
 check('SQL: table prefix replaces only table names, not quoted values',
     App\Db::prefix("SELECT * FROM rounds r WHERE r.title = 'rounds' AND x = \"users\"") === "SELECT * FROM tp_rounds r WHERE r.title = 'rounds' AND x = \"users\"");
 check('email: unusual forms rejected', is_valid_email('x.y+z@schule.example.org') && !is_valid_email('"a b"@example.org') && !is_valid_email('"<svg>"@x.yz') && !is_valid_email("a\n@b.de"));
@@ -530,8 +542,8 @@ check("app/vendor/phpmailer ($bundled) matches composer.lock (" . ($locked['phpm
 echo "Web host in the privacy policy\n";
 App\Config::load(['hosting' => ['de' => 'Beispiel Hosting GmbH, Weg 1']] + $cfg);
 check('[[HOSTER]] from the configuration, per language of the page text', App\Hosting::fill("- **Hosting:** [[HOSTER]]\n", 'de') === "- **Hosting:** Beispiel Hosting GmbH, Weg 1\n");
-check('not configured: visible placeholder in the language of the text (otherwise English)', str_starts_with(App\Hosting::fill('[[HOSTER]]', 'en'), '[WEB HOST WITH ADDRESS]')
-    && str_starts_with(App\Hosting::fill('[[HOSTER]]', 'pl'), '[WEB HOST WITH ADDRESS]') && !App\Hosting::configured('en'));
+check('not configured: visible placeholder in the language of the text; a translation takes English or German (expert review P1-9)', str_starts_with(App\Hosting::fill('[[HOSTER]]', 'en'), '[WEB HOST WITH ADDRESS]')
+    && App\Hosting::fill('[[HOSTER]]', 'pl') === 'Beispiel Hosting GmbH, Weg 1' && !App\Hosting::configured('en'));
 check('templates contain [[HOSTER]]', str_contains((string) file_get_contents(dirname(__DIR__) . '/app/templates/pages/privacy.de.md'), '[[HOSTER]]')
     && str_contains((string) file_get_contents(dirname(__DIR__) . '/app/templates/pages/privacy.en.md'), '[[HOSTER]]'));
 App\Config::load($cfg);
@@ -672,6 +684,10 @@ $contact->setValue(null, null);
 foreach (glob(__DIR__ . '/unit.d/*.php') ?: [] as $file) {
     require $file;
 }
+
+echo "PHP warnings\n";
+check('no PHP warning, notice or deprecation during the unit tests, also none that app code caught'
+    . ($unitWarnings ? ': ' . implode('; ', array_unique($unitWarnings)) : ''), $unitWarnings === []);
 
 echo $fail === 0 ? "ALL UNIT TESTS PASSED\n" : "$fail FAILED\n";
 exit($fail === 0 ? 0 : 1);

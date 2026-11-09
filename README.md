@@ -20,8 +20,9 @@ schools (GDPR/DSGVO, TDDDG) and multilingual families.
 - **For the operator:** PHP 8.3+ and MariaDB, no framework, no Composer, no Node, no external CDNs.
   Optional zero-downtime deployment via GitHub Actions and FTPS, including one-click rollback.
 
-> The admin area and mails to teachers are in German or English (per account). Parent-facing pages and
-> mails are translated into six languages (translations should be reviewed by native speakers).
+> The admin area and mails to teachers are in German or English (per account). Parent-facing pages, mails
+> and the privacy policy templates are translated into six languages (translations should be reviewed by
+> native speakers; for the privacy policy the German version is authoritative).
 
 ## Contents
 
@@ -44,8 +45,11 @@ schools (GDPR/DSGVO, TDDDG) and multilingual families.
 - Round page under a readable URL (e.g. `/parents-evening-2026-k7f3x9q2`) or via an 8-character round code
   (`K7MP-3QXA`) on the start page, handy for paper invitations. Typos like `0`/`O`, dashes, case and Cyrillic
   look-alikes are tolerated.
-- Only free slots are shown, grouped by day. Required: name and acknowledging the privacy notice; e-mail is
-  optional.
+- Only free slots are shown, grouped by day. Only a name is required, e-mail is optional, and there is
+  nothing to tick for the privacy notice: right above the button the form shows who is responsible, the
+  purpose and the deletion with a link to the full notice (the rest folded away), and the chosen slot with
+  date, time and location. The round page names the booking deadline and the deadline for changes; the
+  confirmation page and mails give the date and time until which the booking can be changed online.
 - Personal link to **move or cancel**; confirmation and change mails contain an `.ics` file that updates the
   same calendar entry when the booking is moved (titled with the round and the teacher), cancellations one
   that removes it. The confirmation page offers *Copy link*, *Add to
@@ -64,10 +68,11 @@ schools (GDPR/DSGVO, TDDDG) and multilingual families.
 - Admins (one or more): invite teachers and further admins by e-mail (one-time link, no passwords in
   mails), change roles, deactivate, reset or delete accounts, see and edit all rounds, create rounds for a
   teacher, maintain templates and the details for the legal pages. A log (*Protokoll*) shows which admin
-  changed what (no data of parents, deleted after 90 days).
+  changed what (no names or e-mail addresses of parents, bookings with their date only; deleted after 90 days); from
+  there, a logged search finds the data for a parent's request for access (Art. 15 GDPR) by one exact email address.
 - Teachers only see their own rounds (enforced centrally, foreign IDs return 404).
 - Rounds: several days, first/last slot, duration, any number of breaks, live preview; add days later;
-  location (per round, optionally per day); block single slots; duplicate with a new first day; templates
+  location (per round, optionally per day); block single slots; duplicate with a new first day; a 14-day trash for rounds deleted without bookings; templates
   (e.g. "parent-teacher day, 08:00–16:00, 15 minutes"); deadlines for booking and changes; ready-to-copy
   invitation text with a direct link per parent language and the round's rule on multiple bookings.
 - Bookings: overview, edit, move, delete, add manually (with a mail to the parents, ticked as soon as an
@@ -89,6 +94,9 @@ schools (GDPR/DSGVO, TDDDG) and multilingual families.
   turned off per round; entries made by the teacher only after the parents got a confirmation).
 - A mail the mail server refused is retried from a **mail queue** and marked *E-Mail nicht zugestellt*
   in the booking list; admins see mails that wait too long.
+- Privacy policy templates in all six parent languages, imprint templates in German and English; a
+  translation whose placeholders are still open is not shown (parents get the English text with a notice in
+  their language) and does not block activating rounds. Every mail to parents links the privacy policy.
 - Imprint and privacy policy per language, editable (simple Markdown), with templates per operator type:
   *operated by the school* (public body, Art. 6(1)(e) GDPR, the school's data protection officer) or
   *operated privately* (Art. 6(1)(b)/(f) GDPR, legal notice of a private, non-commercial service). Unedited
@@ -121,7 +129,8 @@ schools (GDPR/DSGVO, TDDDG) and multilingual families.
   in public repositories after 60 days without activity).
 - Database migrations run automatically and are additive (columns, tables, indexes), so a rollback to the
   previous version of the same major version keeps working.
-- Table prefix (default `tp_`), so a database can be shared with other applications.
+- Table prefix (default `tp_`) for tables and foreign keys, so a database can be shared with other applications
+  or a second TalkSlot.
 
 ## Requirements
 
@@ -223,7 +232,7 @@ bin/setup-secrets.sh    # asks for host, directories, FTP and DB credentials; ge
 
 This sets the variables `BASE_URL`, `FTP_HOST`, `WEB_DIR`, `APP_DIR`, `DB_HOST` and the secrets
 `FTP_USERNAME`, `FTP_PASSWORD`, `DB_USER`, `DB_PASS`, `DB_NAME`, `APP_SECRET`, `INSTALL_KEY`. Optional
-variables: `APP_NAME`, `HOSTING_DE`, `HOSTING_EN` (web host for the privacy policy), `LANGUAGES` (e.g. `de,en,tr`) and `DEFAULT_LANGUAGE` (e.g. `en`), `ALERT_EMAIL`, `CRON_ALERT_HOURS`, `DB_SSL_CA` (absolute path of a CA certificate for an encrypted connection to a database on another server), `MAIL_FROM`, `MAIL_FROM_NAME`, `MAIL_REPLY_TO`, `MAIL_TRANSPORT=smtp` with
+variables: `APP_NAME`, `HOSTING_DE`, `HOSTING_EN` (web host for the privacy policy), `LANGUAGES` (e.g. `de,en,tr`) and `DEFAULT_LANGUAGE` (e.g. `en`), `ALERT_EMAIL`, `CRON_ALERT_HOURS`, `ROUND_BOOKING_LIMIT`, `DB_SSL_CA` (absolute path of a CA certificate for an encrypted connection to a database on another server), `MAIL_FROM`, `MAIL_FROM_NAME`, `MAIL_REPLY_TO`, `MAIL_TRANSPORT=smtp` with
 `SMTP_HOST`, `SMTP_PORT`, `SMTP_ENCRYPTION` and the secrets `SMTP_USER`, `SMTP_PASS`, `DB_PREFIX`; the
 variable `CONFIG_MODE` sets the permissions of `config.php` on the server (default `600`).
 Without `FTP_HOST` the deploy, cron and switch workflows do nothing.
@@ -295,7 +304,7 @@ All options are documented in [`config/config.sample.php`](config/config.sample.
 | `default_language` | `de` | language shown until the visitor picks one; must be in `languages` (variable `DEFAULT_LANGUAGE`) |
 | `timezone` | `Europe/Berlin` | |
 | `alert_email` | – | recipient of error alerts (else the admin's address) |
-| `hosting` | – | web host per language, replaces `[[HOSTER]]` in the privacy policy |
+| `hosting` | – | web host per language, replaces `[[HOSTER]]` in the privacy policy (translations without their own entry take the English one) |
 | `access_link_hours` | `48` | validity of invitation/reset links |
 | `summary_evening_hour` | `18` | time of the evening summary |
 | `summary_names` | `false` | the school allows names in the summaries (each account chooses, new ones start without; variable `SUMMARY_NAMES`) |
@@ -311,7 +320,9 @@ values are listed for admins on the dashboard.
 **Adding a language:** copy `app/lang/en.php` to e.g. `app/lang/it.php`, translate it, add the code to
 `languages` and a flag `public/assets/flags/it.svg` (admin translation form). Optionally add the legal templates
 `app/templates/pages/{imprint,imprint-private,privacy,privacy-private}.it.md` (with their hashes in
-`Migrations::CURRENT_PAGE_HASHES`); otherwise the legal pages fall back to English.
+`Migrations::CURRENT_PAGE_HASHES`); otherwise the legal pages fall back to English. Set `'plural'` in the
+language file to the plural rule of the language (`one`, `pl`, `east-slavic` or `none`) and give the forms of
+`'hours'` it needs.
 
 ## Security
 
@@ -336,6 +347,9 @@ values are listed for admins on the dashboard.
 - Passwords 12 characters up to 72 bytes (bcrypt), not on a local list of common passwords, no repetitions
   or keyboard runs, without the username, e-mail address or app name.
 - Spam protection: honeypot, minimum fill-in time, rate limits on bookings, codes and change links.
+- Abuse of the public pages: a generous limit of bookings per round and network, a warning to the teacher and
+  the admins when one network books a lot within minutes, deleting several bookings of a day at once; the
+  mails parents trigger are limited per address (HMAC-hashed), and the operator hears of an unusual volume.
 - Headers: CSP without `unsafe-inline`, `X-Frame-Options: DENY`, `nosniff`, `Referrer-Policy: no-referrer`,
   HSTS, Permissions-Policy, `Cache-Control: no-store`, also on 404 and error pages.
 - CI and deployment use no third-party GitHub Actions (code is fetched with plain `git`, the token only in a request header).
@@ -357,7 +371,8 @@ values are listed for admins on the dashboard.
   translation for booking lists; parent pages stay translatable.
 - Browser storage only on explicit request (§ 25 TDDDG): "remember my appointment" is an unticked checkbox;
   the light/dark choice stores only `light`/`dark`.
-- The mandatory checkbox is worded as *acknowledgement* of the privacy notice, not as consent (Art. 13 GDPR).
+- No checkbox for the privacy notice: Art. 13 GDPR asks to inform, not to confirm. The form gives the
+  information in two levels (Art. 12), the full notice exists in every parent language.
 - Automatic deletion as described above; summary mails to teachers contain no names unless the school
   allows them, and never parent e-mail addresses. Teachers can give their own reply address for parents.
 - The mail queue holds references only; a cancellation by the teacher keeps just what that one mail needs
@@ -367,13 +382,17 @@ values are listed for admins on the dashboard.
 
 ```bash
 php tests/unit.php      # unit tests, no database needed (also run in CI on PHP 8.3–8.5)
-tests/smoke.sh          # several hundred end-to-end checks against the local Docker setup
+tests/smoke.sh          # several hundred end-to-end checks against the local Docker setup, with tests/integration.php
 node tests/browser.mjs  # the JavaScript in headless Chrome (after dev/reset.sh && dev/demo.sh)
 tests/deploy.sh         # atomic deployment via lftp file:// under load, switch-back on errors (needs lftp, openssl and the local DB)
+dev/phpstan.sh          # static analysis (PHPStan level 6 with a baseline)
 ```
 
-CI runs all four on every push: the unit tests on PHP 8.3–8.5, the others against the Docker environment,
-the smoke tests also against MariaDB 10.6; PHP 7.4 and 8.2 must get the "cannot start" message.
+CI runs all of them on every push: the unit tests on PHP 8.3–8.5, the others against the Docker environment,
+the smoke tests also against MariaDB 10.6; PHP 7.4 and 8.2 must get the "cannot start" message. It measures
+the line coverage of all tests (PCOV, shown in the job summary, changed lines without a test marked in pull
+requests, a minimum that must not be undercut) and fails on any PHP warning, notice or deprecation of the app.
+Details: [Development](https://skornehl.github.io/talkslot/guide/development/#measuring-instead-of-guessing).
 
 The smoke test covers login and lockout, account management, **data separation between teachers**,
 CSRF, honeypot, XSS escaping, SQL injection, **20 parallel bookings on one slot → exactly one succeeds**,
@@ -398,7 +417,7 @@ bin/              cron.php, install.php, build.sh, deploy.sh, setup-secrets.sh, 
 config/           config.sample.php → config.php (not in Git)
 public/           document root: index.php, install.php, .htaccess, assets/
 dev/              local Docker environment (PHP 8.5, MariaDB 11.8, Mailpit)
-tests/            unit.php, smoke.sh, browser.mjs, deploy.sh
+tests/            unit.php, smoke.sh, integration.php, browser.mjs, deploy.sh, coverage/, phpstan.neon
 ```
 
 ## Contributing

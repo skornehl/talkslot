@@ -56,7 +56,7 @@ $legalQuery = ['lang' => App\AdminI18n::lang() !== 'de' && App\I18n::lang() === 
     </nav>
     <?php else:
       // Before signing in: language links to the same page (only for harmless paths, otherwise the login page)
-      $langPath = preg_match('#^/admin(?:/[A-Za-z0-9._~-]+)*$#', App\Http::path()) ? App\Http::path() : '/admin/login'; ?>
+      $langPath = preg_match('#^/admin(?:/[A-Za-z0-9._~-]+)*\z#', App\Http::path()) ? App\Http::path() : '/admin/login'; ?>
     <nav class="admin-nav" aria-label="Sprache / Language">
       <?php foreach (['de' => 'Deutsch', 'en' => 'English'] as $code => $name): ?>
         <a href="<?= e(url($langPath, ['lang' => $code])) ?>" lang="<?= $code ?>"<?= App\AdminI18n::lang() === $code ? ' aria-current="true"' : '' ?>><?= $name ?></a>

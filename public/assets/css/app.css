@@ -166,6 +166,16 @@ code { font-family: var(--mono); font-size: .9em; background: var(--neutral-soft
 .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.25rem; margin: 0 0 1.25rem; }
 .card > :first-child { margin-top: 0; }
 .card > :last-child { margin-bottom: 0; }
+/* "Bereit für den Start?" (App\Readiness): each point with its state in words and a coloured edge */
+.readiness { list-style: none; padding: 0; margin: 0; }
+.readiness-item { border-left-width: 6px; }
+.readiness-item h2 { font-size: 1.1rem; margin: 0 0 .4rem; }
+.readiness-done { border-left-color: var(--success); }
+.readiness-check { border-left-color: var(--warning-border); }
+.readiness-todo { border-left-color: var(--danger); }
+.readiness-done .readiness-state { color: var(--success); }
+.readiness-check .readiness-state { color: var(--warning); }
+.readiness-todo .readiness-state { color: var(--danger); }
 .alert { border-radius: var(--radius); padding: .75rem 1rem; margin: 0 0 1.25rem; background: var(--neutral-soft); border-left: 5px solid var(--muted); }
 .alert p:last-child, .alert ul:last-child { margin-bottom: 0; }
 .alert ul { margin: .25rem 0 0; padding-left: 1.25rem; }
@@ -252,6 +262,12 @@ details summary { cursor: pointer; color: var(--primary); margin: .5rem 0; }
 .privacy-summary { background: var(--primary-soft); border-radius: var(--radius); padding: .75rem 1rem; margin: .5rem 0 1rem; font-size: .95rem; }
 .privacy-summary h3 { margin: 0 0 .4rem; font-size: 1rem; }
 .privacy-summary ul { margin: 0; padding-left: 1.2rem; }
+.privacy-summary details { margin: .4rem 0 0; }
+.privacy-summary details ul { margin-top: .3rem; }
+.privacy-summary summary { margin: 0; }
+.privacy-summary .privacy-link { margin: .4rem 0 0; }
+.booking-summary { font-weight: 600; margin: 0 0 .75rem; }
+.booking-summary:empty { margin: 0; }
 
 /* Honeypot: invisible to humans */
 .hp { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }

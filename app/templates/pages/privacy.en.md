@@ -1,3 +1,5 @@
+> This is a translation. The German version is authoritative.
+
 This notice informs you, in accordance with Art. 13 of the General Data Protection Regulation (GDPR), which personal data is processed when you use this booking service, for what purpose, and what rights you have.
 
 # 1. Controller
@@ -26,7 +28,7 @@ If you provide an e-mail address, you receive confirmations with your appointmen
 
 **When you visit the site:**
 
-- **Abuse protection:** to prevent automated mass requests and guessing of codes, your IP address is shortened and then irreversibly hashed with a secret key, and stored together with the number of requests. These entries are deleted after 24 hours at the latest.
+- **Abuse protection:** to prevent automated mass requests and guessing of codes, your IP address is shortened and then irreversibly hashed with a secret key, and stored together with the number of requests. So that these pages cannot send masses of e-mails to one address, your e-mail address is likewise stored only as such a hash, together with the number of e-mails sent to it. These entries are deleted after 24 hours at the latest.
 - **Server logs:** the web host stores technical access data (including IP address, date and time, requested address, browser type) in log files. [ASK THE HOST FOR THE RETENTION PERIOD AND STATE IT HERE.]
 
 There are no user accounts, no advertising, no tracking and no usage analytics. No external services are embedded (no external fonts, scripts, maps or videos). This site does not set cookies.
@@ -37,14 +39,14 @@ There are no user accounts, no advertising, no tracking and no usage analytics. 
 - **Abuse protection and server logs:** Art. 6(1)(e) and (3) GDPR in conjunction with [PROVISION OF THE STATE DATA PROTECTION ACT]. Both serve the secure and reliable operation of the booking service (Art. 32 GDPR) and protection against spam, multiple and unauthorised bookings.
 - **Browser storage (“Remember my appointment”):** Section 25(1) TDDDG and Art. 6(1)(a) GDPR (your consent by ticking the box), see section 7.
 
-By ticking the required box in the booking form you only confirm that you have read this notice. This is not consent; the processing of your booking data is based on the legal grounds stated above.
+You do not need to give consent to book an appointment; the processing of your booking data is based on the legal grounds stated above. Consent only concerns the optional browser storage (“Remember my appointment”).
 
 # 5. Retention and deletion
 
 - **In the booking service** (database), your booking with name and e-mail address is **deleted automatically on the day after the appointment** (from midnight).
 - If you cancel via your personal link, your details are deleted from the booking service **immediately**.
 - If the teacher cancels your appointment or deletes a day or the booking round, the bookings concerned are deleted immediately. If you gave an e-mail address, you receive a cancellation by e-mail.
-- Shortened and hashed IP addresses are deleted after 24 hours at the latest.
+- Shortened and hashed IP addresses and hashed e-mail addresses (abuse protection) are deleted after 24 hours at the latest.
 - **E-mails still to be sent** (e.g. the reminder the evening before, or a confirmation that could not be delivered at once): until it is sent, only a note of which e-mail is due for which booking is kept, without address or content; both are created from your booking when sending. The note is deleted once the e-mail is sent, after 48 hours at the latest, and together with your booking. The only exception is a cancellation by the teacher: your booking is already deleted then, so for this e-mail the address, language, name and appointment (without a link) are kept until it is sent and deleted afterwards, also after 48 hours at the latest.
 - **Summary e-mails to the teacher** (see section 6) contain the number of appointments per day and a link to the appointment list in the booking service, but no names and no e-mail addresses. Only if the school has allowed it do they also contain the time and name; the teacher then deletes them as soon as they are no longer needed, **at the latest at the end of the school year**.
 - If you would like these entries deleted earlier, a short message to the school (section 1) or to the teacher is sufficient (Art. 17 GDPR).

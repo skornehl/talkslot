@@ -34,6 +34,17 @@ together with the release that contains it (see
   browsers send `Origin: null` on TalkSlot's own forms too. Browsers without the header are still
   protected by the tokens.
 - Spam protection: honeypot field, minimum time to fill in a form, rate limits.
+- Slot squatting (one person taking all slots of a round with made-up names): successful bookings are
+  limited per round and shortened IP address (15 per hour by default, generous because of school Wi-Fi).
+  More than 5 bookings of a round from one network within 5 minutes send a warning to the teacher of the
+  round and all admins; under each day, *Mehrere Buchungen löschen …* (delete several bookings) deletes the
+  bookings of a time span at once. A round with *Nur mit Rundencode* (round code required) is only open to
+  those who got the code, the best protection for rounds meant for one class.
+- Mails under the school's address: the mails parents trigger themselves (confirmation, change notice,
+  cancellation, the confirmation sent again) go to one address at most 10 times per hour and 20 times per day;
+  above that the action still works, without a mail. The address is only counted as an HMAC hash and deleted
+  after 24 hours at the latest. Rebookings are also limited per shortened IP address, and the operator gets
+  an alert when parents trigger more than 100 mails in an hour (`mail_alert_hourly`).
 
 **Tokens**
 - Change links, invitation and password links are 256-bit random tokens; only their SHA-256 hash is stored.
@@ -138,10 +149,52 @@ change nobody made, or entries in *Protokoll* (log) nobody can explain:
    (Art. 33 GDPR), and inform the people concerned if the risk is high (Art. 34 GDPR). Involve your data
    protection officer.
 
+## Threat model {#threat-model}
+
+Who can do what, where the trust boundaries are, and which risks are accepted on purpose. Operators can use it
+for their documentation (see [documents for the operator]({{ '/guide/operator-documents/' | relative_url }})).
+
+| Role | Trust | Can |
+|---|---|---|
+| Parents | none, anonymous | book through the round link or code, see and change their own booking with its personal link |
+| Teachers | signed in, trusted with their own rounds | see and change the bookings of their own rounds, enter bookings |
+| Admins | trusted with all data of the installation | accounts and roles, all rounds, legal texts, the log |
+| Operator with server access (FTP, database, GitHub secrets) | fully trusted | everything, including the secrets in `config.php` |
+| Web host, mail provider | processors, bound by contract | the stored data, the files, the mails in transit |
+| Attackers | – | everything on the internet can reach the forms, the sign-in and guess links and codes; others on the same network or the same shared server |
+
+**Trust boundaries**
+1. **Browser ↔ web server (HTTPS):** every input is untrusted: CSRF tokens, rate limits, validation,
+   escaped output, security headers.
+2. **Web server ↔ database:** prepared statements only; the credentials are in `config.php` (mode 600 with the
+   automatic deployment; set it yourself on a manual installation).
+3. **Web server ↔ mail server:** SMTP with TLS if `mail.transport` is `smtp`, otherwise the host's `mail()`; once sent, mails are beyond TalkSlot's control (mailboxes of
+   parents and teachers).
+4. **Deployment:** GitHub Actions builds `config.php` from secrets and uploads it via FTPS; whoever controls
+   the repository and its secrets controls the installation.
+5. **Shared hosting:** other customers of the host are separated by the host (file permissions, PHP user);
+   the dashboard warns when `config.php` is readable by others.
+
+**Accepted residual risks**
+- **The personal link in the URL path** (`/b/<token>`): it can end up in the web server's access logs, the
+  browser history and forwarded mails. Mitigated by `Referrer-Policy: no-referrer`, storing only its hash and
+  a short log retention at the host; moving it out of the path would break booking without JavaScript.
+- **The round code in plain text:** teachers have to pass it on; it only keeps strangers away from the list
+  of slots.
+- **No second factor** for accounts (see below).
+- **Rate limits per shortened IP address** can hit shared networks such as school Wi-Fi (see below).
+- **Mails are encrypted in transit only**, not end to end.
+- **Admins see all bookings:** they are trusted and bound to confidentiality; the log shows what they change.
+- **Summary mails and printed lists** are outside TalkSlot once they reach the teacher.
+
 ## Known limitations
 
 - Rate limits work per shortened IP address. Somebody in the same network (e.g. school Wi-Fi) who keeps
-  sending wrong passwords blocks logins from that network for 15 minutes.
+  sending wrong passwords blocks logins from that network for 15 minutes. In the same way, somebody who
+  books many slots of a round through the school Wi-Fi uses up its limit for the other parents there for an
+  hour; they see a hint to use another connection (e.g. mobile data) or to contact the teacher.
+- With many shortened IP addresses (e.g. IPv6 or a botnet) somebody can still take the slots of an open
+  round. The warning and the bulk deletion help to notice and repair it; *Nur mit Rundencode* prevents it.
 - Somebody who knows a username (for new accounts it is the e-mail address, which parents see as the
   reply address unless the account gives its own reply address for parents) can use up its per-account
   limit. For up to an hour, the account can then only be used

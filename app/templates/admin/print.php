@@ -25,7 +25,7 @@
   <h1><?= e($round['title']) ?></h1>
   <h2><?= e(fmt_date($day['day_date'])) ?> · <?= e(__('{time} Uhr', ['time' => fmt_range($day['start_time'], $day['end_time'])])) ?><?php if (($where = location_of($day, $round)) !== ''): ?> · <?= e($where) ?><?php endif; ?></h2>
   <table>
-    <thead><tr><th class="col-time"><?= e(__('Zeit')) ?></th><th><?= e(__('Name')) ?></th><?php if ($showEmail): ?><th><?= e(__('E-Mail')) ?></th><?php endif; ?><th class="col-notes"><?= e(__('Notizen')) ?></th></tr></thead>
+    <thead><tr><th class="col-time"><?= e(__('Zeit')) ?></th><th><?= e(__('Name')) ?></th><?php if ($showEmail): ?><th><?= e(__('E-Mail')) ?></th><?php endif; ?><th class="col-notes"><?= e(__('Organisatorisches')) ?></th></tr></thead>
     <tbody>
     <?php foreach ($day['rows'] as $r): ?>
       <?php if (isset($r['break'])): ?>
@@ -41,7 +41,7 @@
     <?php endforeach; ?>
     </tbody>
   </table>
-  <p class="print-foot"><?= e(__('Stand: {time} Uhr · Vertraulich – nach dem Termin vernichten.', ['time' => date('d.m.Y H:i')])) ?></p>
+  <p class="print-foot"><?= e(__('Stand: {time} Uhr · Vertraulich – nur Organisatorisches notieren, keine Gesprächsinhalte; nach dem Termin vernichten.', ['time' => date('d.m.Y H:i')])) ?></p>
 </section>
 <?php endforeach; ?>
 <?php if (!$days): ?><p><?= e(__('Keine Tage vorhanden.')) ?></p><?php endif; ?>

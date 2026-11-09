@@ -506,7 +506,7 @@ try {
   async function book(name, { remember }) {
     await goto(`/${slug}`);
     await js(`${firstFree}.checked = true; document.querySelector('#name').value = ${JSON.stringify(name)};
-      document.querySelector('#privacy').checked = true; document.querySelector('#remember').checked = ${remember};`);
+      document.querySelector('#remember').checked = ${remember};`);
     await navigating(`document.querySelector('#name').form.requestSubmit()`);
     return js('location.pathname');
   }
@@ -580,9 +580,34 @@ try {
   await book('Browser Ohne Merken', { remember: false });
   check('without consent nothing is stored', (await stored())[roundId] === undefined && await js(`localStorage.getItem('${KEY}')`) === null);
 
+  section('Parents: the chosen appointment above the button, privacy information in two levels');
+  // Expert review P1-9: no required checkbox; choosing a slot shows it right above the button (aria-live)
+  await goto(`/${slug}`);
+  const summary = () => js(`document.querySelector('[data-slot-summary]').textContent`);
+  check('nothing chosen: the line above the button is empty and takes no space, a polite live region, no privacy checkbox',
+    await summary() === '' && await js(`(p => p.getAttribute('aria-live') === 'polite' && p.getBoundingClientRect().height === 0)(document.querySelector('[data-slot-summary]'))`)
+    && await js(`!document.querySelector('#privacy') && !document.querySelector('[name=privacy]')`));
+  const radios = `[...document.querySelectorAll('[name=slot_id]')]`;
+  await js(`${radios}[0].click()`);
+  const first = await summary();
+  await js(`${radios}[1].click()`);
+  const second = await summary();
+  check('choosing a slot shows it with date and time, choosing another one updates it',
+    first === 'Ihr Termin: ' + await js(`${radios}[0].getAttribute('data-when')`) && /^Ihr Termin: \S+, \d\d\.\d\d\.\d{4}, \d\d:\d\d–\d\d:\d\d Uhr/.test(first)
+    && second === 'Ihr Termin: ' + await js(`${radios}[1].getAttribute('data-when')`) && second !== first, `${first} | ${second}`);
+  check('the chosen appointment is visible right above the button',
+    await js(`(p => { const b = p.nextElementSibling; return b.type === 'submit' && p.getBoundingClientRect().height > 0 && b.getBoundingClientRect().top - p.getBoundingClientRect().bottom < 40; })(document.querySelector('[data-slot-summary]'))`));
+  const box = () => js(`(box => JSON.stringify({ first: box.querySelectorAll(':scope > ul > li').length, open: box.querySelector('details').open,
+    more: box.querySelector('details li').checkVisibility(), link: box.querySelector('.privacy-link a').checkVisibility() }))(document.querySelector('[data-privacy-summary]'))`);
+  const closed = await box();
+  check('privacy box: three lines and the link visible, the rest folded away until opened', closed === JSON.stringify({ first: 3, open: false, more: false, link: true }), closed);
+  await js(`document.querySelector('[data-privacy-summary] summary').click()`);
+  const opened = await box();
+  check('"Mehr zum Datenschutz" opens the second level', opened === JSON.stringify({ first: 3, open: true, more: true, link: true }), opened);
+
   section('Parents: the booking form is sent only once');
   await goto(`/${slug}`);
-  await js(`${firstFree}.checked = true; document.querySelector('#name').value = 'Browser Doppelklick'; document.querySelector('#privacy').checked = true;`);
+  await js(`${firstFree}.checked = true; document.querySelector('#name').value = 'Browser Doppelklick';`);
   const secondBooking = await (async () => {
     const loaded = cdp.once('Page.loadEventFired');
     const r = await js(`(f => { f.requestSubmit(); const e = new Event('submit', { cancelable: true }); f.dispatchEvent(e); return e.defaultPrevented; })(document.getElementById('booking-form'))`);
@@ -609,6 +634,21 @@ try {
   await goto(`/b/${'B'.repeat(43)}`);
   check('a link that leads nowhere any more (booking deleted) removes its entry', await js(`localStorage.getItem('${KEY}')`) === null);
 
+  section('Parents: my appointments on this device');
+  await goto('/');
+  check('start page: no list without saved appointments', await js(`document.getElementById('my-appointments').hidden`));
+  await js(`localStorage.setItem('${KEY}', JSON.stringify({ '1': [{ u: '/b/${'C'.repeat(43)}', l: 'spaeter', d: '${day(20)}' }], '2': [{ u: '/b/${'D'.repeat(43)}', l: 'bald', d: '${day(10)}' }, { u: 'https://evil.example/x', l: '<img src=x onerror=alert(1)>', d: '${day(15)}' }], '3': [{ u: '/b/${'E'.repeat(43)}', l: 'vorbei', d: '${day(-1)}' }] }))`);
+  await goto('/');
+  check('start page lists the saved appointments of all rounds, the next one first; past days are left out', await js(`!document.getElementById('my-appointments').hidden
+    && [...document.querySelectorAll('#my-appointments [data-remembered-label]')].map(p => p.textContent).join('|') === 'bald|<img src=x onerror=alert(1)>|spaeter'`));
+  check('links to the own appointments only; a foreign link is not shown, the label stays text', await js(`(() => { const a = document.querySelectorAll('#my-appointments [data-remembered-link]');
+    return a[0].getAttribute('href') === '/b/${'D'.repeat(43)}' && a[1].hidden && !a[2].hidden && !document.querySelector('#my-appointments img'); })()`));
+  await js(`document.querySelector('#my-appointments [data-remembered-forget]').click()`);
+  check('removing one keeps the others and moves the focus to the next', await js(`document.querySelectorAll('#my-appointments li').length === 2
+    && document.activeElement === document.querySelector('#my-appointments [data-remembered-forget]')`) && await js(`!localStorage.getItem('${KEY}').includes('bald')`));
+  await js(`document.querySelector('#my-appointments [data-remembered-forget]').click(); document.querySelector('#my-appointments [data-remembered-forget]').click()`);
+  check('the last one removed: the list is gone, nothing stored any more, the focus in the code field', await js(`document.getElementById('my-appointments').hidden && document.activeElement.id === 'code'`) && await js(`localStorage.getItem('${KEY}')`) === null);
+
   section('Parents: language choice at the top (phone width)');
   await cdp.send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
   const ua = await js('navigator.userAgent');
@@ -618,7 +658,7 @@ try {
     h1: document.querySelector('h1').getBoundingClientRect().top, wide: document.documentElement.scrollWidth }))(document.querySelector('.lang-switch'))`);
   check('390 px: all language names in their own language above the heading, no horizontal scrolling',
     top.names === 'Deutsch English Polski Русский Українська Türkçe' && top.bottom <= top.h1 && top.bottom < 200 && top.wide <= 390, JSON.stringify(top));
-  await js(`${firstFree}.checked = true; document.querySelector('#name').value = 'Browser Enter'; document.querySelector('#privacy').checked = true; document.querySelector('#name').focus();`);
+  await js(`${firstFree}.checked = true; document.querySelector('#name').value = 'Browser Enter'; document.querySelector('#name').focus();`);
   const entered = cdp.once('Page.loadEventFired');
   await cdp.send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13, text: '\r' });
   await cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
@@ -626,10 +666,12 @@ try {
   check('Enter in the name field books (the language buttons above do not take it over)',
     /^\/b\/[A-Za-z0-9_-]{43}$/.test(await js('location.pathname')) && await js('document.documentElement.lang') === 'de', await js('location.href'));
   await goto(`/${slug}`);
-  await js(`document.querySelector('#name').value = 'Browser Sprache'; document.querySelector('#privacy').checked = true;`);
+  await js(`document.querySelector('#name').value = 'Browser Sprache'; document.querySelector('#remember').checked = true;`);
+  await js(`(r => { r.click(); })(${firstFree})`);
   await navigating(`[...document.querySelectorAll('.lang-switch button')].find(b => b.textContent === 'Türkçe').click()`);
-  check('a language at the top switches the page and keeps the input', await js('document.documentElement.lang') === 'tr'
-    && await js(`document.querySelector('#name').value === 'Browser Sprache' && document.querySelector('#privacy').checked`));
+  check('a language at the top switches the page and keeps the input, the chosen appointment shown in Turkish', await js('document.documentElement.lang') === 'tr'
+    && await js(`document.querySelector('#name').value === 'Browser Sprache' && document.querySelector('#remember').checked`)
+    && await js(`document.querySelector('[data-slot-summary]').textContent.startsWith('Seçtiğiniz randevu: ')`));
   await cdp.send('Emulation.setUserAgentOverride', { userAgent: ua, acceptLanguage: 'uk-UA,uk;q=0.9' });
   await goto(`/${slug}`);
   check('browser in Ukrainian: page stays German, a hint in Ukrainian above the heading', await js('document.documentElement.lang') === 'de'
@@ -643,7 +685,7 @@ try {
   // A page from another origin (here a data: URL) submits forms to the round page and the login. Chrome marks
   // these requests "Sec-Fetch-Site: cross-site" and the front controller refuses them; the forms of TalkSlot
   // itself (same origin, "Origin: null" because of no-referrer) work, as all other sections show.
-  for (const [what, path, fields] of [['booking', `/${slug}`, { name: 'Fremde Seite', privacy: '1', slot_id: '1' }], ['login', '/admin/login', { username: USER, password: PASS }]]) {
+  for (const [what, path, fields] of [['booking', `/${slug}`, { name: 'Fremde Seite', slot_id: '1' }], ['login', '/admin/login', { username: USER, password: PASS }]]) {
     const inputs = Object.entries(fields).map(([k, v]) => `<input name="${k}" value="${v}">`).join('');
     const loaded = cdp.once('Page.loadEventFired');
     await cdp.send('Page.navigate', { url: 'data:text/html,' + encodeURIComponent(`<form method="post" action="${BASE}${path}">${inputs}</form>`) });
@@ -657,7 +699,7 @@ try {
   await js(`localStorage.setItem('${KEY}', JSON.stringify({ ${JSON.stringify(roundId)}: [{ u: '/b/${fake}', l: 'x' }] }))`);
   await goto(`/${slug}`);
   await js(`document.querySelector('[data-remembered-another]').click()`); // to the form, the entry stays
-  await js(`${firstFree}.checked = true; document.querySelector('#name').value = 'www.example.org'; document.querySelector('#privacy').checked = true;`);
+  await js(`${firstFree}.checked = true; document.querySelector('#name').value = 'www.example.org';`);
   await navigating(`document.querySelector('#name').form.requestSubmit()`);
   check('error box gets the focus (screen readers)', await js(`document.activeElement && document.activeElement.id === 'form-errors'`));
   check('with errors the form stays visible, the stored appointment is listed above it', await js(`!document.getElementById('booking-area').hidden

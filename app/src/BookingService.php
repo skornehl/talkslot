@@ -221,6 +221,16 @@ final class BookingService
         return $newAddress;
     }
 
+    /**
+     * The booking keeps no address: its confirmation was held back because the address got too many mails
+     * (Abuse), so no reminder or change notice goes there later either.
+     */
+    public static function forgetEmail(int $bookingId): void
+    {
+        Db::run('UPDATE bookings SET email = NULL, remind_ok = 0 WHERE id = ?', [$bookingId]);
+        Db::run('DELETE FROM mail_outbox WHERE booking_id = ?', [$bookingId]);
+    }
+
     public static function findByToken(#[\SensitiveParameter] string $plain): ?array
     {
         if (!Token::isWellFormed($plain)) {
@@ -279,7 +289,29 @@ final class BookingService
      */
     public static function canChange(array $booking): bool
     {
-        return self::slotStart($booking) > self::deadline((int) $booking['cancel_deadline_hours']);
+        return Time::now() < self::changeDeadline($booking);
+    }
+
+    /** Until when parents can change or cancel a booking online: its start minus the round's deadline for changes. */
+    public static function changeDeadline(array $booking): DateTimeImmutable
+    {
+        return self::slotStart($booking)->modify('-' . (int) $booking['cancel_deadline_hours'] . ' hours');
+    }
+
+    /**
+     * The deadline for changes in the parents' language, for the appointment page and the mails about the
+     * appointment: until when (date and time) while it is still open, otherwise that it has passed (with a deadline
+     * of 0 hours: that the appointment has started). $canMove false: only cancelling works online (round or
+     * teacher inactive), so the notice speaks of cancelling only.
+     */
+    public static function changeNotice(array $booking, bool $canMove = true): string
+    {
+        $hours = (int) $booking['cancel_deadline_hours'];
+        return match (true) {
+            self::canChange($booking) => t($canMove ? 'manage.deadline' : 'manage.deadline_cancel', ['when' => fmt_deadline(self::changeDeadline($booking))]),
+            $hours === 0 => t('manage.locked_started'),
+            default => t('manage.locked', ['hours' => fmt_hours($hours)]),
+        };
     }
 
     private static function deadline(int $hours): DateTimeImmutable

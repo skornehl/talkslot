@@ -19,6 +19,7 @@
   pages:
     - { path: /guide/privacy/, en: Privacy and legal, de: Datenschutz und Recht }
     - { path: /guide/accessibility-statement/, en: Accessibility statement, de: Erklärung zur Barrierefreiheit }
+    - { path: /guide/operator-documents/, en: Documents for the operator, de: Unterlagen für den Betrieb }
     - { path: /guide/security/, en: Security, de: Sicherheit }
     - { path: /guide/development/, en: Development, de: Entwicklung }
     - { path: /guide/faq/, en: FAQ, de: FAQ }

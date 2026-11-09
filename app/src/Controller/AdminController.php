@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\AccessRequest;
 use App\AccountDomains;
 use App\AccountLinks;
 use App\AccountSecurity;
@@ -24,7 +25,9 @@ use App\Operator;
 use App\Outbox;
 use App\ParentContact;
 use App\RateLimiter;
+use App\Readiness;
 use App\RoundCode;
+use App\RoundTrash;
 use App\ScheduleChange;
 use App\ScheduleService;
 use App\SlotGenerator;
@@ -34,6 +37,7 @@ use App\Time;
 use App\Translator;
 use App\TrustedDevice;
 use App\View;
+use App\WhatsNew;
 
 /**
  * Admin area (German or English, see AdminI18n).
@@ -50,58 +54,67 @@ final class AdminController
      * password" and invitation links work without an account and are handled in dispatch() before this table.
      */
     private const ROUTES = [
-        ['GET', '#^/$#', 'dashboard', 'teacher'],
-        ['POST', '#^/logout$#', 'logout', 'teacher'],
-        ['GET', '#^/round/new$#', 'roundForm', 'teacher'],
-        ['POST', '#^/round/new$#', 'roundSave', 'teacher'],
-        ['GET', '#^/round/(\d+)$#', 'roundShow', 'teacher'],
-        ['GET', '#^/round/(\d+)/edit$#', 'roundForm', 'teacher'],
-        ['POST', '#^/round/(\d+)/edit$#', 'roundSave', 'teacher'],
-        ['POST', '#^/round/(\d+)/toggle$#', 'roundToggle', 'teacher'],
-        ['POST', '#^/round/(\d+)/duplicate$#', 'roundDuplicate', 'teacher'],
-        ['POST', '#^/round/(\d+)/delete$#', 'roundDelete', 'teacher'],
-        ['POST', '#^/round/(\d+)/day$#', 'dayAdd', 'teacher'],
-        ['GET', '#^/round/(\d+)/print$#', 'printView', 'teacher'],
-        ['POST', '#^/round/(\d+)/translations$#', 'translationsSave', 'teacher'],
-        ['POST', '#^/round/(\d+)/translations/auto$#', 'translationsAuto', 'teacher'],
-        ['GET', '#^/day/(\d+)/edit$#', 'dayForm', 'teacher'],
-        ['POST', '#^/day/(\d+)/edit$#', 'daySave', 'teacher'],
-        ['POST', '#^/day/(\d+)/delete$#', 'dayDelete', 'teacher'],
-        ['POST', '#^/day/(\d+)/break$#', 'breakAdd', 'teacher'],
-        ['POST', '#^/break/(\d+)/delete$#', 'breakDelete', 'teacher'],
-        ['POST', '#^/slot/(\d+)/block$#', 'slotToggleBlock', 'teacher'],
-        ['GET', '#^/slot/(\d+)/book$#', 'bookingNew', 'teacher'],
-        ['POST', '#^/slot/(\d+)/book$#', 'bookingCreate', 'teacher'],
-        ['GET', '#^/booking/(\d+)/edit$#', 'bookingEdit', 'teacher'],
-        ['POST', '#^/booking/(\d+)/edit$#', 'bookingUpdate', 'teacher'],
-        ['POST', '#^/booking/(\d+)/delete$#', 'bookingDelete', 'teacher'],
-        ['GET', '#^/profile$#', 'profile', 'teacher'],
-        ['POST', '#^/profile$#', 'profileSave', 'teacher'],
-        ['POST', '#^/profile/summaries$#', 'summaryNoticeSeen', 'teacher'],
-        ['POST', '#^/password$#', 'passwordSave', 'teacher'],
-        ['GET', '#^/password-change$#', 'passwordChangeForm', 'teacher'],
-        ['POST', '#^/password-change$#', 'passwordChangeSave', 'teacher'],
-        ['GET', '#^/users$#', 'users', 'admin'],
-        ['GET', '#^/users/new$#', 'userForm', 'admin'],
-        ['POST', '#^/users/new$#', 'userSave', 'admin'],
-        ['GET', '#^/users/(\d+)/edit$#', 'userForm', 'admin'],
-        ['POST', '#^/users/(\d+)/edit$#', 'userSave', 'admin'],
-        ['POST', '#^/users/(\d+)/reset-password$#', 'userResetPassword', 'admin'],
-        ['POST', '#^/users/(\d+)/delete$#', 'userDelete', 'admin'],
-        ['POST', '#^/users/end-sessions$#', 'endAllSessions', 'admin'],
-        ['GET', '#^/texts$#', 'texts', 'admin'],
-        ['POST', '#^/texts/operator$#', 'operatorSave', 'admin'],
-        ['POST', '#^/texts/contact$#', 'parentContactSave', 'admin'],
-        ['GET', '#^/page/(imprint|privacy)/([a-z]{2})$#', 'pageForm', 'admin'],
-        ['POST', '#^/page/(imprint|privacy)/([a-z]{2})$#', 'pageSave', 'admin'],
-        ['GET', '#^/log$#', 'auditLog', 'admin'],
-        ['GET', '#^/templates$#', 'templates', 'admin'],
-        ['GET', '#^/templates/new$#', 'templateForm', 'admin'],
-        ['POST', '#^/templates/new$#', 'templateSave', 'admin'],
-        ['GET', '#^/templates/(\d+)/edit$#', 'templateForm', 'admin'],
-        ['POST', '#^/templates/(\d+)/edit$#', 'templateSave', 'admin'],
-        ['POST', '#^/templates/(\d+)/delete$#', 'templateDelete', 'admin'],
-        ['POST', '#^/templates/from-round/(\d+)$#', 'templateFromRound', 'admin'],
+        ['GET', '#^/\z#', 'dashboard', 'teacher'],
+        ['POST', '#^/logout\z#', 'logout', 'teacher'],
+        ['GET', '#^/round/new\z#', 'roundForm', 'teacher'],
+        ['POST', '#^/round/new\z#', 'roundSave', 'teacher'],
+        ['GET', '#^/round/(\d+)\z#', 'roundShow', 'teacher'],
+        ['GET', '#^/round/(\d+)/edit\z#', 'roundForm', 'teacher'],
+        ['POST', '#^/round/(\d+)/edit\z#', 'roundSave', 'teacher'],
+        ['POST', '#^/round/(\d+)/toggle\z#', 'roundToggle', 'teacher'],
+        ['POST', '#^/round/(\d+)/duplicate\z#', 'roundDuplicate', 'teacher'],
+        ['POST', '#^/round/(\d+)/delete\z#', 'roundDelete', 'teacher'],
+        ['GET', '#^/trash\z#', 'trash', 'teacher'],
+        ['POST', '#^/trash/(\d+)/restore\z#', 'trashRestore', 'teacher'],
+        ['POST', '#^/trash/(\d+)/delete\z#', 'trashDelete', 'teacher'],
+        ['POST', '#^/round/(\d+)/day\z#', 'dayAdd', 'teacher'],
+        ['GET', '#^/round/(\d+)/print\z#', 'printView', 'teacher'],
+        ['POST', '#^/round/(\d+)/translations\z#', 'translationsSave', 'teacher'],
+        ['POST', '#^/round/(\d+)/translations/auto\z#', 'translationsAuto', 'teacher'],
+        ['GET', '#^/day/(\d+)/edit\z#', 'dayForm', 'teacher'],
+        ['POST', '#^/day/(\d+)/edit\z#', 'daySave', 'teacher'],
+        ['POST', '#^/day/(\d+)/delete\z#', 'dayDelete', 'teacher'],
+        ['GET', '#^/day/(\d+)/bookings\z#', 'dayBookingsForm', 'teacher'],
+        ['POST', '#^/day/(\d+)/bookings/delete\z#', 'dayBookingsDelete', 'teacher'],
+        ['POST', '#^/day/(\d+)/break\z#', 'breakAdd', 'teacher'],
+        ['POST', '#^/break/(\d+)/delete\z#', 'breakDelete', 'teacher'],
+        ['POST', '#^/slot/(\d+)/block\z#', 'slotToggleBlock', 'teacher'],
+        ['GET', '#^/slot/(\d+)/book\z#', 'bookingNew', 'teacher'],
+        ['POST', '#^/slot/(\d+)/book\z#', 'bookingCreate', 'teacher'],
+        ['GET', '#^/booking/(\d+)/edit\z#', 'bookingEdit', 'teacher'],
+        ['POST', '#^/booking/(\d+)/edit\z#', 'bookingUpdate', 'teacher'],
+        ['POST', '#^/booking/(\d+)/delete\z#', 'bookingDelete', 'teacher'],
+        ['GET', '#^/profile\z#', 'profile', 'teacher'],
+        ['POST', '#^/profile\z#', 'profileSave', 'teacher'],
+        ['POST', '#^/profile/summaries\z#', 'summaryNoticeSeen', 'teacher'],
+        ['POST', '#^/news\z#', 'newsSeen', 'teacher'],
+        ['POST', '#^/password\z#', 'passwordSave', 'teacher'],
+        ['GET', '#^/password-change\z#', 'passwordChangeForm', 'teacher'],
+        ['POST', '#^/password-change\z#', 'passwordChangeSave', 'teacher'],
+        ['GET', '#^/users\z#', 'users', 'admin'],
+        ['GET', '#^/users/new\z#', 'userForm', 'admin'],
+        ['POST', '#^/users/new\z#', 'userSave', 'admin'],
+        ['GET', '#^/users/(\d+)/edit\z#', 'userForm', 'admin'],
+        ['POST', '#^/users/(\d+)/edit\z#', 'userSave', 'admin'],
+        ['POST', '#^/users/(\d+)/reset-password\z#', 'userResetPassword', 'admin'],
+        ['POST', '#^/users/(\d+)/delete\z#', 'userDelete', 'admin'],
+        ['POST', '#^/users/end-sessions\z#', 'endAllSessions', 'admin'],
+        ['GET', '#^/texts\z#', 'texts', 'admin'],
+        ['GET', '#^/start\z#', 'readiness', 'admin'],
+        ['POST', '#^/texts/operator\z#', 'operatorSave', 'admin'],
+        ['POST', '#^/texts/contact\z#', 'parentContactSave', 'admin'],
+        ['GET', '#^/page/(imprint|privacy)/([a-z]{2})\z#', 'pageForm', 'admin'],
+        ['POST', '#^/page/(imprint|privacy)/([a-z]{2})\z#', 'pageSave', 'admin'],
+        ['GET', '#^/log\z#', 'auditLog', 'admin'],
+        ['GET', '#^/access-request\z#', 'accessRequestForm', 'admin'],
+        ['POST', '#^/access-request\z#', 'accessRequestSearch', 'admin'],
+        ['GET', '#^/templates\z#', 'templates', 'admin'],
+        ['GET', '#^/templates/new\z#', 'templateForm', 'admin'],
+        ['POST', '#^/templates/new\z#', 'templateSave', 'admin'],
+        ['GET', '#^/templates/(\d+)/edit\z#', 'templateForm', 'admin'],
+        ['POST', '#^/templates/(\d+)/edit\z#', 'templateSave', 'admin'],
+        ['POST', '#^/templates/(\d+)/delete\z#', 'templateDelete', 'admin'],
+        ['POST', '#^/templates/from-round/(\d+)\z#', 'templateFromRound', 'admin'],
     ];
 
     public function dispatch(string $path, string $method): void
@@ -118,7 +131,7 @@ final class AdminController
             return;
         }
         // Invitation/password link and "forgot password" work without login
-        if (preg_match('#^/invite/([A-Za-z0-9_-]{43})$#', $path, $m)) {
+        if (preg_match('#^/invite/([A-Za-z0-9_-]{43})\z#', $path, $m)) {
             $method === 'POST' ? $this->inviteSave($m[1]) : $this->inviteForm($m[1]);
             return;
         }
@@ -277,7 +290,9 @@ final class AdminController
             $r['deletion_at'] = Cleanup::deletionAt($r, $r['last_day']);
         }
         unset($r);
+        $legalHints = Auth::isAdmin() ? array_merge(self::operatorHints(), self::legalHints(LegalTexts::outdated())) : [];
         $this->render('admin/dashboard', [
+            'trashCount' => RoundTrash::count($all ? null : (int) Auth::id()),
             'title' => $all ? __('Alle Terminrunden') : __('Meine Terminrunden'),
             'rounds' => $rounds,
             'showOwner' => $all,
@@ -299,8 +314,12 @@ final class AdminController
             )) : 0,
             'operatorMissing' => !Operator::ready(),
             'typeMissing' => !Auth::isAdmin() && Operator::ready() && Operator::type() === null,
-            'textsOpen' => !Auth::isAdmin() && Operator::ready() && LegalTexts::open() !== [],
-            'legalHints' => Auth::isAdmin() ? array_merge(self::operatorHints(), self::legalHints(LegalTexts::outdated())) : [],
+            'textsOpen' => !Auth::isAdmin() && Operator::ready() && (LegalTexts::splitOpen(LegalTexts::open())[0] !== [] || LegalTexts::missing() !== [] || LegalTexts::germanEmpty()),
+            'legalHints' => $legalHints,
+            // Until the first round has been public: one checklist ("Bereit für den Start?") instead of the setup warnings
+            'readiness' => Auth::isAdmin() && !Readiness::started() ? Readiness::checks($legalHints) : null,
+            // "Was ist neu" after an update: what changed in how admins and teachers work
+            'whatsNew' => WhatsNew::unseen((array) Auth::user()),
             // Offboarding: active accounts nobody has signed in to for a long time (only the number)
             'unusedAccounts' => Auth::isAdmin() ? (int) Db::value(
                 'SELECT COUNT(*) FROM users WHERE is_active = 1 AND COALESCE(last_login_at, created_at) < ?',
@@ -802,11 +821,66 @@ final class AdminController
             Http::redirect('/admin/round/' . $id, [], 'delete-round');
         }
         $label = self::roundLabel($id); // for the log: the round is gone afterwards
+        // Without bookings: into the trash, restorable for a while. Booked in the meantime: ask again
+        if ($booked === 0) {
+            if (RoundTrash::put($id) === null) {
+                $this->flash('error', __('Inzwischen hat sich an dieser Runde etwas geändert (z. B. eine neue Buchung). Bitte prüfen und erneut löschen.'));
+                Http::redirect('/admin/round/' . $id, [], 'delete-round');
+            }
+            $this->audit(fn () => __('in den Papierkorb gelegt'), $label);
+            $this->flash('success', __('Runde in den Papierkorb gelegt. Sie lässt sich {days} Tage lang wiederherstellen (Link „Papierkorb“ oben auf dieser Seite).', ['days' => RoundTrash::KEEP_DAYS]));
+            Http::redirect('/admin');
+        }
         $parents = ScheduleService::cancelRound($id, Http::post('notify') === '1');
-        $this->audit(fn () => ($booked ? __('gelöscht (mit {count} Buchung(en))', ['count' => $booked]) : __('gelöscht')) . self::parentsAudit($parents), $label);
+        $this->audit(fn () => __('gelöscht (mit {count} Buchung(en))', ['count' => $booked]) . self::parentsAudit($parents), $label);
         $this->flash('success', __('Runde mit allen Tagen und Buchungen gelöscht.'));
         $this->parentsFlash($parents);
         Http::redirect('/admin');
+    }
+
+    // ---------------------------------------------------------------- Trash (rounds without bookings)
+
+    private function trash(): void
+    {
+        $this->render('admin/trash', ['title' => __('Papierkorb'), 'rows' => RoundTrash::entries(Auth::isAdmin() ? null : (int) Auth::id()),
+            'showOwner' => Auth::isAdmin(), 'days' => RoundTrash::KEEP_DAYS]);
+    }
+
+    /** An entry of the trash the signed-in account may act on, else 404 (own entries; admins all). */
+    private function trashEntry(int $id): array
+    {
+        $entry = RoundTrash::find($id);
+        return $entry && self::mayAccess((int) $entry['user_id']) ? $entry : $this->notFound();
+    }
+
+    private function trashRestore(int $id): void
+    {
+        $entry = $this->trashEntry($id);
+        // As when activating: a round only goes public if what that requires is (still) there
+        $blocker = $this->publishBlocker($this->userById((int) $entry['user_id']));
+        $restored = RoundTrash::restore($id, $blocker === null);
+        if ($restored === null) {
+            $this->flash('error', __('Dieser Eintrag ist nicht mehr im Papierkorb.'));
+            Http::redirect('/admin/trash');
+        }
+        $this->audit(fn () => __('aus dem Papierkorb wiederhergestellt'), $restored['id']);
+        $this->flash('success', $restored['same_address']
+            ? __('Runde wiederhergestellt, mit ihrer bisherigen Adresse und ihrem Rundencode. War sie aktiv, ist sie wieder buchbar.')
+            : __('Runde wiederhergestellt. Ihre bisherige Adresse oder ihr Rundencode war vergeben, deshalb hat sie neue: Schon verteilte Links oder Codes führen nicht mehr zu dieser Runde, bitte geben Sie die neuen weiter.'));
+        if ($restored['deactivated']) {
+            $this->flash('error', __('Die Runde bleibt deaktiviert: {hint}', ['hint' => (string) $blocker]));
+        }
+        Http::redirect('/admin/round/' . $restored['id']);
+    }
+
+    private function trashDelete(int $id): void
+    {
+        $entry = $this->trashEntry($id);
+        RoundTrash::remove($id);
+        $owner = Db::one("SELECT COALESCE(NULLIF(display_name, ''), username) AS owner FROM users WHERE id = ?", [$entry['user_id']]);
+        $this->audit(fn () => __('aus dem Papierkorb endgültig gelöscht'), ['title' => $entry['title'], 'owner' => $owner['owner'] ?? '?']);
+        $this->flash('success', __('Runde endgültig gelöscht.'));
+        Http::redirect('/admin/trash');
     }
 
     // ---------------------------------------------------------------- Days & breaks
@@ -1018,6 +1092,68 @@ final class AdminController
         Http::redirect('/admin/round/' . $day['round_id']);
     }
 
+    /**
+     * Deleting several bookings of a day at once (expert review P1-7, after slots were taken with made-up names):
+     * the bookings of the appointments within ?from–?to (without them all of the day, conflicts outside its
+     * times too), each with a box, so the teacher keeps the genuine ones: ticked, except the teacher's own
+     * entries. Nothing is deleted here (GET); dayBookingsDelete() deletes the ticked ones.
+     */
+    private function dayBookingsForm(int $id): void
+    {
+        $day = $this->day($id);
+        $round = $this->round((int) $day['round_id']);
+        $span = Http::query('from') === '' && Http::query('to') === '';
+        $from = $span ? (string) $day['start_time'] : Time::normalizeTime(Http::query('from'));
+        $to = $span ? (string) $day['end_time'] : Time::normalizeTime(Http::query('to'));
+        $valid = $from && $to && $from < $to;
+        $bookings = match (true) {
+            !$valid => [],
+            $span => Db::all(BookingService::DETAIL_SQL . ' WHERE d.id = ? ORDER BY s.start_time, b.id', [$id]),
+            default => Db::all(
+                BookingService::DETAIL_SQL . ' WHERE d.id = ? AND s.start_time >= ? AND s.end_time <= ? ORDER BY s.start_time, b.id',
+                [$id, $from, $to]
+            ),
+        };
+        foreach ($bookings as &$b) {
+            $b['mailable'] = ScheduleService::upcoming($b) && ScheduleService::mailable($b);
+        }
+        unset($b);
+        $this->render('admin/bookings_delete', [
+            'title' => __('Mehrere Buchungen löschen'),
+            'round' => $round,
+            'day' => $day,
+            'from' => $valid ? $from : Http::query('from'),
+            'to' => $valid ? $to : Http::query('to'),
+            'errors' => $valid ? [] : [__('Bitte gültige Start- und Endzeit angeben (Start vor Ende).')],
+            'bookings' => $bookings,
+            'mailable' => count(array_filter(array_column($bookings, 'mailable'))),
+        ]);
+    }
+
+    /** Deletes the bookings of the day ticked in dayBookingsForm(); the parents are told only if asked to. */
+    private function dayBookingsDelete(int $id): void
+    {
+        $day = $this->day($id);
+        $ids = is_array($_POST['booking'] ?? null) ? array_filter($_POST['booking'], static fn ($v): bool => is_string($v) && ctype_digit($v)) : [];
+        if (!$ids) {
+            $this->flash('error', __('Keine Buchung ausgewählt – es wurde nichts gelöscht.'));
+            Http::redirect('/admin/round/' . $day['round_id'], [], 'day-' . $id);
+        }
+        // The cancellations go to the outbox (bulk mails), nothing is sent while the page waits
+        $notify = Http::post('notify') === '1';
+        [$deleted, $parents] = ScheduleService::deleteBookings($id, array_values($ids), $notify);
+        if ($deleted === 0) { // deleted meanwhile (another tab, the parents) or not of this day
+            $this->flash('error', __('Keine der ausgewählten Buchungen gibt es noch – es wurde nichts gelöscht.'));
+            Http::redirect('/admin/round/' . $day['round_id'], [], 'day-' . $id);
+        }
+        $this->audit(fn () => __('Tag {date}: {count} Buchung(en) auf einmal gelöscht', ['date' => self::when($day['day_date']), 'count' => $deleted])
+            . self::parentsAudit($parents), (int) $day['round_id']);
+        $this->flash('success', __('{count} Buchung(en) gelöscht – die Slots sind wieder frei.', ['count' => $deleted]));
+        // Without the box nobody is told on purpose (made-up names): no list of people to inform
+        $notify ? $this->parentsFlash($parents) : $this->flash('info', __('Es wurden keine Absagen per E-Mail versendet.'));
+        Http::redirect('/admin/round/' . $day['round_id'], [], 'day-' . $id);
+    }
+
     private function dayBookings(int $dayId): int
     {
         return (int) Db::value('SELECT COUNT(*) FROM bookings b JOIN slots s ON s.id = b.slot_id WHERE s.day_id = ?', [$dayId]);
@@ -1146,7 +1282,9 @@ final class AdminController
             // An entry puts a draft to use: from now on it expires after its last day (Cleanup)
             Db::run('UPDATE rounds SET was_used = 1 WHERE id = ?', [$round['id']]);
         }
-        $this->audit(fn () => __('Buchung {slot} eingetragen', ['slot' => self::when($slot['day_date'], $slot['start_time'])]), (int) $round['id']);
+        // Booking events with the date only (expert review P2-4): with the time, a summary mail or a printed list would
+        // tell whose booking it was for 90 days after the booking itself is gone
+        $this->audit(fn () => __('Buchung am {date} eingetragen', ['date' => self::when($slot['day_date'])]), (int) $round['id']);
         $msg = __('Eintrag angelegt. Änderungslink für die Eltern (wird nur jetzt angezeigt): {link}', ['link' => abs_url('/b/' . $token, ['lang' => $old['lang']])]);
         if ($old['send_mail'] && $old['email'] !== '' && $this->teacherMailAllowed($msg)) {
             $mail = $this->withoutSession(static fn () => Notifier::sendOrQueue((array) BookingService::findById($id), 'booked', $token));
@@ -1200,9 +1338,11 @@ final class AdminController
         }
         $newAddress = BookingService::update($id, PublicController::cleanName($old['name']), $old['email'] ?: null, $old['lang']);
         $target = $moved ? BookingService::findById($id) : null;
-        $this->audit(fn () => $target
-            ? __('Buchung {slot} geändert, umgebucht auf {target}', ['slot' => self::when($booking['day_date'], $booking['start_time']), 'target' => self::when($target['day_date'], $target['start_time'])])
-            : __('Buchung {slot} geändert', ['slot' => self::when($booking['day_date'], $booking['start_time'])]), (int) $booking['round_id']);
+        $this->audit(fn () => match (true) {
+            $target === null => __('Buchung am {date} geändert', ['date' => self::when($booking['day_date'])]),
+            $target['day_date'] === $booking['day_date'] => __('Buchung am {date} geändert, auf eine andere Uhrzeit am selben Tag umgebucht', ['date' => self::when($booking['day_date'])]),
+            default => __('Buchung am {date} geändert, umgebucht auf den {target}', ['date' => self::when($booking['day_date']), 'target' => self::when($target['day_date'])]),
+        }, (int) $booking['round_id']);
         $msg = $moved ? __('Eintrag gespeichert und umgebucht.') : __('Eintrag gespeichert.');
         // Also without a change here: this is how parents learn the new date, location or teacher of their
         // appointment after the day or the round was changed (the mail carries the current details)
@@ -1225,7 +1365,7 @@ final class AdminController
         $notify = Http::post('notify') === '1';
         // The cancellation goes out right away (session closed meanwhile), or from the outbox if the server refuses
         $mail = $this->withoutSession(static fn () => ScheduleService::deleteBooking($booking, $notify));
-        $this->audit(fn () => __('Buchung {slot} gelöscht', ['slot' => self::when($booking['day_date'], $booking['start_time'])])
+        $this->audit(fn () => __('Buchung am {date} gelöscht', ['date' => self::when($booking['day_date'])])
             . ($mail !== null ? ', ' . __('Eltern per E-Mail informiert') : ''), (int) $booking['round_id']);
         $this->flash('success', __('Eintrag gelöscht – der Slot ist wieder frei.') . match ($mail) {
             Notifier::SENT => ' ' . __('Absage per E-Mail an die Eltern gesendet.'),
@@ -1347,10 +1487,23 @@ final class AdminController
                 ? __('Bevor Runden aktiviert werden können, wählen Sie bitte unter „Texte“ die Betriebsart: Wird die Terminvergabe von der Schule oder privat betrieben?')
                 : __('Runden können erst aktiviert werden, wenn ein Admin die Betriebsart (von der Schule oder privat betrieben) gewählt hat.');
         }
-        if (($open = LegalTexts::open()) !== []) {
+        // Open placeholders in a translation (e.g. the Polish privacy policy) do not count: parents then get the
+        // English or German text (LegalTexts::forParents())
+        if (($open = LegalTexts::splitOpen(LegalTexts::open())[0]) !== []) {
             return Auth::isAdmin()
                 ? __('Bevor Runden aktiviert werden können, ersetzen Sie bitte unter „Texte“ die offenen Platzhalter in eckigen Klammern: {texts}.', ['texts' => self::openTexts($open, false)])
                 : __('Runden können erst aktiviert werden, wenn ein Admin die offenen Platzhalter in Impressum bzw. Datenschutzerklärung ausgefüllt hat.');
+        }
+        // A page empty in every fallback language: parents would get no text at all (LegalTexts::missing())
+        if (($missing = LegalTexts::missing()) !== []) {
+            return Auth::isAdmin()
+                ? __('Bevor Runden aktiviert werden können, hinterlegen Sie bitte unter „Texte“ {texts} in mindestens einer dieser Sprachen: {languages}.', ['texts' => self::missingTexts($missing), 'languages' => strtoupper(implode(', ', LegalTexts::fallbackLanguages()))])
+                : __('Runden können erst aktiviert werden, wenn ein Admin Impressum und Datenschutzerklärung hinterlegt hat.');
+        }
+        if (LegalTexts::germanEmpty()) {
+            return Auth::isAdmin()
+                ? __('Bevor Runden aktiviert werden können, hinterlegen Sie bitte unter „Texte“ die deutsche Datenschutzerklärung: Auf sie verweisen alle Übersetzungen als maßgebliche Fassung.')
+                : __('Runden können erst aktiviert werden, wenn ein Admin Impressum und Datenschutzerklärung hinterlegt hat.');
         }
         return null;
     }
@@ -1486,6 +1639,20 @@ final class AdminController
         Http::redirect('/admin');
     }
 
+    /** "Was ist neu" confirmed: the notes so far are not shown again to this account. */
+    private function newsSeen(): void
+    {
+        WhatsNew::markSeen(Auth::id());
+        Http::redirect('/admin');
+    }
+
+    /** "Bereit für den Start?": the checklist of the setup (Readiness). */
+    private function readiness(): void
+    {
+        $items = Readiness::checks(array_merge(self::operatorHints(), self::legalHints(LegalTexts::outdated())));
+        $this->render('admin/readiness', ['title' => __('Bereit für den Start?'), 'items' => $items, 'started' => Readiness::started()]);
+    }
+
     private function passwordSave(): void
     {
         $result = $this->changePasswordFromPost();
@@ -1529,11 +1696,12 @@ final class AdminController
         // Sign-ins only in coarse steps (never, within / more than 12 months ago): enough to clean up
         // accounts, without showing everybody's login times to all admins (employee data protection)
         $users = Db::all(
-            'SELECT u.id, u.username, u.display_name, u.email, u.role, u.is_active, u.must_change_password, u.access_token_expires_at,
+            'SELECT u.id, u.username, u.display_name, u.email, u.role, u.is_active, u.must_change_password,
                     u.last_login_at IS NULL AS never_signed_in, u.last_login_at < ? AS long_inactive,
+                    COALESCE(u.access_token_expires_at > ?, 0) AS invite_open,
                     (SELECT COUNT(*) FROM rounds r WHERE r.user_id = u.id) AS round_count
                FROM users u ORDER BY u.is_active DESC, u.display_name, u.username',
-            [self::inactiveSince()]
+            [self::inactiveSince(), Time::nowSql()]
         );
         $this->render('admin/users', ['title' => __('Benutzer'), 'users' => $users, 'me' => Auth::id()]);
     }
@@ -1809,6 +1977,7 @@ final class AdminController
             $me = Auth::user();
             $this->withoutSession(static fn () => AccountSecurity::adminChange(AccountSecurity::DELETED, $user, $me));
         }
+        WhatsNew::forget($id);
         $this->flash('success', __('Benutzer „{name}“ mit allen Runden und Buchungen gelöscht.', ['name' => $user['username']]));
         $this->parentsFlash($parents);
         Http::redirect('/admin/users');
@@ -1890,13 +2059,22 @@ final class AdminController
         if ($old) {
             $hints[] = __('Die Datenschutzerklärung ({languages}) beschreibt noch das alte Modell (Lehrkräfte verantwortlich, Betreiberin als Auftragsverarbeiterin). Verantwortlich ist jetzt der Betreiber (die Angaben für Impressum und Datenschutz) – bitte Abschnitt 1, 6 und 9 an die Vorlage anpassen.', ['languages' => $list($old)]);
         }
-        // Wording that does not fit the operator type (LegalTexts::mismatches()), per kind the languages
+        // Wording that does not fit the operator type (LegalTexts::mismatches()) or no longer fits at all
+        // (LegalTexts::obsolete()), per kind the languages
         $mismatch = [];
-        foreach (Db::all("SELECT lang, content FROM pages WHERE page_key IN ('imprint', 'privacy') ORDER BY lang") as $row) {
-            foreach (LegalTexts::mismatches((string) $row['content'], Operator::type()) as $kind) {
-                $mismatch[$kind][(string) $row['lang']] = ['lang' => $row['lang']];
+        // Only texts of offered languages (admins cannot edit the others) that are not emptied (pick(): missing)
+        foreach (LegalTexts::stored() as $texts) {
+            foreach ($texts as $lang => $content) {
+                foreach (trim($content) !== '' ? [...LegalTexts::mismatches($content, Operator::type()), ...LegalTexts::obsolete($content)] : [] as $kind) {
+                    $mismatch[$kind][(string) $lang] = ['lang' => (string) $lang];
+                }
             }
         }
+        ksort($mismatch);
+        foreach ($mismatch as &$langs) {
+            ksort($langs);
+        }
+        unset($langs);
         if (isset($mismatch['old'])) {
             // Operated by the school, but the template up to v1.6: "private service" without a data protection
             // officer, legal bases for private operators only, "cancel at any time"
@@ -1913,10 +2091,14 @@ final class AdminController
             // all booked appointments and a promised deletion of the summary mails in the teacher's mailbox
             $hints[] = __('Die Datenschutzerklärung ({languages}) nennt den Betreiber noch als Verantwortlichen für „alle darüber gebuchten Termine“ und sagt vermutlich auch die Löschung der Zusammenfassungen im Postfach der Lehrkraft zu. Bei privatem Betrieb ist er nur für die Terminvergabe verantwortlich; für das Gespräch und das Postfach der Lehrkraft gelten die Regeln der Schule – bitte die Abschnitte 1, 4, 5 und 9 mit der Vorlage „Privat betrieben“ abgleichen („Vorlage laden“).', ['languages' => $list($mismatch['scope'])]);
         }
+        if (isset($mismatch['checkbox'])) {
+            // Expert review P1-9: the booking form no longer has the required checkbox "read the privacy notice"
+            $hints[] = __('Die Datenschutzerklärung ({languages}) erwähnt noch das Pflicht-Häkchen im Buchungsformular. Das gibt es nicht mehr: Eltern werden informiert, bestätigen müssen sie nichts – bitte den letzten Absatz in Abschnitt 4 an die Vorlage anpassen.', ['languages' => $list($mismatch['checkbox'])]);
+        }
         if (isset($mismatch['anytime'])) {
             $hints[] = __('Die Datenschutzerklärung ({languages}) sagt noch, Eltern könnten ihren Termin „jederzeit“ selbst absagen. Das geht nur bis zur Änderungsfrist der Terminrunde – bitte den Satz in Abschnitt 9 an die Vorlage anpassen.', ['languages' => $list($mismatch['anytime'])]);
         }
-        $noPlaceholder = Db::all("SELECT lang FROM pages WHERE page_key IN ('imprint', 'privacy') AND content NOT LIKE '%[[VERANTWORTLICHE]]%' GROUP BY lang ORDER BY lang");
+        $noPlaceholder = Db::all("SELECT lang FROM pages WHERE page_key IN ('imprint', 'privacy') AND TRIM(content) <> '' AND content NOT LIKE '%[[VERANTWORTLICHE]]%' GROUP BY lang ORDER BY lang");
         if ($noPlaceholder) {
             $hints[] = __('Impressum bzw. Datenschutzerklärung ({languages}) enthalten den Platzhalter [[VERANTWORTLICHE]] nicht – die Angaben für Impressum und Datenschutz erscheinen dort nicht automatisch.', ['languages' => $list($noPlaceholder)]);
         }
@@ -1931,7 +2113,7 @@ final class AdminController
         array_push($hints, ...($outdated !== null ? self::outdatedHints($outdated) : []));
         $hosting = array_values(array_filter(
             array_column(Db::all("SELECT DISTINCT lang FROM pages WHERE page_key = 'privacy' AND content LIKE '%[[HOSTER]]%' ORDER BY lang"), 'lang'),
-            static fn ($l) => !\App\Hosting::configured((string) $l)
+            static fn ($l) => \App\Hosting::source((string) $l) === null
         ));
         if ($hosting) {
             $hints[] = __('Für die Datenschutzerklärung ({languages}) fehlen die Angaben zum Hoster (Konfiguration „hosting“, beim Deployment die Variablen HOSTING_DE bzw. HOSTING_EN) – bis dahin steht dort ein Platzhalter.', ['languages' => implode(', ', array_map('strtoupper', $hosting))]);
@@ -1957,10 +2139,36 @@ final class AdminController
         } elseif (Operator::typeAuto()) {
             $hints[] = __('Die Betriebsart wurde beim Update auf „{type}“ gesetzt, weil Impressum und Datenschutzerklärung noch unverändert der bisherigen Vorlage entsprachen. Bitte prüfen Sie das unter „Texte“ und speichern Sie die Angaben dort einmal.', ['type' => Operator::typeLabel((string) Operator::type())]);
         }
-        if (($open = LegalTexts::open()) !== []) {
-            $hints[] = __('Impressum bzw. Datenschutzerklärung enthalten noch offene Platzhalter in eckigen Klammern – {texts}. Solange sie nicht ersetzt sind, lassen sich keine Runden aktivieren; bereits aktive Runden bleiben erreichbar.', ['texts' => self::openTexts($open, true)]);
+        [$blocking, $translations] = LegalTexts::splitOpen(LegalTexts::open());
+        if ($blocking !== []) {
+            $hints[] = __('Impressum bzw. Datenschutzerklärung enthalten noch offene Platzhalter in eckigen Klammern – {texts}. Solange sie nicht ersetzt sind, lassen sich keine Runden aktivieren; bereits aktive Runden bleiben erreichbar.', ['texts' => self::openTexts($blocking, true)]);
+        }
+        if ($translations !== []) {
+            // Translations (expert review P1-9): parents get the English (or German) text until they are filled in
+            $hints[] = __('Übersetzungen noch nicht vollständig: {texts}. Bitte ersetzen Sie dort die Platzhalter in eckigen Klammern durch dieselben Angaben wie in der deutschen Fassung. Bis dahin sehen Eltern in diesen Sprachen die englische bzw. deutsche Fassung mit einem Hinweis in ihrer Sprache; Runden lassen sich trotzdem aktivieren. Wenn Sie eine Übersetzung nicht anbieten möchten, leeren Sie den Text.', ['texts' => self::openTexts($translations, false)]);
+        }
+        if (($missing = LegalTexts::missing()) !== []) {
+            $hints[] = __('Für {texts} gibt es in keiner dieser Sprachen einen Text: {languages}. Eltern bekommen dann keinen, und es lassen sich keine Runden aktivieren.', ['texts' => self::missingTexts($missing), 'languages' => strtoupper(implode(', ', LegalTexts::fallbackLanguages()))]);
+        }
+        if (LegalTexts::germanEmpty()) {
+            $hints[] = __('Die deutsche Datenschutzerklärung ist leer. Auf sie verweisen alle Übersetzungen als maßgebliche Fassung; bis sie hinterlegt ist, lassen sich keine Runden aktivieren.');
+        }
+        // The German text is the authoritative version: what it says beyond the template, or a change made there since,
+        // may be missing in the other languages
+        $edited = LegalTexts::behindEditedGerman();
+        if ($edited !== []) {
+            $hints[] = __('Ihre deutsche Datenschutzerklärung weicht von der Vorlage ab. Diese Fassungen sind noch die Vorlage mit Ihren Angaben: {languages}. Maßgeblich ist die deutsche Fassung – bitte übertragen Sie Ihre Änderungen dorthin.', ['languages' => strtoupper(implode(', ', $edited))]);
+        }
+        if (($behind = array_values(array_diff(LegalTexts::behindGerman(), $edited))) !== []) {
+            $hints[] = __('Die deutsche Datenschutzerklärung wurde geändert, nachdem diese Fassungen zuletzt gespeichert wurden: {languages}. Maßgeblich ist die deutsche Fassung – bitte prüfen Sie, ob sie dieselben Angaben enthalten, und speichern Sie sie danach (auch unverändert).', ['languages' => strtoupper(implode(', ', $behind))]);
         }
         return $hints;
+    }
+
+    /** The pages missing in every fallback language (LegalTexts::missing()): "Impressum und Datenschutzerklärung". */
+    private static function missingTexts(array $missing): string
+    {
+        return implode(' ' . __('und') . ' ', array_map(self::pageLabel(...), $missing));
     }
 
     /**
@@ -2131,10 +2339,14 @@ final class AdminController
     {
         $this->assertLang($lang);
         $content = str_replace("\r\n", "\n", Http::postRaw('content'));
+        // The German text is the authoritative version (LegalTexts::behindGerman()): saved unchanged, it is not newer
+        // than the translations. Saving a translation always counts, that is how admins confirm it.
+        $was = $lang === 'de' ? Db::one('SELECT content, updated_at FROM pages WHERE page_key = ? AND lang = ?', [$key, $lang]) : null;
+        $at = $was !== null && rtrim((string) $was['content']) === rtrim($content) ? (string) $was['updated_at'] : Time::nowSql();
         Db::run(
             'INSERT INTO pages (page_key, lang, content, updated_at) VALUES (?, ?, ?, ?)
              ON DUPLICATE KEY UPDATE content = ?, updated_at = ?',
-            [$key, $lang, $content, Time::nowSql(), $content, Time::nowSql()]
+            [$key, $lang, $content, $at, $content, $at]
         );
         // Version marker (LegalTexts::base()): the template the form was loaded from or the admin reconciled the
         // text with ("base", an operator type) if it is still the one the form showed ("base_hash"), else the
@@ -2359,6 +2571,40 @@ final class AdminController
         ]);
     }
 
+    // ---------------------------------------------------------------- Requests for access (Art. 15 GDPR)
+
+    /** Form for a request for access about one e-mail address (admins only, see AccessRequest). */
+    private function accessRequestForm(): void
+    {
+        $this->render('admin/access_request', ['title' => __('Auskunft zu einer E-Mail-Adresse'), 'email' => '', 'result' => null, 'errors' => []]);
+    }
+
+    /**
+     * The search: a POST, so that the address appears in no address bar, browser history or server log; only with
+     * the box that it answers a request for access; logged with the number of hits, without the address (the log
+     * holds no data of parents).
+     */
+    private function accessRequestSearch(): void
+    {
+        $email = Email::normalize(Http::post('email')); // stored form, also for a domain with umlauts
+        $errors = [];
+        if ($email === null) {
+            $errors[] = __('Die E-Mail-Adresse ist ungültig.');
+        }
+        if (Http::post('purpose') !== '1') {
+            $errors[] = __('Bitte bestätigen Sie, dass Sie ein Auskunftsersuchen der Person bearbeiten, der die Adresse gehört.');
+        }
+        if ($errors) {
+            http_response_code(422);
+            $this->render('admin/access_request', ['title' => __('Auskunft zu einer E-Mail-Adresse'), 'email' => mb_substr(Http::post('email'), 0, 254), 'result' => null, 'errors' => $errors]);
+            return;
+        }
+        $result = AccessRequest::find($email);
+        $this->audit(fn () => __('Auskunftssuche zu einer E-Mail-Adresse (Auskunftsersuchen): {bookings} Buchung(en), {mails} wartende Absage-E-Mail(s) gefunden',
+            ['bookings' => count($result['bookings']), 'mails' => count($result['cancellations'])]));
+        $this->render('admin/access_request', ['title' => __('Auskunft zu einer E-Mail-Adresse'), 'email' => $email, 'result' => $result, 'errors' => []]);
+    }
+
     /**
      * Logs a change if an admin made it (see Audit). With $round (its id, or roundLabel() fetched before the
      * round was deleted) the round is named first.
@@ -2397,7 +2643,7 @@ final class AdminController
 
     private static function when(string $date, ?string $time = null): string
     {
-        return date('d.m.Y', (int) strtotime($date)) . ($time !== null ? ' ' . substr($time, 0, 5) : '');
+        return fmt_datetime($date, 'd.m.Y') . ($time !== null ? ' ' . substr($time, 0, 5) : '');
     }
 
     private static function accountLabel(array $user): string

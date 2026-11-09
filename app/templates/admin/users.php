@@ -17,7 +17,7 @@
       <td class="small"><?= $u['never_signed_in'] ? '<span class="muted">' . e(__('nie')) . '</span>' : ($u['long_inactive'] ? '<strong>' . e(__('vor über 12 Monaten')) . '</strong>' : e(__('in den letzten 12 Monaten'))) ?></td>
       <td>
         <?php if (!$u['is_active']): ?><span class="status status-off"><?= e(__('deaktiviert')) ?></span>
-        <?php elseif ($u['never_signed_in'] && $u['access_token_expires_at'] !== null && strtotime($u['access_token_expires_at']) > time()): ?><span class="status status-off"><?= e(__('Einladung offen')) ?></span>
+        <?php elseif ($u['never_signed_in'] && $u['invite_open']): ?><span class="status status-off"><?= e(__('Einladung offen')) ?></span>
         <?php elseif ($u['never_signed_in']): ?><span class="status status-off"><?= e(__('Einladung abgelaufen')) ?></span>
         <?php elseif ($u['must_change_password']): ?><span class="status status-off"><?= e(__('Passwortwechsel offen')) ?></span>
         <?php else: ?><span class="status status-on"><?= e(__('aktiv')) ?></span><?php endif; ?>

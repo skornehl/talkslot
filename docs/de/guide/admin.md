@@ -23,7 +23,8 @@ des deutschen Admin-Bereichs; jedes Konto kann ihn unter *Mein Profil* auf Engli
    **keine Runde öffentlich erreichbar**.
 3. **Rechtstexte** (*Texte*): Impressum und Datenschutzerklärung stammen aus den Vorlagen der Betriebsart.
    Prüfen Sie sie für jede Sprache und ersetzen Sie die verbleibenden Platzhalter in eckigen Klammern.
-   Vorher lässt sich keine Runde aktivieren. Details unter
+   Vorher lässt sich keine Runde aktivieren (in den Übersetzungen der Datenschutzerklärung bedeuten offene
+   Platzhalter nur, dass Eltern den englischen Text bekommen). Details unter
    [Datenschutz und Recht]({{ '/de/guide/privacy/' | relative_url }}).
 4. **E-Mail-Versand prüfen:** *Texte → E-Mail-Versand* zeigt Versandweg und Absender. Machen Sie eine
    Testbuchung mit Ihrer eigenen E-Mail-Adresse und prüfen Sie, ob die Bestätigung ankommt (und nicht als
@@ -36,6 +37,19 @@ des deutschen Admin-Bereichs; jedes Konto kann ihn unter *Mein Profil* auf Engli
    Impressum.
 6. ***Vorlagen*** (optional): die üblichen Formate einmal anlegen, z. B. Ihren Elternsprechtag.
 7. **Lehrkräfte einladen** und bei Bedarf weitere Admins (*Benutzer*).
+
+***Bereit für den Start?*** (verlinkt unter der Überschrift von *Alle Runden* und oben unter *Texte*) zeigt
+all das auf einer Seite, jeden Punkt als *Erledigt*, *Bitte prüfen* oder *Noch offen*, mit dem Weg zur Lösung:
+Impressum und Datenschutzerklärung, die bzw. der Datenschutzbeauftragte der Schule (nur bei Betrieb durch die
+Schule), der Kontakt für Eltern, E-Mail-Versand, Cronjob, Server und Konfiguration sowie die Rechte der Konfigurationsdatei. Der
+E-Mail-Versand gilt als erledigt, sobald sich ein eingeladenes Konto angemeldet hat: Seine Einladung ist
+angekommen. Bis die erste Runde aktiv war, zeigt *Alle Runden* diese Liste statt der einzelnen Warnungen zu
+diesen Punkten; danach erscheinen die Warnungen wie bisher.
+
+***Neu seit dem letzten Update***: Nach einem Update nennt *Alle Runden*, was sich für Admins und Lehrkräfte
+geändert hat, z. B. eine neue Einstellung im Profil, damit das nicht wie ein Fehler wirkt. *Verstanden*
+blendet die Hinweise für Ihr Konto aus. Nach dem Update angelegte Konten und eine neue Installation bekommen
+die älteren Hinweise nicht.
 
 Warnt die Übersicht, dass die Konfiguration für alle Benutzer des Servers lesbar ist, setzen Sie die
 Rechte der genannten Dateien auf `600` oder geben Sie die Warnung an die technische Betreuung weiter: Sie
@@ -114,6 +128,13 @@ können:
   Oft sind sie der einzige Weg, einen Missbrauch zu bemerken.
 - **Passwortlinks** gehen nur per E-Mail hinaus und werden nie angezeigt. Setzt ein Admin ein Passwort
   zurück, erfährt die Person, dass ihr bisheriges Passwort nicht mehr gilt.
+- **Missbrauch der öffentlichen Seiten:** Kommen innerhalb von 5 Minuten mehr als 5 Buchungen einer Runde
+  aus einem Netzwerk, erhalten die Lehrkraft der Runde und alle Admins eine E-Mail (*Auffällig viele
+  Buchungen in der Runde …*), höchstens eine pro Runde und Stunde. Prüfen Sie die Buchungen; *Mehrere
+  Buchungen löschen …* unter jedem Tag löscht die eines Zeitraums auf einmal, und *Nur mit Rundencode*
+  verhindert eine Wiederholung. Der Betreiber (`alert_email`) erhält eine Warnmeldung, wenn Eltern in einer
+  Stunde mehr als 100 E-Mails auslösen; an eine Adresse gehen höchstens 10 solcher E-Mails pro Stunde (siehe
+  [Sicherheit]({{ '/de/guide/security/' | relative_url }})).
 - **Alle Sitzungen beenden** (unten auf der Seite *Benutzer*) meldet alle Konten auf allen Geräten ab, nur
   Ihre aktuelle Sitzung bleibt bestehen, z. B. nach einem verlorenen Gerät oder bei Verdacht auf einen
   Einbruch. Es braucht Ihr Passwort, und alle Admins erhalten eine E-Mail. Was in so einem Fall außerdem zu
@@ -137,7 +158,8 @@ Rundenformular). Die Runde erscheint dann bei dieser Lehrkraft, die Eltern sehen
 Zusammenfassungen gehen an sie. Eltern, die schon gebucht haben, erhalten eine Änderungsmitteilung mit der
 neuen Lehrkraft, wenn *Eltern per E-Mail informieren* angehakt bleibt; die Meldung nach dem Speichern nennt
 diejenigen, die keine E-Mail bekommen konnten. Lehrkräfte sehen immer nur
-ihre eigenen Runden; das wird zentral durchgesetzt und ist durch Tests abgesichert.
+ihre eigenen Runden; das wird zentral durchgesetzt und ist durch Tests abgesichert. Im *Papierkorb* sehen Admins
+auch die gelöschten Runden ohne Buchungen aller Lehrkräfte.
 
 Wie Runden funktionieren, steht in der [Anleitung für Lehrkräfte]({{ '/de/guide/teachers/' | relative_url }}).
 
@@ -165,9 +187,16 @@ Vorlagen ersetzt wurden. Der Admin, der die Betriebsart danach speichert, steht 
 im Protokoll, ein Rechtstext, der nach dem Abgleich mit einer neueren Vorlage gespeichert wurde, mit „… mit
 dem aktuellen Stand der Vorlage … abgeglichen“.
 
-Was Lehrkräfte in ihren eigenen Runden tun, erfasst das Protokoll **nicht**, und es enthält nie Daten von
-Eltern: Eine Buchung erscheint nur mit Datum und Uhrzeit (z. B. „Buchung 12.11.2026 14:00 gelöscht“).
+Was Lehrkräfte in ihren eigenen Runden tun, erfasst das Protokoll **nicht**, und es enthält nie Namen oder
+E-Mail-Adressen von Eltern: Eine Buchung erscheint nur mit ihrem Datum (z. B. „Buchung am 12.11.2026
+gelöscht“), ohne Uhrzeit, mit der sie sich zusammen mit einer Zusammenfassung oder einem Ausdruck einer Person
+zuordnen ließe; Runde, Lehrkraft und Datum können trotzdem auf eine Familie deuten, deshalb sehen das Protokoll
+nur Admins.
 Einträge werden nach 90 Tagen gelöscht (einstellbar, `audit_log_days`). Nur Admins sehen das Protokoll.
+
+Von der Protokoll-Seite aus findet *Auskunft zu einer E-Mail-Adresse* die Daten für eine Auskunftsanfrage von Eltern:
+siehe [Auskunftsanfragen]({{ '/de/guide/privacy/' | relative_url }}#requests-for-access). Auch diese Suchen stehen im
+Protokoll, ohne die Adresse.
 
 ## Rechtstexte
 
@@ -180,8 +209,16 @@ Platzhalter werden automatisch gefüllt:
 | `[[VERANTWORTLICHE]]` | die *Angaben für Impressum und Datenschutz* (oben unter *Texte*) |
 | `[[HOSTER]]` | den Hoster aus der Konfiguration (`hosting`) |
 
-Für Sprachen ohne eigene Fassung wird die englische verwendet. Für beide Texte gibt es je eine Vorlage pro
-**Betriebsart** (*Von der Schule betrieben*, *Privat betrieben*). *Vorlage laden* im Formular eines Textes
+Die Datenschutzerklärung gibt es als Vorlage in allen sechs Elternsprachen; die Übersetzungen sagen, dass
+die deutsche Fassung maßgeblich ist, und enthalten dieselben Platzhalter wie die deutsche, Sie tragen dort
+also dieselben Angaben ein. Das Impressum gibt es auf Deutsch und Englisch. Für eine Sprache ohne Text, mit
+leerem Text oder mit einer Übersetzung, deren Platzhalter noch offen sind, wird die englische Fassung
+verwendet, danach die deutsche, danach die der Standardsprache (Englisch und Deutsch nur, wenn sie angeboten
+werden), mit einem Hinweis an die Eltern in ihrer Sprache. Hat keine davon einen Text für eine Seite, lässt
+sich keine Runde aktivieren. Füllen Sie die Übersetzungen aus, bevor Sie Eltern in diesen Sprachen einladen.
+Speichern Sie die deutsche Datenschutzerklärung nach einer vollständigen Übersetzung, bittet das Dashboard,
+diese Übersetzung zu prüfen (maßgeblich ist die deutsche Fassung); erneutes Speichern bestätigt sie. Für beide Texte
+gibt es je eine Vorlage pro **Betriebsart** (*Von der Schule betrieben*, *Privat betrieben*). *Vorlage laden* im Formular eines Textes
 setzt eine davon ein, die zur Betriebsart passende steht zuerst; der gespeicherte Text ändert sich erst beim
 Speichern. Ändern Sie die Betriebsart oben unter *Texte*, ersetzt TalkSlot alle Texte, die noch unverändert
 einer Vorlage entsprechen, durch die Vorlagen der neuen Betriebsart und nennt die Anzahl; bearbeitete Texte
@@ -232,10 +269,13 @@ Ist keine Betriebsart gewählt (Installationen aus der Zeit davor mit bearbeitet
 Dashboard „Bitte Betriebsart wählen“, und bis ein Admin sie wählt, lässt sich keine Runde aktivieren;
 bereits aktive Runden bleiben erreichbar.
 
-Angaben, die nur Sie kennen, stehen als Platzhalter in eckigen Klammern im Text. Solange ein Text einer
-angebotenen Sprache noch einen enthält, lässt sich keine Runde aktivieren; bereits aktive Runden bleiben
-erreichbar. Hinweise im Dashboard und unter *Texte* nennen die offenen Platzhalter je Text und zeigen an,
-wenn einem Text ein Platzhalter fehlt, er veraltet ist oder nicht zur Betriebsart passt (z. B. die
+Angaben, die nur Sie kennen, stehen als Platzhalter in eckigen Klammern im Text. Solange der englische Text
+oder der der Standardsprache noch einen enthält, lässt sich keine Runde aktivieren; bereits aktive Runden
+bleiben erreichbar. Offene Platzhalter in einer Übersetzung der Datenschutzerklärung halten die Aktivierung
+nicht auf; Dashboard und *Texte* zeigen dann *Übersetzungen noch nicht vollständig*, bis Sie sie ausfüllen
+oder die Übersetzung leeren. Hinweise im Dashboard und unter *Texte* nennen die offenen Platzhalter je Text
+und zeigen an, wenn einem Text ein Platzhalter fehlt, er veraltet ist (z. B. noch das Pflicht-Häkchen
+erwähnt, das das Buchungsformular nicht mehr hat) oder nicht zur Betriebsart passt (z. B. die
 Rechtsgrundlagen der Vorlage für Schulen bei privatem Betrieb).
 
 Öffentliche Schulen müssen je nach Bundesland auch eine **Erklärung zur Barrierefreiheit** veröffentlichen: siehe die

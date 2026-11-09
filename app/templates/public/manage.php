@@ -3,6 +3,8 @@
  * Confirmation and change page (reachable only via the secret link).
  * @var array $booking @var string $token @var bool $canChange @var bool $canMove @var array $days
  * @var string $csrf @var string $done @var bool $mailed @var bool $mailQueued @var bool $remember @var array $errors
+ * @var bool $mailLimited no mail after booking or moving: the address got too many (App\Abuse); after booking the
+ *   booking keeps no address then
  * @var string $open section whose form was sent with an error (move, cancel, mail): shown opened
  * @var string $mailTo address entered for the confirmation mail (only after an error)
  * @var string $contact who parents can ask, e.g. once changes are only possible in person (App\ParentContact)
@@ -23,6 +25,7 @@ $doneText = ['booked' => 'manage.booked', 'changed' => 'manage.changed', 'sent' 
     <p><strong><?= e(t($doneText)) ?></strong></p>
     <?php if ($mailed): ?><p><?= e(t('manage.mail_sent')) ?></p><?php endif; ?>
     <?php if ($mailQueued): ?><p data-mail-queued><?= e(t('manage.mail_queued')) ?></p><?php endif; ?>
+    <?php if ($mailLimited): ?><p data-mail-limited><?= e(t($done === 'booked' ? 'manage.mail_limited_booked' : 'manage.mail_limited')) ?></p><?php endif; ?>
   </div>
 <?php endif; ?>
 
@@ -74,10 +77,12 @@ $doneText = ['booked' => 'manage.booked', 'changed' => 'manage.changed', 'sent' 
 
 <?php if (!$canChange): ?>
   <div class="alert" data-locked>
-    <p><?= e(t('manage.locked', ['hours' => (int) $booking['cancel_deadline_hours']])) ?></p>
+    <p><?= e(App\BookingService::changeNotice($booking)) ?></p>
     <?php $contactFallback = true; require __DIR__ . '/_contact.php'; ?>
   </div>
 <?php else: ?>
+  <?php /* Until when (date and time) moving and cancelling work online, as in the confirmation mail */ ?>
+  <p class="hint" data-change-deadline><?= e(App\BookingService::changeNotice($booking, $canMove)) ?></p>
   <?php /* Moving and cancelling folded away: right after booking, the slot list would be the first thing to see */ ?>
   <?php if ($canMove): ?>
   <details class="card" id="change"<?= $open === 'move' ? ' open' : '' ?>>

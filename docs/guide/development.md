@@ -22,9 +22,9 @@ app/              application (outside the document root)
 bin/              cron.php, install.php, build.sh, deploy.sh, build-config.php, …
 config/           config.sample.php → config.php (not in Git)
 public/           document root: index.php (front controller), install.php, .htaccess, assets/
-dev/              Docker environment, reset.sh, demo.sh
+dev/              Docker environment, reset.sh, demo.sh, cs.sh
 docs/             this website (GitHub Pages, Jekyll)
-tests/            unit.php, smoke.sh, browser.mjs, deploy.sh
+tests/            unit.php, smoke.sh, integration.php, browser.mjs, deploy.sh, coverage/, phpstan.neon
 ```
 
 ## Tests
@@ -32,8 +32,10 @@ tests/            unit.php, smoke.sh, browser.mjs, deploy.sh
 ```bash
 php tests/unit.php      # unit tests, no database needed; CI runs them on PHP 8.3, 8.4 and 8.5
 tests/smoke.sh          # several hundred end-to-end checks against the Docker setup (dev/reset.sh first)
+php tests/integration.php  # services against the database in a throwaway schema (part of the smoke test)
 node tests/browser.mjs  # the JavaScript in headless Chrome (dev/reset.sh && dev/demo.sh first)
 tests/deploy.sh         # the atomic deployment via lftp file:// under load, switch-back on errors (needs lftp, openssl and the database)
+dev/phpstan.sh          # static analysis with PHPStan (downloads the pinned PHAR into dev/data/)
 ```
 
 `tests/unit.php` includes every file in `tests/unit.d/`, `tests/smoke.sh` every file in `tests/smoke.d/`
@@ -60,6 +62,34 @@ CI runs the unit tests on every push, and the smoke, browser and deployment test
 It also runs the smoke tests against MariaDB 10.6, the minimum (`MARIADB_VERSION=10.6` for `dev/compose.yml`),
 and checks that PHP 7.4 and 8.2 get the message of `App\Platform` instead of a syntax error.
 
+### Measuring instead of guessing
+
+- **Warnings fail the tests.** The app only logs PHP warnings, notices and deprecations (`app/var/php-error.log`)
+  and carries on. `tests/unit.php` turns them into errors and at the end also fails for those that app code
+  caught; after the smoke and deployment tests and in every CI job `tests/php-errors.sh` fails for any such line
+  of the app in the error log (lines of test code that provoke them on purpose do not count).
+- **Line coverage.** CI builds the app container with PCOV (`COVERAGE=1 docker compose -f dev/compose.yml up -d
+  --build`): `tests/coverage/prepend.php` records the lines of every request and CLI script of the unit, smoke,
+  integration, browser and deployment tests, and `tests/coverage/report.php` merges them. The job summary of
+  the run shows the coverage per file; for a pull request, changed lines that no test executes are marked in the
+  diff. **A pull request must not lower the coverage:** the run on `main` records its coverage as the commit
+  status `coverage`, and a pull request's run fails if it is more than 0.05 percentage points below it (a few
+  lines depend on timing). Every run also fails below `COVERAGE_MIN` in `.github/workflows/tests.yml` or if no
+  test loads a PHP file at all. Locally, after the tests in such a container:
+  `docker compose -f dev/compose.yml exec -w /srv/app app php tests/coverage/report.php`. The raw data collect in
+  `/tmp/talkslot-coverage` in the container; empty it before a new run, or line numbers of older code mix in.
+- **Static analysis.** `dev/phpstan.sh` runs [PHPStan](https://phpstan.org/) at level 6 (`tests/phpstan.neon`);
+  CI does the same. The errors that existed when it was introduced are listed in `tests/phpstan-baseline.neon`;
+  every new one fails. Value types of arrays are not required yet. PHPStan is a development tool only: the
+  script downloads a pinned version and checks its checksum, the app and its build never contain it.
+- **Integration tests** (`tests/integration.php`) call the services directly against the database, without
+  HTTP. Every run creates the tables of `schema.sql` under a random prefix (`it<hex>_`) in the configured
+  database and drops them at the end; the data of an installation or a running smoke test stay untouched.
+  `dev/reset.sh` drops tables an interrupted run left behind. The script only runs with `debug` in `config.php`
+  (the Docker environment) or `TALKSLOT_INTEGRATION=1`, never by accident against a live installation.
+  `App\Time::setNow()` fixes the clock, so deadlines and deletion periods are tested without moving
+  timestamps in the database (it works in unit tests too; `time()`, e.g. for the rate limits, is not affected).
+
 ## Conventions
 
 - **Language:** code, comments, commits and documentation in English (the German guide in `docs/de/` in
@@ -75,10 +105,27 @@ and checks that PHP 7.4 and 8.2 get the message of `App\Platform` instead of a s
   placeholders. Mails to an account follow its language (`AdminI18n::with()`).
 - **Parent texts** pass through `t('key')` with `app/lang/{de,en,pl,ru,tr,uk}.php`; every key must exist in
   every language (a unit test checks this). Ask native speakers to review new Polish, Russian, Turkish and
-  Ukrainian texts.
+  Ukrainian texts, and say so in the pull request. Numbers with a unit go through `I18n::plural()`
+  (`fmt_hours()`): each language file names its plural rule (`'plural'`: `one`, `pl`, `east-slavic` or `none`)
+  and gives as many forms of `'hours'` as the rule needs.
 - **Commits:** [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `docs:`, …);
   releases are derived from them.
+- **Coding standard:** PSR-12 for `app/src`, `bin`, `public` and `config` (the exceptions are in
+  `.php-cs-fixer.dist.php`). `dev/cs.sh` checks it with a pinned PHP-CS-Fixer, `dev/cs.sh --fix` applies it; CI
+  runs the check in the workflow *Coding standard*.
+- **Regular expressions:** routes and checks of a whole value end with `\z`, not `$`, which also matches before
+  a final line break (a unit test checks the routes).
 - **Database:** only prepared statements; the unit test's SQL audit fails on concatenated variables.
+- **Table prefix:** SQL names the tables plainly and `Db::prefix()` adds the prefix. A new table goes into
+  `Db::TABLES`, a foreign key is called `fk_…` (it gets the prefix too; to drop one, look its name up with
+  `Db::foreignKey()`, as older installations have it without the prefix), no alias is named like a table, and a
+  named lock goes through `Db::lock()`. Unit tests check all four.
+- **Regular expressions on text** use the `u` modifier wherever bytes and characters differ: a non-ASCII
+  character in the pattern, `\R`, `\h`, `\v`, `\X`, `\p{…}`, `\x{…}`. Without it they split UTF-8 characters
+  (Polish, Russian, Ukrainian names and mails). A unit test checks every pattern in the code.
+- **Smoke checks** test HTTP status codes, the database or a stable marker in the template (`data-…`, helper
+  `marker` in `tests/smoke.sh`) rather than the wording of a page, which changes. This matters most for checks
+  that something is *not* shown: after a rewording they would pass without testing anything.
 - **Admin routes:** add a route to `AdminController::ROUTES` with the role it needs as the fourth element
   (`'teacher'` for every signed-in account, `'admin'` for admin accounts only). A route without a known role
   is admin-only. GET routes must not change data; the smoke test opens every GET route of the table and
@@ -86,7 +133,10 @@ and checks that PHP 7.4 and 8.2 get the message of `App\Platform` instead of a s
 - **Migrations** (`app/src/Migrations.php`) are additive, so that a rollback to the previous version of the
   same major version keeps working; see [Migrations](#migrations) below for the rules.
 - **Legal templates:** after changing `app/templates/pages/*.md`, update `CURRENT_PAGE_HASHES` and move
-  the old hashes to `OLD_PAGE_HASHES`, so unedited texts are upgraded automatically. The unit test tells
+  the old hashes to `OLD_PAGE_HASHES`, so unedited texts are upgraded automatically. The privacy policy exists in all
+  six parent languages for both operator types (`privacy*.{de,en,pl,ru,uk,tr}.md`): a change to the German
+  template goes into all twelve files, with the same sections and the German placeholders in the translations
+  (a unit test compares them); mark changed translations for a native-speaker review. The unit test tells
   you the new hashes. Edited texts need no new hint in `AdminController::legalHints()`: their version
   markers show admins the changed sections by themselves (`LegalTexts::outdated()`). Keep sections under
   first-level headings (`# 5. …`) and put each paragraph or list item on one line, so the comparison works
@@ -179,6 +229,7 @@ sends the outbox; page requests run the same database steps as a fallback. What 
 | Rate limits (HMACs of truncated IP addresses, of account names and IDs) | after 24 hours |
 | Summary delivery log | after 60 days |
 | Admin log | after `audit_log_days` (default 90) |
+| Rounds without bookings in the trash (`round_trash`: what the teacher entered, no data of parents) | after 14 days (`RoundTrash::KEEP_DAYS`), or restored |
 | Deactivated teacher accounts without rounds in use | after 15 months without login |
 
 New personal data needs its deletion step in `Cleanup::run()` (with a test), a line in this table and in
@@ -208,7 +259,9 @@ directly. An existing one runs the missing steps of `Migrations::STEPS` on the n
   Step 3 (renaming `admin_users`, dropping columns) dates from before this rule.
 - While the files of an update are uploaded, new code may meet the old schema for a moment. Where that
   matters (a page that must not fail), let the code fall back to the old behaviour until the step has run,
-  as `RoundAccess::required()` does.
+  as `RoundAccess::required()` does. Such a fallback names the migration it bridges and can go with the next
+  major version only if the [upgrade path]({{ '/guide/operations/' | relative_url }}#updates) no longer starts
+  below that migration: 2.0 is planned to require v1.3.0 (migration 13).
 - The steps use MariaDB syntax (10.6 or newer); MySQL is not supported.
 - Parallel branches: two branches that add a step under the same number conflict in Git, and keeping both
   blocks when resolving it loses one of them silently (PHP keeps only the last of two equal array keys).

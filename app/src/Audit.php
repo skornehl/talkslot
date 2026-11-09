@@ -5,12 +5,14 @@ namespace App;
 
 /**
  * Log of the changes made by admin accounts: who changed what and when. With several admins this
- * makes it traceable who e.g. moved a round to another teacher or changed a role.
+ * makes it traceable who e.g. moved a round to another teacher or changed a role. Searches for a request for
+ * access are entered as well (who, when, how many results; AccessRequest).
  *
  * Only actions of admins are recorded, not those of teachers in their own rounds (no monitoring
  * of the teaching staff), plus changes the application makes itself on an update (system()).
- * Entries contain no data of parents (e.g. "Buchung 12.11.2026 14:00 gelöscht", without the
- * name) and are deleted after audit_log_days (default 90, see Cleanup).
+ * Entries contain no names or e-mail addresses of parents; a booking appears with its date only (e.g.
+ * "Buchung am 12.11.2026 gelöscht"), which makes it harder to match to a person. Entries are deleted after
+ * audit_log_days (default 90, see Cleanup).
  */
 final class Audit
 {

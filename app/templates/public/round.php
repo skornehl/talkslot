@@ -2,8 +2,15 @@
 /**
  * Public round page.
  * @var array $round @var array $days @var string $csrf @var array $errors @var array $old
+ * @var string $controller name of the controller (first level of the privacy information)
+ * @var ?string $operatorType operated by the school or privately (legal basis), null = not chosen yet
  * @var string $contact who parents can ask (App\ParentContact) @var ?string $unavailable why there is no free slot
  */
+// Deadlines before booking (expert review P1-9): a deadline of 0 hours restricts nothing and is not mentioned
+$deadlines = array_filter([
+    (int) ($round['booking_deadline_hours'] ?? 0) > 0 ? t('round.deadline.booking', ['hours' => fmt_hours((int) $round['booking_deadline_hours'])]) : '',
+    (int) ($round['cancel_deadline_hours'] ?? 0) > 0 ? t('round.deadline.change', ['hours' => fmt_hours((int) $round['cancel_deadline_hours'])]) : '',
+]);
 ?>
 <article class="round" data-round-id="<?= (int) $round['id'] ?>">
   <h1><?= e($round['title']) ?></h1>
@@ -16,7 +23,7 @@
   <?php if (!empty($round['auto_translated'])): ?>
     <p class="small muted" data-auto-translated><?= e(t('round.auto_translated', ['source' => App\I18n::name($round['source_lang'])])) ?></p>
   <?php endif; ?>
-  <p class="alert alert-info"><?= e(t(App\BookingService::limitNotice($round))) ?></p>
+  <p class="alert alert-info"><?= e(t(App\BookingService::limitNotice($round))) ?><?php if ($deadlines): ?><br><span data-deadlines><?= e(implode(' ', $deadlines)) ?></span><?php endif; ?></p>
 
   <?php require __DIR__ . '/_remembered.php'; ?>
 
@@ -43,6 +50,7 @@
       <div class="field">
         <label for="name"><?= e(t('form.name')) ?> <span class="req" aria-hidden="true">*</span><span class="visually-hidden">(<?= e(t('form.required')) ?>)</span></label>
         <input type="text" id="name" name="name" required maxlength="200" autocomplete="off" aria-describedby="name-hint" value="<?= e($old['name'] ?? '') ?>">
+        <?php /* The child's name, nothing more (expert review P2-4); the sibling rule is in the info box above */ ?>
         <p class="hint" id="name-hint"><?= e(t('form.name.hint')) ?></p>
       </div>
       <div class="field">
@@ -56,22 +64,44 @@
         <input type="text" id="website" name="website" tabindex="-1" autocomplete="off">
       </div>
 
-      <section class="privacy-summary" aria-labelledby="privacy-summary-title">
-        <h3 id="privacy-summary-title"><?= e(t('privacy.summary.title')) ?></h3>
-        <ul>
-          <?php foreach ((array) App\I18n::raw('privacy.summary.items') as $item): ?><li><?= e($item) ?></li><?php endforeach; ?>
-        </ul>
-      </section>
-      <div class="check">
-        <input type="checkbox" id="privacy" name="privacy" value="1" required<?= !empty($old['privacy']) ? ' checked' : '' ?>>
-        <label for="privacy"><?= e(t('form.privacy.before')) ?><a href="<?= e(url('/datenschutz', ['r' => $round['slug']])) ?>" target="_blank" rel="noopener"><?= e(t('form.privacy.link')) ?></a><?= e(t('form.privacy.after')) ?> <span class="req" aria-hidden="true">*</span></label>
-      </div>
       <div class="check">
         <input type="checkbox" id="remember" name="remember" value="1" aria-describedby="remember-hint"<?= !empty($old['remember']) ? ' checked' : '' ?>>
         <label for="remember"><?= e(t('form.remember')) ?></label>
       </div>
       <p class="hint hint-indent" id="remember-hint"><?= e(t('form.remember.hint')) ?></p>
 
+      <?php /* Privacy information in two levels (Art. 12, 13 GDPR): who, what for, deletion and the link to the full
+         notice right above the button, the rest folded away. Informing is enough, nothing to tick. */ ?>
+      <section class="privacy-summary" aria-labelledby="privacy-summary-title" data-privacy-summary>
+        <h3 id="privacy-summary-title"><?= e(t('privacy.summary.title')) ?></h3>
+        <ul>
+          <?php if (($controller ?? '') !== ''): ?><li><?= e(t('privacy.summary.controller', ['controller' => $controller])) ?></li><?php endif; ?>
+          <li><?= e(t('privacy.summary.purpose')) ?></li>
+          <li><?= e(t('privacy.summary.deletion')) ?></li>
+        </ul>
+        <details>
+          <summary><?= e(t('privacy.summary.more')) ?></summary>
+          <ul>
+            <li><?= e(t('privacy.summary.data')) ?></li>
+            <li><?= e(t('privacy.summary.teacher')) ?></li>
+            <?php if (in_array($operatorType ?? null, App\Operator::TYPES, true)): ?><li><?= e(t('privacy.summary.basis.' . $operatorType)) ?></li><?php endif; ?>
+            <li><?= e(t('privacy.summary.rights')) ?></li>
+          </ul>
+        </details>
+        <p class="privacy-link"><a href="<?= e(url('/datenschutz', ['r' => $round['slug']])) ?>" target="_blank" rel="noopener"><?= e(t('privacy.summary.link')) ?></a></p>
+      </section>
+
+      <?php /* The chosen appointment right above the button, announced by screen readers (aria-live): app.js fills it in
+         when a slot is chosen, after an error or a language switch the server already does. Empty, it takes no space. */
+      $chosen = null;
+      foreach ($days as $day) {
+          foreach ($day['slots'] as $s) {
+              if ((string) $s['id'] === (string) ($old['slot_id'] ?? '')) {
+                  $chosen = slot_label($day, $s, $round);
+              }
+          }
+      } ?>
+      <p class="booking-summary" aria-live="polite" data-slot-summary="<?= e(t('round.selected')) ?>"><?= $chosen !== null ? e(t('round.selected', ['when' => $chosen])) : '' ?></p>
       <button type="submit" class="button button-primary button-large"><?= e(t('form.submit')) ?></button>
     </form>
     <?php endif; ?>
