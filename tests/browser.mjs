@@ -260,6 +260,30 @@ try {
   await goto('/admin');
   check('round created only once', await js(`[...document.querySelectorAll('a')].filter(a => a.textContent.trim() === ${JSON.stringify(title)}).length`) === 1);
 
+  section('Admin: day form preview, links to folded sections');
+  await goto(demoRound + '#translations');
+  check('a link to a folded section opens it', await js(`document.getElementById('translations').open`));
+  await goto(demoRound);
+  const dayEdit = await js(`document.querySelector('a[href*="/admin/day/"][href$="/edit"]').getAttribute('href')`);
+  await goto(dayEdit);
+  const booked = await js(`document.querySelector('[data-day-fields]').getAttribute('data-booked')`);
+  check('day form: the start times of the bookings for the preview, no warning as it stands', /^\d\d:\d\d(,\d\d:\d\d)*$/.test(booked) && await js(`document.querySelector('[data-slot-conflicts]').hidden`), booked);
+  const setField = (name, value) => js(`(() => { const f = document.querySelector('[name="${name}"]'); f.value = '${value}'; f.dispatchEvent(new Event('input', { bubbles: true })); })()`);
+  const startBefore = await js(`document.querySelector('[name="start_time"]').value`);
+  const endBefore = await js(`document.querySelector('[name="end_time"]').value`);
+  await setField('start_time', '20:00');
+  await setField('end_time', '21:00');
+  const count = booked.split(',').length;
+  check('times that exclude the bookings: the warning names how many', await js(`!document.querySelector('[data-slot-conflicts]').hidden && document.querySelector('[data-slot-conflicts]').textContent.startsWith('${count} gebuchte(r)')`));
+  await setField('start_time', startBefore);
+  await setField('end_time', endBefore);
+  await setField('slot_minutes', '30');
+  const previewStarts = (await js(`document.querySelector('[data-slot-preview]').textContent`)).match(/\d\d:\d\d(?=–)/g) || [];
+  const lost = booked.split(',').filter((b) => !previewStarts.includes(b)).length;
+  check('a longer duration: only bookings whose start is no longer in the schedule count', lost < count && (lost === 0
+    ? await js(`document.querySelector('[data-slot-conflicts]').hidden`)
+    : await js(`document.querySelector('[data-slot-conflicts]').textContent.startsWith('${lost} gebuchte(r)')`)), `${lost} of ${count}`);
+
   section('Admin: "Duplizieren …" opens the form with the date');
   await goto(roundPath);
   check('duplicate form closed at first', await js(`!document.getElementById('duplicate').open`));
@@ -436,13 +460,13 @@ try {
     return cdp.dialogs.map((d) => d.message).join(' | ');
   };
   const withMail = await deleteDialog('Familie Yılmaz (Elif)');
-  check('deleting a booking with an address: box ticked, the dialog says a cancellation goes out by e-mail', withMail.startsWith('Eintrag von „Familie Yılmaz (Elif)“ löschen?')
+  check('deleting a booking with an address: box ticked, the dialog says a cancellation goes out by e-mail', withMail.startsWith('Buchung von „Familie Yılmaz (Elif)“ löschen?')
     && withMail.endsWith('\n\nDie Eltern erhalten eine Absage per E-Mail.') && await js(`${bookingForm('Familie Yılmaz (Elif)')}.querySelector('input[name="notify"]').checked`), withMail);
   await js(`${bookingForm('Familie Yılmaz (Elif)')}.querySelector('input[name="notify"]').click()`);
   const unticked = await deleteDialog('Familie Yılmaz (Elif)');
   check('… box unticked: the dialog says the parents are NOT notified', unticked.endsWith('\n\nDie Eltern werden NICHT automatisch benachrichtigt – bitte selbst informieren.'), unticked);
   const noMail = await deleteDialog('Lukas Schmidt');
-  check('… without an e-mail address: please inform them in person, no box', noMail.endsWith('Für diesen Eintrag ist keine E-Mail-Adresse hinterlegt – bitte persönlich informieren.')
+  check('… without an e-mail address: please inform them in person, no box', noMail.endsWith('Für diese Buchung ist keine E-Mail-Adresse hinterlegt – bitte persönlich informieren.')
     && await js(`!${bookingForm('Lukas Schmidt')}.querySelector('input[name="notify"]')`), noMail);
   check('"Abbrechen" keeps both bookings', await js(`location.pathname`) === demoRound
     && await js(`['Familie Yılmaz (Elif)', 'Lukas Schmidt'].every(n => document.querySelector('main').textContent.includes(n))`));

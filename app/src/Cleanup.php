@@ -40,6 +40,7 @@ final class Cleanup
     /** @return array<string,int> number of deleted/changed records per step */
     public static function run(): array
     {
+        Migrations::retryInvariants();
         $today = Time::today();
         $now = Time::nowSql();
         $stats = [];
