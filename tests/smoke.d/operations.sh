@@ -406,3 +406,87 @@ OP_PX=$($DC exec -T app php /srv/app/tests/.op-prefix.php lock)
 check "locks: the name contains the database and the prefix, not only tp_migrate" '[ "$OP_PX" = "lock=yes|0|1|1" ]' || echo "    $OP_PX"
 rm -f "$OP_SCRIPT"
 for p in tp2_ tp4_ tp5_; do OP_DROP "$p"; done
+echo "Operations: rules in the database, locks (expert review P2-6)"
+T=$(curl -s -b "$J" "$B/admin" | csrf)
+OP_SQL() { $DC exec -T app php -r '$p = new PDO("mysql:host=db;dbname=talkslot;charset=utf8mb4", "app", "app-dev-only", [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]); $p->exec($argv[1]);' "$1"; }
+# Another request takes a name or date after the check of the form: a trigger stands in for it with error 1062
+OP_RACE() { OP_SQL "DROP TRIGGER IF EXISTS op_race"; [ -z "${1:-}" ] || OP_SQL "CREATE TRIGGER op_race BEFORE $2 ON tp_$1 FOR EACH ROW IF $3 THEN SIGNAL SQLSTATE '23000' SET MYSQL_ERRNO = 1062, MESSAGE_TEXT = 'race'; END IF"; }
+OP_RACE
+OP_TAKEN="Die Adresse der Runde oder einer ihrer Tage wurde gerade anderweitig vergeben"
+OPR=$(op_round "Betrieb Regeln" 0 "$OP_NEXT")
+OP_DAY=$(DBQ "SELECT id FROM tp_round_days WHERE round_id = $OPR")
+OP_D2=$(date -d '+16 day' +%F)
+OP_RACE rounds INSERT "NEW.title = 'Betrieb Rennen'"
+OP_PX=$(curl -s -b "$J" --data-urlencode "csrf=$T" -d "title=Betrieb+Rennen&is_active=0&user_id=&booking_deadline_hours=0&cancel_deadline_hours=0&delete_after_hours=24&day_dates%5B%5D=$OP_D2&start_time=10:00&end_time=11:00&slot_minutes=30" "$B/admin/round/new")
+check "new round, name taken in the meantime: the form with a message instead of an error page" 'echo "$OP_PX" | grep -q "$OP_TAKEN" && echo "$OP_PX" | grep -q "name=\"title\""'
+OP_RACE rounds UPDATE "NEW.title = 'Betrieb Rennen'"
+OP_PX=$(curl -s -b "$J" --data-urlencode "csrf=$T" -d "title=Betrieb+Rennen&is_active=0&booking_deadline_hours=0&cancel_deadline_hours=0&delete_after_hours=24" "$B/admin/round/$OPR/edit")
+check "saving a round, address taken in the meantime: the form with a message" 'echo "$OP_PX" | grep -q "$OP_TAKEN"'
+OP_RACE round_days INSERT "NEW.day_date = '$OP_D2'"
+OP_PX=$(curl -s -w '\n%{http_code}' -b "$J" --data-urlencode "csrf=$T" -d "day_dates%5B%5D=$OP_D2&start_time=10:00&end_time=11:00&slot_minutes=30" "$B/admin/round/$OPR/day")
+check "adding a day that was added in the meantime: 422 with a message" '[ "$(echo "$OP_PX" | tail -1)" = 422 ] && echo "$OP_PX" | grep -q "Diesen Tag gibt es in der Runde bereits."'
+OP_RACE round_days UPDATE "NEW.day_date = '$OP_D2'"
+OP_PX=$(curl -s -b "$J" -d "csrf=$T&day_date=$OP_D2&start_time=10:00&end_time=11:00&slot_minutes=30" "$B/admin/day/$OP_DAY/edit")
+check "moving a day to a date taken in the meantime: the form with a message" 'echo "$OP_PX" | grep -q "Diesen Tag gibt es in der Runde bereits."'
+OP_RACE users INSERT "NEW.display_name = 'Betrieb Rennen'"
+OP_PX=$(curl -s -b "$J" --data-urlencode "csrf=$T" -d "display_name=Betrieb+Rennen&email=rennen@example.org&username=rennen&role=teacher&lang=de" "$B/admin/users/new")
+check "new account, name taken in the meantime: the form with a message" 'echo "$OP_PX" | grep -q "gibt es bereits ein Konto"'
+OP_RACE
+curl -s -o /dev/null -b "$J" --data-urlencode "csrf=$T" -d "display_name=Betrieb+Konto&email=konto-op@example.org&username=konto-op&role=teacher&lang=de" "$B/admin/users/new"
+OP_U=$(DBQ "SELECT id FROM tp_users WHERE username = 'konto-op'")
+OP_RACE users UPDATE "NEW.display_name = 'Betrieb Rennen'"
+OP_PX=$(curl -s -b "$J" --data-urlencode "csrf=$T" -d "display_name=Betrieb+Rennen&email=konto-op@example.org&username=konto-op&role=teacher&is_active=1&lang=de" "$B/admin/users/$OP_U/edit")
+check "saving an account, name taken in the meantime: the form with a message" 'echo "$OP_PX" | grep -q "gibt es bereits ein Konto"'
+OP_RACE round_templates INSERT "NEW.name = 'Betrieb Rennen'"
+OP_PX=$(curl -s -b "$J" --data-urlencode "csrf=$T" -d "name=Betrieb+Rennen&start_time=8:00&end_time=9:00&slot_minutes=15&booking_deadline_hours=0&cancel_deadline_hours=0&delete_after_hours=24" "$B/admin/templates/new")
+check "template, name taken in the meantime: the form with a message" 'echo "$OP_PX" | grep -q "Eine Vorlage mit diesem Namen gibt es bereits."'
+OP_RACE
+# Rules in the database
+OP_BAD=$(DBQ "INSERT INTO tp_round_days (round_id, day_date, start_time, end_time, slot_minutes) VALUES ($OPR, '2040-01-01', '12:00:00', '11:00:00', 15)" 2>&1)
+OP_BAD2=$(DBQ "UPDATE tp_rounds SET booking_limit = 'alle' WHERE id = $OPR" 2>&1)
+OP_BAD3=$(DBQ "INSERT INTO tp_round_days (round_id, day_date, start_time, end_time, slot_minutes) SELECT round_id, day_date, start_time, end_time, slot_minutes FROM tp_round_days WHERE id = $OP_DAY" 2>&1)
+check "the database refuses a day ending before it starts, an unknown booking limit and a second entry for a date" 'echo "$OP_BAD" | grep -q ck_days_times && echo "$OP_BAD2" | grep -q ck_rounds_limit && echo "$OP_BAD3" | grep -q uq_days_round_date'
+# Migration 26 on rows that break a rule: left out and reported, set once the rows are in order
+OP_NOUQ="ALTER TABLE tp_round_days DROP KEY uq_days_round_date, DROP CONSTRAINT ck_days_times, DROP KEY idx_days_date; ALTER TABLE tp_rounds DROP CONSTRAINT ck_rounds_limit, DROP KEY idx_rounds_expired; ALTER TABLE tp_sent_summaries DROP KEY idx_summaries_sent"
+OP_HAS() { DBQ "SELECT COUNT(DISTINCT index_name) FROM information_schema.statistics WHERE table_schema = DATABASE() AND index_name IN ('uq_days_round_date','idx_days_date','idx_rounds_expired','idx_summaries_sent')"; }
+OP_CK() { DBQ "SELECT COUNT(*) FROM information_schema.check_constraints WHERE constraint_schema = DATABASE() AND constraint_name IN ('ck_days_times','ck_rounds_limit')"; }
+OP_T1=$(date +%s)
+OP_LIMIT=$(DBQ "SELECT booking_limit FROM tp_rounds WHERE id = $OPR")
+DBQ "$OP_NOUQ; INSERT INTO tp_round_days (round_id, day_date, start_time, end_time, slot_minutes) SELECT round_id, day_date, start_time, end_time, slot_minutes FROM tp_round_days WHERE id = $OP_DAY; INSERT INTO tp_round_days (round_id, day_date, start_time, end_time, slot_minutes) SELECT round_id, '2031-02-02', end_time, start_time, slot_minutes FROM tp_round_days WHERE id = $OP_DAY; UPDATE tp_rounds SET booking_limit = 'alle' WHERE id = $OPR; UPDATE tp_settings SET value = '25' WHERE name = 'schema_version'"
+curl -s -o /dev/null "$B/"
+OP_V=$(OP_SETTING schema_version); OP_H1=$(OP_HAS); OP_C1=$(OP_CK)
+OP_RULES='$q = urlencode("to:betrieb@example.org subject:\"Datenbank: Regel nicht gesetzt\""); $u = "http://mail:8025/api/v1/search?query=$q";'
+OP_AL=$(ALERTS "$OP_RULES"' echo json_decode(file_get_contents($u), true)["messages_count"] ?? "?";')
+OP_ALB=$(ALERTS "$OP_RULES"' $m = json_decode(file_get_contents($u), true)["messages"][0]["ID"] ?? ""; echo json_decode(file_get_contents("http://mail:8025/api/v1/message/$m"), true)["Text"] ?? "";')
+check "migration 26 on rows that break all three rules: the indexes set, no rule, one report naming the round ($OP_H1 indexes, $OP_AL)" '[ "$OP_V" = "$OP_LATEST" ] && [ "$OP_H1" = 3 ] && [ "$OP_C1" = 0 ] && [ "$OP_AL" = 1 ] && [ "$(echo "$OP_ALB" | grep -c "Runden: $OPR$")" = 3 ]'
+$DC exec -T app php /srv/app/bin/cron.php > /dev/null
+OP_H2=$(OP_HAS); OP_AL2=$(ALERTS "$OP_RULES"' echo json_decode(file_get_contents($u), true)["messages_count"] ?? "?";')
+check "the rows still break it: the cron job leaves it out, without another report ($OP_H2 indexes, $OP_AL2)" '[ "$OP_H2" = 3 ] && [ "$OP_AL2" = 1 ] && [ "$(OP_SETTING schema_rules_skipped)" = 1 ]'
+DBQ "DELETE FROM tp_round_days WHERE round_id = $OPR AND id <> $OP_DAY; UPDATE tp_rounds SET booking_limit = '$OP_LIMIT' WHERE id = $OPR"
+$DC exec -T app php /srv/app/bin/cron.php > /dev/null
+check "the rows in order: the next cron job sets it and stops asking, without changing the schema version" '[ "$(OP_HAS)" = 4 ] && [ "$(OP_CK)" = 2 ] && [ "$(OP_SETTING schema_version)" = "$OP_LATEST" ] && [ "$(OP_SETTING schema_rules_skipped)" = 0 ]'
+ALERTS "$OP_RULES"' file_get_contents($u, false, stream_context_create(["http" => ["method" => "DELETE"]]));
+  $f = "/srv/app/app/var/alerts.json"; $s = json_decode((string) @file_get_contents($f), true);
+  if (is_array($s)) { $n = count($s["keys"] ?? []); $s["keys"] = array_filter($s["keys"] ?? [], fn ($e) => $e["last"] < '"$OP_T1"');
+    $s["_count"] = max(0, ($s["_count"] ?? 0) - $n + count($s["keys"])); file_put_contents($f, json_encode($s)); }'
+# The settings of the round are those under the lock, not those from the start of the request
+OP_SCRIPT="$ROOT/tests/.op-inv.php"
+cat > "$OP_SCRIPT" <<'PHP'
+<?php
+require dirname(__DIR__) . '/app/bootstrap.php';
+use App\{BookingService, BookingException, Db};
+$round = Db::one('SELECT * FROM rounds WHERE id = ?', [(int) $argv[1]]);
+Db::run('UPDATE rounds SET is_active = 0 WHERE id = ?', [$round['id']]);
+$slot = (int) Db::value('SELECT s.id FROM slots s JOIN round_days d ON d.id = s.day_id WHERE d.round_id = ? LIMIT 1', [$round['id']]);
+try {
+    BookingService::book($round, $slot, 'Betrieb Veraltet', null, 'de');
+    $result = 'booked';
+} catch (BookingException $e) {
+    $result = $e->getMessage() === BookingService::UNAVAILABLE ? 'unavailable' : $e->getMessage();
+}
+echo $result, '|', Db::value('SELECT @@SESSION.innodb_lock_wait_timeout'), "\n";
+PHP
+DBQ "UPDATE tp_rounds SET is_active = 1, booking_limit = 'round' WHERE id = $OPR"
+OP_PX=$($DC exec -T app php /srv/app/tests/.op-inv.php "$OPR" 2>&1)
+rm -f "$OP_SCRIPT"
+check "a round deactivated after the request began: refused under the lock; waits for a row lock at most 5 s" '[ "$OP_PX" = "unavailable|5" ]' || echo "    $OP_PX"
