@@ -10,7 +10,7 @@ namespace App;
  */
 final class Migrations
 {
-    public const LATEST = 24;
+    public const LATEST = 28;
 
     /** Version => SQL statements */
     private const STEPS = [
@@ -194,6 +194,12 @@ final class Migrations
                 CONSTRAINT fk_trash_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
         ],
+        // Request for an interpreter (expert review P3-1): each round decides whether parents are asked, off by
+        // default; the language they enter goes with their booking
+        28 => [
+            'ALTER TABLE rounds ADD COLUMN IF NOT EXISTS ask_interpreter TINYINT(1) NOT NULL DEFAULT 0 AFTER remind_parents',
+            'ALTER TABLE bookings ADD COLUMN IF NOT EXISTS interpreter_lang VARCHAR(60) NULL AFTER email',
+        ],
     ];
 
     /**
@@ -207,20 +213,20 @@ final class Migrations
         // Unchanged since v1.5.0: the legal notice of a "private, non-commercial service"
         'imprint-private.de' => '036e210b629357dfbf768868e3a5f249c888d3052f301170703b196336058f43',
         'imprint-private.en' => 'f15521ceaa18e97c98190e448cc95eb6130c4cf571164b09819bb40dd7af22c8',
-        'privacy.de' => '219561177b423e1df31a96ceceafa3acd5e056fd3ed83848dce76a9d824447ed',
-        'privacy.en' => 'ff37cb7ccf06e8f80829034c503f6a044f34386b3e7e3cef09bbce5a031ee0fb',
-        'privacy-private.de' => 'fe18ddafc7b4d6e23ea1b833a4dcda799bf32b6a6019bedcad7af39220e9809d',
-        'privacy-private.en' => '95f293c9aa18afa794180605535808408bbd62a1f128c26805f7f21bc7664dfe',
+        'privacy.de' => '0e1505ba988ffc60d1556650a45fd5076f40acb9be5e1419cf0847d0ed2ceacc',
+        'privacy.en' => '5a84059107d04543b26db5235f5d505e29aafcefb96a964a13be599da5d87880',
+        'privacy-private.de' => '2d0833173dcd0204a0c26b3333bc2e0de539683dd5c587c14e740b691e0e3c00',
+        'privacy-private.en' => '412eb157db87768b17d4c9eb47de37d454ee99edb19d00861f0cea84374efb75',
         // Translations of the privacy policy for the other parent languages (German placeholders, the German
         // version is authoritative); the legal notice has none, it falls back to English
-        'privacy.pl' => 'b1207d9957e7c1807452e03211326db7192cd011f22443aaae7a19120c57b3fa',
-        'privacy.ru' => 'a98412c7d4b007b346ffd7aa069fbd5734c99232610bcf204396e3c1de3afe97',
-        'privacy.tr' => 'a1d90420d68845cd38ba2276e23a110fd0ea2b8b34f38299304b0f999a60220b',
-        'privacy.uk' => '280e59189730622d74d01f8489383afba82a1d128e6c301847ae9c193a8f5971',
-        'privacy-private.pl' => '08e4390a3fe6e0664f56cd874ec1e83b8a8e5b434ce399a5fb626e580dc27dd3',
-        'privacy-private.ru' => '298f1ab98c9099864ee254cd3a06a5a103038797e2f9c901e4547b8c1da05ef8',
-        'privacy-private.tr' => 'f82100ed20a9c9cf3ad6b4d5a915ea665c84e89ae38f92e90f43a6919e6d6ded',
-        'privacy-private.uk' => '5e2f673b01f9ad72fa21b247be29467a9f3ee643d30267b53d6d4a2c8e00434f',
+        'privacy.pl' => '00b1cb199acfe27bce201b4c4ddab3016b10b92baa3155582807af9f92021fb7',
+        'privacy.ru' => '8604612cf3dbdb6a09a488aee049c8e6cf305cff39dd32eca247f414c9cc56ea',
+        'privacy.tr' => '81a89754883664ca7e7bb7a1a9c33275932ff5f2ce7585433aca84421f3d8607',
+        'privacy.uk' => '3cdbf5ea568c46eafcdda8fc7760d5deb9c7a66b5ca0d55a6bb43cebca3d7bd3',
+        'privacy-private.pl' => '679a705238489ec93f673b1d7b78c64fff8675f99ca186b569703c62ac09d659',
+        'privacy-private.ru' => '070f79cc5d972e4f998532b257099a82bcb08b861609402cc55425643060f84c',
+        'privacy-private.tr' => 'c723c9d06fee1716635d2b08d00fccddb52af69621e71b0f51130938d6cbaaed',
+        'privacy-private.uk' => '211dff89eb29be85fd04a5ff9f078cfd25798b2b870775ff53e4f168aaeb9a84',
     ];
 
     /**
@@ -231,6 +237,13 @@ final class Migrations
      */
     public const OLD_PAGE_HASHES = [
         'private' => [
+            // Privacy policy in the six parent languages before the request for an interpreter (up to expert review P3-1)
+            'fe18ddafc7b4d6e23ea1b833a4dcda799bf32b6a6019bedcad7af39220e9809d',
+            '95f293c9aa18afa794180605535808408bbd62a1f128c26805f7f21bc7664dfe',
+            '08e4390a3fe6e0664f56cd874ec1e83b8a8e5b434ce399a5fb626e580dc27dd3',
+            '298f1ab98c9099864ee254cd3a06a5a103038797e2f9c901e4547b8c1da05ef8',
+            'f82100ed20a9c9cf3ad6b4d5a915ea665c84e89ae38f92e90f43a6919e6d6ded',
+            '5e2f673b01f9ad72fa21b247be29467a9f3ee643d30267b53d6d4a2c8e00434f',
             // Privacy policy de/en with the required checkbox in the booking form, with the limit of mails per address and
             // before the translations into the other parent languages (up to expert review P1-9)
             '1bb552694fa8214a0d84763856268adc5c2b9f61699cdb90ab9f0800f3d12a9e',
@@ -322,6 +335,13 @@ final class Migrations
             'f1ac0f64ece1e1ce11b4322831f8d121b6d5a3ea450183d6a277cf26d9c0f3b1',
         ],
         'school' => [
+            // Privacy policy in the six parent languages before the request for an interpreter (up to expert review P3-1)
+            '219561177b423e1df31a96ceceafa3acd5e056fd3ed83848dce76a9d824447ed',
+            'ff37cb7ccf06e8f80829034c503f6a044f34386b3e7e3cef09bbce5a031ee0fb',
+            'b1207d9957e7c1807452e03211326db7192cd011f22443aaae7a19120c57b3fa',
+            'a98412c7d4b007b346ffd7aa069fbd5734c99232610bcf204396e3c1de3afe97',
+            'a1d90420d68845cd38ba2276e23a110fd0ea2b8b34f38299304b0f999a60220b',
+            '280e59189730622d74d01f8489383afba82a1d128e6c301847ae9c193a8f5971',
             // Privacy policy de/en with the required checkbox in the booking form, with the limit of mails per address and
             // before the translations into the other parent languages (up to expert review P1-9)
             'e7928743e27c7350503e2a1355ca9470734455f2aeaa9e0c729c96ebf2c12c5d',

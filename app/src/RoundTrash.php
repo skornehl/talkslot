@@ -19,7 +19,7 @@ final class RoundTrash
 
     /** Everything of rounds except the id; a unit test compares this with schema.sql. */
     public const ROUND_COLUMNS = [
-        'user_id', 'title', 'slug', 'code', 'code_required', 'booking_limit', 'remind_parents', 'description', 'location', 'source_lang',
+        'user_id', 'title', 'slug', 'code', 'code_required', 'booking_limit', 'remind_parents', 'ask_interpreter', 'description', 'location', 'source_lang',
         'is_active', 'was_used', 'booking_deadline_hours', 'cancel_deadline_hours', 'delete_after_hours', 'expired_at', 'created_at', 'updated_at',
     ];
 

@@ -60,7 +60,7 @@ $deletionText = $deletion ? __('{date}, {time} Uhr', ['date' => fmt_date($deleti
     <pre class="invitation"><?= e($invitation) ?></pre>
   </details>
   <?php if (trim((string) ($round['location'] ?? '')) !== ''): ?><p><?= __h('Ort: {location}', ['location' => '<strong>' . e(trim((string) $round['location'])) . '</strong>']) ?></p><?php endif; ?>
-  <p class="small muted"><?= e(['round' => __('Ein Termin pro Person'), 'day' => __('Ein Termin pro Person und Tag')][$round['booking_limit'] ?? 'none'] ?? __('Mehrfachbuchungen erlaubt')) ?><?= !empty($round['remind_parents']) ? ' · ' . e(__('Erinnerung am Vorabend')) : '' ?> · <?= e(__('Buchungsschluss {hours} h vorher', ['hours' => (int) $round['booking_deadline_hours']])) ?> · <?= e(__('Ändern/Absagen bis {hours} h vorher', ['hours' => (int) $round['cancel_deadline_hours']])) ?> ·
+  <p class="small muted"><?= e(['round' => __('Ein Termin pro Person'), 'day' => __('Ein Termin pro Person und Tag')][$round['booking_limit'] ?? 'none'] ?? __('Mehrfachbuchungen erlaubt')) ?><?= !empty($round['remind_parents']) ? ' · ' . e(__('Erinnerung am Vorabend')) : '' ?><?= !empty($round['ask_interpreter']) ? ' · ' . e(__('Fragt nach Dolmetschung')) : '' ?> · <?= e(__('Buchungsschluss {hours} h vorher', ['hours' => (int) $round['booking_deadline_hours']])) ?> · <?= e(__('Ändern/Absagen bis {hours} h vorher', ['hours' => (int) $round['cancel_deadline_hours']])) ?> ·
     <?= e(match (true) {
         $round['delete_after_hours'] === null => __('Runde wird nicht automatisch gelöscht'),
         $deletion !== null => __('Runde wird am {date} gelöscht ({hours} h nach Ablauf)', ['date' => $deletionText, 'hours' => (int) $round['delete_after_hours']]),
@@ -185,6 +185,7 @@ $deletionText = $deletion ? __('{date}, {time} Uhr', ['date' => fmt_date($deleti
         <td>
           <?php if ($s['booking_id']): ?>
             <strong><?= e($s['name']) ?></strong><?php if ($s['email']): ?><br><span class="small"><?= e($s['email']) ?></span><?php endif; ?>
+            <?php if ($s['interpreter_lang'] !== null): ?><br><span class="small" data-interpreter><?= e(__('Dolmetschung gewünscht: {language}', ['language' => $s['interpreter_lang']])) ?></span><?php endif; ?>
             <?php if ($s['source'] === 'admin'): ?> <span class="badge"><?= e(__('selbst eingetragen')) ?></span><?php endif; ?>
             <?php if ($s['mail_failed_at'] !== null): ?> <span class="badge badge-warning" data-mail-failed title="<?= e($s['mail_waiting'] ? __('Neuer Versuch folgt automatisch. Erhalten die Eltern sie nicht, informieren Sie sie bitte persönlich oder prüfen Sie die Adresse.') : __('Es folgt kein weiterer Versuch. Bitte informieren Sie die Eltern persönlich oder prüfen Sie die Adresse.')) ?>"><?= e($s['mail_waiting'] ? __('E-Mail nicht zugestellt – neuer Versuch folgt') : __('E-Mail nicht zugestellt')) ?></span><?php endif; ?>
           <?php elseif ($s['is_blocked']): ?><span class="muted"><?= e(__('gesperrt')) ?></span>

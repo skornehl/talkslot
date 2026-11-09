@@ -22,6 +22,7 @@ Parents and guardians can use this page to book, change and cancel meetings (e.g
 
 - the **name(s)** you enter in the text field (required). Please only enter what is needed to identify the meeting (e.g. the child's name) and no other information.
 - your **e-mail address**, only if you choose to provide it. It is used solely for the booking confirmation and messages about your appointment (change, cancellation, a reminder the evening before if the teacher has turned it on for the round), never for advertising or newsletters.
+- your **request for an interpreter (language)**, only if the teacher has provided for it in the round and you choose to give it. It is used solely to prepare the meeting, can be seen only by the teacher and the administrators of the booking service, appears in no e-mail and is deleted with the booking.
 - the chosen **time slot**, the time of booking and the selected language.
 
 If you provide an e-mail address, you receive confirmations with your appointment as a calendar file (.ics). On the page of your appointment you can also download the calendar file and have the confirmation sent to an e-mail address later (at most twice within 24 hours). That address is only used to send this e-mail and is not stored in the booking service. What you store in your own calendar is your own responsibility.

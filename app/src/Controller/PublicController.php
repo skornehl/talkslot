@@ -251,6 +251,8 @@ final class PublicController
             'slot_id' => Http::post('slot_id'),
             'name' => Http::post('name'),
             'email' => Http::post('email'),
+            // Only where the round asks for it: what the form did not offer is not stored
+            'interpreter_lang' => !empty($round['ask_interpreter']) ? Http::post('interpreter_lang') : '',
             'remember' => Http::post('remember') === '1',
         ];
 
@@ -305,7 +307,7 @@ final class PublicController
             return;
         }
         try {
-            [$id, $token] = BookingService::book($round, (int) $old['slot_id'], self::cleanName($old['name']), Email::normalize($old['email']), I18n::lang());
+            [$id, $token] = BookingService::book($round, (int) $old['slot_id'], self::cleanName($old['name']), Email::normalize($old['email']), I18n::lang(), self::cleanLanguage($old['interpreter_lang']));
         } catch (BookingException $e) {
             // Hits of the multiple-booking limit count like bookings: slows down probing
             // whether a name already has an appointment
@@ -521,6 +523,8 @@ final class PublicController
     }
 
     /** Shared validation for name/email/slot (also used by the admin). */
+    private const LINK = '~(://|www\.|https?:)~i';
+
     public static function validate(array $in, bool $requireSlot): array
     {
         $errors = [];
@@ -530,7 +534,7 @@ final class PublicController
         $name = self::cleanName((string) ($in['name'] ?? ''));
         if (mb_strlen($name) < 2 || mb_strlen($name) > 200) {
             $errors[] = t('err.name');
-        } elseif (preg_match('~(://|www\.|https?:)~i', $name)) {
+        } elseif (preg_match(self::LINK, $name)) {
             // The name appears in emails: no links (otherwise phishing via the school's sender address)
             $errors[] = t('err.name_link');
         }
@@ -538,6 +542,11 @@ final class PublicController
         $email = trim((string) ($in['email'] ?? ''));
         if ($email !== '' && Email::normalize($email) === null) {
             $errors[] = t('err.email');
+        }
+        // A language, not a place for messages: the field is short and takes no links, like the name
+        $language = self::cleanName((string) ($in['interpreter_lang'] ?? ''));
+        if (mb_strlen($language) > 60 || preg_match(self::LINK, $language)) {
+            $errors[] = t('err.interpreter');
         }
         return $errors;
     }
@@ -561,6 +570,13 @@ final class PublicController
     }
 
     /** Remove control characters, collapse whitespace. */
+    /** The language of a request for an interpreter as it is stored; null = no interpreter requested. */
+    public static function cleanLanguage(string $language): ?string
+    {
+        $language = self::cleanName($language);
+        return $language === '' ? null : $language;
+    }
+
     public static function cleanName(string $name): string
     {
         $name = (string) preg_replace('/[\p{C}]+/u', ' ', $name);

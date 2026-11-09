@@ -58,6 +58,13 @@ $deadlines = array_filter([
         <input type="email" id="email" name="email" maxlength="254" autocomplete="email" inputmode="email" aria-describedby="email-hint" value="<?= e($old['email'] ?? '') ?>">
         <p class="hint" id="email-hint"><?= e(t(!empty($round['remind_parents']) ? 'form.email.hint_reminder' : 'form.email.hint')) ?></p>
       </div>
+      <?php if (!empty($round['ask_interpreter'])): ?>
+      <div class="field">
+        <label for="interpreter_lang"><?= e(t('form.interpreter')) ?></label>
+        <input type="text" id="interpreter_lang" name="interpreter_lang" maxlength="60" autocomplete="off" aria-describedby="interpreter-hint" value="<?= e($old['interpreter_lang'] ?? '') ?>">
+        <p class="hint" id="interpreter-hint"><?= e(t('form.interpreter.hint')) ?></p>
+      </div>
+      <?php endif; ?>
 
       <div class="hp" aria-hidden="true">
         <label for="website">Website</label>
@@ -82,7 +89,7 @@ $deadlines = array_filter([
         <details>
           <summary><?= e(t('privacy.summary.more')) ?></summary>
           <ul>
-            <li><?= e(t('privacy.summary.data')) ?></li>
+            <li><?= e(t(!empty($round['ask_interpreter']) ? 'privacy.summary.data_interpreter' : 'privacy.summary.data')) ?></li>
             <li><?= e(t('privacy.summary.teacher')) ?></li>
             <?php if (in_array($operatorType ?? null, App\Operator::TYPES, true)): ?><li><?= e(t('privacy.summary.basis.' . $operatorType)) ?></li><?php endif; ?>
             <li><?= e(t('privacy.summary.rights')) ?></li>

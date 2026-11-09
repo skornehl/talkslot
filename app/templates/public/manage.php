@@ -38,6 +38,7 @@ $doneText = ['booked' => 'manage.booked', 'changed' => 'manage.changed', 'sent' 
     <dt><?= e(t('manage.when')) ?></dt><dd><strong><?= e($label) ?></strong></dd>
     <?php if (trim((string) ($booking['location'] ?? '')) !== ''): ?><dt><?= e(t('manage.location')) ?></dt><dd><?= e(trim((string) $booking['location'])) ?></dd><?php endif; ?>
     <dt><?= e(t('manage.name')) ?></dt><dd><?= e($booking['name']) ?></dd>
+    <?php if ($booking['interpreter_lang'] !== null): ?><dt><?= e(t('manage.interpreter')) ?></dt><dd data-interpreter><?= e($booking['interpreter_lang']) ?></dd><?php endif; ?>
   </dl>
   <?php if ($canChange): /* once changes are locked, the contact is part of that notice */ require __DIR__ . '/_contact.php'; endif; ?>
 </div>

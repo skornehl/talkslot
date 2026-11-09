@@ -11,6 +11,7 @@ TDDDG. Diese Seite erläutert die Designentscheidungen; sie ist keine Rechtsbera
 | Daten | Wo | Gelöscht |
 |---|---|---|
 | Name und optionale E-Mail-Adresse einer Buchung | Datenbank | ab 0:00 Uhr am Tag nach dem Termin, bei einer Absage sofort |
+| Sprache eines Wunsches nach Dolmetschung (freiwillig, nur in Runden, die danach fragen) | Datenbank | mit der Buchung |
 | Hash des persönlichen Änderungslinks (und der Links in der Erinnerung und in einer später verschickten Bestätigung) | Datenbank | mit der Buchung |
 | Eintrag der Mail-Warteschlange: welche E-Mail für welche Buchung oder welches Konto aussteht (ohne Adresse, Text oder Link) | Datenbank | nach dem Versand, spätestens nach 48 Stunden, mit der Buchung |
 | Absage durch die Lehrkraft in der Mail-Warteschlange: Adresse, Sprache, Name, Termin und Lehrkraft (Name und Adresse für Antworten; keine Adresse, wenn das Konto gelöscht wurde) der gelöschten Buchung (ohne Link) | Datenbank | nach dem Versand, spätestens nach 48 Stunden |
@@ -26,7 +27,7 @@ Datenschutzerklärung.
 
 ## Designentscheidungen
 
-- **Datenminimierung:** ein frei eingegebener Name und eine optionale E-Mail-Adresse, sonst nichts. Das Feld
+- **Datenminimierung:** ein frei eingegebener Name und eine optionale E-Mail-Adresse, sonst nichts (nur in Runden, die danach fragen, außerdem die Sprache eines Wunsches nach Dolmetschung, siehe unten). Das Feld
   fragt nach dem **Namen des Kindes** (Vor- und Nachname, bei Bedarf mit Klasse), damit die Lehrkraft die
   Buchung zuordnen kann und Eltern nicht für zwei Kinder ihren eigenen Namen eintragen; der Infokasten einer
   Runde mit Buchungsbegrenzung sagt „ein Termin pro Kind“ und wie Geschwister buchen. Das Rundenformular
@@ -59,6 +60,13 @@ Datenschutzerklärung.
   Runde beim Buchen eingeschaltet war (das Formular sagt es). Einträge der Lehrkraft bekommen sie erst, wenn
   eine Bestätigung oder Änderungsmitteilung bei den Eltern angekommen ist, denn diese E-Mail informiert über
   den Eintrag und die Datenschutzhinweise. Ein späteres Einschalten betrifft frühere Buchungen nicht.
+- **Wunsch nach Dolmetschung statt der Sprache der Seite:** Welche Sprache Eltern auf der Seite nutzen, sagt wenig
+  darüber, ob sie eine Dolmetschung brauchen, und könnte auf ihre Herkunft schließen lassen; Lehrkräfte sehen sie
+  deshalb nicht. Stattdessen kann eine Runde fragen (standardmäßig aus): Wer eine Dolmetschung wünscht, trägt die
+  Sprache selbst in ein freiwilliges Feld ein. Die Angabe dient nur der Vorbereitung des Gesprächs: Lehrkraft und
+  Admins sehen sie in der Terminliste, im Ausdruck und in der Auskunftssuche, die Eltern auf der Seite ihres Termins.
+  Sie steht in keiner E-Mail und keiner Zusammenfassung und wird mit der Buchung gelöscht. Die Datenschutzvorlagen
+  beider Betreiberarten beschreiben sie in allen sechs Sprachen.
 - **Bestätigung nachträglich per E-Mail:** Eltern ohne Adresse bei der Buchung können sich die Bestätigung
   auf der Seite ihres Termins an eine dort eingegebene Adresse schicken lassen. Diese Adresse dient nur
   dieser einen E-Mail und wird nicht gespeichert; die Fußzeile der E-Mail sagt das. Höchstens zweimal pro
@@ -160,7 +168,7 @@ Datenschutzerklärung.
 Eltern können fragen, was über sie gespeichert ist (Art. 15 DSGVO). Ein Admin findet die Daten dafür unter
 *Protokoll → Auskunft zu einer E-Mail-Adresse*: Geben Sie genau die Adresse ein und bestätigen Sie, dass Sie eine
 Auskunftsanfrage bearbeiten. Die Seite zeigt über alle Lehrkräfte hinweg die Buchungen mit dieser Adresse
-(Termin, Runde, Lehrkraft, Name wie gebucht, Sprache, wann und von wem eingetragen, Stand von Erinnerung und
+(Termin, Runde, Lehrkraft, Name wie gebucht, Wunsch nach Dolmetschung, Sprache, wann und von wem eingetragen, Stand von Erinnerung und
 Zustellung) und Absage-E-Mails, die noch auf den Versand warten. Groß- und Kleinschreibung spielen keine Rolle;
 Teile einer Adresse werden nicht gesucht, und die Suche ist ein abgeschicktes Formular, die Adresse steht also in
 keiner URL.

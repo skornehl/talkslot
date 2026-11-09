@@ -92,6 +92,8 @@ schools (GDPR/DSGVO, TDDDG) and multilingual families.
   even from a webmailer (interim page for the `SameSite=Strict` cookie).
 - Reminder to parents the evening before, with the link to cancel (only with an e-mail address; can be
   turned off per round; entries made by the teacher only after the parents got a confirmation).
+- Optional per round: parents can request an interpreter and name the language (shown with the booking, in
+  no mail, deleted with it).
 - A mail the mail server refused is retried from a **mail queue** and marked *E-Mail nicht zugestellt*
   in the booking list; admins see mails that wait too long.
 - Privacy policy templates in all six parent languages, imprint templates in German and English; a

@@ -24,6 +24,7 @@ Die Lehrkräfte, die über diese Plattform Gesprächstermine anbieten, nutzen di
 
 - **Name(n)**, die Sie in das Freitextfeld eintragen (Pflichtangabe). Bitte geben Sie nur an, was zur Zuordnung des Gesprächs nötig ist (z. B. Name des Kindes), und keine weiteren Informationen.
 - **E-Mail-Adresse** – nur wenn Sie diese freiwillig angeben. Sie wird ausschließlich für die Terminbestätigung und Mitteilungen zu Ihrem Termin (Änderung, Absage, Erinnerung am Vorabend, sofern die Lehrkraft sie für die Terminrunde vorgesehen hat) genutzt, nicht für Werbung oder Newsletter.
+- **Wunsch nach einer Dolmetschung (Sprache)** – nur wenn die Lehrkraft das für die Terminrunde vorgesehen hat und Sie ihn freiwillig angeben. Er wird ausschließlich zur Vorbereitung des Gesprächs genutzt, ist nur für die Lehrkraft und die Administration der Terminvergabe sichtbar, steht in keiner E-Mail und wird mit der Buchung gelöscht.
 - der gewählte **Termin**, der Zeitpunkt der Buchung und die gewählte Sprache.
 
 Wenn Sie eine E-Mail-Adresse angeben, erhalten Sie Bestätigungen mit Ihrem Termin als Kalenderdatei (.ics). Auf der Seite Ihres Termins können Sie die Kalenderdatei auch herunterladen und sich die Bestätigung nachträglich an eine E-Mail-Adresse senden lassen (höchstens zweimal innerhalb von 24 Stunden). Diese Adresse wird nur für den Versand dieser E-Mail verwendet und nicht in der Terminvergabe gespeichert. Was Sie in Ihrem eigenen Kalender speichern, liegt in Ihrer Verantwortung.

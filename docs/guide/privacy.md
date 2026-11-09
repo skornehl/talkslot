@@ -11,6 +11,7 @@ This page explains the design decisions; it is not legal advice.
 | Data | Where | Deleted |
 |---|---|---|
 | Name and optional e-mail address of a booking | database | from 0:00 the day after the appointment, or immediately on cancellation |
+| Language of a request for an interpreter (optional, only in rounds that ask for it) | database | with the booking |
 | Hash of the personal change link (and of the links in the reminder and in a confirmation sent later) | database | with the booking |
 | Mail queue entry: which mail is due for which booking or account (no address, text or link) | database | once sent, after 48 hours at the latest, with the booking |
 | Cancellation by the teacher in the mail queue: address, language, name, appointment and teacher (name and address for replies; no address once the account is deleted) of the deleted booking (no link) | database | once sent, after 48 hours at the latest |
@@ -25,7 +26,7 @@ ask how long they are kept and state it in the privacy policy.
 
 ## Design decisions
 
-- **Data minimisation:** a free-text name and an optional e-mail address, nothing else. The field asks for the
+- **Data minimisation:** a free-text name and an optional e-mail address, nothing else (only in rounds that ask for it, also the language of a request for an interpreter, see below). The field asks for the
   **child's name** (*Name des Kindes*), first and last name, with the class if needed, so that teachers can
   match the booking and parents do not enter their own name for two children; the info box of a round with a
   booking limit says one appointment per child and how to book siblings. The round form asks teachers for
@@ -57,6 +58,13 @@ ask how long they are kept and state it in the privacy policy.
   had it turned on when they booked (the form says so). Entries made by the teacher get it only once a
   confirmation or change notice reached the parents, as that mail tells them about the entry and the
   privacy notice. Turning the reminder on later does not affect earlier bookings.
+- **A request for an interpreter, not the language of the page:** which language parents use on the page says
+  little about whether they need an interpreter and could hint at their origin, so teachers are not shown it. A
+  round can ask instead (off by default): parents who would like an interpreter enter the language themselves in
+  an optional field. It serves only to prepare the meeting: it is shown to the teacher and admins in the list of
+  appointments, on the printout and in the search for a request for access, and to the parents on the page of
+  their appointment. It appears in no mail or summary and is deleted with the booking. The privacy
+  templates of both operator types, in all six languages, describe it.
 - **Confirmation by e-mail afterwards:** parents who gave no address when booking can have the
   confirmation sent from the appointment page to an address they enter there. That address is used for
   this one mail and not stored; its footer says so. At most twice per booking within 24 hours (rate limit
@@ -146,7 +154,7 @@ ask how long they are kept and state it in the privacy policy.
 Parents can ask what is stored about them (Art. 15 GDPR). An admin finds the data for such a request under
 *Protokoll → Auskunft zu einer E-Mail-Adresse* (request for access by email address): enter the exact address and
 confirm that you are answering a request for access. The page lists, across all teachers, the bookings with that address (appointment, round,
-teacher, the name as booked, language, when and by whom it was entered, reminder and delivery status) and
+teacher, the name as booked, a request for an interpreter, language, when and by whom it was entered, reminder and delivery status) and
 cancellation mails that are still waiting to be sent. Upper and lower case do not matter; parts of an address
 are not searched for, and the search is a form post, so the address appears in no URL.
 

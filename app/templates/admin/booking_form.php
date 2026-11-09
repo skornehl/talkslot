@@ -20,6 +20,12 @@ $action = $booking ? url('/admin/booking/' . (int) $booking['id'] . '/edit') : u
     <label for="email"><?= e(__('E-Mail (optional)')) ?></label>
     <input type="email" id="email" name="email" maxlength="254" value="<?= e($old['email']) ?>">
   </div>
+  <?php if (!empty($round['ask_interpreter']) || $old['interpreter_lang'] !== ''): ?>
+  <div class="field">
+    <label for="interpreter_lang"><?= e(__('Gespräch mit Dolmetschung gewünscht: Sprache (optional)')) ?></label>
+    <input type="text" id="interpreter_lang" name="interpreter_lang" maxlength="60" value="<?= e($old['interpreter_lang']) ?>">
+  </div>
+  <?php endif; ?>
   <div class="field">
     <label for="lang"><?= e(__('Sprache für E-Mails und Änderungslink')) ?></label>
     <select id="lang" name="lang">

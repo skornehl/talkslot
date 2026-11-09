@@ -26,6 +26,7 @@ Veliler ve yasal temsilciler bu sayfa üzerinden, randevu sayfasında adı geçe
 
 - metin alanına girdiğiniz **ad(lar)** (zorunlu). Lütfen yalnızca görüşmenin kimle ilgili olduğunu anlamak için gerekli olanı (örneğin çocuğun adını) girin, başka bilgi girmeyin.
 - **e-posta adresi** – yalnızca isteğe bağlı olarak girerseniz. Yalnızca randevu onayı ve randevunuzla ilgili bildirimler (değişiklik, iptal, öğretmen bu randevu takvimi için öngördüyse bir önceki akşam hatırlatma) için kullanılır; reklam veya bülten için kullanılmaz.
+- **tercüman isteği (dil)** – yalnızca öğretmen bu randevu takvimi için bunu öngördüyse ve isteğe bağlı olarak girerseniz. Yalnızca görüşmenin hazırlanması için kullanılır, yalnızca öğretmen ve randevu sisteminin yöneticileri görebilir, hiçbir e-postada yer almaz ve randevuyla birlikte silinir.
 - seçilen **randevu saati**, randevunun alındığı zaman ve seçilen dil.
 
 Bir e-posta adresi girerseniz, randevunuzu takvim dosyası (.ics) olarak içeren onaylar alırsınız. Randevu sayfanızda takvim dosyasını indirebilir ve onayın sonradan seçtiğiniz bir e-posta adresine gönderilmesini isteyebilirsiniz (24 saat içinde en fazla iki kez). Bu adres yalnızca bu e-postanın gönderilmesi için kullanılır ve randevu sisteminde kaydedilmez. Kendi takviminize kaydettiklerinizden siz sorumlusunuz.

@@ -32,6 +32,10 @@ $action = $row ? url('/admin/templates/' . (int) $row['id'] . '/edit') : url('/a
     <input type="checkbox" id="remind_parents" name="remind_parents" value="1"<?= !empty($data['remind_parents']) ? ' checked' : '' ?>>
     <label for="remind_parents"><?= e(__('Eltern am Vorabend an ihren Termin erinnern')) ?></label>
   </div>
+  <div class="check">
+    <input type="checkbox" id="ask_interpreter" name="ask_interpreter" value="1"<?= !empty($data['ask_interpreter']) ? ' checked' : '' ?>>
+    <label for="ask_interpreter"><?= e(__('Eltern fragen, ob sie eine Dolmetschung wünschen')) ?></label>
+  </div>
 
   <div class="field">
     <label for="location"><?= e(__('Ort (optional)')) ?></label>

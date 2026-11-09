@@ -46,6 +46,12 @@ the German ones, with the English label in brackets.
   notice on that same day gets none (editing a name without a mail does not count). It applies to bookings
   made while it is on; your own entries only get it once their parents received a confirmation or change
   notice by mail.
+- **Interpreter** (*Eltern fragen, ob sie eine Dolmetschung wünschen*, off by default): the booking form gets an
+  optional field in which parents enter the language if they would like an interpreter for the meeting. You
+  see it with the booking in the list and on the printout, as *Dolmetschung gewünscht: …*; it appears in no
+  mail or summary and is deleted with the booking. It is a request: organise the interpreter yourself, or tell
+  the parents if that is not possible. You can enter or change it in the booking, and it stays visible if you
+  turn the question off later. A copy of the round, a template and the trash keep the setting.
 - **Random part in the address** (recommended) so the round cannot be found by guessing, and optionally
   **round code required** (*Nur mit Rundencode*).
 - **Active**: parents can book. Inactive rounds take no bookings, but parents can still cancel. While no

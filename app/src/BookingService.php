@@ -116,25 +116,25 @@ final class BookingService
      * @return array{0:int,1:string} [booking_id, token_plaintext]
      * @throws BookingException
      */
-    public static function book(array $round, int $slotId, string $name, ?string $email, string $lang): array
+    public static function book(array $round, int $slotId, string $name, ?string $email, string $lang, ?string $interpreterLang = null): array
     {
-        return self::create($round, $slotId, $name, $email, $lang, 'parent');
+        return self::create($round, $slotId, $name, $email, $lang, 'parent', $interpreterLang);
     }
 
     /** Entry by the teacher: ignores blocks and the booking deadline. */
-    public static function adminBook(array $round, int $slotId, string $name, ?string $email, string $lang): array
+    public static function adminBook(array $round, int $slotId, string $name, ?string $email, string $lang, ?string $interpreterLang = null): array
     {
-        return self::create($round, $slotId, $name, $email, $lang, 'admin');
+        return self::create($round, $slotId, $name, $email, $lang, 'admin', $interpreterLang);
     }
 
-    private static function create(array $round, int $slotId, string $name, ?string $email, string $lang, string $source): array
+    private static function create(array $round, int $slotId, string $name, ?string $email, string $lang, string $source, ?string $interpreterLang): array
     {
         [$plain, $hash] = Token::generate();
         // Parents may get the reminder if the round said so when they booked (the form tells them); entries
         // by the teacher only once the parents got a confirmation or change notice (see mailResult())
         $remindOk = $source === 'parent' && !empty($round['remind_parents']) ? 1 : 0;
         try {
-            $id = self::retryOnDeadlock(static fn (): int => Db::transaction(static function () use ($round, $slotId, $name, $email, $lang, $source, $hash, $remindOk): int {
+            $id = self::retryOnDeadlock(static fn (): int => Db::transaction(static function () use ($round, $slotId, $name, $email, $interpreterLang, $lang, $source, $hash, $remindOk): int {
                 $limited = $source !== 'admin' && self::lockForLimit($round);
                 $slot = self::lockSlot($slotId, (int) $round['id']);
                 self::assertFree($slot, $round, $source === 'admin');
@@ -143,9 +143,9 @@ final class BookingService
                 }
                 $now = Time::nowSql();
                 return Db::insert(
-                    'INSERT INTO bookings (slot_id, name, email, token_hash, lang, source, remind_ok, created_at, updated_at)
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                    [$slotId, $name, $email, $hash, $lang, $source, $remindOk, $now, $now]
+                    'INSERT INTO bookings (slot_id, name, email, interpreter_lang, token_hash, lang, source, remind_ok, created_at, updated_at)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                    [$slotId, $name, $email, $interpreterLang, $hash, $lang, $source, $remindOk, $now, $now]
                 );
             }));
         } catch (\PDOException $e) {
@@ -206,13 +206,13 @@ final class BookingService
      * the bulk mails after a change of a day or round (ScheduleService) to addresses of its choice. Mails
      * still waiting for the old address are dropped. true = new address.
      */
-    public static function update(int $bookingId, string $name, ?string $email, string $lang): bool
+    public static function update(int $bookingId, string $name, ?string $email, string $lang, ?string $interpreterLang): bool
     {
         $old = (string) Db::value('SELECT email FROM bookings WHERE id = ?', [$bookingId]);
         $newAddress = (string) $email !== '' && mb_strtolower(trim((string) $email)) !== mb_strtolower(trim($old));
         Db::run(
-            'UPDATE bookings SET name = ?, email = ?, lang = ?, updated_at = ? WHERE id = ?',
-            [$name, $email, $lang, Time::nowSql(), $bookingId]
+            'UPDATE bookings SET name = ?, email = ?, interpreter_lang = ?, lang = ?, updated_at = ? WHERE id = ?',
+            [$name, $email, $interpreterLang, $lang, Time::nowSql(), $bookingId]
         );
         if ($newAddress) {
             Db::run("UPDATE bookings SET source = 'admin', notified_at = NULL, remind_ok = 0, mail_failed_at = NULL WHERE id = ?", [$bookingId]);
