@@ -4,7 +4,7 @@
 
 <section class="card">
   <h2><?= e(__('Angaben')) ?></h2>
-  <form method="post" action="<?= e(url('/admin/profile')) ?>" class="form-grid">
+  <form method="post" action="<?= e(url('/admin/profile')) ?>" class="form-grid" novalidate>
     <?= Csrf::adminField() ?>
     <div class="field">
       <label for="display_name"><?= e(__('Anzeigename')) ?></label>
@@ -14,7 +14,7 @@
     <?php if (App\Auth::isAdmin()): ?>
     <p class="hint"><?= __h('Die Angaben für Impressum und Datenschutz (die Schule bzw. der Betreiber) pflegen alle Admins gemeinsam unter {link}.', ['link' => '<a href="' . e(url('/admin/texts')) . '">' . e(__('„Texte“')) . '</a>']) ?></p>
     <?php endif; ?>
-    <?php $domains = App\AccountDomains::allowed(); ?>
+    <?php $domains = App\AccountDomains::shown(); ?>
     <div class="field">
       <label for="email"><?= e(__('E-Mail-Adresse')) ?></label>
       <input type="email" id="email" name="email" maxlength="254" value="<?= e($data['email'] ?? '') ?>" aria-describedby="em-hint">

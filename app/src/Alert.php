@@ -117,8 +117,8 @@ final class Alert
 
     private static function recipient(): ?string
     {
-        $to = trim((string) Config::get('alert_email', ''));
-        if (filter_var($to, FILTER_VALIDATE_EMAIL)) {
+        $to = Email::normalize((string) Config::get('alert_email', ''));
+        if ($to !== null) {
             return $to;
         }
         if (Db::isUnavailable()) {
@@ -126,8 +126,7 @@ final class Alert
         }
         try {
             $admin = Operator::admin();
-            $to = trim((string) ($admin['email'] ?? ''));
-            return filter_var($to, FILTER_VALIDATE_EMAIL) ? $to : null;
+            return Email::normalize((string) ($admin['email'] ?? ''));
         } catch (\Throwable) {
             return null;
         }
