@@ -64,5 +64,8 @@ in person, the teacher contacts you directly.
   slot is free, the page says why: all slots are taken, or the booking deadline has passed. Where the
   teacher or the school has given a contact for questions (for example the school office with its phone
   number), the booking page, the page of your appointment and the "not found" page show it.
+- **Too many requests from your network:** many parents on the same Wi-Fi (e.g. at school) can use up a
+  limit together. Try again later or over another connection, such as mobile data; otherwise contact the
+  teacher.
 - **Privacy:** the booking site sets no cookies and does not track you. Your details are deleted
   automatically the day after the appointment.

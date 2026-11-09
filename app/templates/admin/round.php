@@ -218,6 +218,18 @@ $deletionText = $deletion ? __('{date}, {time} Uhr', ['date' => fmt_date($deleti
     </tbody>
   </table>
   </div>
+  <?php if ($dayBookings > 1): ?>
+  <?php /* Expert review P1-7: after slots were taken with made-up names, several bookings at once (next page lists them) */ ?>
+  <details class="bulk-delete">
+    <summary><?= e(__('Mehrere Buchungen löschen …')) ?></summary>
+    <p class="small muted"><?= e(__('Zum Aufräumen, z. B. wenn jemand Termine mit Fantasienamen belegt hat. Danach sehen Sie die Buchungen des Zeitraums und wählen aus, welche gelöscht werden.')) ?></p>
+    <form method="get" action="<?= e(url('/admin/day/' . $did . '/bookings')) ?>" class="inline-form">
+      <label><?= e(__('Von')) ?> <input type="text" inputmode="numeric" pattern="[0-9]{1,2}([:.][0-9]{2})?|[0-9]{3,4}" maxlength="5" placeholder="HH:MM" autocomplete="off" class="time-input" data-time name="from" required value="<?= e(fmt_time($day['start_time'])) ?>"></label>
+      <label><?= e(__('Bis')) ?> <input type="text" inputmode="numeric" pattern="[0-9]{1,2}([:.][0-9]{2})?|[0-9]{3,4}" maxlength="5" placeholder="HH:MM" autocomplete="off" class="time-input" data-time name="to" required value="<?= e(fmt_time($day['end_time'])) ?>"></label>
+      <button type="submit" class="button button-small"><?= e(__('Buchungen anzeigen')) ?></button>
+    </form>
+  </details>
+  <?php endif; ?>
 </section>
 <?php endforeach; ?>
 

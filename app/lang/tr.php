@@ -98,7 +98,8 @@ return [
     'err.deadline' => 'Bu saat için artık randevu alınamaz; randevu süresi doldu.',
     'err.csrf' => 'Formun süresi doldu. Lütfen tekrar deneyin.',
     'err.too_fast' => 'Çok hızlı oldu. Lütfen formu birkaç saniye sonra tekrar gönderin.',
-    'err.rate' => 'Çok fazla istek. Lütfen daha sonra tekrar deneyin.',
+    'err.rate' => 'Ağınızdan çok fazla istek geldi (birçok kişi aynı Wi-Fi ağını kullandığında bu olabilir). Lütfen daha sonra veya başka bir bağlantıyla, örneğin Wi-Fi yerine mobil veriyle tekrar deneyin. Yine olmazsa lütfen doğrudan öğretmenle iletişime geçin.',
+    'err.rate_move' => 'Bu randevu son bir saat içinde çok sık değiştirildi. Lütfen daha sonra tekrar deneyin veya doğrudan öğretmenle iletişime geçin.',
     'err.spam' => 'Randevu kaydedilemedi.',
 
     'manage.title' => 'Randevunuz',
@@ -108,6 +109,8 @@ return [
     'manage.link_label' => 'Kişisel bağlantınız',
     'manage.mail_sent' => 'Bu bağlantıyı içeren bir onay e-posta adresinize gönderildi.',
     'manage.mail_queued' => 'Onay şu anda gönderilemedi. Mümkün olur olmaz e-posta adresinize otomatik olarak gönderilecektir. Lütfen yine de bağlantınızı saklayın.',
+    'manage.mail_limited' => 'E-posta gönderilmedi: Bu adrese kısa sürede çok fazla e-posta gönderildi. Lütfen bağlantınızı başka bir şekilde saklayın, örneğin yer imi olarak.',
+    'manage.mail_limited_booked' => 'Onay e-postayla gönderilmedi ve bu randevuyla ilgili daha sonra da e-posta gelmeyecek: Bu adrese kısa sürede çok fazla e-posta gönderildi. Lütfen bağlantınızı başka bir şekilde saklayın, örneğin yer imi olarak.',
     'manage.copy' => 'Bağlantıyı kopyala',
     'manage.copied' => 'Kopyalandı ✓',
     'manage.copy.prompt' => 'Bağlantıyı kopyalayın:',

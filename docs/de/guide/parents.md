@@ -71,5 +71,8 @@ oder wenn die Lehrkraft Sie lieber selbst informiert, meldet sie sich persönlic
   Startseite an. Ist kein Termin frei, steht dort, warum: Alle Termine sind vergeben, oder die Buchungsfrist
   ist abgelaufen. Haben Lehrkraft oder Schule einen Kontakt für Fragen angegeben (z. B. das Sekretariat mit
   Telefonnummer), zeigen ihn die Buchungsseite, die Seite Ihres Termins und die Seite „Nicht gefunden“.
+- **Zu viele Anfragen aus Ihrem Netzwerk:** Viele Eltern im selben WLAN (z. B. in der Schule) können
+  gemeinsam ein Limit aufbrauchen. Versuchen Sie es später oder über eine andere Verbindung, etwa mobile
+  Daten; sonst wenden Sie sich an die Lehrkraft.
 - **Datenschutz:** Die Buchungsseite setzt keine Cookies und verfolgt Sie nicht. Ihre Angaben werden am Tag
   nach dem Termin automatisch gelöscht.
