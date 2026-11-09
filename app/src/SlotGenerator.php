@@ -54,10 +54,9 @@ final class SlotGenerator
      * - unbooked slots that no longer fit are deleted
      * - booked slots that no longer fit are marked as conflicts
      *
-     * Locks: the day row first (FOR UPDATE), then the slots it changes. A booking locks its slot
-     * together with the day row (BookingService::lockSlot joins round_days), so a booking and a sync of
-     * the same day are serialized; where they cross, InnoDB ends one of them as a deadlock (bookings
-     * retry). The list of slots below is a plain snapshot read, though, and a deleted slot takes its
+     * Locks: the day row first (FOR UPDATE), then the slots it changes. A booking locks the day row and
+     * then its slot in the same order (BookingService::lockSlot), so a booking and a sync of the same day
+     * are serialized. The list of slots below is a plain snapshot read, though, and a deleted slot takes its
      * booking with it (ON DELETE CASCADE). So the DELETE checks for a booking itself and does not
      * rely on that lock: a slot booked in the meantime is kept as a conflict instead.
      *
