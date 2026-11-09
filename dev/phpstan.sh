@@ -13,7 +13,7 @@ PHAR=dev/data/phpstan-$VERSION.phar
 if [ ! -f "$PHAR" ]; then
   mkdir -p dev/data
   PART=$(mktemp dev/data/phpstan.XXXXXX) # a file of its own: two runs at once do not write into the same one
-  curl -sSfL --retry 3 -o "$PART" "https://github.com/phpstan/phpstan/releases/download/$VERSION/phpstan.phar" || { rm -f "$PART"; exit 1; }
+  curl -sSfL --retry 6 --retry-delay 10 -o "$PART" "https://github.com/phpstan/phpstan/releases/download/$VERSION/phpstan.phar" || { rm -f "$PART"; exit 1; }
   mv "$PART" "$PHAR"
 fi
 if ! echo "$SHA256  $PHAR" | sha256sum -c --status; then
