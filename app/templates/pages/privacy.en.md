@@ -1,3 +1,5 @@
+> This is a translation. The German version is authoritative.
+
 This notice informs you, in accordance with Art. 13 of the General Data Protection Regulation (GDPR), which personal data is processed when you use this booking service, for what purpose, and what rights you have.
 
 # 1. Controller
@@ -37,7 +39,7 @@ There are no user accounts, no advertising, no tracking and no usage analytics. 
 - **Abuse protection and server logs:** Art. 6(1)(e) and (3) GDPR in conjunction with [PROVISION OF THE STATE DATA PROTECTION ACT]. Both serve the secure and reliable operation of the booking service (Art. 32 GDPR) and protection against spam, multiple and unauthorised bookings.
 - **Browser storage (“Remember my appointment”):** Section 25(1) TDDDG and Art. 6(1)(a) GDPR (your consent by ticking the box), see section 7.
 
-By ticking the required box in the booking form you only confirm that you have read this notice. This is not consent; the processing of your booking data is based on the legal grounds stated above.
+You do not need to give consent to book an appointment; the processing of your booking data is based on the legal grounds stated above. Consent only concerns the optional browser storage (“Remember my appointment”).
 
 # 5. Retention and deletion
 

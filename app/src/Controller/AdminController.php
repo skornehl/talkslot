@@ -314,7 +314,7 @@ final class AdminController
             )) : 0,
             'operatorMissing' => !Operator::ready(),
             'typeMissing' => !Auth::isAdmin() && Operator::ready() && Operator::type() === null,
-            'textsOpen' => !Auth::isAdmin() && Operator::ready() && LegalTexts::open() !== [],
+            'textsOpen' => !Auth::isAdmin() && Operator::ready() && (LegalTexts::splitOpen(LegalTexts::open())[0] !== [] || LegalTexts::missing() !== [] || LegalTexts::germanEmpty()),
             'legalHints' => $legalHints,
             // Until the first round has been public: one checklist ("Bereit für den Start?") instead of the setup warnings
             'readiness' => Auth::isAdmin() && !Readiness::started() ? Readiness::checks($legalHints) : null,
@@ -1487,10 +1487,23 @@ final class AdminController
                 ? __('Bevor Runden aktiviert werden können, wählen Sie bitte unter „Texte“ die Betriebsart: Wird die Terminvergabe von der Schule oder privat betrieben?')
                 : __('Runden können erst aktiviert werden, wenn ein Admin die Betriebsart (von der Schule oder privat betrieben) gewählt hat.');
         }
-        if (($open = LegalTexts::open()) !== []) {
+        // Open placeholders in a translation (e.g. the Polish privacy policy) do not count: parents then get the
+        // English or German text (LegalTexts::forParents())
+        if (($open = LegalTexts::splitOpen(LegalTexts::open())[0]) !== []) {
             return Auth::isAdmin()
                 ? __('Bevor Runden aktiviert werden können, ersetzen Sie bitte unter „Texte“ die offenen Platzhalter in eckigen Klammern: {texts}.', ['texts' => self::openTexts($open, false)])
                 : __('Runden können erst aktiviert werden, wenn ein Admin die offenen Platzhalter in Impressum bzw. Datenschutzerklärung ausgefüllt hat.');
+        }
+        // A page empty in every fallback language: parents would get no text at all (LegalTexts::missing())
+        if (($missing = LegalTexts::missing()) !== []) {
+            return Auth::isAdmin()
+                ? __('Bevor Runden aktiviert werden können, hinterlegen Sie bitte unter „Texte“ {texts} in mindestens einer dieser Sprachen: {languages}.', ['texts' => self::missingTexts($missing), 'languages' => strtoupper(implode(', ', LegalTexts::fallbackLanguages()))])
+                : __('Runden können erst aktiviert werden, wenn ein Admin Impressum und Datenschutzerklärung hinterlegt hat.');
+        }
+        if (LegalTexts::germanEmpty()) {
+            return Auth::isAdmin()
+                ? __('Bevor Runden aktiviert werden können, hinterlegen Sie bitte unter „Texte“ die deutsche Datenschutzerklärung: Auf sie verweisen alle Übersetzungen als maßgebliche Fassung.')
+                : __('Runden können erst aktiviert werden, wenn ein Admin Impressum und Datenschutzerklärung hinterlegt hat.');
         }
         return null;
     }
@@ -2045,13 +2058,22 @@ final class AdminController
         if ($old) {
             $hints[] = __('Die Datenschutzerklärung ({languages}) beschreibt noch das alte Modell (Lehrkräfte verantwortlich, Betreiberin als Auftragsverarbeiterin). Verantwortlich ist jetzt der Betreiber (die Angaben für Impressum und Datenschutz) – bitte Abschnitt 1, 6 und 9 an die Vorlage anpassen.', ['languages' => $list($old)]);
         }
-        // Wording that does not fit the operator type (LegalTexts::mismatches()), per kind the languages
+        // Wording that does not fit the operator type (LegalTexts::mismatches()) or no longer fits at all
+        // (LegalTexts::obsolete()), per kind the languages
         $mismatch = [];
-        foreach (Db::all("SELECT lang, content FROM pages WHERE page_key IN ('imprint', 'privacy') ORDER BY lang") as $row) {
-            foreach (LegalTexts::mismatches((string) $row['content'], Operator::type()) as $kind) {
-                $mismatch[$kind][(string) $row['lang']] = ['lang' => $row['lang']];
+        // Only texts of offered languages (admins cannot edit the others) that are not emptied (pick(): missing)
+        foreach (LegalTexts::stored() as $texts) {
+            foreach ($texts as $lang => $content) {
+                foreach (trim($content) !== '' ? [...LegalTexts::mismatches($content, Operator::type()), ...LegalTexts::obsolete($content)] : [] as $kind) {
+                    $mismatch[$kind][(string) $lang] = ['lang' => (string) $lang];
+                }
             }
         }
+        ksort($mismatch);
+        foreach ($mismatch as &$langs) {
+            ksort($langs);
+        }
+        unset($langs);
         if (isset($mismatch['old'])) {
             // Operated by the school, but the template up to v1.6: "private service" without a data protection
             // officer, legal bases for private operators only, "cancel at any time"
@@ -2068,10 +2090,14 @@ final class AdminController
             // all booked appointments and a promised deletion of the summary mails in the teacher's mailbox
             $hints[] = __('Die Datenschutzerklärung ({languages}) nennt den Betreiber noch als Verantwortlichen für „alle darüber gebuchten Termine“ und sagt vermutlich auch die Löschung der Zusammenfassungen im Postfach der Lehrkraft zu. Bei privatem Betrieb ist er nur für die Terminvergabe verantwortlich; für das Gespräch und das Postfach der Lehrkraft gelten die Regeln der Schule – bitte die Abschnitte 1, 4, 5 und 9 mit der Vorlage „Privat betrieben“ abgleichen („Vorlage laden“).', ['languages' => $list($mismatch['scope'])]);
         }
+        if (isset($mismatch['checkbox'])) {
+            // Expert review P1-9: the booking form no longer has the required checkbox "read the privacy notice"
+            $hints[] = __('Die Datenschutzerklärung ({languages}) erwähnt noch das Pflicht-Häkchen im Buchungsformular. Das gibt es nicht mehr: Eltern werden informiert, bestätigen müssen sie nichts – bitte den letzten Absatz in Abschnitt 4 an die Vorlage anpassen.', ['languages' => $list($mismatch['checkbox'])]);
+        }
         if (isset($mismatch['anytime'])) {
             $hints[] = __('Die Datenschutzerklärung ({languages}) sagt noch, Eltern könnten ihren Termin „jederzeit“ selbst absagen. Das geht nur bis zur Änderungsfrist der Terminrunde – bitte den Satz in Abschnitt 9 an die Vorlage anpassen.', ['languages' => $list($mismatch['anytime'])]);
         }
-        $noPlaceholder = Db::all("SELECT lang FROM pages WHERE page_key IN ('imprint', 'privacy') AND content NOT LIKE '%[[VERANTWORTLICHE]]%' GROUP BY lang ORDER BY lang");
+        $noPlaceholder = Db::all("SELECT lang FROM pages WHERE page_key IN ('imprint', 'privacy') AND TRIM(content) <> '' AND content NOT LIKE '%[[VERANTWORTLICHE]]%' GROUP BY lang ORDER BY lang");
         if ($noPlaceholder) {
             $hints[] = __('Impressum bzw. Datenschutzerklärung ({languages}) enthalten den Platzhalter [[VERANTWORTLICHE]] nicht – die Angaben für Impressum und Datenschutz erscheinen dort nicht automatisch.', ['languages' => $list($noPlaceholder)]);
         }
@@ -2086,7 +2112,7 @@ final class AdminController
         array_push($hints, ...($outdated !== null ? self::outdatedHints($outdated) : []));
         $hosting = array_values(array_filter(
             array_column(Db::all("SELECT DISTINCT lang FROM pages WHERE page_key = 'privacy' AND content LIKE '%[[HOSTER]]%' ORDER BY lang"), 'lang'),
-            static fn ($l) => !\App\Hosting::configured((string) $l)
+            static fn ($l) => \App\Hosting::source((string) $l) === null
         ));
         if ($hosting) {
             $hints[] = __('Für die Datenschutzerklärung ({languages}) fehlen die Angaben zum Hoster (Konfiguration „hosting“, beim Deployment die Variablen HOSTING_DE bzw. HOSTING_EN) – bis dahin steht dort ein Platzhalter.', ['languages' => implode(', ', array_map('strtoupper', $hosting))]);
@@ -2112,10 +2138,36 @@ final class AdminController
         } elseif (Operator::typeAuto()) {
             $hints[] = __('Die Betriebsart wurde beim Update auf „{type}“ gesetzt, weil Impressum und Datenschutzerklärung noch unverändert der bisherigen Vorlage entsprachen. Bitte prüfen Sie das unter „Texte“ und speichern Sie die Angaben dort einmal.', ['type' => Operator::typeLabel((string) Operator::type())]);
         }
-        if (($open = LegalTexts::open()) !== []) {
-            $hints[] = __('Impressum bzw. Datenschutzerklärung enthalten noch offene Platzhalter in eckigen Klammern – {texts}. Solange sie nicht ersetzt sind, lassen sich keine Runden aktivieren; bereits aktive Runden bleiben erreichbar.', ['texts' => self::openTexts($open, true)]);
+        [$blocking, $translations] = LegalTexts::splitOpen(LegalTexts::open());
+        if ($blocking !== []) {
+            $hints[] = __('Impressum bzw. Datenschutzerklärung enthalten noch offene Platzhalter in eckigen Klammern – {texts}. Solange sie nicht ersetzt sind, lassen sich keine Runden aktivieren; bereits aktive Runden bleiben erreichbar.', ['texts' => self::openTexts($blocking, true)]);
+        }
+        if ($translations !== []) {
+            // Translations (expert review P1-9): parents get the English (or German) text until they are filled in
+            $hints[] = __('Übersetzungen noch nicht vollständig: {texts}. Bitte ersetzen Sie dort die Platzhalter in eckigen Klammern durch dieselben Angaben wie in der deutschen Fassung. Bis dahin sehen Eltern in diesen Sprachen die englische bzw. deutsche Fassung mit einem Hinweis in ihrer Sprache; Runden lassen sich trotzdem aktivieren. Wenn Sie eine Übersetzung nicht anbieten möchten, leeren Sie den Text.', ['texts' => self::openTexts($translations, false)]);
+        }
+        if (($missing = LegalTexts::missing()) !== []) {
+            $hints[] = __('Für {texts} gibt es in keiner dieser Sprachen einen Text: {languages}. Eltern bekommen dann keinen, und es lassen sich keine Runden aktivieren.', ['texts' => self::missingTexts($missing), 'languages' => strtoupper(implode(', ', LegalTexts::fallbackLanguages()))]);
+        }
+        if (LegalTexts::germanEmpty()) {
+            $hints[] = __('Die deutsche Datenschutzerklärung ist leer. Auf sie verweisen alle Übersetzungen als maßgebliche Fassung; bis sie hinterlegt ist, lassen sich keine Runden aktivieren.');
+        }
+        // The German text is the authoritative version: what it says beyond the template, or a change made there since,
+        // may be missing in the other languages
+        $edited = LegalTexts::behindEditedGerman();
+        if ($edited !== []) {
+            $hints[] = __('Ihre deutsche Datenschutzerklärung weicht von der Vorlage ab. Diese Fassungen sind noch die Vorlage mit Ihren Angaben: {languages}. Maßgeblich ist die deutsche Fassung – bitte übertragen Sie Ihre Änderungen dorthin.', ['languages' => strtoupper(implode(', ', $edited))]);
+        }
+        if (($behind = array_values(array_diff(LegalTexts::behindGerman(), $edited))) !== []) {
+            $hints[] = __('Die deutsche Datenschutzerklärung wurde geändert, nachdem diese Fassungen zuletzt gespeichert wurden: {languages}. Maßgeblich ist die deutsche Fassung – bitte prüfen Sie, ob sie dieselben Angaben enthalten, und speichern Sie sie danach (auch unverändert).', ['languages' => strtoupper(implode(', ', $behind))]);
         }
         return $hints;
+    }
+
+    /** The pages missing in every fallback language (LegalTexts::missing()): "Impressum und Datenschutzerklärung". */
+    private static function missingTexts(array $missing): string
+    {
+        return implode(' ' . __('und') . ' ', array_map(self::pageLabel(...), $missing));
     }
 
     /**
@@ -2286,10 +2338,14 @@ final class AdminController
     {
         $this->assertLang($lang);
         $content = str_replace("\r\n", "\n", Http::postRaw('content'));
+        // The German text is the authoritative version (LegalTexts::behindGerman()): saved unchanged, it is not newer
+        // than the translations. Saving a translation always counts, that is how admins confirm it.
+        $was = $lang === 'de' ? Db::one('SELECT content, updated_at FROM pages WHERE page_key = ? AND lang = ?', [$key, $lang]) : null;
+        $at = $was !== null && rtrim((string) $was['content']) === rtrim($content) ? (string) $was['updated_at'] : Time::nowSql();
         Db::run(
             'INSERT INTO pages (page_key, lang, content, updated_at) VALUES (?, ?, ?, ?)
              ON DUPLICATE KEY UPDATE content = ?, updated_at = ?',
-            [$key, $lang, $content, Time::nowSql(), $content, Time::nowSql()]
+            [$key, $lang, $content, $at, $content, $at]
         );
         // Version marker (LegalTexts::base()): the template the form was loaded from or the admin reconciled the
         // text with ("base", an operator type) if it is still the one the form showed ("base_hash"), else the

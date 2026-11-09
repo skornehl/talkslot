@@ -77,7 +77,9 @@ Syntaxfehlers.
   nutzt, und bei abweichenden Platzhaltern. E-Mails an ein Konto folgen dessen Sprache (`AdminI18n::with()`).
 - **Elterntexte** laufen durch `t('schlüssel')` mit `app/lang/{de,en,pl,ru,tr,uk}.php`; jeder Schlüssel muss
   in jeder Sprache vorhanden sein (ein Unit-Test prüft das). Lassen Sie neue polnische, russische, türkische
-  und ukrainische Texte von Muttersprachlern gegenlesen.
+  und ukrainische Texte von Muttersprachlern gegenlesen und vermerken Sie das im Pull Request. Zahlen mit
+  Einheit laufen über `I18n::plural()` (`fmt_hours()`): Jede Sprachdatei nennt ihre Pluralregel (`'plural'`:
+  `one`, `pl`, `east-slavic` oder `none`) und so viele Formen von `'hours'`, wie die Regel braucht.
 - **Commits:** [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `docs:`, …);
   Releases werden daraus abgeleitet.
 - **Datenbank:** ausschließlich Prepared Statements; das SQL-Audit im Unit-Test schlägt bei
@@ -95,7 +97,10 @@ Syntaxfehlers.
   Major-Version weiter funktioniert; die Regeln stehen unten unter [Migrationen](#migrationen).
 - **Rechtstext-Vorlagen:** Aktualisieren Sie nach einer Änderung an `app/templates/pages/*.md` die
   `CURRENT_PAGE_HASHES` und verschieben Sie die alten Hashes nach `OLD_PAGE_HASHES`, damit unbearbeitete
-  Texte automatisch aktualisiert werden. Der Unit-Test nennt Ihnen die neuen Hashes. Für bearbeitete Texte
+  Texte automatisch aktualisiert werden. Die Datenschutzerklärung gibt es in allen sechs Elternsprachen für beide
+  Betriebsarten (`privacy*.{de,en,pl,ru,uk,tr}.md`): Eine Änderung an der deutschen Vorlage gehört in alle
+  zwölf Dateien, mit denselben Abschnitten und den deutschen Platzhaltern in den Übersetzungen (ein Unit-Test
+  vergleicht sie); markieren Sie geänderte Übersetzungen für eine Prüfung durch Muttersprachler. Der Unit-Test nennt Ihnen die neuen Hashes. Für bearbeitete Texte
   braucht es keinen neuen Hinweis in `AdminController::legalHints()`: Ihr Vorlagenstand zeigt Admins die
   geänderten Abschnitte von selbst (`LegalTexts::outdated()`). Halten Sie die Abschnitte unter Überschriften
   der ersten Ebene (`# 5. …`) und jeden Absatz bzw. Listenpunkt in einer Zeile, damit der Vergleich je

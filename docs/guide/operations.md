@@ -41,6 +41,12 @@ templates get them as their markers; for other edited texts the hint lists the s
 already active stay online; the dashboard lists the placeholders, and the next round can only be activated
 once they are filled in.
 
+**Update to the version with the translated privacy policies:** each offered language without a privacy
+policy of its own gets the translation of the operator type. Its placeholders are open at first, so parents in
+that language keep getting the English text (now with a notice in their language) until an admin fills them
+in; this does not block activating rounds. The dashboard shows *Übersetzungen noch nicht vollständig*. Edited
+texts that still mention the required checkbox of the booking form, which is gone, get a hint.
+
 **Update to the version with the operator type:** an installation whose texts are all still unedited
 templates up to v1.6 becomes *operated privately* (what those templates described), and the dashboard tells
 the admins. Every other installation has no operator type afterwards: admins see *Bitte Betriebsart wählen*

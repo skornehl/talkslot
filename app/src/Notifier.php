@@ -140,8 +140,16 @@ final class Notifier
                 'app' => app_name(),
                 'teacher' => (string) ($b['teacher_name'] ?? ''),
                 'controller' => Operator::name() !== '' ? Operator::name() : (string) ($b['teacher_name'] ?? ''),
+                // The privacy notice in the parents' language (footer)
+                'privacy' => abs_url('/datenschutz', ['lang' => I18n::lang()]),
             ];
-            $body = t("mail.$type.body", $vars);
+            // A reminder after the deadline for changes (e.g. 24 hours with the reminder the evening before): no
+            // invitation to cancel through the link, the notice below says to contact the teacher
+            $body = t($type === 'reminder' && !BookingService::canChange($b) ? 'mail.reminder.body_locked' : "mail.$type.body", $vars);
+            if (in_array($type, ['booked', 'changed', 'reminder'], true)) {
+                // Until when the link still changes or cancels the appointment (date and time), or that it no longer does
+                $body .= "\n\n" . BookingService::changeNotice($b);
+            }
             if (!empty($b['rebook'])) {
                 $body .= "\n\n" . t('mail.cancelled_teacher.rebook', ['url' => abs_url('/' . $b['rebook'], ['lang' => I18n::lang()])]);
             }

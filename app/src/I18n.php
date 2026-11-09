@@ -133,6 +133,33 @@ final class I18n
         return is_string($s) ? $s : $key;
     }
 
+    /**
+     * A number with the plural form of the current language: $key holds the forms with {n} (app/lang/*.php,
+     * e.g. 'hours'), 'plural' the rule that picks one of them (pluralForm()).
+     */
+    public static function plural(string $key, int $n): string
+    {
+        $forms = array_values((array) (self::raw($key) ?? [$key]));
+        $form = $forms[min(self::pluralForm((string) (self::raw('plural') ?? 'one'), $n), count($forms) - 1)];
+        return str_replace('{n}', (string) $n, (string) $form);
+    }
+
+    /**
+     * Index of the plural form for $n: "one" (German, English: 1 / other), "pl" (Polish: 1 / 2–4, 22–24 … / other),
+     * "east-slavic" (Russian, Ukrainian: 1, 21 … / 2–4, 22–24 … / other), "none" (Turkish: one form only).
+     */
+    public static function pluralForm(string $rule, int $n): int
+    {
+        $n = abs($n);
+        $few = $n % 10 >= 2 && $n % 10 <= 4 && ($n % 100 < 12 || $n % 100 > 14);
+        return match ($rule) {
+            'none' => 0,
+            'pl' => $n === 1 ? 0 : ($few ? 1 : 2),
+            'east-slavic' => $n % 10 === 1 && $n % 100 !== 11 ? 0 : ($few ? 1 : 2),
+            default => $n === 1 ? 0 : 1,
+        };
+    }
+
     public static function raw(string $key): mixed
     {
         return self::$strings[$key] ?? self::$fallback[$key] ?? null;

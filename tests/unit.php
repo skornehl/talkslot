@@ -531,8 +531,8 @@ check("app/vendor/phpmailer ($bundled) matches composer.lock (" . ($locked['phpm
 echo "Web host in the privacy policy\n";
 App\Config::load(['hosting' => ['de' => 'Beispiel Hosting GmbH, Weg 1']] + $cfg);
 check('[[HOSTER]] from the configuration, per language of the page text', App\Hosting::fill("- **Hosting:** [[HOSTER]]\n", 'de') === "- **Hosting:** Beispiel Hosting GmbH, Weg 1\n");
-check('not configured: visible placeholder in the language of the text (otherwise English)', str_starts_with(App\Hosting::fill('[[HOSTER]]', 'en'), '[WEB HOST WITH ADDRESS]')
-    && str_starts_with(App\Hosting::fill('[[HOSTER]]', 'pl'), '[WEB HOST WITH ADDRESS]') && !App\Hosting::configured('en'));
+check('not configured: visible placeholder in the language of the text; a translation takes English or German (expert review P1-9)', str_starts_with(App\Hosting::fill('[[HOSTER]]', 'en'), '[WEB HOST WITH ADDRESS]')
+    && App\Hosting::fill('[[HOSTER]]', 'pl') === 'Beispiel Hosting GmbH, Weg 1' && !App\Hosting::configured('en'));
 check('templates contain [[HOSTER]]', str_contains((string) file_get_contents(dirname(__DIR__) . '/app/templates/pages/privacy.de.md'), '[[HOSTER]]')
     && str_contains((string) file_get_contents(dirname(__DIR__) . '/app/templates/pages/privacy.en.md'), '[[HOSTER]]'));
 App\Config::load($cfg);

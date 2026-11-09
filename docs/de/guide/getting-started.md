@@ -44,10 +44,10 @@ deshalb, dass noch kein vollständiger Lauf des Cronjobs verzeichnet ist ([Über
    erledigen Sie das zuerst unter *Texte*).
 2. **Öffnen Sie eine Terminrunde** auf dem Dashboard (*Alle Runden*). Sie sehen den Link für Eltern, den
    Rundencode, den Einladungstext und die Buchungen jedes Tages.
-3. **Buchen Sie als Elternteil:** Klicken Sie neben dem Link auf *Öffnen*, wählen Sie einen Termin, geben
-   Sie einen Namen ein und setzen Sie den Haken bei der Datenschutz-Checkbox. Die Bestätigungsseite zeigt
-   den persönlichen Änderungslink. Mit E-Mail-Adresse kommt die Bestätigung in Mailpit an, inklusive
-   Kalenderdatei.
+3. **Buchen Sie als Elternteil:** Klicken Sie neben dem Link auf *Öffnen*, wählen Sie einen Termin und
+   geben Sie einen Namen ein; die Zeile über dem Button zeigt den gewählten Termin. Die Bestätigungsseite
+   zeigt den persönlichen Änderungslink und bis wann er gilt. Mit E-Mail-Adresse kommt die Bestätigung in
+   Mailpit an, inklusive Kalenderdatei.
 4. **Wechseln Sie die Sprache** ganz oben auf der Seite und probieren Sie in der Fußzeile den hellen und
    dunklen Modus aus.
 5. **Legen Sie eine eigene Terminrunde an** mit *+ Neue Runde*: Wählen Sie ein oder mehrere Daten, den

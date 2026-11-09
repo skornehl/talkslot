@@ -75,7 +75,9 @@ and checks that PHP 7.4 and 8.2 get the message of `App\Platform` instead of a s
   placeholders. Mails to an account follow its language (`AdminI18n::with()`).
 - **Parent texts** pass through `t('key')` with `app/lang/{de,en,pl,ru,tr,uk}.php`; every key must exist in
   every language (a unit test checks this). Ask native speakers to review new Polish, Russian, Turkish and
-  Ukrainian texts.
+  Ukrainian texts, and say so in the pull request. Numbers with a unit go through `I18n::plural()`
+  (`fmt_hours()`): each language file names its plural rule (`'plural'`: `one`, `pl`, `east-slavic` or `none`)
+  and gives as many forms of `'hours'` as the rule needs.
 - **Commits:** [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `docs:`, …);
   releases are derived from them.
 - **Database:** only prepared statements; the unit test's SQL audit fails on concatenated variables.
@@ -90,7 +92,10 @@ and checks that PHP 7.4 and 8.2 get the message of `App\Platform` instead of a s
 - **Migrations** (`app/src/Migrations.php`) are additive, so that a rollback to the previous version of the
   same major version keeps working; see [Migrations](#migrations) below for the rules.
 - **Legal templates:** after changing `app/templates/pages/*.md`, update `CURRENT_PAGE_HASHES` and move
-  the old hashes to `OLD_PAGE_HASHES`, so unedited texts are upgraded automatically. The unit test tells
+  the old hashes to `OLD_PAGE_HASHES`, so unedited texts are upgraded automatically. The privacy policy exists in all
+  six parent languages for both operator types (`privacy*.{de,en,pl,ru,uk,tr}.md`): a change to the German
+  template goes into all twelve files, with the same sections and the German placeholders in the translations
+  (a unit test compares them); mark changed translations for a native-speaker review. The unit test tells
   you the new hashes. Edited texts need no new hint in `AdminController::legalHints()`: their version
   markers show admins the changed sections by themselves (`LegalTexts::outdated()`). Keep sections under
   first-level headings (`# 5. …`) and put each paragraph or list item on one line, so the comparison works
