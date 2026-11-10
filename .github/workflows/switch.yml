@@ -33,6 +33,13 @@ on:
         description: Optional, normally empty. Defaults to the repository of this workflow
         type: string
         default: ''
+    # Declared so that a caller can pass them one by one instead of `secrets: inherit`; none is required. Secrets
+    # in the environment "production" must be listed by name as well, or passed with `secrets: inherit`.
+    secrets:
+      APP_SECRET: { required: false }
+      FTP_USERNAME: { required: false }
+      FTP_PASSWORD: { required: false }
+      TALKSLOT_TOKEN: { required: false, description: Only for a private TalkSlot repository }
 
 concurrency:
   group: deploy # shared with "Deploy": never two switches at the same time
@@ -46,6 +53,7 @@ jobs:
     runs-on: ubuntu-latest
     if: vars.FTP_HOST != ''
     environment: production # FTP credentials live in the environment (main only)
+    timeout-minutes: 15
     env:
       FTP_URL: ftp://${{ vars.FTP_HOST }}
       APP_DIR: ${{ vars.APP_DIR || 'talkslot-app' }}

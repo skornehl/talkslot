@@ -161,6 +161,10 @@ When a later change (of the day or a break) makes a conflict fit again, its pare
 the current details, if these changed since their last mail. Saving an entry with *Änderung per E-Mail
 mitteilen* also sends the current details without a change (at most 30 mails per hour from your account).
 
+**If an admin stands in for you**, they can see the parents' names and addresses of a round only after choosing
+*Vertretung übernehmen* (take over as substitute) for it; you get an e-mail then, and the log records it. Otherwise admins see how your
+rounds are booked, not who booked.
+
 Further actions on the round: edit, deactivate, **print view / PDF** (*Druckansicht / PDF*; its last column,
 *Organisatorisches* (*organisational notes*), is for organisational notes only, nothing about the conversation), and
 **duplicate** (*Duplizieren …*): a copy with new link and code, including times, breaks, blocked slots,
@@ -243,6 +247,12 @@ hours. It is shown on the booking page of your rounds and on the page of booked 
 need it most when all slots are taken or the deadline for changes has passed. Left empty, parents see the
 contact the admins set for all, if any. Parents see it as you write it (not translated); please no private
 phone numbers.
+
+### Security of your account
+
+*Mein Profil → Sicherheit* shows what happened to your account: changes of the password, the e-mail address and
+admin rights, requested reset links, and failed sign-ins since the previous one. Only you see this in the
+application. If something looks unfamiliar, change your password and talk to an admin.
 
 ### Links from the mails
 

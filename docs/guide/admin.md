@@ -110,10 +110,25 @@ A taken-over session or a misused admin account must not be able to take over ot
   (password links go there; this applies to your own address too). After 5 wrong entries in 15 minutes
   (wrong current passwords when changing your own password count too) the confirmation is refused for a
   while; signing out and in again starts afresh.
-- **Security mails:** the account holder gets a mail when its password was changed or set; the previous
-  address when an admin changed the e-mail address or the username; all active admins (you included) and
-  the person concerned when admin rights change or an admin account is deactivated, reactivated or
-  deleted. Please do not filter these mails away: they are often the only way to notice misuse.
+- **Security mails** (please do not filter them away: they are often the only way to notice misuse), in the
+  language of the recipient:
+
+  | Mail (German, English) | Goes to | When |
+  |---|---|---|
+  | *Ihr Passwort wurde geändert* / *festgelegt* (*Your password has been changed* / *set*) | the account | its password was changed in the profile, or set through an invitation or reset link |
+  | *Ihre E-Mail-Adresse wurde geändert*, *Ihr Benutzername wurde geändert* (*Your email address has been changed*, *Your username has been changed*) | the previous address | the person (in *Mein Profil*) or an admin changed it |
+  | *Sicherheitshinweis: Änderung im Verwaltungsbereich von …* (*Security notice: change in the admin area of …*) | all active admins (you included) and the person concerned; an invited admin gets the invitation instead | an admin was invited, admin rights were given or taken away, an admin account was deactivated, reactivated or deleted |
+  | the same, *Alle Sitzungen wurden beendet* (*All sessions have been ended*) | all active admins | somebody ended all sessions |
+  | *Viele fehlgeschlagene Anmeldeversuche bei …* (*Many failed sign-in attempts at …*) | the account | strangers used up its sign-in limit; at most one a day. It may arrive later (at once with PHP-FPM or LiteSpeed, otherwise with the next cron run) and gives the time |
+  | *Sicherheitshinweis: viele fehlgeschlagene Anmeldungen bei …* (*Security notice: many failed sign-ins at …*) | all active admins | the sign-in limit of more than 3 accounts was reached within an hour; at most one a day, without names |
+  | *Passwort festlegen für …* (*Set password for …*), for an account that never signed in *Einladung zu …* (*Invitation to …*) | the account | an admin reset its password (*Link zum Zurücksetzen senden*) or sent the invitation again |
+- **Security events** (*Mein Profil → Sicherheit*): every account sees its own: changes of the password, the
+  e-mail address and admin rights, requested reset links, that its sign-in limit was reached, and the number of
+  failed sign-ins since the previous one. No IP address or device is stored, and sign-ins themselves are not
+  recorded. **In the application only the account holder sees them**, admins do not: there is no page for it
+  (whoever has access to the database or its backups could read them). Admins only get an alarm without names
+  when the sign-in limit of more than 3 accounts is reached within an hour (at most one a day). Entries are
+  deleted after 30 days (`security_events_days`, at most 90); agree on the period with the staff council.
 - **Password links** are only sent by mail and never shown on screen. A reset by an admin tells the person
   that their previous password no longer works.
 - **Misuse of the public pages:** when more than 5 bookings of a round come from one network within 5
@@ -124,7 +139,8 @@ A taken-over session or a misused admin account must not be able to take over ot
   such mails per hour go out (see [Security]({{ '/guide/security/' | relative_url }}#built-in-protections)).
 - **Alle Sitzungen beenden** (end all sessions, at the bottom of *Benutzer*) signs out every account on
   every device except your current session, e.g. after a lost device or a suspected break-in. It needs
-  your password, and all admins get a mail. What else to do in such a case is described under
+  your password, and all admins get a mail. All known devices count as new afterwards: anyone whose sign-in
+  limit strangers have used up then needs *Passwort vergessen?*. What else to do in such a case is described under
   [Security]({{ '/guide/security/' | relative_url }}#if-you-suspect-misuse).
 
 ### When somebody leaves
@@ -138,13 +154,24 @@ The hint on the overview about accounts unused for over 12 months helps you not 
 
 ## Rounds of all teachers
 
-Admins see and edit **all rounds** (*Alle Runden*) with their bookings, and can create a round for a
+Admins see and edit **all rounds** (*Alle Runden*) and how they are booked, and can create a round for a
 teacher or move a round to another teacher (field *Lehrkraft* in the round form). The round then appears
 for that teacher, parents see their name and summaries go to them. Parents who have already booked get a
 change notice with the new teacher if *Eltern per E-Mail informieren* stays ticked; the message after saving
 names those who could not be mailed. Teachers
 only ever see their own rounds; this is enforced centrally and covered by tests. In the trash (*Papierkorb*)
 admins see the deleted rounds without bookings of all teachers, too.
+
+**Names and e-mail addresses of parents in another teacher's round** stay hidden: such a round shows *gebucht*
+(booked), without the print view or the actions on bookings. If you stand in for the teacher, choose
+***Vertretung übernehmen*** (take over as substitute) on the round page and confirm with your password. You then
+see the parents' data of this round and can edit its bookings until this sign-in ends; a new sign-in or a new
+teacher of the round means taking over again. The teacher gets an e-mail (if there is no address, the message says
+so and you tell them yourself), and the log says who took over which round. Handing a round with bookings to
+another teacher, and deleting a day or a round with upcoming appointments, need this too; a round that is over can
+be cleaned up without it. If you change a round without taking it over, the message after saving gives only the
+number of parents to inform. Deleting an account with upcoming bookings asks for your password, as the message
+afterwards names their parents (nobody else can tell them any more).
 
 How rounds work is described in the [Teacher guide]({{ '/guide/teachers/' | relative_url }}).
 
@@ -254,6 +281,9 @@ or empty the translation. Hints on the dashboard and under *Texte* list the open
 tell you when a text is missing a placeholder, is outdated (e.g. still mentions the required checkbox the
 booking form no longer has) or does not fit the operator type (e.g. the legal bases of the school template
 when TalkSlot is operated privately).
+
+Schools run as public bodies may also have to publish an **accessibility statement**, depending on the state: see the
+[template]({{ '/guide/accessibility-statement/' | relative_url }}).
 
 ## Notifications
 

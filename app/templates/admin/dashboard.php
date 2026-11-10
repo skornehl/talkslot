@@ -97,7 +97,7 @@
         <?php elseif ($r['expired_at']): ?><span class="status status-off"><?= e(__('abgelaufen')) ?></span><?php if ($r['deletion_at']): ?><br><span class="small muted"><?= e(__('wird am {date} gelöscht', ['date' => $r['deletion_at']->format('d.m.Y')])) ?></span><?php endif; ?>
         <?php else: ?><span class="status status-off"><?= e(__('inaktiv')) ?></span><?php endif; ?>
       </td>
-      <td><button type="button" class="button button-small" data-copy="<?= e($link) ?>"><?= e(__('Link kopieren')) ?></button></td>
+      <td><button type="button" class="button button-small" data-copy="<?= e($link) ?>" aria-label="<?= e(__('Link kopieren') . ': ' . $r['title']) ?>"><?= e(__('Link kopieren')) ?></button></td>
     </tr>
   <?php endforeach; ?>
   </tbody>

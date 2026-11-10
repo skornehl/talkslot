@@ -17,7 +17,7 @@ use PDOStatement;
 final class Db
 {
     /** All tables of the application (including historical ones for migrations) */
-    public const TABLES = ['users', 'rounds', 'round_days', 'day_breaks', 'slots', 'bookings', 'pages', 'rate_limits', 'settings', 'sent_summaries', 'admin_users', 'round_translations', 'audit_log', 'round_templates', 'mail_outbox', 'round_trash'];
+    public const TABLES = ['users', 'rounds', 'round_days', 'day_breaks', 'slots', 'bookings', 'pages', 'rate_limits', 'settings', 'sent_summaries', 'admin_users', 'round_translations', 'audit_log', 'round_templates', 'mail_outbox', 'round_trash', 'security_events'];
 
     private static ?PDO $pdo = null;
     /** Connection error of this request: don't wait for the timeout again on every query. */
@@ -138,6 +138,8 @@ final class Db
             }
             // Strict SQL mode: no silent truncation
             self::$pdo->exec("SET SESSION sql_mode = 'STRICT_ALL_TABLES,NO_ZERO_DATE,NO_ENGINE_SUBSTITUTION'");
+            // A blocked PHP worker for 5 s instead of the 50 s of the server default; retrying() repeats the transaction
+            self::$pdo->exec('SET SESSION innodb_lock_wait_timeout = 5');
         }
         return self::$pdo;
     }
@@ -250,6 +252,34 @@ final class Db
                 $pdo->rollBack();
             }
             throw $e;
+        }
+    }
+
+    /** Lost a row lock (1213 deadlock, 1205 lock wait timeout, 1020 row changed since the snapshot): repeating helps. */
+    public static function isRetryable(\Throwable $e): bool
+    {
+        return $e instanceof PDOException && in_array((int) ($e->errorInfo[1] ?? 0), [1020, 1205, 1213], true);
+    }
+
+    /**
+     * Runs $fn, a whole transaction, a second time if it lost a row lock (isRetryable()); then the error goes on.
+     * Inside an open transaction it does not repeat: a deadlock has rolled back all of it, so $fn would run alone
+     * and without the locks taken before. Only the outermost transaction can be repeated.
+     * @template T
+     * @param callable(): T $fn
+     * @return T
+     */
+    public static function retrying(callable $fn): mixed
+    {
+        $outermost = self::$pdo === null || !self::$pdo->inTransaction();
+        try {
+            return $fn();
+        } catch (PDOException $e) {
+            if (!$outermost || !self::isRetryable($e)) {
+                throw $e;
+            }
+            usleep(50000);
+            return $fn();
         }
     }
 

@@ -16,10 +16,10 @@
       <td><strong><?= e($tp['name']) ?></strong></td>
       <td class="small"><?= e($tp['summary']) ?></td>
       <td class="row-actions">
-        <a class="button button-small" href="<?= e(url('/admin/round/new', ['template' => $tid])) ?>"><?= e(__('Runde anlegen')) ?></a>
-        <a class="button button-small" href="<?= e(url('/admin/templates/' . $tid . '/edit')) ?>"><?= e(__('Bearbeiten')) ?></a>
+        <a class="button button-small" href="<?= e(url('/admin/round/new', ['template' => $tid])) ?>" aria-label="<?= e(__('Runde anlegen') . ': ' . $tp['name']) ?>"><?= e(__('Runde anlegen')) ?></a>
+        <a class="button button-small" href="<?= e(url('/admin/templates/' . $tid . '/edit')) ?>" aria-label="<?= e(__('Bearbeiten') . ': ' . $tp['name']) ?>"><?= e(__('Bearbeiten')) ?></a>
         <form method="post" action="<?= e(url('/admin/templates/' . $tid . '/delete')) ?>" class="inline" data-confirm="<?= e(__('Vorlage „{name}“ löschen? Bereits angelegte Runden bleiben unverändert.', ['name' => $tp['name']])) ?>"><?= Csrf::adminField() ?>
-          <button type="submit" class="button button-small button-danger"><?= e(__('Löschen')) ?></button></form>
+          <button type="submit" class="button button-small button-danger" aria-label="<?= e(__('Löschen') . ': ' . $tp['name']) ?>"><?= e(__('Löschen')) ?></button></form>
       </td>
     </tr>
   <?php endforeach; ?>

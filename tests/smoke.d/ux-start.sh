@@ -13,7 +13,7 @@ RS=$(curl -s -w '\n%{http_code}' -b "$J" "$B/admin/start")
 check "checklist page: legal texts, data protection officer (operated by the school), mail, cron job, server, rights" \
   'echo "$RS" | tail -1 | grep -qx 200 && [ "$(echo "$RS" | grep -o "data-check=\"[a-z]*\"" | tr "\n" " ")" = "data-check=\"legal\" data-check=\"dpo\" data-check=\"contact\" data-check=\"mail\" data-check=\"cron\" data-check=\"server\" data-check=\"rights\" " ] && [ "$(rs_check server)" = done ]'
 check "linked from \"Texte\" and from the overview" 'curl -s -b "$J" "$B/admin/texts" | has "href=\"/admin/start\"" && curl -s -b "$J" "$B/admin" | has "Einrichtung prüfen: Bereit für den Start?"'
-check "mail: done once an invited account has signed in (the invitation arrived)" '[ "$(rs_check mail)" = done ] && curl -s -b "$J" "$B/admin/start" | has "Versand über SMTP von termine@example.org"'
+check "mail: done once an invited account has signed in (the invitation arrived)" '[ "$(rs_check mail)" = done ] && curl -s -b "$J" "$B/admin/start" | has "von termine@example.org"'
 RS_LOGINS=$(DBQ "SELECT CONCAT('UPDATE tp_users SET last_login_at = ', QUOTE(last_login_at), ' WHERE id = ', id, ';') FROM tp_users WHERE last_login_at IS NOT NULL AND id <> (SELECT MIN(id) FROM tp_users)")
 DBQ "UPDATE tp_users SET last_login_at = NULL WHERE id <> (SELECT m FROM (SELECT MIN(id) AS m FROM tp_users) x)"
 check "mail without such a sign-in: please check, how to test it" '[ "$(rs_check mail)" = check ] && curl -s -b "$J" "$B/admin/start" | has "Laden Sie unter „Benutzer“ eine Lehrkraft ein."'

@@ -173,6 +173,10 @@ aktuellen Daten, wenn sich diese seit ihrer letzten E-Mail geändert haben. Ein 
 *Änderung per E-Mail mitteilen* speichern, schickt die aktuellen Daten auch ohne Änderung (höchstens 30
 E-Mails pro Stunde aus Ihrem Konto).
 
+**Vertritt ein Admin Sie**, kann er die Namen und Adressen der Eltern einer Runde erst sehen, nachdem er für sie
+*Vertretung übernehmen* gewählt hat; Sie erhalten dann eine E-Mail, und das Protokoll hält es fest. Sonst sehen
+Admins, wie Ihre Runden belegt sind, aber nicht, wer gebucht hat.
+
 Weitere Aktionen für die Runde: bearbeiten, deaktivieren, ***Druckansicht / PDF*** (die letzte Spalte,
 *Organisatorisches*, ist nur für Organisatorisches gedacht, nicht für Gesprächsinhalte) und
 ***Duplizieren …***: eine Kopie mit neuem Link und Code, mit Zeiten, Pausen, gesperrten Terminen,
@@ -256,6 +260,12 @@ Ihrer Runden und auf der Seite gebuchter Termine, wo Eltern ihn am ehesten brauc
 vergeben sind oder die Frist für Änderungen abgelaufen ist. Bleibt das Feld leer, sehen Eltern den Kontakt,
 den die Admins für alle hinterlegt haben, falls es einen gibt. Eltern sehen ihn so, wie Sie ihn schreiben
 (nicht übersetzt); bitte keine privaten Telefonnummern.
+
+### Sicherheit Ihres Kontos
+
+*Mein Profil → Sicherheit* zeigt, was mit Ihrem Konto geschehen ist: Änderungen an Passwort, E-Mail-Adresse und
+Admin-Rechten, angeforderte Links zum Zurücksetzen und fehlgeschlagene Anmeldungen seit der vorigen. Das sehen in der
+Anwendung nur Sie. Kommt Ihnen etwas unbekannt vor, ändern Sie Ihr Passwort und sprechen Sie einen Admin an.
 
 ### Links aus den E-Mails
 

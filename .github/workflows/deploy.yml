@@ -1,10 +1,16 @@
-# Optional deployment via FTPS to shared hosting (bin/build.sh, bin/deploy.sh) on every push to
-# main. Runs only if the variable FTP_HOST is set – so not in forks without setup.
-# Setup: README, section "Deployment with GitHub Actions" (bin/setup-secrets.sh).
+# Optional deployment via FTPS to shared hosting (bin/build.sh, bin/deploy.sh) for every commit on main,
+# once the workflow "Tests" has passed on exactly that commit (deploy gate, expert review P1-6): a push whose
+# smoke, browser or deployment tests fail never goes live. Runs only if the variable FTP_HOST is set – so not
+# in forks without setup. Setup: README, section "Deployment with GitHub Actions" (bin/setup-secrets.sh).
+# "Run workflow" (workflow_dispatch) deploys the current main at once, even if its tests failed (lint and unit tests still run).
 #
 # Also usable as a reusable workflow: a separate repo containing only configuration (variables,
-# secrets) calls it with a pinned TalkSlot version (`uses: …/deploy.yml@v1.2.0`) and gets exactly the
-# code of that version, see README "Deploying from your own repository".
+# secrets) calls it with a pinned TalkSlot version (`uses: …/deploy.yml@<commit> # v1.9.0`) and gets exactly
+# the code of that version, see README "Deploying from your own repository". Releases are only created for
+# commits whose tests passed (release.yml).
+#
+# The lint and the unit tests run in a job of their own without secrets ("verify"), on the pinned PHP images
+# of dev/php-cli.Dockerfile; the build with the secrets starts only after that job and only on main.
 #
 # Atomic: every version is uploaded completely into its own directory and only then made active via
 # the pointer file; afterwards the site and its database (health check: reachable, MariaDB, migrations
@@ -20,7 +26,10 @@
 name: Deploy
 
 on:
-  push:
+  # After the workflow "Tests" has finished on main; the jobs check that it passed on a push of this repository
+  workflow_run:
+    workflows: [Tests]
+    types: [completed]
     branches: [main]
   workflow_dispatch:
   workflow_call:
@@ -33,18 +42,83 @@ on:
         description: Optional, normally empty. Defaults to the repository of this workflow
         type: string
         default: ''
-
-concurrency:
-  group: deploy # shared with "Switch version": never two switches at the same time
-  cancel-in-progress: false
+    # Declared so that a caller can pass them one by one instead of `secrets: inherit`; none is required. Secrets
+    # in the environment "production" must be listed by name as well, or passed with `secrets: inherit`.
+    secrets:
+      APP_SECRET: { required: false }
+      INSTALL_KEY: { required: false }
+      DB_NAME: { required: false }
+      DB_USER: { required: false }
+      DB_PASS: { required: false }
+      SMTP_USER: { required: false }
+      SMTP_PASS: { required: false }
+      FTP_USERNAME: { required: false }
+      FTP_PASSWORD: { required: false }
+      TALKSLOT_TOKEN: { required: false, description: Only for a private TalkSlot repository }
 
 permissions:
   contents: read
 
 jobs:
-  deploy:
-    if: vars.FTP_HOST != ''
+  # Lint on the minimum PHP version and the current one, unit tests: without secrets, before anything is built
+  verify:
+    if: >-
+      vars.FTP_HOST != '' && (github.event_name != 'workflow_run' || (github.event.workflow_run.conclusion == 'success'
+      && github.event.workflow_run.event == 'push' && github.event.workflow_run.head_repository.full_name == github.repository))
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      stale: ${{ steps.newest.outputs.stale }}
+    steps:
+      # The same commit as the job "deploy" (see there)
+      - name: Fetch code
+        env:
+          REPO: ${{ inputs.repository || job.workflow_repository || github.repository }}
+          REF: ${{ inputs.ref || (github.event_name == 'workflow_run' && job.workflow_repository == github.repository && github.event.workflow_run.head_sha) || job.workflow_sha || github.sha }}
+          TOKEN: ${{ secrets.TALKSLOT_TOKEN || github.token }}
+        run: |
+          git init -q . && git remote add origin "https://github.com/$REPO.git"
+          AUTH="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$TOKEN" | base64 -w0)"
+          git -c http.extraheader="$AUTH" fetch -q --depth=1 origin "$REF" # commit, tag or branch
+          git checkout -q --detach "FETCH_HEAD^{commit}"
+          git log -1 --format='Checked out: %h %s'
+
+      # Tests of an older commit that finish late: the job "deploy" does not even queue, so it cannot push out a
+      # newer commit that is waiting for its turn
+      - name: Still the newest commit of main?
+        id: newest
+        if: github.event_name == 'workflow_run'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          HEAD="$(gh api "repos/$GITHUB_REPOSITORY/commits/main" -q .sha)"
+          if [ -n "$HEAD" ] && [ "$HEAD" != "$SHA" ]; then
+            echo "stale=1" >> "$GITHUB_OUTPUT"
+            echo "::notice::main has moved on to ${HEAD:0:7}; its tests decide."
+          fi
+
+      - name: Lint (PHP 8.3 and 8.5) & unit tests
+        run: |
+          cp dev/config.dev.php config/config.php
+          for v in 8.3 8.5; do
+            echo "PHP $v"
+            dev/php.sh "$v" sh -c '
+              set -e
+              find . -name "*.php" -not -path "./app/vendor/*" -print0 | xargs -0 -n1 php -l > /dev/null
+              php tests/unit.php'
+          done
+
+  deploy:
+    needs: verify
+    if: github.ref == 'refs/heads/main' && needs.verify.outputs.stale != '1' # the build with the secrets only for main
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # At job level, so that a run that deploys nothing (failed tests, the main branch of a fork) cannot replace a
+    # waiting deployment; the group is shared with "Switch version": never two switches at the same time
+    concurrency:
+      group: deploy
+      cancel-in-progress: false
     # Secrets preferably in the environment "production", restricted to main (Settings → Environments)
     environment: production
     env:
@@ -61,7 +135,8 @@ jobs:
         env:
           # As a called workflow: the TalkSlot version named in the caller's `uses: …@<version>`
           REPO: ${{ inputs.repository || job.workflow_repository || github.repository }}
-          REF: ${{ inputs.ref || job.workflow_sha || github.sha }}
+          # After "Tests" on main: the commit those tests ran on (the newest commit of main may already be another)
+          REF: ${{ inputs.ref || (github.event_name == 'workflow_run' && job.workflow_repository == github.repository && github.event.workflow_run.head_sha) || job.workflow_sha || github.sha }}
           TOKEN: ${{ secrets.TALKSLOT_TOKEN || github.token }}
         run: |
           git init -q . && git remote add origin "https://github.com/$REPO.git"
@@ -70,15 +145,6 @@ jobs:
           git -c http.extraheader="$AUTH" fetch -q origin "$REF" # commit, tag or branch
           git checkout -q --detach "FETCH_HEAD^{commit}"
           git log -1 --format='Checked out: %h %s'
-
-      - name: Lint & unit tests
-        run: |
-          cp dev/config.dev.php config/config.php
-          docker run --rm -v "$PWD:/app" -w /app php:8.5-cli sh -c '
-            set -e
-            find . -name "*.php" -not -path "./app/vendor/*" -print0 | xargs -0 -n1 php -l > /dev/null
-            php tests/unit.php'
-          rm config/config.php
 
       - name: Determine version
         id: version
@@ -128,16 +194,18 @@ jobs:
           COMMIT: ${{ steps.version.outputs.commit }}
         run: bin/build.sh
 
-      # If a newer commit has been pushed to main in the meantime, its run (waiting in the
-      # concurrency group) deploys everything anyway; this run then uploads nothing.
+      # If a newer commit has been pushed to main in the meantime, its run (waiting in the concurrency group, or
+      # after its tests) deploys everything anyway; this run then uploads nothing. If its tests fail, the site
+      # stays on the version that is live.
       - name: Still current?
         id: current
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' || github.event_name == 'workflow_run'
         env:
           GH_TOKEN: ${{ github.token }}
+          SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
         run: |
           HEAD="$(gh api "repos/$GITHUB_REPOSITORY/commits/main" -q .sha)"
-          if [ -n "$HEAD" ] && [ "$HEAD" != "$GITHUB_SHA" ]; then
+          if [ -n "$HEAD" ] && [ "$HEAD" != "$SHA" ]; then
             echo "superseded=1" >> "$GITHUB_OUTPUT"
             echo "::notice::main has moved on to ${HEAD:0:7} – that run will deploy."
           fi
@@ -172,12 +240,13 @@ jobs:
 
       - name: Still current after upload?
         id: current_after
-        if: github.event_name == 'push' && steps.current.outputs.superseded != '1'
+        if: (github.event_name == 'push' || github.event_name == 'workflow_run') && steps.current.outputs.superseded != '1'
         env:
           GH_TOKEN: ${{ github.token }}
+          SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
         run: |
           HEAD="$(gh api "repos/$GITHUB_REPOSITORY/commits/main" -q .sha)"
-          if [ -n "$HEAD" ] && [ "$HEAD" != "$GITHUB_SHA" ]; then
+          if [ -n "$HEAD" ] && [ "$HEAD" != "$SHA" ]; then
             echo "superseded=1" >> "$GITHUB_OUTPUT"
             echo "::notice::main has moved on to ${HEAD:0:7} – that run will deploy, this one does not switch."
           fi

@@ -231,16 +231,33 @@ var L = (function () {
 
   // Copy link (admin, and the parents' appointment page with texts in the page language; there the
   // button is hidden until JavaScript runs)
+  // "Kopiert" only changes the text of the button: screen readers hear it from a status region
+  var copyStatus = null;
+  var copyClear = null;
+  if (document.querySelector('[data-copy]')) {
+    copyStatus = document.createElement('div');
+    copyStatus.setAttribute('role', 'status');
+    copyStatus.className = 'visually-hidden';
+    copyStatus.setAttribute('data-copy-status', '');
+    document.body.appendChild(copyStatus);
+  }
   Array.prototype.forEach.call(document.querySelectorAll('[data-copy]'), function (btn) {
     var original = btn.textContent;
     var copied = btn.getAttribute('data-copy-done') || L('Kopiert ✓');
     var ask = btn.getAttribute('data-copy-prompt') || L('Link kopieren:');
+    var restore = null;
     btn.hidden = false;
     btn.addEventListener('click', function () {
       var text = btn.getAttribute('data-copy');
       var done = function () {
         btn.textContent = copied;
-        setTimeout(function () { btn.textContent = original; }, 2000);
+        // Emptied first, so that a second copy within the two seconds is announced as well
+        copyStatus.textContent = '';
+        window.setTimeout(function () { copyStatus.textContent = copied.replace(/\s*✓$/, ''); }, 50);
+        window.clearTimeout(copyClear);
+        copyClear = window.setTimeout(function () { copyStatus.textContent = ''; }, 2000);
+        window.clearTimeout(restore);
+        restore = window.setTimeout(function () { btn.textContent = original; }, 2000);
       };
       if (navigator.clipboard && window.isSecureContext) {
         navigator.clipboard.writeText(text).then(done, function () { window.prompt(ask, text); });

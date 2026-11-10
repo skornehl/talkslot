@@ -13,19 +13,34 @@ namespace App;
  * Entries contain no names or e-mail addresses of parents; a booking appears with its date only (e.g.
  * "Buchung am 12.11.2026 gelöscht"), which makes it harder to match to a person. Entries are deleted after
  * audit_log_days (default 90, see Cleanup).
+ *
+ * Besides the text an entry can carry what it is about in a structured form (expert review P2-10, ARCH-14): the
+ * kind of change (action), the round and a few values (params). Only the keys in PARAM_KEYS are stored, so
+ * that no name or address of parents can get in there (a unit test checks the list).
  */
 final class Audit
 {
-    public static function log(string $message): void
+    /** What the params of an entry may hold: numbers and dates of the change, nothing about parents. */
+    public const PARAM_KEYS = ['count', 'date', 'reached'];
+
+    public static function log(string $message, ?string $action = null, ?int $roundId = null, array $params = []): void
     {
         $user = Auth::user();
         if (!$user || $user['role'] !== 'admin') {
             return;
         }
         Db::run(
-            'INSERT INTO audit_log (created_at, user_id, actor, message) VALUES (?, ?, ?, ?)',
-            [Time::nowSql(), (int) $user['id'], $user['display_name'] !== '' ? $user['display_name'] : $user['username'], mb_substr($message, 0, 1000)]
+            'INSERT INTO audit_log (created_at, user_id, actor, message, action, round_id, params) VALUES (?, ?, ?, ?, ?, ?, ?)',
+            [Time::nowSql(), (int) $user['id'], $user['display_name'] !== '' ? $user['display_name'] : $user['username'], mb_substr($message, 0, 1000),
+             $action, $roundId, self::params($params)]
         );
+    }
+
+    /** The params as stored: only the allowed keys with plain values, as JSON (null: none). */
+    public static function params(array $params): ?string
+    {
+        $kept = array_filter(array_intersect_key($params, array_flip(self::PARAM_KEYS)), 'is_scalar');
+        return $kept ? json_encode($kept, JSON_THROW_ON_ERROR) : null;
     }
 
     /** Name in the log for changes the application made itself, e.g. on an update (no account). */
