@@ -46,6 +46,9 @@ return [
     'Die Installation ist fehlgeschlagen ({reason}). Die dabei angelegten Tabellen wurden wieder entfernt; Sie können es nach der Behebung erneut versuchen.' => 'The installation failed ({reason}). The tables it had created have been removed again; you can try again once the cause is fixed.',
     'Die Installation ist fehlgeschlagen ({reason}). Es wurde nichts verändert.' => 'The installation failed ({reason}). Nothing has been changed.',
     'Die Installation ist fehlgeschlagen ({reason}). Die dabei angelegten Tabellen ließen sich nicht entfernen; bitte löschen Sie sie, bevor Sie es erneut versuchen (siehe Fehlerprotokoll).' => 'The installation failed ({reason}). The tables it had created could not be removed; please delete them before trying again (see the error log).',
+
+    // Database newer than the code, after switching back to an earlier version (expert review P2-5)
+    'Die Datenbank ist neuer als diese Version von TalkSlot (Schema-Version {db}, diese Version kennt nur bis {code}), vermutlich nach dem Zurückschalten auf eine ältere Version. Das ist unbedenklich, solange die neueren Migrationen nur hinzugefügt haben. Bitte spielen Sie bald wieder die aktuelle Version aus.' => 'The database is newer than this version of TalkSlot (schema version {db}, this version only knows up to {code}), probably after switching back to an earlier version. This is harmless as long as the newer migrations only added things. Please deploy the current version again soon.',
     // A name or date taken by another request after the check of the form (expert review P2-6)
     'Die Adresse der Runde oder einer ihrer Tage wurde gerade anderweitig vergeben. Bitte prüfen Sie die Angaben und speichern Sie noch einmal.' => 'The address of the round or one of its days has just been taken by someone else. Please check the details and save again.',
 ];

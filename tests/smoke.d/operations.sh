@@ -406,6 +406,66 @@ OP_PX=$($DC exec -T app php /srv/app/tests/.op-prefix.php lock)
 check "locks: the name contains the database and the prefix, not only tp_migrate" '[ "$OP_PX" = "lock=yes|0|1|1" ]' || echo "    $OP_PX"
 rm -f "$OP_SCRIPT"
 for p in tp2_ tp4_ tp5_; do OP_DROP "$p"; done
+
+echo "Operations: migrations (expert review P2-5)"
+OP_MG=$($DC exec -T app php /srv/app/tests/migrations.php 2>&1); OP_MG_RC=$?
+printf '%s\n' "$OP_MG" | sed 's/^/  /'
+check "first release migrated up = a new installation, every step can be repeated" '[ "$OP_MG_RC" = 0 ] && echo "$OP_MG" | grep -q "^ALL MIGRATION TESTS PASSED$"'
+# A step that must wait for a metadata lock (an open transaction, e.g. in phpMyAdmin) gives up after 10 s instead of
+# blocking the table for up to a day; the next request repeats it. The newest step that adds a column does the work.
+OP_SCRIPT="$ROOT/tests/.op-migrate.php"
+cat > "$OP_SCRIPT" <<'PHP'
+<?php
+require dirname(__DIR__) . '/app/bootstrap.php';
+$steps = (new ReflectionClassConstant(App\Migrations::class, 'STEPS'))->getValue();
+krsort($steps);
+foreach ($steps as $step => $statements) {
+    if (preg_match('/ALTER TABLE (\w+)\s+ADD COLUMN IF NOT EXISTS (\w+)/i', implode("\n", $statements), $m)) {
+        break;
+    }
+}
+App\Db::execRaw("ALTER TABLE $m[1] DROP COLUMN $m[2]");
+App\Settings::set('schema_version', (string) ($step - 1));
+$db = (array) App\Config::get('db');
+$other = new PDO("mysql:host={$db['host']};port={$db['port']};dbname={$db['name']}", $db['user'], $db['pass'], [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+$other->beginTransaction();
+$other->query('SELECT 1 FROM ' . App\Db::table($m[1]) . ' LIMIT 1')->fetchAll();
+$started = microtime(true);
+try {
+    App\Migrations::run();
+    $result = 'migrated';
+} catch (PDOException $e) {
+    $result = (string) ($e->errorInfo[1] ?? '?');
+}
+$waited = microtime(true) - $started;
+$version = (int) App\Settings::get('schema_version');
+$timeout = (int) App\Db::value('SELECT @@SESSION.lock_wait_timeout');
+$other->rollBack();
+$other = null;
+App\Migrations::run(); // within the pause: not yet
+$paused = (int) App\Settings::get('schema_version') === $step - 1;
+App\Settings::set('migrate_retry_after', '0');
+App\Migrations::run();
+printf("%s|%d|%d|%d|%d|%d\n", $result, $waited >= 9 && $waited < 25, $version === $step - 1, $timeout > 10, $paused, (int) App\Settings::get('schema_version') === App\Migrations::LATEST);
+PHP
+OP_PX=$($DC exec -T app php /srv/app/tests/.op-migrate.php 2>&1)
+rm -f "$OP_SCRIPT"
+check "a step waiting for a metadata lock gives up after 10 s (error 1205), pauses a minute, then runs" '[ "$OP_PX" = "1205|1|1|1|1|1" ]' || echo "    $OP_PX"
+# Switched back to an earlier version: the database is newer than the code. It keeps working; admins are told
+OP_T1=$(date +%s)
+DBQ "UPDATE tp_settings SET value = '$((OP_LATEST + 1))' WHERE name = 'schema_version'"
+OP_H=$(op_health)
+OP_PAGE=$(curl -s -b "$J" "$B/admin"); curl -s -o /dev/null "$B/"
+OP_AHEAD='$q = urlencode("to:betrieb@example.org subject:\"Datenbank neuer als der Code\""); $u = "http://mail:8025/api/v1/search?query=$q";'
+OP_AL=$(ALERTS "$OP_AHEAD"' echo json_decode(file_get_contents($u), true)["messages_count"] ?? "?";')
+check "database newer than the code: health check ok, a hint for admins, one mail ($OP_AL)" \
+  'op_is "$OP_H" 200 ok && echo "$OP_PAGE" | grep -q "Die Datenbank ist neuer als diese Version von TalkSlot (Schema-Version $((OP_LATEST + 1)), diese Version kennt nur bis $OP_LATEST)" && [ "$OP_AL" = 1 ]'
+DBQ "UPDATE tp_settings SET value = '$OP_LATEST' WHERE name = 'schema_version'"
+check "database at the version of the code: no hint, the next switch back is reported again" '! curl -s -b "$J" "$B/admin" | grep -q "Die Datenbank ist neuer als" && [ -z "$(OP_SETTING schema_ahead_reported)" ]'
+ALERTS "$OP_AHEAD"' file_get_contents($u, false, stream_context_create(["http" => ["method" => "DELETE"]]));
+  $f = "/srv/app/app/var/alerts.json"; $s = json_decode((string) @file_get_contents($f), true);
+  if (is_array($s)) { $n = count($s["keys"] ?? []); $s["keys"] = array_filter($s["keys"] ?? [], fn ($e) => $e["last"] < '"$OP_T1"');
+    $s["_count"] = max(0, ($s["_count"] ?? 0) - $n + count($s["keys"])); file_put_contents($f, json_encode($s)); }'
 echo "Operations: rules in the database, locks (expert review P2-6)"
 T=$(curl -s -b "$J" "$B/admin" | csrf)
 OP_SQL() { $DC exec -T app php -r '$p = new PDO("mysql:host=db;dbname=talkslot;charset=utf8mb4", "app", "app-dev-only", [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]); $p->exec($argv[1]);' "$1"; }

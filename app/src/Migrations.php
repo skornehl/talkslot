@@ -12,6 +12,12 @@ final class Migrations
 {
     public const LATEST = 27;
 
+    /** Seconds a step waits for a metadata lock (e.g. an open transaction in phpMyAdmin) before it gives up */
+    private const LOCK_WAIT_SECONDS = 10;
+
+    /** Pause after a step gave up on a metadata lock */
+    private const RETRY_AFTER_SECONDS = 60;
+
     /** Version => SQL statements */
     private const STEPS = [
         2 => ['ALTER TABLE rounds ADD COLUMN IF NOT EXISTS access_pin VARCHAR(12) NULL AFTER description'],
@@ -376,9 +382,14 @@ final class Migrations
             return;
         }
         $current = (int) $version;
+        if ($current > self::LATEST) {
+            self::reportAhead($current);
+        } elseif (Settings::get('schema_ahead_reported') !== null) {
+            Db::run("DELETE FROM settings WHERE name = 'schema_ahead_reported'"); // back in step: the next switch back is reported again
+        }
         // Only one request migrates (parallel page requests, e.g. during the upload); the others
         // wait briefly and then find the new state. The lock is per database and prefix (Db::lock()).
-        if ($current < self::LATEST) {
+        if ($current < self::LATEST && (int) Settings::get('migrate_retry_after') <= time()) {
             // The steps use MariaDB syntax (ADD COLUMN IF NOT EXISTS …): on MySQL or an older MariaDB they would
             // fail half-way. Reported by alert mail with the reason instead (App::run, Health::check()).
             if (($problem = Health::serverProblem()) !== null) {
@@ -388,9 +399,20 @@ final class Migrations
                 return;
             }
             try {
+                // A step that has to wait for a metadata lock gives up (error 1205) and is repeated by the next
+                // request, instead of queueing every query on the table behind it for up to a day (expert review P2-5)
+                Db::execRaw('SET SESSION lock_wait_timeout = ' . self::LOCK_WAIT_SECONDS);
                 $current = (int) Settings::get('schema_version');
                 self::steps($current);
+                Db::run("DELETE FROM settings WHERE name = 'migrate_retry_after'");
+            } catch (\PDOException $e) {
+                // Blocked by a metadata lock: not again for a minute, or every request would queue behind a new ALTER
+                if ((int) ($e->errorInfo[1] ?? 0) === 1205) {
+                    Settings::set('migrate_retry_after', (string) (time() + self::RETRY_AFTER_SECONDS));
+                }
+                throw $e;
             } finally {
+                Db::execRaw('SET SESSION lock_wait_timeout = DEFAULT');
                 Db::unlock('migrate');
             }
         }
@@ -399,6 +421,33 @@ final class Migrations
         if (Settings::get('pages_version') !== self::pagesVersion() && self::refreshPages()) {
             Settings::set('pages_version', self::pagesVersion());
         }
+    }
+
+    /**
+     * The database is newer than this code: expected after switching back to an earlier version (switch.yml), and
+     * harmless as long as the newer steps only added. Reported once per time it happens (expert review P2-5).
+     */
+    private static function reportAhead(int $current): void
+    {
+        if (Settings::get('schema_ahead_reported') === (string) $current) {
+            return;
+        }
+        $sent = Alert::notify('schema-ahead', 'Datenbank neuer als der Code', [
+            'Die Datenbank hat Schema-Version ' . $current . ', diese Version von TalkSlot kennt nur bis ' . self::LATEST . '.',
+            'Das ist nach dem Zurückschalten auf eine ältere Version zu erwarten und unbedenklich, solange die neueren Migrationen nur hinzugefügt haben. Bitte spielen Sie bald wieder die aktuelle Version aus.',
+        ]);
+        if ($sent) {
+            Settings::set('schema_ahead_reported', (string) $current);
+        }
+    }
+
+    /** Hint for the dashboard of admins while the database is newer than this code, or null. */
+    public static function aheadHint(): ?string
+    {
+        $current = (int) Settings::get('schema_version');
+        return $current > self::LATEST
+            ? __('Die Datenbank ist neuer als diese Version von TalkSlot (Schema-Version {db}, diese Version kennt nur bis {code}), vermutlich nach dem Zurückschalten auf eine ältere Version. Das ist unbedenklich, solange die neueren Migrationen nur hinzugefügt haben. Bitte spielen Sie bald wieder die aktuelle Version aus.', ['db' => $current, 'code' => self::LATEST])
+            : null;
     }
 
     private static function steps(int $current): void

@@ -283,6 +283,15 @@ direkt. Eine bestehende führt beim nächsten Aufruf die fehlenden Schritte aus 
   Code um, nicht die Datenbank.
 - PHP-Arbeit eines Schritts (Daten nachtragen) gehört unter seiner Nummer in `Migrations::steps()`, wie bei den
   Schritten 7 und 10, und muss ebenfalls wiederholbar sein.
+- **Automatisch geprüft.** Ein Unit-Test lehnt ab, was ein Schritt nicht tun darf (jeder Schritt außer 3, der älter
+  ist als die Regel), und doppelte Nummern. `tests/migrations.php` (Teil des Smoke-Tests) bringt das Schema des
+  ersten Releases mit einigen Daten auf den aktuellen Stand, vergleicht es mit einer Neuinstallation (Tabellen,
+  Spalten, Indizes, Fremdschlüssel) und führt jeden Schritt seither ein zweites Mal aus. `tests/n-1.sh` lässt das letzte
+  Release auf dem Schema des aktuellen Codes laufen (Anmeldung, Buchen, Verschieben, Absagen, Health-Check); die CI
+  macht das bei jedem Push.
+- Ein Schritt wartet höchstens 10 Sekunden auf eine Metadatensperre (`lock_wait_timeout`, etwa eine offene
+  Transaktion in phpMyAdmin) und gibt dann auf; nach einer Minute Pause wiederholt ihn eine spätere Anfrage. Ist die Datenbank neuer als der
+  Code (nach dem Zurückschalten), bekommen Admins einmalig eine E-Mail und einen Hinweis in der Übersicht.
 - Eine neue Tabelle gehört in `Db::TABLES`, sonst bekommt sie kein Tabellenpräfix; keine Spalte darf wie eine
   Tabelle heißen (Unit-Tests prüfen beides).
 - **Nicht** in einer Minor-Version: Spalten oder Tabellen umbenennen oder löschen, Typ oder Kollation einer

@@ -137,6 +137,18 @@ jobs:
           # Node 22+ has WebSocket built in; older versions need the flag
           node $(node -e 'process.exit(typeof WebSocket === "undefined" ? 1 : 0)' || echo --experimental-websocket) tests/browser.mjs
 
+      # What "Switch version" does after an update: the code goes back, the database does not (expert review P2-5)
+      - name: Previous release on the schema of this commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          TAG="$(gh api "repos/$REPO/releases/latest" -q .tag_name || true)"
+          if [ -z "$TAG" ]; then echo "::notice::No release yet (e.g. a fork): nothing to compare with."; exit 0; fi
+          AUTH="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)"
+          git -c http.extraheader="$AUTH" fetch -q --depth=1 origin "refs/tags/$TAG:refs/tags/$TAG"
+          dev/reset.sh && dev/demo.sh && tests/n-1.sh "$TAG"
+
       - name: Deployment test (inside the app container, which has PHP and the database)
         run: |
           docker compose -f dev/compose.yml exec -T -e DEBIAN_FRONTEND=noninteractive app sh -c 'apt-get update -qq && apt-get install -y -qq lftp > /dev/null'

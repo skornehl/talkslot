@@ -311,7 +311,7 @@ final class AdminController
             // config.php readable for every user of the server (only admins can have that fixed)
             'configExposed' => Auth::isAdmin() ? \App\Config::exposedFiles() : [],
             // Database server not supported, settings in config.php that do not work as written
-            'setupHints' => Auth::isAdmin() ? array_merge(array_filter([\App\Health::serverProblem()]), \App\ConfigSchema::warnings(\App\Config::all())) : [],
+            'setupHints' => Auth::isAdmin() ? array_merge(array_filter([\App\Health::serverProblem(), \App\Migrations::aheadHint()]), \App\ConfigSchema::warnings(\App\Config::all())) : [],
             // Cron job late or never run (only admins can have it fixed)
             'cron' => Auth::isAdmin() ? \App\CronMonitor::status() : null,
             'profileHints' => $this->profileHints(),
