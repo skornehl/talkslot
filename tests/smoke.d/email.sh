@@ -31,6 +31,11 @@ check "sign in with the address with umlauts (the username is its punycode form)
 rm -f "$EMJ"; EMJ=$(mktemp); EMT3=$(curl -s -c "$EMJ" -b "$EMJ" "$B/admin/forgot" | csrf)
 curl -s -o /dev/null -c "$EMJ" -b "$EMJ" --data-urlencode "csrf=$EMT3" --data-urlencode "email=lehrerin@grundschule-münster.de" "$B/admin/forgot"
 check "forgot password with the address with umlauts: the link goes to its punycode form" '[ "$(em_mails lehrerin@xn--grundschule-mnster-y6b.de)" -ge 1 ] && [ -n "$(DBQ "SELECT access_token_hash FROM tp_users WHERE id = ${EMUID:-0}")" ]'
+# Text outside ASCII reaches the query only here: compared with the ASCII column username it would be an error (1267)
+DBQ "DELETE FROM tp_rate_limits WHERE bucket = 'forgot'"
+EM_ASCII=$(curl -s -o /dev/null -w '%{http_code}' -b "$EMJ" -c "$EMJ" --data-urlencode "csrf=$(curl -s -c "$EMJ" -b "$EMJ" "$B/admin/forgot" | csrf)" -d "email=niemand-ascii@example.org" "$B/admin/forgot")
+EM_UMLAUT=$(curl -s -o /dev/null -w '%{http_code}' -b "$EMJ" -c "$EMJ" --data-urlencode "csrf=$(curl -s -c "$EMJ" -b "$EMJ" "$B/admin/forgot" | csrf)" --data-urlencode "email=müller@example.org" "$B/admin/forgot")
+check "forgot password with an address outside ASCII: the same answer as for an unknown address, not an error ($EM_ASCII, $EM_UMLAUT)" '[ "$EM_ASCII" = 200 ] && [ "$EM_UMLAUT" = "$EM_ASCII" ]'
 rm -f "$EMJ"
 curl -s -o /dev/null -b "$J" --data-urlencode "csrf=$T" -d "confirm=1" --data-urlencode "current_password=$PASS" "$B/admin/users/${EMUID:-0}/delete"
 check "test account of the e-mail addresses removed" '[ -z "$(DBQ "SELECT id FROM tp_users WHERE id = ${EMUID:-0}")" ]'

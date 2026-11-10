@@ -14,9 +14,27 @@ moment; use a quiet time, or switch to the atomic deployment.
 
 Read the [release notes](https://github.com/skornehl/talkslot/releases) before updating.
 
-**Upgrade path:** every 1.x version can be updated directly to the latest 1.x. A future version 2.0 will only
-update installations of v1.3.0 or newer, so bring an installation older than that to the latest 1.x first.
-Your version is shown at the bottom of every page (*Powered by TalkSlot v…*).
+**Upgrade path:** every 1.x version can be updated directly to the latest version, including 2.0. Your version
+is shown at the bottom of every page (*Powered by TalkSlot v…*).
+
+### Upgrading to 2.0 {#upgrading-to-2-0}
+
+Version 2.0 has one schema change that is not additive: migration 29 stores the columns that only ever hold ASCII
+in ASCII. `users.username` becomes `ascii_general_ci` (signing in still ignores case) and the hash columns
+(`users.access_token_hash`, `bookings.token_hash`, `bookings.reminder_token_hash`, `bookings.mail_token_hash`,
+`rate_limits.key_hash`, `round_translations.source_hash`) become `ascii_bin`. The values stay as they are, so
+booking links, invitation links and sessions keep working.
+
+- **Before the update:** take a [database backup](#backups). The step rewrites `users`, `bookings`, `rate_limits` and
+  `round_translations`, and writes to these tables wait until it has finished (a moment on a school's data).
+- **Usernames outside ASCII:** such a username has not been accepted for a long time, and it cannot sign in. If an
+  old account still has one, the column keeps its old character set and the alert mail names the account's ID. Give the account a
+  valid username under *Benutzer*; the next cron job finishes the step.
+- **Going back:** a rollback to 1.x is no longer promised, unlike a rollback within a major version. 1.x runs
+  on the new schema with one known fault: its forgot-password form answers with an error page for an address outside
+  ASCII, such as one with an umlaut in the domain. Only restoring the backup brings back the old schema.
+- **Minimum version:** none beyond 1.x. Earlier plans to require v1.3.0 were dropped for 2.0, as it removes no
+  fallback for older schemas.
 
 ## Database migrations
 
@@ -34,7 +52,8 @@ half-way): the alert mail and the admins' dashboard name the database server. Th
 well: `db_server` is `ok` or `unsupported` in the output of `php bin/cron.php -v` and of the web cron.
 
 Migrations only add columns, tables and indexes, so a rollback to the previous version of the same major
-version keeps working ([rules for migrations]({{ '/guide/development/' | relative_url }}#migrations)).
+version keeps working ([rules for migrations]({{ '/guide/development/' | relative_url }}#migrations)). 2.0 is the
+exception to "only add", see [Upgrading to 2.0](#upgrading-to-2-0).
 Imprint and privacy texts that were never edited are replaced by newer templates of the operator type
 (operated by the school or privately) automatically; edited texts stay untouched, and admins see on the
 dashboard and under *Texte* which sections a newer template has changed since the text was based on it, to

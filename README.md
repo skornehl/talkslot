@@ -130,7 +130,8 @@ schools (GDPR/DSGVO, TDDDG) and multilingual families.
   dashboard and the operator gets an alert mail, daily while it lasts (GitHub disables scheduled workflows
   in public repositories after 60 days without activity).
 - Database migrations run automatically and are additive (columns, tables, indexes), so a rollback to the
-  previous version of the same major version keeps working.
+  previous version of the same major version keeps working. Coming from 1.x, read the
+  [notes on upgrading to 2.0](https://skornehl.github.io/talkslot/guide/operations/#upgrading-to-2-0).
 - Table prefix (default `tp_`) for tables and foreign keys, so a database can be shared with other applications
   or a second TalkSlot.
 

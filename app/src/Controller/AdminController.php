@@ -2148,8 +2148,9 @@ final class AdminController
         $user = null;
         if (self::checkFormToken('forgot') && RateLimiter::hit('forgot', $limit, $window)) {
             $input = mb_strtolower(Email::input(Http::post('email')));
-            // Username before email (unique); with multiple matches the oldest account
-            $user = $input !== '' ? Db::one(
+            // Username before email (unique); with multiple matches the oldest account. Both are ASCII (Email,
+            // Auth::validUsername), and comparing other text with the ASCII column username is an error (1267)
+            $user = $input !== '' && mb_check_encoding($input, 'ASCII') ? Db::one(
                 'SELECT * FROM users WHERE (email = ? OR username = ?) AND is_active = 1 AND email IS NOT NULL
                   ORDER BY username = ? DESC, id LIMIT 1',
                 [$input, $input, $input]

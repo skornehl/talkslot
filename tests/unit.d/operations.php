@@ -460,6 +460,30 @@ $p5Good = ["ALTER TABLE users ADD COLUMN IF NOT EXISTS x VARCHAR(5) NOT NULL DEF
 $p5Missed = array_filter($p5Bad, static fn (string $sql): bool => $p5Problems([$sql]) === []);
 $p5False = array_filter($p5Good, static fn (string $sql): bool => $p5Problems([$sql]) !== []);
 check('the check of the migrations finds the forbidden forms and accepts the additive ones' . ($p5Missed || $p5False ? ' (' . implode(' | ', array_merge($p5Missed, $p5False)) . ')' : ''), !$p5Missed && !$p5False);
+// Step 29, the one change in place besides step 26: the PHP steps are not in STEPS, so they get a check of their own
+$p5Source = (string) file_get_contents(dirname(__DIR__, 2) . '/app/src/Migrations.php');
+$p5Php = [];
+foreach (token_get_all('<?php ' . substr($p5Source, (int) strpos($p5Source, 'public static function run()'))) as $p5Token) {
+    if (is_array($p5Token) && in_array($p5Token[0], [T_CONSTANT_ENCAPSED_STRING, T_ENCAPSED_AND_WHITESPACE], true)
+        && preg_match_all('/\b(?:DROP|RENAME|MODIFY|CHANGE|TRUNCATE)\b|\bCONVERT\s+TO\b/i', $p5Token[1], $p5Hits)) {
+        array_push($p5Php, ...$p5Hits[0]);
+    }
+}
+check('migrations: of DROP, RENAME, MODIFY, CHANGE, TRUNCATE and CONVERT TO the PHP steps use only the MODIFY of step 29' . ($p5Php === ['MODIFY'] ? '' : ' (' . implode(', ', $p5Php) . ')'), $p5Php === ['MODIFY']);
+$p5Ascii = (new ReflectionClassConstant(App\Migrations::class, 'ASCII_COLUMNS'))->getValue();
+$p5Schema = (string) file_get_contents(dirname(__DIR__, 2) . '/app/schema.sql');
+$p5AsciiBad = [];
+foreach ($p5Ascii as $p5Table => $p5Columns) {
+    preg_match('/CREATE TABLE IF NOT EXISTS ' . $p5Table . ' \((.*?)\n\) ENGINE/s', $p5Schema, $p5Create);
+    foreach ($p5Columns as $p5Column => [$p5Definition, $p5Collation]) {
+        [$p5Type, $p5Null] = explode(' ', $p5Definition, 2);
+        if (!str_contains($p5Create[1] ?? '', "\n  $p5Column $p5Type CHARACTER SET ascii COLLATE $p5Collation $p5Null,") || !in_array($p5Collation, ['ascii_bin', 'ascii_general_ci'], true)) {
+            $p5AsciiBad[] = "$p5Table.$p5Column";
+        }
+    }
+}
+check('step 29: the columns it changes are declared the same in schema.sql, only ASCII collations' . ($p5AsciiBad ? ' (' . implode(', ', $p5AsciiBad) . ')' : ''), !$p5AsciiBad && array_sum(array_map('count', $p5Ascii)) === 7);
+check('step 29: no statement of its own, the only caller of asciiColumns() besides the retry is its number', ($p5Steps[29] ?? null) === [] && substr_count($p5Source, 'self::asciiColumns()') === 2 && str_contains($p5Source, 'if ($version === 29) {'));
 // Two branches with the same number merge without a conflict, and PHP keeps only the last of two equal array keys
 preg_match_all('/^ {8}(\d+) => \[/m', (string) file_get_contents(dirname(__DIR__, 2) . '/app/src/Migrations.php'), $p5Numbers);
 $p5Numbers = array_map('intval', $p5Numbers[1]);
