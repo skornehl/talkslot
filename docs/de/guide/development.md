@@ -58,10 +58,19 @@ Die Sicherheitsinvarianten (Rollen in der Routentabelle, keine Datenänderung du
 Buchungsweg, Sicherheits-Header auf Fehlerseiten, abgelehnte seitenübergreifende Formulare) stehen in
 `tests/unit.d/security.php` und `tests/smoke.d/security.sh`; siehe [Sicherheit]({{ '/de/guide/security/' | relative_url }}).
 
-Die CI führt bei jedem Push die Unit-Tests aus sowie Smoke-, Browser- und Deploy-Tests gegen die Docker-Umgebung.
-Außerdem laufen die Smoke-Tests gegen MariaDB 10.6, die Mindestversion (`MARIADB_VERSION=10.6` für
-`dev/compose.yml`), und sie prüft, dass PHP 7.4 und 8.2 die Meldung von `App\Platform` erhalten statt eines
-Syntaxfehlers.
+Die CI führt bei jedem Push die Unit-Tests aus sowie Smoke-, Browser- und Deploy-Tests gegen die Docker-Umgebung
+(PHP 8.5, MariaDB 11.8, SMTP). Der Job *Minimum platform* wiederholt die Smoke- und Deploy-Tests auf PHP 8.3 und
+MariaDB 10.6, der Mindestplattform, und verschickt die Mails per `mail()` wie bei vielen Webhostern
+(`PHP_VERSION=8.3 MARIADB_VERSION=10.6` für `dev/compose.yml`; der Sendmail-Modus von Mailpit nimmt sie an).
+Außerdem prüft sie, dass PHP 7.4 und 8.2 die Meldung von `App\Platform` erhalten statt eines Syntaxfehlers. Ein
+Push auf `main` wird erst ausgespielt, wenn all das bestanden ist
+([Deploy-Gate]({{ '/de/guide/deployment/' | relative_url }}#deploy-gate)).
+
+Die Images sind per Digest festgelegt: die Testumgebung in `dev/Dockerfile`, die PHP-Kommandozeile der CI in
+`dev/php-cli.Dockerfile` (`dev/php.sh 8.3 php tests/unit.php` führt die Unit-Tests ohne lokales PHP auf PHP 8.3
+aus). Neue Digests schlägt Dependabot vor; welche Versionen getestet werden, ändern Sie von Hand in diesen
+Dateien. Um lokal die Versionen zu wechseln, legen Sie die Datenbank neu an:
+`docker compose -f dev/compose.yml down -v`, dann `up -d --build`.
 
 ### Messen statt schätzen
 
@@ -100,6 +109,10 @@ Syntaxfehlers.
 
 - **Sprache:** Code, Kommentare, Commits und Dokumentation auf Englisch (die deutsche Anleitung in `docs/de/`
   auf Deutsch). Der Admin-Bereich ist je Konto deutsch oder englisch, die Elternseiten gibt es in sechs Sprachen.
+- **Begriffe in der Oberfläche:** Ein *Termin* ist ein Zeitfenster (englisch: slot), eine *Buchung* ist ein
+  Termin, den Eltern gebucht oder die Lehrkraft eingetragen hat; in deutschen Texten kein „Slot“. Eltern lesen keine
+  Fachbegriffe wie „localStorage“; der Datenschutztext heißt für sie *Datenschutzhinweise* (*Datenschutz* als kurzer
+  Link im Fußbereich).
 - **Admin-Texte** stehen im Code auf Deutsch und laufen durch `__()`: `__('Runde gespeichert.')` gibt den
   deutschen Text unverändert zurück und für ein englisches Konto den Eintrag aus den Wörterbüchern in
   `app/lang/admin/en/*.php` (eine Datei pro Thema, alle zusammengeführt; ein Text braucht genau einen
@@ -216,16 +229,17 @@ Termine → Buchungen**. Das Löschen oder Ändern eines Tages, einer Runde oder
 das Löschen eines Kontos sperrt vorher die Zeilen der aktiven Admins, damit immer ein Admin bleibt
 (`AccountSecurity`).
 
-Eine Buchung läuft in `Db::transaction()`: Mit Buchungslimit sperrt sie die Runde
-(`BookingService::lockForLimit()`), dann den Termin zusammen mit seinem Tag in einem verknüpften `SELECT … FOR
-UPDATE` (`lockSlot()`), dann prüft sie, ob der Termin schon gebucht ist. Diese Verknüpfung ist die einzige
-Stelle, an der ein Termin vor seinem Tag gesperrt werden kann; eine Buchung kann sich deshalb mit einem `sync()`
-desselben Tages kreuzen, und InnoDB beendet dann eine der beiden als Deadlock. Buchungen sind darauf
-eingestellt: Sie wiederholen bei einem Deadlock oder Sperr-Timeout einmal (`retryOnDeadlock()`) und melden den
-Termin danach als vergeben, und `UNIQUE(slot_id)` ist die harte Garantie gegen Doppelbuchungen; Einträge und
-Verschiebungen durch die Lehrkraft laufen über dieselben Methoden. Änderungen an Tagen, Runden und Konten
-(`ScheduleService`, `sync()`) werden nicht wiederholt. Für neuen Code: den Tag vor seinen Terminen sperren und
-neue Schreibzugriffe, die `lockSlot()` nutzen, in `retryOnDeadlock()` einbetten. E-Mails gehen erst nach dem
+Eine Buchung läuft in `Db::transaction()`: Mit Buchungslimit sperrt sie die Runde und liest sie neu
+(`BookingService::lockForLimit()`), dann ihren Tag, dann den Termin (`lockSlot()`), dann prüft sie, ob der Termin
+schon gebucht ist. Jeder Weg sperrt in dieser Reihenfolge: Runde, Tag, Termine, Buchungen. Der Tag des Termins wird
+vor der Transaktion gelesen, denn ein einfaches Lesen darin würde ihren Snapshot vor den Sperren beginnen. Eine
+Transaktion, die eine Zeilensperre verliert (Deadlock, Sperr-Timeout, Zeile seit dem Snapshot geändert), wird einmal
+von vorn wiederholt (`Db::retrying()`, nie innerhalb einer offenen Transaktion); Buchungen melden den Termin danach als vergeben, und `UNIQUE(slot_id)` ist die harte
+Garantie gegen Doppelbuchungen. Die Änderungen von `ScheduleService`, `sync()` und `keepingAnAdmin()` laufen über
+denselben Wrapper. Auf eine Zeilensperre wird höchstens 5 Sekunden gewartet. Für neuen Code: in dieser Reihenfolge
+sperren und neue Transaktionen in `Db::retrying()` einbetten. Regeln, die das Formular prüft (ein Datum je Runde,
+eindeutige Namen), sind auch Constraints in der Datenbank: Eine Anfrage, die an der Prüfung vorbeikommt, bekommt das
+Formular mit einem Hinweis (`Db::isDuplicate()`), keine Fehlerseite. E-Mails gehen erst nach dem
 Commit hinaus (direkt oder über die Warteschlange), nie innerhalb der Transaktion.
 
 Hintergrundarbeiten nutzen stattdessen benannte Sperren: Migrationen und die Warteschlange `GET_LOCK`;
@@ -269,6 +283,15 @@ direkt. Eine bestehende führt beim nächsten Aufruf die fehlenden Schritte aus 
   Code um, nicht die Datenbank.
 - PHP-Arbeit eines Schritts (Daten nachtragen) gehört unter seiner Nummer in `Migrations::steps()`, wie bei den
   Schritten 7 und 10, und muss ebenfalls wiederholbar sein.
+- **Automatisch geprüft.** Ein Unit-Test lehnt ab, was ein Schritt nicht tun darf (jeder Schritt außer 3, der älter
+  ist als die Regel), und doppelte Nummern. `tests/migrations.php` (Teil des Smoke-Tests) bringt das Schema des
+  ersten Releases mit einigen Daten auf den aktuellen Stand, vergleicht es mit einer Neuinstallation (Tabellen,
+  Spalten, Indizes, Fremdschlüssel) und führt jeden Schritt seither ein zweites Mal aus. `tests/n-1.sh` lässt das letzte
+  Release auf dem Schema des aktuellen Codes laufen (Anmeldung, Buchen, Verschieben, Absagen, Health-Check); die CI
+  macht das bei jedem Push.
+- Ein Schritt wartet höchstens 10 Sekunden auf eine Metadatensperre (`lock_wait_timeout`, etwa eine offene
+  Transaktion in phpMyAdmin) und gibt dann auf; nach einer Minute Pause wiederholt ihn eine spätere Anfrage. Ist die Datenbank neuer als der
+  Code (nach dem Zurückschalten), bekommen Admins einmalig eine E-Mail und einen Hinweis in der Übersicht.
 - Eine neue Tabelle gehört in `Db::TABLES`, sonst bekommt sie kein Tabellenpräfix; keine Spalte darf wie eine
   Tabelle heißen (Unit-Tests prüfen beides).
 - **Nicht** in einer Minor-Version: Spalten oder Tabellen umbenennen oder löschen, Typ oder Kollation einer
@@ -276,7 +299,9 @@ direkt. Eine bestehende führt beim nächsten Aufruf die fehlenden Schritte aus 
   Sie können die vorige Version brechen oder an vorhandenen Daten scheitern. Sie warten auf eine Major-Version
   und kommen in zwei Schritten (erst erweitern, dann zurückbauen, „Expand/Contract“): die neue Spalte ergänzen
   und nutzen, die alte erst in einer späteren Major-Version entfernen. Schritt 3 (Umbenennen von
-  `admin_users`, Löschen von Spalten) stammt aus der Zeit vor dieser Regel.
+  `admin_users`, Löschen von Spalten) stammt aus der Zeit vor dieser Regel. Schritt 26 setzt `UNIQUE` und `CHECK` auf bestehenden
+  Spalten als bewusste Ausnahme: nur wo die Zeilen es zulassen (sonst nennt er dem Betreiber die Runden, und ein späterer Cron-Lauf setzt die Regel, sobald sie in Ordnung sind), und die Vorversion lehnt solche
+  Zeilen in ihren Formularen ohnehin ab.
 - Während die Dateien eines Updates hochgeladen werden, kann neuer Code kurz auf das alte Schema treffen. Wo das
   zählt (eine Seite, die nicht scheitern darf), sollte der Code auf das alte Verhalten zurückfallen, bis der
   Schritt gelaufen ist, wie `RoundAccess::required()`. Ein solcher Rückfall nennt die Migration, die er

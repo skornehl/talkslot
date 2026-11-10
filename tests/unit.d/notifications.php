@@ -244,8 +244,9 @@ check('dashboard notice: only for accounts from before (NULL) with summaries, sa
 $_SESSION = ['csrf' => 'test'];
 $profileUser = ['display_name' => 'Frau Berger', 'username' => 'berger', 'role' => 'teacher', 'email' => 'berger@schule.example.org', 'reply_to' => 'b.berger@schule.example.org',
     'lang' => 'de', 'summary_evening' => 1, 'summary_deadline' => 1, 'summary_names' => null];
+$profileSecurity = ['events' => [], 'days' => 30, 'known' => false, 'previous' => null, 'failed' => 0];
 $profile = static fn (array $change = []): string => App\AdminI18n::with('de', static fn () => App\View::capture('admin/profile',
-    ['user' => $change + $profileUser, 'data' => $change + $profileUser, 'errors' => []]));
+    ['user' => $change + $profileUser, 'data' => $change + $profileUser, 'errors' => [], 'security' => $profileSecurity]));
 $namesOn = $profile();
 $namesNo = $profile(['summary_names' => 0]);
 App\Config::load(['allowed_account_domains' => ['schule.example.org']] + $cfg);
@@ -257,7 +258,7 @@ check('profile: names to choose only where the school allows them (as before for
     && !str_contains($namesOn, 'Die Schule erlaubt nur')
     && str_contains($namesOn, '<input type="email" id="reply_to" name="reply_to" maxlength="254" value="b.berger@schule.example.org" aria-describedby="rt-hint">'));
 // Without a reply address the account's address is the Reply-To of the parents' mails: the hint must not hide it
-$profileEn = App\AdminI18n::with('en', static fn () => App\View::capture('admin/profile', ['user' => $profileUser, 'data' => $profileUser, 'errors' => []]));
+$profileEn = App\AdminI18n::with('en', static fn () => App\View::capture('admin/profile', ['user' => $profileUser, 'data' => $profileUser, 'errors' => [], 'security' => $profileSecurity]));
 check('profile: the hint under the e-mail address says that parents see it while there is no reply address (German, English)',
     str_contains($namesOn, 'Solange Sie keine Antwortadresse für Eltern angeben, gehen auch die Antworten der Eltern auf E-Mails zu ihrem Termin an diese Adresse; Eltern sehen sie dann, sobald sie antworten.')
     && str_contains($profileEn, 'As long as you do not enter a reply address for parents, parents&apos; replies to emails about their appointment go to this address as well; parents then see it as soon as they reply.')

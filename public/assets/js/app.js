@@ -206,6 +206,23 @@ var L = (function () {
     }
   }
 
+  // A link or redirect to a folded section (#translations, a day): open it and show the messages there, as the
+  // ones at the top of the page are out of sight then
+  var jumpedTo = window.location.hash.length > 1 ? document.getElementById(window.location.hash.slice(1)) : null;
+  if (jumpedTo && document.body.classList.contains('admin')) {
+    if (jumpedTo.tagName === 'DETAILS') { jumpedTo.open = true; }
+    var flashes = document.querySelectorAll('[data-flash]');
+    Array.prototype.forEach.call(flashes, function (flash) { jumpedTo.parentNode.insertBefore(flash, jumpedTo); });
+    var breakForm = jumpedTo.querySelector('.add-break');
+    if (breakForm && document.querySelector('[data-flash="error"]')) { breakForm.open = true; }
+  }
+
+  // A field the browser refuses inside a folded section: open it, or the message cannot be shown
+  document.addEventListener('invalid', function (ev) {
+    var folded = ev.target.closest ? ev.target.closest('details') : null;
+    if (folded) { folded.open = true; }
+  }, true);
+
   // Focus the error box after submitting (screen readers)
   var errors = document.getElementById('form-errors');
   if (errors) {
@@ -434,6 +451,13 @@ var L = (function () {
       var ok = document.querySelectorAll('fieldset[lang] legend .status.status-on');
       var counter = document.querySelector('[data-bt-counter]');
       if (counter) { counter.textContent = L('({ok} von {all} aktuell)', { ok: ok.length, all: all.length }); }
+      var behind = document.querySelector('[data-bt-behind]');
+      if (behind) {
+        var names = Array.prototype.map.call(document.querySelectorAll('fieldset[lang]'), function (f) {
+          return f.querySelector('legend .status.status-on') ? '' : f.getAttribute('data-lang-name');
+        }).filter(Boolean);
+        behind.textContent = names.length ? L('– fehlt oder veraltet: {languages}', { languages: names.join(', ') }) : '';
+      }
     }
 
     function saveOne(r, force) {
@@ -584,11 +608,14 @@ var L = (function () {
   }
   Array.prototype.forEach.call(document.querySelectorAll('[data-day-fields]'), function (box) {
     var preview = box.querySelector('[data-slot-preview]');
+    var conflicts = box.querySelector('[data-slot-conflicts]');
+    var status = box.querySelector('[data-slot-status]');
+    var announce = null;
     function update() {
       var from = minutes(box.querySelector('[name="start_time"]').value);
       var to = minutes(box.querySelector('[name="end_time"]').value);
       var len = parseInt(box.querySelector('[name="slot_minutes"]').value, 10);
-      if (from === null || to === null || !(len >= 5) || from >= to) { preview.hidden = true; return; }
+      if (from === null || to === null || !(len >= 5) || from >= to) { preview.hidden = true; if (conflicts) { conflicts.hidden = true; } return; }
       var starts = box.querySelectorAll('[name="break_start[]"]');
       var ends = box.querySelectorAll('[name="break_end[]"]');
       var breaks = [];
@@ -613,6 +640,21 @@ var L = (function () {
           : L('Vorschau: {count} Termine pro Tag: {slots}', { count: slots.length, slots: slots.join(', ') }))
         : L('Mit diesen Zeiten entsteht kein Termin.');
       preview.hidden = false;
+      // "Tag bearbeiten": a booking keeps its slot if its start time is still in the schedule (SlotGenerator::sync),
+      // otherwise it becomes a conflict
+      var lost = (box.getAttribute('data-booked') || '').split(',').filter(function (start) {
+        return start && !slots.some(function (slot) { return slot.slice(0, 5) === start; });
+      }).length;
+      var lostText = lost ? L('{count} gebuchte(r) Termin(e) passen nicht mehr in diesen Zeitplan und würden als Konflikt markiert.', { count: lost }) : '';
+      if (conflicts) {
+        conflicts.textContent = lostText;
+        conflicts.hidden = !lost;
+      }
+      // Announced once typing has paused, without reading the whole list on every key
+      window.clearTimeout(announce);
+      announce = window.setTimeout(function () {
+        status.textContent = (slots.length ? L('{count} Termine pro Tag', { count: slots.length }) : L('Mit diesen Zeiten entsteht kein Termin.')) + (lost ? ' ' + lostText : '');
+      }, 500);
     }
     box.addEventListener('input', update);
     box.addEventListener('change', update);

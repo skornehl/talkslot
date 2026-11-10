@@ -67,7 +67,7 @@ $legalQuery = ['lang' => App\AdminI18n::lang() !== 'de' && App\I18n::lang() === 
 </header>
 <main id="main" class="wrap wrap-wide" tabindex="-1">
   <?php foreach ($flash ?? [] as [$type, $msg]): ?>
-    <div class="alert alert-<?= e($type) ?>" role="status"><p><?= e($msg) ?></p></div>
+    <div class="alert alert-<?= e($type) ?>" role="status" data-flash="<?= e($type) ?>"><p><?= e($msg) ?></p></div>
   <?php endforeach; ?>
   <?= $content ?>
 </main>

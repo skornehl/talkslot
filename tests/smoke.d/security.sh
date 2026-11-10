@@ -131,11 +131,16 @@ check "deleting each other at the same moment: the second one waits and is refus
 # Ending all sessions: only with the password; every other session ends, the own one stays
 JT=$(mktemp); AS_LOGIN "$JT" "$USER" "$PASS"
 check "all sessions: without the password refused" 'AS_POST -d "current_password=" "$B/admin/users/end-sessions" | has "Zum Beenden aller Sitzungen bitte Ihr Passwort eingeben." && [ "$(AS_CODE "$JZ")" = 200 ]'
+AS_DEV=$(mktemp); grep 'tp_device_' "$JT" > "$AS_DEV" # known-device cookie of the other device (P0-4b, checked below)
+AS_N0=$(awk -F'\t' '/tp_device_/ { split($7, v, "."); print v[1] }' "$J")
 R=$(curl -s -L -c "$J" -b "$J" --data-urlencode "csrf=$T" --data-urlencode "current_password=$PASS" "$B/admin/users/end-sessions")
+AS_N1=$(awk -F'\t' '/tp_device_/ { split($7, v, "."); print v[1] }' "$J")
 check "all sessions ended: other admin and other device logged out, the own session stays" 'echo "$R" | has "Alle Sitzungen beendet:" && [ "$(AS_CODE "$JZ")" = 303 ] && [ "$(AS_CODE "$JT")" = 303 ] && [ "$(AS_CODE "$J")" = 200 ]'
 check "all sessions ended: notice to all admins, entry in the log" 'AS_TEXT "to:as-admin-$AS@example.org $NOTE" | has "Alle Sitzungen wurden beendet" && curl -s -b "$J" "$B/admin/log" | has "Alle Sitzungen beendet"'
 AS_LOGIN "$JZ" "as-admin-$AS@example.org" Sicher-Passwort-123
 check "signing in again after that works" '[ "$(AS_CODE "$JZ")" = 200 ]'
+check "all sessions ended: the browser that ended them gets a new known-device cookie (checked below: valid, the others revoked)" '[ -s "$AS_DEV" ] && [ -n "$AS_N1" ] && [ "$AS_N1" != "$AS_N0" ]'
+AS_NEW=$(mktemp); grep 'tp_device_' "$J" > "$AS_NEW"
 rm -f "$JT"
 T=$(curl -s -b "$J" "$B/admin/users" | csrf)
 
@@ -429,6 +434,7 @@ S_FULL login_user "$(S_HM "login:#$AID")"
 SJ3=$(mktemp); S_DEVICE "$SJ2" "$SJ3"; SJ4=$(mktemp)
 C1=$(S_LOGIN "$SJ4" "$USER" "$PASS"); C2=$(S_LOGIN "$SJ3" "$USER" "$PASS")
 check "account limit used up: unknown device refused, known device signs in" '[ "$C1 $C2" = "401 303" ]'
+check "… a known device from before \"Alle Sitzungen beenden\" no longer counts, the cookie given to the browser that ended them does (P0-4b)" '[ -s "$AS_DEV" ] && [ "$(S_LOGIN "$AS_DEV" "$USER" "$PASS")" = 401 ] && [ -s "$AS_NEW" ] && [ "$(S_LOGIN "$AS_NEW" "$USER" "$PASS")" = 303 ]'
 SJ5=$(mktemp); S_DEVICE "$SJ3" "$SJ5"
 check "… and gets the cookie renewed (new random number)" '[ -n "$(S_NONCE "$SJ5")" ] && [ "$(S_NONCE "$SJ5")" != "$(S_NONCE "$SJ2")" ]'
 awk -F'\t' 'BEGIN { OFS = "\t" } /tp_device_/ { split($7, v, "."); $7 = v[1] "." v[2] "." sprintf("%064d", 0) } { print }' "$SJ5" > "$SJ4"
@@ -453,11 +459,26 @@ S_FULL login_user "$(S_HM "login:#$SUID")"
 N0=$(S_MAILS "to:$SU")
 SJ7=$(mktemp)
 C1=$(S_LOGIN "$SJ7" "$SU" "Gartenzaun-Wolke-Tisch-5"); C2=$(S_LOGIN "$SJ7" "$SU" "Gartenzaun-Wolke-Tisch-5")
-check "account limit used up: the owner gets one e-mail (not one per attempt)" '[ "$C1 $C2" = "401 401" ] && [ "$(S_MAILS "to:$SU")" = "$((N0 + 1))" ]'
+# P0-4b: the notice is queued and goes out after the response (here, without PHP-FPM, with the cron job), so
+# the time of the refused attempt tells nothing
+SQ=$(DBQ "SELECT COUNT(*) FROM tp_mail_outbox WHERE kind = 'login_notice' AND user_id = $SUID"); SN=$(S_MAILS "to:$SU")
+$DC exec -T app php /srv/app/bin/cron.php > /dev/null
+check "account limit used up: the owner gets one e-mail (not one per attempt), queued during the attempt, sent after it" '[ "$C1 $C2" = "401 401" ] && [ "$SQ" = 1 ] && [ "$SN" = "$N0" ] && [ "$(S_MAILS "to:$SU")" = "$((N0 + 1))" ] && [ "$(DBQ "SELECT COUNT(*) FROM tp_mail_outbox WHERE kind = \"login_notice\"")" = 0 ]'
 SM=$(S_MAILTEXT "to:$SU subject:Anmeldeversuche")
-check "… which explains the lockout and the way out" 'echo "$SM" | has "Hallo Frau Geraet," && echo "$SM" | has "(mehr als 20)" && echo "$SM" | has "bis zu 60 Minuten" && echo "$SM" | has "„Passwort vergessen?“"'
+check "… which explains the lockout and the way out, with the time (it may go out later)" 'echo "$SM" | has "Hallo Frau Geraet," && echo "$SM" | has "am $(date +%d.%m.%Y) um " && echo "$SM" | has "(mehr als 20)" && echo "$SM" | has "bis zu 60 Minuten" && echo "$SM" | has "„Passwort vergessen?“"'
 SJ8=$(mktemp); S_DEVICE "$SJ6" "$SJ8"
 check "… and the browser that set the password through the link signs in anyway" '[ "$(S_LOGIN "$SJ8" "$SU" "Gartenzaun-Wolke-Tisch-5")" = 303 ]'
+# P0-4b: an own new password revokes the account's known devices, this browser gets a cookie of the new epoch
+SJ9=$(mktemp); S_DEVICE "$SJ8" "$SJ9"
+SH=$(curl -s -D - -o /dev/null -c "$SJ8" -b "$SJ8" --data-urlencode "csrf=$(curl -s -b "$SJ8" "$B/admin/profile" | csrf)" --data-urlencode "current_password=Gartenzaun-Wolke-Tisch-5" -d "new_password=Leuchtturm-Birke-Ofen-8&new_password2=Leuchtturm-Birke-Ofen-8" "$B/admin/password")
+SJ10=$(mktemp); S_DEVICE "$SJ8" "$SJ10"
+check "own new password: this browser gets a new known-device cookie and still signs in, the one from before does not (limit used up)" 'echo "$SH" | grep -qi "^set-cookie: tp_device_[0-9a-f]\{16\}=[A-Za-z0-9_-]\{22\}\." && [ "$(S_NONCE "$SJ10")" != "$(S_NONCE "$SJ9")" ] && [ "$(S_LOGIN "$SJ10" "$SU" "Leuchtturm-Birke-Ofen-8")" = 303 ] && [ "$(S_LOGIN "$SJ9" "$SU" "Leuchtturm-Birke-Ofen-8")" = 401 ]'
+# P0-4b: at most MAX_PER_BROWSER (20) known-device cookies per browser, the oldest go first (a shared PC with
+# one per account would otherwise exceed the ~8 KB header limit of the server)
+SC=""; for i in $(seq 1 25); do SC="$SC; tp_device_$(printf '%016x' "$i")=AAAAAAAAAAAAAAAAAAAAAA.$((1700000000 + i)).$(printf '%064d' 0)"; done
+SH=$(curl -s -D - -o /dev/null -H "Cookie: ${SC#; }" --data-urlencode "csrf=$(curl -s "$B/admin/login" | csrf)" --data-urlencode "username=$USER" --data-urlencode "password=$PASS" "$B/admin/login")
+SDEL=$(echo "$SH" | grep -i "^set-cookie: tp_device_[0-9a-f]\{16\}=deleted" | grep -o 'tp_device_[0-9a-f]*' | sort | tr '\n' ' ')
+check "many known-device cookies in one browser: the 6 oldest of 25 removed on signing in, the new one set ($SDEL)" '[ "$SDEL" = "$(for i in 1 2 3 4 5 6; do printf "tp_device_%016x " "$i"; done)" ] && echo "$SH" | grep -i "^set-cookie: tp_device_" | grep -vqi "=deleted"'
 
 # Changing the own password follows the same rules
 T=$(curl -s -b "$J" "$B/admin" | csrf)
@@ -467,4 +488,12 @@ T=$(curl -s -b "$J" "$B/admin/users" | csrf)
 curl -s -o /dev/null -b "$J" -d "csrf=$T&confirm=1" "$B/admin/users/$SUID/delete"
 check "cleaned up: test account deleted" '[ -z "$(DBQ "SELECT id FROM tp_users WHERE username = \"$SU\"")" ]'
 S_CLEAR
-rm -f "$SJ1" "$SJ2" "$SJ3" "$SJ4" "$SJ5" "$SJ6" "$SJ7" "$SJ8"
+# In-process (script on stdin for the coverage run): an account gone before the notice went out
+SD=$($DC exec -T app php <<'PHP'
+<?php
+require '/srv/app/app/bootstrap.php';
+var_export(App\Auth::deliverLockoutNotice(0, '2026-01-01 10:00:00'));
+PHP
+)
+check "the notice about failed sign-ins: nothing for an account that is gone ($SD)" '[ "$SD" = NULL ]'
+rm -f "$SJ1" "$SJ2" "$SJ3" "$SJ4" "$SJ5" "$SJ6" "$SJ7" "$SJ8" "$SJ9" "$SJ10" "$AS_DEV" "$AS_NEW"

@@ -9,12 +9,14 @@ Englisch umstellen.
 
 ## Runde anlegen
 
-*+ Neue Runde* öffnet das Formular. Die Termine werden zusammen mit der Runde angelegt:
+*+ Neue Runde* öffnet das Formular. Die Termine werden zusammen mit der Runde angelegt. Das Formular geht vom
+Wichtigsten zu den Details: *Worum geht es?*, *Wann?*, *Regeln für Eltern*, und die technischen Einstellungen
+sind unter *Erweitert* eingeklappt:
 
 - ***Vorlage*** (falls Ihre Admins welche angelegt haben): *Übernehmen* trägt Zeiten, Pausen und
   Einstellungen ein, z. B. „Elternsprechtag: 08:00–16:00, 15 Minuten, Mittagspause“. Alles bleibt
   änderbar; nur Titel und Datum fehlen dann noch.
-- **Titel** und optional ein ***Beschreibungstext***, die den Eltern angezeigt werden. Reiner Text. Bitte
+- **Titel** und optional eine ***Beschreibung***, die den Eltern angezeigt werden. Reiner Text. Bitte
   neutral halten, z. B. „Elternsprechtag 7b“: Beide stehen in den E-Mails an Eltern und in Kalenderdateien,
   der Titel auch im Protokoll und beim Anlegen in der Adresse der Runde. Ein Titel wie „Beratung
   Förderbedarf“ verriete jedem, der eine Buchung sieht, mehr als den Termin.
@@ -38,19 +40,19 @@ Englisch umstellen.
   der Rundenseite (eine Frist von 0 wird nicht erwähnt) und Datum und Uhrzeit der zweiten auf der Seite ihres
   Termins und in den Bestätigungs-, Änderungs- und Erinnerungs-E-Mails (eine Erinnerung nach der Frist bittet,
   sich stattdessen an Sie zu wenden).
-- ***Runde löschen nach Ablauf***: Stunden nach dem letzten Tag, standardmäßig 24, leer = nie. Buchungen werden in jedem Fall am Tag nach dem Termin gelöscht.
-  Ablaufen kann nur eine Runde, die in Gebrauch war: die irgendwann aktiv war oder in die Sie etwas
-  eingetragen haben. Eine Runde, die nie aktiv war, etwa eine Kopie mit den alten Daten, bleibt, bis Sie
-  sie nutzen oder löschen (*Noch nie aktiv: wird nicht automatisch gelöscht*). Die Seite der Runde nennt
-  das Datum der Löschung (*Runde wird am … gelöscht*); eine abgelaufene Runde sagt außerdem, wie Sie sie
-  behalten: einen Tag ab heute hinzufügen oder dieses Feld leeren.
 - **Erinnerung** (*Eltern am Vorabend an ihren Termin erinnern*, standardmäßig an): Eltern mit
   E-Mail-Adresse bekommen am Vorabend eine Erinnerung mit dem Link zum Absagen. Wer am selben Tag eine
   Bestätigung oder Änderungsmitteilung bekommen hat, bekommt keine (eine Namenskorrektur ohne E-Mail zählt
   nicht). Sie gilt für Buchungen, die gemacht wurden, während sie eingeschaltet war; Ihre eigenen Einträge
   bekommen sie erst, wenn die Eltern eine Bestätigung oder Änderungsmitteilung per E-Mail erhalten haben.
-- **Zufallsanteil in der Adresse** (empfohlen), damit die Runde nicht durch Ausprobieren gefunden wird,
-  und optional *Nur mit Rundencode*.
+- **Zufallsanteil in der Adresse** (empfohlen, unter *Erweitert*), damit die Runde nicht durch Ausprobieren
+  gefunden wird, und optional *Nur mit Rundencode*. Beim Bearbeiten steht dort auch die *Webadresse* selbst.
+- ***Runde löschen nach Ablauf*** (unter *Erweitert*): Tage nach dem letzten Tag, standardmäßig 1, leer = nie. Buchungen werden in jedem Fall am Tag nach dem Termin gelöscht.
+  Ablaufen kann nur eine Runde, die in Gebrauch war: die irgendwann aktiv war oder in die Sie etwas
+  eingetragen haben. Eine Runde, die nie aktiv war, etwa eine Kopie mit den alten Daten, bleibt, bis Sie
+  sie nutzen oder löschen (*Noch nie aktiv: wird nicht automatisch gelöscht*). Die Seite der Runde nennt
+  das Datum der Löschung (*Runde wird am … gelöscht*); eine abgelaufene Runde sagt außerdem, wie Sie sie
+  behalten: einen Tag ab heute hinzufügen oder dieses Feld leeren.
 - **Aktiv**: Eltern können buchen. Inaktive Runden nehmen keine Buchungen an, Eltern können aber weiterhin
   absagen. Solange sich noch keine Runde aktivieren lässt (z. B. weil die Admins noch Platzhalter in den
   Rechtstexten ausfüllen müssen), sagt das Formular unter dem Häkchen, warum, und eine neue Runde ist
@@ -114,8 +116,11 @@ Pro Tag sehen Sie alle Termine mit den Buchungen:
 - **Adressen wie `eltern@xn--mller-kva.de`** sind Adressen mit Umlauten in der Domain (`eltern@müller.de`),
   so geschrieben, wie Mailserver sie brauchen. Sie funktionieren so, wie sie sind, auch beim Kopieren.
 - ***Sperren***: einen Termin sperren, damit niemand ihn buchen kann, und wieder freigeben.
-- **Tage**: Zeiten und den Ort eines einzelnen Tages bearbeiten (*Tag bearbeiten*), Pausen hinzufügen,
-  einen Tag drucken (*Tag drucken*), weitere Tage hinzufügen (*+ Tag hinzufügen*) oder einen Tag löschen.
+- **Tage**: Zeiten, Pausen und den Ort eines einzelnen Tages bearbeiten (*Tag bearbeiten*; wie bei einem neuen
+  Tag zeigt die Vorschau die entstehenden Termine und zusätzlich, wie viele Buchungen nicht mehr passen
+  würden), eine Pause direkt auf der Seite hinzufügen (*+ Pause hinzufügen*), einen Tag drucken (*Tag drucken*),
+  weitere Tage hinzufügen (*+ Tag hinzufügen*) oder einen Tag löschen. Bei mehreren Tagen springen die Links
+  oben zum jeweiligen Tag.
 
 Wenn Sie Zeiten oder Pausen ändern, werden **gebuchte Termine nie gelöscht**; Termine, die nicht mehr
 passen, werden mit ⚠ markiert, damit Sie sie verschieben können.
@@ -168,6 +173,10 @@ aktuellen Daten, wenn sich diese seit ihrer letzten E-Mail geändert haben. Ein 
 *Änderung per E-Mail mitteilen* speichern, schickt die aktuellen Daten auch ohne Änderung (höchstens 30
 E-Mails pro Stunde aus Ihrem Konto).
 
+**Vertritt ein Admin Sie**, kann er die Namen und Adressen der Eltern einer Runde erst sehen, nachdem er für sie
+*Vertretung übernehmen* gewählt hat; Sie erhalten dann eine E-Mail, und das Protokoll hält es fest. Sonst sehen
+Admins, wie Ihre Runden belegt sind, aber nicht, wer gebucht hat.
+
 Weitere Aktionen für die Runde: bearbeiten, deaktivieren, ***Druckansicht / PDF*** (die letzte Spalte,
 *Organisatorisches*, ist nur für Organisatorisches gedacht, nicht für Gesprächsinhalte) und
 ***Duplizieren …***: eine Kopie mit neuem Link und Code, mit Zeiten, Pausen, gesperrten Terminen,
@@ -188,7 +197,8 @@ Bestätigungsdialog nicht anzeigt. Sollen nur keine neuen Buchungen mehr möglic
 ## Übersetzungen
 
 Eltern sehen Titel und Beschreibung in ihrer Sprache, wenn eine Übersetzung vorhanden ist. Unter
-*Übersetzungen von Titel und Beschreibung* können Sie:
+*Übersetzungen von Titel und Beschreibung*, eingeklappt unter den Tagen (dort steht, welche Sprachen fehlen oder
+veraltet sind), können Sie:
 
 - ***Im Browser übersetzen***: Chrome ab 138 oder Edge ab 148 am Computer
   übersetzen mit einem lokalen Modell auf Ihrem Gerät. Der Text wird an keinen Dienst gesendet; nur das
@@ -250,6 +260,12 @@ Ihrer Runden und auf der Seite gebuchter Termine, wo Eltern ihn am ehesten brauc
 vergeben sind oder die Frist für Änderungen abgelaufen ist. Bleibt das Feld leer, sehen Eltern den Kontakt,
 den die Admins für alle hinterlegt haben, falls es einen gibt. Eltern sehen ihn so, wie Sie ihn schreiben
 (nicht übersetzt); bitte keine privaten Telefonnummern.
+
+### Sicherheit Ihres Kontos
+
+*Mein Profil → Sicherheit* zeigt, was mit Ihrem Konto geschehen ist: Änderungen an Passwort, E-Mail-Adresse und
+Admin-Rechten, angeforderte Links zum Zurücksetzen und fehlgeschlagene Anmeldungen seit der vorigen. Das sehen in der
+Anwendung nur Sie. Kommt Ihnen etwas unbekannt vor, ändern Sie Ihr Passwort und sprechen Sie einen Admin an.
 
 ### Links aus den E-Mails
 

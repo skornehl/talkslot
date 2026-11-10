@@ -15,7 +15,8 @@ $deprecated = [];
 set_error_handler(static function (int $no, string $msg) use (&$deprecated): bool { $deprecated[] = $msg; return true; }, E_DEPRECATED | E_USER_DEPRECATED);
 $o = App\Db::options(['ssl_ca' => '/etc/ssl/db-ca.pem']);
 restore_error_handler();
-echo ($o[Pdo\Mysql::ATTR_SSL_CA] ?? null) === '/etc/ssl/db-ca.pem' && ($o[Pdo\Mysql::ATTR_SSL_VERIFY_SERVER_CERT] ?? null) === true
+$attr = static fn (string $name): int => (int) constant(class_exists(Pdo\Mysql::class, false) ? Pdo\Mysql::class . '::ATTR_' . $name : PDO::class . '::MYSQL_ATTR_' . $name); // PHP 8.3 has no Pdo\Mysql
+echo ($o[$attr('SSL_CA')] ?? null) === '/etc/ssl/db-ca.pem' && ($o[$attr('SSL_VERIFY_SERVER_CERT')] ?? null) === true
     && $deprecated === [] ? 'attributes ok' : 'attributes wrong: ' . implode(' ', $deprecated), "\n";
 $try = static function (string $ca) use ($root): string {
     $code = '<?php require $argv[1] . "/app/bootstrap.php"; $c = require $argv[1] . "/config/config.php";'

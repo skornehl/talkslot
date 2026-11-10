@@ -1,8 +1,12 @@
 # Local development only: docker compose -f dev/compose.yml up -d
+# The images and their versions are pinned in dev/Dockerfile (PHP_VERSION, MARIADB_VERSION: see there).
 name: talkslot-dev
 services:
   db:
-    image: mariadb:${MARIADB_VERSION:-11.8} # CI also runs the smoke tests on 10.6, the minimum
+    build:
+      context: .
+      target: db
+      args: { MARIADB_VERSION: "${MARIADB_VERSION:-11.8}" } # CI also runs the tests on 10.6, the minimum
     environment:
       MARIADB_DATABASE: talkslot
       MARIADB_USER: app
@@ -13,12 +17,15 @@ services:
       interval: 2s
       retries: 30
   mail:
-    image: axllent/mailpit:v1.27
+    build: { context: ., target: mail }
     ports: ["127.0.0.1:8025:8025"] # web interface showing all mails sent by the app
   app:
     build:
       context: .
-      args: { COVERAGE: "${COVERAGE:-0}" } # 1: line coverage with PCOV (tests/coverage/report.php)
+      target: app
+      args:
+        PHP_VERSION: "${PHP_VERSION:-8.5}" # CI also runs the tests on 8.3, the minimum
+        COVERAGE: "${COVERAGE:-0}" # 1: line coverage with PCOV (tests/coverage/report.php)
     ports: ["127.0.0.1:8080:80"]
     volumes: ["..:/srv/app"]
     depends_on:

@@ -4,7 +4,7 @@
 #   dev/cs.sh --fix  change those files
 # PHP-CS-Fixer is a development tool, never part of the app or of a build: the pinned PHAR is downloaded from the
 # PHP-CS-Fixer releases on GitHub into dev/data/ (not in Git) and its checksum checked on every run. It runs with
-# the local php, or in Docker (php:8.3-cli, the oldest supported version) if there is none or CS_DOCKER=1 is set.
+# the local php, or in Docker (dev/php.sh 8.3, the oldest supported version) if there is none or CS_DOCKER=1 is set.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 VERSION=3.95.27
@@ -27,5 +27,5 @@ fi
 if [ -z "${CS_DOCKER:-}" ] && command -v php > /dev/null; then
   php "$PHAR" "${ARGS[@]}"
 else
-  docker run --rm -v "$PWD:/app" -w /app -u "$(id -u):$(id -g)" php:8.3-cli php "$PHAR" "${ARGS[@]}"
+  PHP_USER="$(id -u):$(id -g)" dev/php.sh 8.3 php "$PHAR" "${ARGS[@]}"
 fi
