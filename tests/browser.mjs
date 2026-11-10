@@ -726,6 +726,11 @@ try {
   await js(`${firstFree}.checked = true; document.querySelector('#name').value = 'www.example.org';`);
   await navigating(`document.querySelector('#name').form.requestSubmit()`);
   check('error box gets the focus (screen readers)', await js(`document.activeElement && document.activeElement.id === 'form-errors'`));
+  check('the field is marked and named by its message', await js(`document.querySelector('#name').getAttribute('aria-invalid') === 'true'
+    && !!document.getElementById(document.querySelector('#name').getAttribute('aria-describedby').split(' ')[0])`));
+  await js(`document.querySelector('#form-errors a[href="#name"]').click()`);
+  await sleep(50);
+  check('the link in the error list leads to the field and gives it the focus', await js(`document.activeElement.id === 'name'`));
   check('with errors the form stays visible, the stored appointment is listed above it', await js(`!document.getElementById('booking-area').hidden
     && !document.getElementById('remembered').hidden && document.querySelector('[data-remembered-another]').hidden`));
   await js(`localStorage.removeItem('${KEY}')`);

@@ -21,7 +21,8 @@ use App\Csrf; ?>
   <?php $withDates = false; $singleDate = $dayData['date'] ?? $day['day_date']; require __DIR__ . '/_day_fields.php'; ?>
   <div class="field">
     <label for="location"><?= e(__('Ort an diesem Tag (optional)')) ?></label>
-    <input type="text" id="location" name="location" maxlength="200" value="<?= e($dayData['location'] ?? ($day['location'] ?? '')) ?>" placeholder="<?= e(trim((string) ($round['location'] ?? '')) !== '' ? __('wie die Runde: {location}', ['location' => trim((string) $round['location'])]) : __('z. B. Raum 2.14')) ?>" aria-describedby="dloc-hint">
+    <input type="text" id="location" name="location" maxlength="200" value="<?= e($dayData['location'] ?? ($day['location'] ?? '')) ?>" placeholder="<?= e(trim((string) ($round['location'] ?? '')) !== '' ? __('wie die Runde: {location}', ['location' => trim((string) $round['location'])]) : __('z. B. Raum 2.14')) ?>"<?= field_attrs($errors, 'location', 'dloc-hint') ?>>
+    <?= field_error($errors, 'location') ?>
     <p class="hint" id="dloc-hint"><?= e(__('Nur ausfüllen, wenn der Tag nicht am Ort der Runde stattfindet.')) ?></p>
   </div>
   <?php if ($parents['mailable'] > 0): ?>

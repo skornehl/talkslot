@@ -105,6 +105,10 @@ versions locally, recreate the database: `docker compose -f dev/compose.yml down
 - **Words in the interface:** a *Termin* is a time slot (English: slot), a *Buchung* is a slot that parents
   booked or the teacher entered (*eintragen*); no "Slot" in German texts. Parents read no technical terms such as
   "localStorage"; the privacy text is *Datenschutzhinweise* for them (*Datenschutz* as the short link in the footer).
+- **Form errors:** an error that belongs to one field is stored under the id of that field
+  (`$errors['title'] = …`), any other with a numeric key. The error list then links to the field; in the template
+  `field_attrs($errors, 'title', 'title-hint')` marks the input and `field_error($errors, 'title')` puts the message
+  next to it. A key needs an element with that id on the page, and focusable if it is not a form control.
 - **Admin texts** are written in German in the code and pass through `__()`: `__('Runde gespeichert.')`
   returns the German text as it is and, for an English account, the entry of the dictionaries in
   `app/lang/admin/en/*.php` (one file per topic, all merged; a text needs exactly one entry, as a second

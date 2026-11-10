@@ -437,34 +437,34 @@ final class AdminController
 
         $errors = [];
         if (mb_strlen($data['title']) < 1 || mb_strlen($data['title']) > 200) {
-            $errors[] = __('Bitte einen Titel (max. 200 Zeichen) angeben.');
+            $errors['title'] = __('Bitte einen Titel (max. 200 Zeichen) angeben.');
         }
         if (mb_strlen($data['description']) > 5000) {
-            $errors[] = __('Der Beschreibungstext ist zu lang (max. 5000 Zeichen).');
+            $errors['description'] = __('Der Beschreibungstext ist zu lang (max. 5000 Zeichen).');
         }
         if (mb_strlen($data['location']) > 200) {
-            $errors[] = __('Ort: höchstens 200 Zeichen.');
+            $errors['location'] = __('Ort: höchstens 200 Zeichen.');
         }
         foreach ([
             'booking_deadline_hours' => __('Buchungsfrist: ganze Zahl zwischen 0 und 720 Stunden.'),
             'cancel_deadline_hours' => __('Änderungsfrist: ganze Zahl zwischen 0 und 720 Stunden.'),
         ] as $field => $error) {
             if (!ctype_digit((string) $data[$field]) || (int) $data[$field] > 720) {
-                $errors[] = $error;
+                $errors[$field] = $error;
             }
         }
         if ($deleteError !== null) {
-            $errors[] = $deleteError;
+            $errors['delete_after_days'] = $deleteError;
         }
         // Block publishing only if the round would (newly) become public as a result: when
         // activating it or reassigning an active round – not on every change to it
         $publishing = $owner && $data['is_active'] && (!$round || !$round['is_active'] || (int) $owner['id'] !== (int) $round['user_id']);
         if (!$owner) {
-            $errors[] = __('Bitte eine aktive Lehrkraft für die Runde wählen.');
+            $errors['user_id'] = __('Bitte eine aktive Lehrkraft für die Runde wählen.');
         } elseif ($round && (int) $owner['id'] !== (int) $round['user_id'] && !self::seesParents($round)
             && Db::value('SELECT 1 FROM bookings b JOIN slots s ON s.id = b.slot_id JOIN round_days d ON d.id = s.day_id WHERE d.round_id = ? LIMIT 1', [$round['id']]) !== null) {
             // Whoever gets the round sees its parents: no way around taking over (e.g. to oneself)
-            $errors[] = __('Zum Übergeben einer Runde mit Buchungen bitte zuerst die Vertretung übernehmen.');
+            $errors['user_id'] = __('Zum Übergeben einer Runde mit Buchungen bitte zuerst die Vertretung übernehmen.');
         } elseif ($publishing && ($hint = $this->publishBlocker($owner)) !== null) {
             // A round that is online stays so with its previous teacher; any other can be saved inactive meanwhile
             $errors[] = $hint . ' ' . ($round && $round['is_active'] ? __('Behalten Sie bis dahin die bisherige Lehrkraft, dann bleibt die Runde aktiv.') : self::saveInactiveHint());
@@ -990,7 +990,7 @@ final class AdminController
 
     /**
      * Reads date(s), times, appointment duration and breaks from the form.
-     * @return array{0:array,1:list<string>} [dayData, errors]
+     * @return array{0:array,1:array<int|string,string>} [dayData, errors; a string key is the id of the field]
      */
     private function daysInput(?int $roundId): array
     {
@@ -1005,17 +1005,24 @@ final class AdminController
         $end = Time::normalizeTime(Http::post('end_time'));
         $minutes = Http::post('slot_minutes');
 
+        $dateErrors = [];
+        $badDates = [];
         if (!$dates) {
-            $errors[] = __('Bitte mindestens ein Datum angeben.');
+            $dateErrors[] = __('Bitte mindestens ein Datum angeben.');
         } elseif (count($dates) > 30) {
-            $errors[] = __('Höchstens 30 Tage auf einmal.');
+            $dateErrors[] = __('Höchstens 30 Tage auf einmal.');
         }
         foreach ($dates as $d) {
             if (!Time::isDate($d)) {
-                $errors[] = __('Ungültiges Datum: {date}', ['date' => $d]);
+                $dateErrors[] = __('Ungültiges Datum: {date}', ['date' => $d]);
+                $badDates[] = $d;
             } elseif ($roundId !== null && $this->dateTaken($roundId, $d)) {
-                $errors[] = __('Den {date} gibt es in dieser Runde bereits – bitte den vorhandenen Tag bearbeiten.', ['date' => fmt_date($d)]);
+                $dateErrors[] = __('Den {date} gibt es in dieser Runde bereits – bitte den vorhandenen Tag bearbeiten.', ['date' => fmt_date($d)]);
+                $badDates[] = $d;
             }
+        }
+        if ($dateErrors) {
+            $errors['day_dates'] = implode(' ', $dateErrors);
         }
         $errors = array_merge($errors, self::timeErrors($start, $end, $minutes));
         [$breaks, $breakErrors] = self::breaksInput();
@@ -1023,10 +1030,11 @@ final class AdminController
 
         $dayData = [
             'dates' => $dates ?: [''],
+            'badDates' => $badDates,
             'start' => $start ? fmt_time($start) : Http::post('start_time'),
             'end' => $end ? fmt_time($end) : Http::post('end_time'),
             'minutes' => (int) $minutes,
-            'breaks' => array_map(static fn ($b) => [fmt_time($b[0]), fmt_time($b[1]), $b[2]], $breaks),
+            'breaks' => $breakErrors ? self::breakRowsAsSent() : array_map(static fn ($b) => [fmt_time($b[0]), fmt_time($b[1]), $b[2]], $breaks),
             'start_sql' => $start, 'end_sql' => $end, 'breaks_sql' => $breaks,
         ];
         if (!$errors && !SlotGenerator::compute($start, $end, (int) $minutes, array_map(
@@ -1058,15 +1066,23 @@ final class AdminController
         return [(string) (int) round((float) $days * 24), null];
     }
 
-    /** The break rows as sent, for the form after an error: a row with a typo must not vanish from it. */
+    /** Start and end of a break as times, null if they are no valid range. @return ?array{0: string, 1: string} */
+    private static function breakTimes(string $start, string $end): ?array
+    {
+        $from = Time::normalizeTime($start);
+        $to = Time::normalizeTime($end);
+        return $from && $to && $from < $to ? [$from, $to] : null;
+    }
+
+    /** The break rows as sent, for the form after an error: a row with a typo must not vanish from it. The last value: is the row wrong? */
     private static function breakRowsAsSent(): array
     {
-        $field = static fn (string $name, int $i): string => is_string($_POST[$name][$i] ?? null) ? trim($_POST[$name][$i]) : '';
+        $field = static fn (string $name, int|string $i): string => is_string($_POST[$name][$i] ?? null) ? trim($_POST[$name][$i]) : '';
         $rows = [];
         foreach (array_keys(is_array($_POST['break_start'] ?? null) ? $_POST['break_start'] : []) as $i) {
-            $row = [$field('break_start', $i), $field('break_end', $i), $field('break_label', $i)];
-            if ($row[0] !== '' || $row[1] !== '') {
-                $rows[] = $row;
+            [$start, $end, $label] = [$field('break_start', $i), $field('break_end', $i), $field('break_label', $i)];
+            if ($start !== '' || $end !== '') {
+                $rows[] = [$start, $end, $label, self::breakTimes($start, $end) === null];
             }
         }
         return $rows;
@@ -1079,7 +1095,7 @@ final class AdminController
 
     /**
      * Breaks from the form (break_start[], break_end[], break_label[]); empty rows are skipped.
-     * @return array{0:list<array{0:string,1:string,2:string}>,1:list<string>} [breaks as [start, end, label], errors]
+     * @return array{0:list<array{0:string,1:string,2:string}>,1:array<int|string,string>} [breaks as [start, end, label], errors]
      */
     private static function breaksInput(): array
     {
@@ -1091,20 +1107,21 @@ final class AdminController
         $bl = $arr('break_label');
         $breaks = [];
         $errors = [];
+        $row = 0; // counted as the form shows them again: without empty rows
         foreach ($arr('break_start') as $i => $s) {
             $e = $be[$i] ?? '';
             if ($s === '' && $e === '') {
                 continue;
             }
-            $ns = Time::normalizeTime($s);
-            $ne = Time::normalizeTime($e);
-            if (!$ns || !$ne || $ns >= $ne) {
-                $errors[] = __('Pause {n}: Bitte Start- und Endzeit angeben (Start vor Ende).', ['n' => $i + 1]);
+            $row++;
+            $times = self::breakTimes($s, $e);
+            if ($times === null) {
+                $errors[] = __('Pause {n}: Bitte Start- und Endzeit angeben (Start vor Ende).', ['n' => $row]);
                 continue;
             }
-            $breaks[] = [$ns, $ne, mb_substr($bl[$i] ?? '', 0, 100)];
+            $breaks[] = [$times[0], $times[1], mb_substr($bl[$i] ?? '', 0, 100)];
         }
-        return [$breaks, $errors];
+        return [$breaks, $errors ? ['breaks' => implode(' ', $errors)] : []];
     }
 
     /** Shared check of time range and appointment duration (create and edit). */
@@ -1112,10 +1129,10 @@ final class AdminController
     {
         $errors = [];
         if (!$start || !$end || $start >= $end) {
-            $errors[] = __('Bitte gültige Zeiten angeben (erster Termin vor dem Ende, z. B. 14:00 bis 18:00).');
+            $errors[$start ? 'end_time' : 'start_time'] = __('Bitte gültige Zeiten angeben (erster Termin vor dem Ende, z. B. 14:00 bis 18:00).');
         }
         if (!ctype_digit($minutes) || (int) $minutes < 5 || (int) $minutes > 240) {
-            $errors[] = __('Dauer pro Termin: 5 bis 240 Minuten.');
+            $errors['slot_minutes'] = __('Dauer pro Termin: 5 bis 240 Minuten.');
         }
         return $errors;
     }
@@ -1191,7 +1208,7 @@ final class AdminController
         [$breaks, $breakErrors] = Http::post('breaks_field') === '1' ? self::breaksInput() : [null, []];
         $errors = array_merge($errors, $breakErrors);
         if (!$errors && $this->dateTaken((int) $day['round_id'], $in['date'], $id)) {
-            $errors[] = __('Diesen Tag gibt es in der Runde bereits.');
+            $errors['day_date'] = __('Diesen Tag gibt es in der Runde bereits.');
         }
         if (!$errors) {
             $slotBreaks = $breaks !== null ? array_map(static fn (array $b): array => ['start_time' => $b[0], 'end_time' => $b[1]], $breaks)
@@ -1385,7 +1402,7 @@ final class AdminController
         return __('Die Eltern erfahren davon, wenn Sie den Termin umbuchen (mit „Änderung per E-Mail mitteilen“) oder löschen (mit „Eltern per E-Mail informieren“); ohne E-Mail-Adresse bitte persönlich informieren.');
     }
 
-    /** @return array{0:array,1:list<string>} */
+    /** @return array{0:array,1:array<int|string,string>} */
     private function dayInput(): array
     {
         $date = Http::post('day_date');
@@ -1393,10 +1410,10 @@ final class AdminController
         $end = Time::normalizeTime(Http::post('end_time'));
         $minutes = Http::post('slot_minutes');
         $location = trim(Http::post('location'));
-        $errors = Time::isDate($date) ? [] : [__('Bitte ein gültiges Datum angeben.')];
+        $errors = Time::isDate($date) ? [] : ['day_date' => __('Bitte ein gültiges Datum angeben.')];
         $errors = array_merge($errors, self::timeErrors($start, $end, $minutes));
         if (mb_strlen($location) > 200) {
-            $errors[] = __('Ort: höchstens 200 Zeichen.');
+            $errors['location'] = __('Ort: höchstens 200 Zeichen.');
         }
         return [['date' => $date, 'start' => $start, 'end' => $end, 'minutes' => (int) $minutes, 'location' => $location], $errors];
     }
@@ -2659,7 +2676,7 @@ final class AdminController
             'start' => $start ? fmt_time($start) : Http::post('start_time'),
             'end' => $end ? fmt_time($end) : Http::post('end_time'),
             'minutes' => (int) $minutes,
-            'breaks' => array_map(static fn ($b) => [fmt_time($b[0]), fmt_time($b[1]), $b[2]], $breaks),
+            'breaks' => $errors ? self::breakRowsAsSent() : array_map(static fn ($b) => [fmt_time($b[0]), fmt_time($b[1]), $b[2]], $breaks),
             'booking_deadline_hours' => Http::post('booking_deadline_hours'),
             'cancel_deadline_hours' => Http::post('cancel_deadline_hours'),
             'delete_after_hours' => $deleteAfter,
