@@ -5,8 +5,8 @@ description: Updates, migrations, error alerts, logs, backups and troubleshootin
 
 ## Updates
 
-**With GitHub Actions** every push to `main`, or a new version number in your configuration-only
-repository, deploys the update atomically; see [Deployment]({{ '/guide/deployment/' | relative_url }}).
+**With GitHub Actions** every push to `main` (once its tests have passed), or a new version in your
+configuration-only repository, deploys the update atomically; see [Deployment]({{ '/guide/deployment/' | relative_url }}).
 
 **By hand:** upload the new `app/`, `bin/` and `public/` (keep `config/config.php` and `app/var/`).
 Upload `app/` and `bin/` first and `public/` last. During the upload old and new files are mixed for a

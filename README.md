@@ -134,8 +134,8 @@ schools (GDPR/DSGVO, TDDDG) and multilingual families.
 
 ## Requirements
 
-- PHP 8.3 or newer (tested with 8.3–8.5) with `pdo_mysql`, `mbstring`, `iconv` (and `openssl` for SMTP with TLS)
-- MariaDB 10.6 or newer (migrations use MariaDB syntax; MySQL is not supported)
+- PHP 8.3 or newer (end-to-end tests on 8.3 and 8.5, unit tests on 8.3–8.5) with `pdo_mysql`, `mbstring`, `iconv` (and `openssl` for SMTP with TLS)
+- MariaDB 10.6 or newer (tested on 10.6 and 11.8; migrations use MariaDB syntax; MySQL is not supported)
 - Apache with `mod_rewrite` (and ideally `mod_headers`); other servers need equivalent rules, see
   `public/.htaccess`
 - HTTPS
@@ -201,8 +201,8 @@ App: <http://localhost:8080>, admin: <http://localhost:8080/admin>. Mails end up
 
 ## Deployment with GitHub Actions
 
-Optional, for shared hosting with FTPS. Every push to `main` runs the tests, uploads the new version and
-switches over **atomically**:
+Optional, for shared hosting with FTPS. Every commit on `main` whose tests have all passed (workflow *Tests*,
+the deploy gate) is uploaded and switched over **atomically**:
 
 1. The new version is uploaded completely into its own directory (`<APP_DIR>/releases/<name>/`, assets to
    `<WEB_DIR>/v/<name>/`) while the old one keeps running, and checked for completeness. Right after the
@@ -279,14 +279,27 @@ permissions:
   contents: read
 jobs:
   deploy:
-    uses: skornehl/talkslot/.github/workflows/deploy.yml@v1.2.0
-    secrets: inherit
+    uses: skornehl/talkslot/.github/workflows/deploy.yml@<commit SHA of the release> # v1.9.0
+    secrets:
+      APP_SECRET: ${{ secrets.APP_SECRET }}
+      INSTALL_KEY: ${{ secrets.INSTALL_KEY }}
+      DB_NAME: ${{ secrets.DB_NAME }}
+      DB_USER: ${{ secrets.DB_USER }}
+      DB_PASS: ${{ secrets.DB_PASS }}
+      SMTP_USER: ${{ secrets.SMTP_USER }}
+      SMTP_PASS: ${{ secrets.SMTP_PASS }}
+      FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+      FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
 ```
 
+Pin the release by its commit SHA with the version as a comment (a tag can be moved; look the commit up with
+`git ls-remote https://github.com/skornehl/talkslot refs/tags/v1.9.0`), and pass the secrets one by one
+instead of `secrets: inherit` (versions whose `deploy.yml` lists `secrets:` under `workflow_call`; older ones need `secrets: inherit`).
+Releases are only created for commits whose tests passed.
 Variables and secrets are the same as above and live in your repository (or its `production`
 environment). The rollback workflow works the same way (`switch.yml`, input `target`). The workflows fetch the
-TalkSlot code of exactly the version in the `uses:` line, so updating means changing that version;
-Dependabot (`package-ecosystem: github-actions`) can open these pull requests for you.
+TalkSlot code of exactly the version in the `uses:` line, so updating means changing that commit and its
+comment; Dependabot (`package-ecosystem: github-actions`) can open these pull requests for you.
 Set the variables `APP_NAME` (name shown to parents) and `HOSTING_DE`/`HOSTING_EN` (web host for the
 privacy policy, replaces `[[HOSTER]]`) there as well.
 
@@ -388,8 +401,9 @@ tests/deploy.sh         # atomic deployment via lftp file:// under load, switch-
 dev/phpstan.sh          # static analysis (PHPStan level 6 with a baseline)
 ```
 
-CI runs all of them on every push: the unit tests on PHP 8.3–8.5, the others against the Docker environment,
-the smoke tests also against MariaDB 10.6; PHP 7.4 and 8.2 must get the "cannot start" message. It measures
+CI runs all of them on every push: the unit tests on PHP 8.3–8.5, the others against the Docker environment
+on PHP 8.5 with MariaDB 11.8, and the smoke and deployment tests once more on the minimum platform (PHP 8.3,
+MariaDB 10.6, mail via `mail()`); PHP 7.4 and 8.2 must get the "cannot start" message. It measures
 the line coverage of all tests (PCOV, shown in the job summary, changed lines without a test marked in pull
 requests, a minimum that must not be undercut) and fails on any PHP warning, notice or deprecation of the app.
 Details: [Development](https://skornehl.github.io/talkslot/guide/development/#measuring-instead-of-guessing).

@@ -1,7 +1,9 @@
 # Lint and unit tests on all supported PHP versions (without a database), static analysis (PHPStan), plus the
 # end-to-end tests (tests/smoke.sh with tests/integration.php), browser tests (tests/browser.mjs) and the
-# deployment test (tests/deploy.sh) against the Docker environment from dev/, with line coverage. Every run
-# fails on PHP warnings, notices and deprecations of the app (tests/php-errors.sh).
+# deployment test (tests/deploy.sh) against the Docker environment from dev/, with line coverage, on the current
+# platform and once more on the minimum one. Every run fails on PHP warnings, notices and deprecations of the app
+# (tests/php-errors.sh). Images are pinned by digest in dev/Dockerfile and dev/php-cli.Dockerfile.
+# A push to main deploys only after this workflow has passed on that commit (deploy.yml, "workflow_run").
 name: Tests
 
 on:
@@ -37,7 +39,7 @@ jobs:
         run: |
           cp dev/config.dev.php config/config.php
           rc=0
-          docker run --rm -v "$PWD:/app" -w /app "php:${{ matrix.php }}-cli" sh -c '
+          dev/php.sh "${{ matrix.php }}" sh -c '
             set -e
             find . -name "*.php" -not -path "./app/vendor/*" -print0 | xargs -0 -n1 php -l > /dev/null
             php tests/unit.php' > unit.log 2>&1 || rc=$?
@@ -53,9 +55,9 @@ jobs:
         if: matrix.php == '8.3'
         run: |
           for v in 7.4 8.2; do
-            docker run --rm -v "$PWD:/app" -w /app "php:$v-cli" sh -c 'for f in app/bootstrap.php app/src/Platform.php public/index.php public/install.php bin/cron.php bin/install.php; do php -l "$f" || exit 1; done'
+            dev/php.sh "$v" sh -c 'for f in app/bootstrap.php app/src/Platform.php public/index.php public/install.php bin/cron.php bin/install.php; do php -l "$f" || exit 1; done'
             for entry in public/index.php bin/cron.php; do
-              rc=0; out=$(docker run --rm -v "$PWD:/app" -w /app "php:$v-cli" php "$entry" 2>&1) || rc=$?
+              rc=0; out=$(dev/php.sh "$v" php "$entry" 2>&1) || rc=$?
               echo "PHP $v, $entry (exit $rc): $out"
               if [ "$rc" != 1 ] || ! printf '%s\n' "$out" | grep -q "^PHP 8.3 or newer is required; this server runs PHP $v\."; then exit 1; fi
             done
@@ -82,8 +84,16 @@ jobs:
       - name: PHPStan
         run: PHPSTAN_DOCKER=1 dev/phpstan.sh
 
+      # app/vendor/ must hold exactly the upstream files of the commit in composer.lock: fetched again and
+      # compared (the unit tests check the files against app/vendor/*/SHA256SUMS without network access)
+      - name: Bundled libraries match their upstream source
+        run: |
+          bin/update-vendor.sh
+          git diff --exit-code --stat -- app/vendor || { echo "::error::app/vendor/ differs from the upstream files of composer.lock"; exit 1; }
+          test -z "$(git status --porcelain -- app/vendor)"
+
   e2e:
-    name: End-to-end and browser tests
+    name: End-to-end and browser tests (PHP 8.5, MariaDB 11.8, SMTP)
     runs-on: ubuntu-latest
     timeout-minutes: 45
     permissions:
@@ -167,14 +177,16 @@ jobs:
         if: failure()
         run: docker compose -f dev/compose.yml logs --tail 200 app
 
-  # The documented minimum MariaDB (App\Health::MIN_MARIADB): the Docker environment runs 11.8, whose locking
-  # differs (innodb_snapshot_isolation); the smoke tests once more against 10.6
-  mariadb-min:
-    name: Smoke tests on MariaDB 10.6
+  # The minimum platform (expert review P1-6): PHP 8.3 (App\Platform) and MariaDB 10.6 (App\Health::MIN_MARIADB),
+  # whose locking differs from 11.8 (innodb_snapshot_isolation), and mail via mail() as on many web hosts (the
+  # job above uses SMTP). dev/Dockerfile builds both versions from pinned images; Mailpit receives the mails.
+  minimum-platform:
+    name: Minimum platform (PHP 8.3, MariaDB 10.6, mail())
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      MARIADB_VERSION: '10.6' # dev/compose.yml
+      PHP_VERSION: '8.3' # dev/compose.yml, dev/Dockerfile
+      MARIADB_VERSION: '10.6'
     steps:
       - name: Fetch code
         env:
@@ -190,13 +202,27 @@ jobs:
 
       - name: Start the Docker environment
         run: |
-          cp dev/config.dev.php config/config.php
+          printf '%s\n' '<?php' '// dev/config.dev.php with the transport "mail" (CI job "Minimum platform")' \
+            '$c = require __DIR__ . "/../dev/config.dev.php";' '$c["mail"]["transport"] = "mail";' 'return $c;' > config/config.php
           docker compose -f dev/compose.yml up -d --build --wait --quiet-pull
-          docker compose -f dev/compose.yml exec -T db mariadb -uapp -papp-dev-only -Ne 'SELECT VERSION()'
+          # What this job claims to test, not only printed: otherwise a lost setting leaves it green on the current platform
+          docker compose -f dev/compose.yml exec -T app php -r 'echo "PHP ", PHP_VERSION, ", mail() via ", ini_get("sendmail_path"), "\n";
+            exit(str_starts_with(PHP_VERSION, "8.3.") && ini_get("sendmail_path") !== "" && (require "/srv/app/config/config.php")["mail"]["transport"] === "mail" ? 0 : 1);'
+          V="$(docker compose -f dev/compose.yml exec -T db mariadb -uapp -papp-dev-only -Ne 'SELECT VERSION()')"
+          echo "MariaDB $V"
+          case "$V" in 10.6.*) ;; *) exit 1 ;; esac
           for i in $(seq 1 60); do [ "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/)" != 000 ] && break; sleep 1; done
 
       - name: Smoke tests
         run: dev/reset.sh && tests/smoke.sh
+
+      - name: Deployment test (inside the app container)
+        run: |
+          docker compose -f dev/compose.yml exec -T -e DEBIAN_FRONTEND=noninteractive app sh -c 'apt-get update -qq && apt-get install -y -qq lftp > /dev/null'
+          docker compose -f dev/compose.yml exec -T -w /srv/app app tests/deploy.sh
+
+      - name: No PHP warnings, notices or deprecations in the error log
+        run: tests/php-errors.sh
 
       - name: Server log
         if: failure()
