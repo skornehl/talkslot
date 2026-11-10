@@ -11,10 +11,10 @@ FROM mariadb:10.6@sha256:f1c56f035ed268a0d7c2c2e06dc879f6319b997cb434cf822a4cfd7
 FROM mariadb-${MARIADB_VERSION} AS db
 
 # Web interface showing all mails sent by the app; its sendmail mode is the mail() transport of the app container
-FROM axllent/mailpit:v1.27@sha256:e22dce5b36f93c77082e204a3942fb6b283b7896e057458400a4c88344c3df68 AS mail
+FROM axllent/mailpit:v1.32@sha256:0790692be935ea4420d085694f7985b1f692ca6a8771ab0e0bd8ba75ac180498 AS mail
 
-FROM php:8.5-apache@sha256:304eac8c3e14c194d05e1d67e756b641051d31d6848dd74db47dfae95f3142b8 AS php-8.5
-FROM php:8.3-apache@sha256:df17bb6139ae1667c9d9c042a4f0bf9e4e3767e0a940fadc7b17727e6e55c418 AS php-8.3
+FROM php:8.5-apache@sha256:08af36df144462d84c7f16190557eec06cb9f656882685610b712a15eec54d46 AS php-8.5
+FROM php:8.3-apache@sha256:a800bbd2c0aa322702259ed475556b2cbc311076a8d3c4bba9bfe96838745472 AS php-8.3
 FROM php-${PHP_VERSION} AS app
 # mail(): PHP hands the mail to Mailpit's sendmail replacement (transport "mail", CI job "Minimum platform")
 COPY --from=mail /mailpit /usr/local/bin/mailpit
