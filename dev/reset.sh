@@ -3,7 +3,7 @@
 # Also drops tables that an interrupted tests/integration.php left behind (prefix it<hex>_).
 cd "$(dirname "$0")"
 docker compose exec -T db mariadb -uapp -papp-dev-only talkslot -e \
-  "SET FOREIGN_KEY_CHECKS=0; DROP TABLE IF EXISTS round_trash, tp_round_trash, mail_outbox, tp_mail_outbox, round_templates, tp_round_templates, audit_log, tp_audit_log, round_translations, tp_round_translations, sent_summaries, bookings, slots, day_breaks, round_days, rounds, pages, rate_limits, settings, users, admin_users, tp_sent_summaries, tp_bookings, tp_slots, tp_day_breaks, tp_round_days, tp_rounds, tp_pages, tp_rate_limits, tp_settings, tp_users, tp_admin_users;
+  "SET FOREIGN_KEY_CHECKS=0; DROP TABLE IF EXISTS security_events, tp_security_events, round_trash, tp_round_trash, mail_outbox, tp_mail_outbox, round_templates, tp_round_templates, audit_log, tp_audit_log, round_translations, tp_round_translations, sent_summaries, bookings, slots, day_breaks, round_days, rounds, pages, rate_limits, settings, users, admin_users, tp_sent_summaries, tp_bookings, tp_slots, tp_day_breaks, tp_round_days, tp_rounds, tp_pages, tp_rate_limits, tp_settings, tp_users, tp_admin_users;
    SET @t = (SELECT GROUP_CONCAT('\`', table_name, '\`') FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name REGEXP '^it[0-9a-f]{8}_');
    SET @s = IF(@t IS NULL, 'DO 0', CONCAT('DROP TABLE ', @t)); PREPARE s FROM @s; EXECUTE s; DEALLOCATE PREPARE s;"
 # The error log exists before chown, so that Apache (www-data) can write to it even if a command line call as

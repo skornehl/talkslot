@@ -1,6 +1,8 @@
 <?php
 /** English texts of the admin area: German original => English (see App\AdminI18n). Usability: ways on for parents, guidance for admins. */
 return [
+    // Screen readers (expert review P2-2)
+    'Pause entfernen: {day}, {time}' => 'Remove break: {day}, {time}',
     // Rounds that cannot be activated yet can be saved inactive
     'Bis dahin können Sie die Runde ohne Häkchen bei „Aktiv“ speichern und alles vorbereiten; aktivieren Sie sie, sobald das erledigt ist, auf der Seite der Runde mit „Aktivieren“.'
         => 'Until then you can save the round without ticking “Active” and prepare everything; once that is done, activate it on the round page with “Activate”.',
@@ -24,6 +26,22 @@ return [
     'Die Einladung wird an diese Adresse geschickt.' => 'The invitation is sent to this address.',
     'Wenn leer, ist die E-Mail-Adresse der Benutzername. Sicherer ist ein eigener Name (z. B. „mmuster“), weil Eltern die E-Mail-Adresse sehen können. Der Benutzername steht in der Einladung.'
         => 'If empty, the e-mail address is the username. A separate username (e.g. “mmuster”) is safer, as parents can see the e-mail address. The invitation includes it.',
+    // Round page and forms (expert review P2-3)
+    'Tage dieser Runde' => 'Days of this round',
+    'Worum geht es?' => 'What is it about?',
+    'Beschreibung (optional)' => 'Description (optional)',
+    'Regeln für Eltern' => 'Rules for parents',
+    'Erweitert: Webadresse, Rundencode, Sprache, automatisches Löschen' => 'Advanced: web address, round code, language, automatic deletion',
+    'Webadresse' => 'Web address',
+    'Leer = Runde nie automatisch löschen.' => 'Empty = never delete the round automatically.',
+    'Pausen jetzt: {breaks}' => 'breaks now: {breaks}',
+    'keine' => 'none',
+    'Runde löschen nach Ablauf (Tage)' => 'Delete round after it ends (days)',
+    'Ab dem Tag nach dem letzten Termin, z. B. 1 = einen Tag danach. Leer = Runde nie automatisch löschen (Buchungen werden trotzdem am Folgetag gelöscht).'
+        => 'From the day after the last appointment, e.g. 1 = one day later. Empty = never delete the round automatically (bookings are still deleted on the following day).',
+    'Runde löschen nach Ablauf: leer lassen (nie löschen) oder 0 bis 365 Tage.' => 'Delete round after it ends: leave empty (never delete) or 0 to 365 days.',
+    'Runde wird am {date} gelöscht ({days} Tag(e) nach Ablauf)' => 'Round will be deleted on {date} ({days} day(s) after it ends)',
+    'Runde wird {days} Tag(e) nach Ablauf gelöscht' => 'Round is deleted {days} day(s) after it ends',
     // "Bereit für den Start?" (expert review P2-13)
     'Bereit für den Start?' => 'Ready to start?',
     'Erledigt' => 'Done',

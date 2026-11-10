@@ -83,7 +83,7 @@ return [
     'privacy.summary.rights' => 'You have the right of access, rectification, erasure and to object, among others, and can lodge a complaint with a data protection supervisory authority.',
     'privacy.summary.link' => 'Full privacy notice, including your rights (e.g. access, erasure, objection, complaint)',
     'form.remember' => 'Remember my appointment on this device (optional)',
-    'form.remember.hint' => 'Stores only the link to your appointment in this browser’s storage (localStorage) so you can find it again here. Nothing is sent to the server. You can remove it at any time.',
+    'form.remember.hint' => 'Stores only the link to your appointment in this browser’s storage so you can find it again here. Nothing is sent to the server. You can remove it at any time.',
     'form.submit' => 'Book appointment',
 
     'pin.title' => 'Code required',

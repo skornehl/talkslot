@@ -317,7 +317,8 @@ final class PublicController
             if (!in_array($e->getMessage(), [BookingService::LIMIT_ROUND, BookingService::LIMIT_DAY], true)) {
                 $giveBack();
             }
-            $this->round($slug, [t('err.' . $e->getMessage())], ['slot_id' => ''] + $old, true);
+            $field = in_array($e->getMessage(), [BookingService::LIMIT_ROUND, BookingService::LIMIT_DAY], true) ? 'name' : 'slot_id';
+            $this->round($slug, [$field => t('err.' . $e->getMessage())], ['slot_id' => ''] + $old, true);
             return;
         }
         Abuse::booked($round);
@@ -525,29 +526,29 @@ final class PublicController
         };
     }
 
-    /** Shared validation for name/email/language/slot (also used by the admin). */
+    /** Shared validation for name/email/language/slot (also used by the admin); the keys are the ids of the fields. */
     public static function validate(array $in, bool $requireSlot): array
     {
         $errors = [];
         if ($requireSlot && (int) ($in['slot_id'] ?? 0) <= 0) {
-            $errors[] = t('err.slot');
+            $errors['slot_id'] = t('err.slot');
         }
         $name = self::cleanName((string) ($in['name'] ?? ''));
         if (mb_strlen($name) < 2 || mb_strlen($name) > 200) {
-            $errors[] = t('err.name');
+            $errors['name'] = t('err.name');
         } elseif (preg_match(self::LINK_PATTERN, $name)) {
             // The name appears in emails: no links (otherwise phishing via the school's sender address)
-            $errors[] = t('err.name_link');
+            $errors['name'] = t('err.name_link');
         }
         // An address with umlauts in the domain counts in its ASCII form (App\Email); the form keeps what was typed
         $email = trim((string) ($in['email'] ?? ''));
         if ($email !== '' && Email::normalize($email) === null) {
-            $errors[] = t('err.email');
+            $errors['email'] = t('err.email');
         }
         // A language, not a place for messages: the field is short and takes no links, like the name
         $language = self::cleanName((string) ($in['interpreter_lang'] ?? ''));
         if (mb_strlen($language) > 60 || preg_match(self::LINK_PATTERN, $language)) {
-            $errors[] = t('err.interpreter');
+            $errors['interpreter_lang'] = t('err.interpreter');
         }
         return $errors;
     }

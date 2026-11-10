@@ -58,9 +58,17 @@ The security invariants (roles in the route table, no data changes by GET, locki
 security headers on error pages, refused cross-site form posts) are in `tests/unit.d/security.php` and
 `tests/smoke.d/security.sh`; see [Security]({{ '/guide/security/' | relative_url }}).
 
-CI runs the unit tests on every push, and the smoke, browser and deployment tests against the Docker environment.
-It also runs the smoke tests against MariaDB 10.6, the minimum (`MARIADB_VERSION=10.6` for `dev/compose.yml`),
-and checks that PHP 7.4 and 8.2 get the message of `App\Platform` instead of a syntax error.
+CI runs the unit tests on every push, and the smoke, browser and deployment tests against the Docker environment
+(PHP 8.5, MariaDB 11.8, SMTP). The job *Minimum platform* runs the smoke and deployment tests once more on PHP 8.3
+and MariaDB 10.6, the minimum, and sends the mails with `mail()` as many web hosts do
+(`PHP_VERSION=8.3 MARIADB_VERSION=10.6` for `dev/compose.yml`; Mailpit's sendmail mode receives them). It also
+checks that PHP 7.4 and 8.2 get the message of `App\Platform` instead of a syntax error. A push to `main`
+deploys only after all of this has passed ([deploy gate]({{ '/guide/deployment/' | relative_url }}#deploy-gate)).
+
+The images are pinned by digest: the test environment in `dev/Dockerfile`, the PHP command line of CI in
+`dev/php-cli.Dockerfile` (`dev/php.sh 8.3 php tests/unit.php` runs the unit tests on PHP 8.3 without a local
+PHP). Dependabot proposes new digests; which versions are tested is changed by hand in these files. To switch
+versions locally, recreate the database: `docker compose -f dev/compose.yml down -v`, then `up -d --build`.
 
 ### Measuring instead of guessing
 
@@ -94,6 +102,13 @@ and checks that PHP 7.4 and 8.2 get the message of `App\Platform` instead of a s
 
 - **Language:** code, comments, commits and documentation in English (the German guide in `docs/de/` in
   German). The admin area is German or English per account, the parent pages come in six languages.
+- **Words in the interface:** a *Termin* is a time slot (English: slot), a *Buchung* is a slot that parents
+  booked or the teacher entered (*eintragen*); no "Slot" in German texts. Parents read no technical terms such as
+  "localStorage"; the privacy text is *Datenschutzhinweise* for them (*Datenschutz* as the short link in the footer).
+- **Form errors:** an error that belongs to one field is stored under the id of that field
+  (`$errors['title'] = …`), any other with a numeric key. The error list then links to the field; in the template
+  `field_attrs($errors, 'title', 'title-hint')` marks the input and `field_error($errors, 'title')` puts the message
+  next to it. A key needs an element with that id on the page, and focusable if it is not a form control.
 - **Admin texts** are written in German in the code and pass through `__()`: `__('Runde gespeichert.')`
   returns the German text as it is and, for an English account, the entry of the dictionaries in
   `app/lang/admin/en/*.php` (one file per topic, all merged; a text needs exactly one entry, as a second
@@ -201,15 +216,17 @@ changing a day, a round or an account (`ScheduleService::LOCKS`) and rebuilding 
 (`SlotGenerator::sync()`) follow it; an account's deletion first locks the rows of the active admins, so
 that one admin always remains (`AccountSecurity`).
 
-A booking runs in `Db::transaction()`: with a booking limit it locks the round
-(`BookingService::lockForLimit()`), then the slot together with its day in one joined `SELECT … FOR UPDATE`
-(`lockSlot()`), then checks for a booking of the slot. That join is the one place where a slot may be locked
-before its day, so a booking can cross a `sync()` of the same day; InnoDB then ends one of them as a deadlock.
-Bookings expect this: they retry once on a deadlock or lock wait timeout (`retryOnDeadlock()`) and then report
-the slot as taken, and `UNIQUE(slot_id)` is the hard guarantee against double bookings; the teacher's entries
-and moves go through the same methods. Changes to days, rounds and accounts (`ScheduleService`, `sync()`) do not
-retry. For new code: lock the day before its slots, and wrap new writes that use `lockSlot()` in
-`retryOnDeadlock()`. Mails go out after the commit (directly or through the outbox), never inside the
+A booking runs in `Db::transaction()`: with a booking limit it locks the round and reads it anew
+(`BookingService::lockForLimit()`), then its day, then the slot (`lockSlot()`), then checks for a booking of the
+slot. Every path locks in this order: round, day, slots, bookings. The day of the slot is read before the
+transaction, because a plain read inside it would start its snapshot before the locks. A transaction that loses a
+row lock (deadlock, lock wait timeout, a row changed since the snapshot) is repeated once from the start (`Db::retrying()`, never inside an open transaction);
+bookings then report the slot as taken, and `UNIQUE(slot_id)` is the hard guarantee against double bookings. The
+changes of `ScheduleService`, `sync()` and `keepingAnAdmin()` go through the same wrapper. A row lock is waited for
+at most 5 seconds. For new code: lock in this order, and wrap new transactions in `Db::retrying()`.
+Rules the form checks (one date per round, unique names) are also constraints in the database: a request that
+slips past the check gets the form with a message (`Db::isDuplicate()`), not an error page.
+Mails go out after the commit (directly or through the outbox), never inside the
 transaction.
 
 Background work takes named locks instead: migrations and the outbox use `GET_LOCK`; reminders and summaries
@@ -250,13 +267,23 @@ directly. An existing one runs the missing steps of `Migrations::STEPS` on the n
   rollback relies on: it switches the code, not the database.
 - PHP work of a step (filling in data) goes into `Migrations::steps()` under its number, like steps 7 and
   10, and must be repeatable as well.
+- **Checked automatically.** A unit test rejects what a step must not do (every step except 3, from before the
+  rule) and duplicate numbers. `tests/migrations.php` (part of the smoke test) brings the schema of the first
+  release up to date with some data, compares it with a new installation (tables, columns, indexes, foreign keys)
+  and runs every step since then a second time. `tests/n-1.sh` runs the latest release on the schema of the current code
+  (sign-in, booking, moving, cancelling, health check); CI does this for every push.
+- A step waits at most 10 seconds for a metadata lock (`lock_wait_timeout`, e.g. an open transaction in
+  phpMyAdmin), then gives up; after a minute's pause a later request repeats it. If the database is newer than the code (after
+  switching back), admins get one mail and a hint on the dashboard.
 - A new table goes into `Db::TABLES`, or it does not get the table prefix; no column may be named like a
   table (unit tests check both).
 - **Not** in a minor version: renaming or dropping columns and tables, changing a column's type or
   collation, new `UNIQUE` or foreign key constraints on existing columns, `ON DELETE RESTRICT`. They can
   break the previous version or fail on existing data. They wait for a major version and go in two steps
   (expand, then contract): add the new column and use it, drop the old one only in a later major version.
-  Step 3 (renaming `admin_users`, dropping columns) dates from before this rule.
+  Step 3 (renaming `admin_users`, dropping columns) dates from before this rule. Step 26 sets `UNIQUE` and `CHECK` on
+  existing columns as a deliberate exception: only where the rows allow it (otherwise it names the rounds to the operator, and a later cron run adds the rule once they are in order), and the
+  previous version already refuses such rows in its forms.
 - While the files of an update are uploaded, new code may meet the old schema for a moment. Where that
   matters (a page that must not fail), let the code fall back to the old behaviour until the step has run,
   as `RoundAccess::required()` does. Such a fallback names the migration it bridges and can go with the next

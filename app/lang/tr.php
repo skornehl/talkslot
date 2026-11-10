@@ -83,7 +83,7 @@ return [
     'privacy.summary.rights' => 'Diğerlerinin yanı sıra erişim, düzeltme, silme ve itiraz hakkınız ile bir veri koruma denetim makamına şikâyette bulunma hakkınız vardır.',
     'privacy.summary.link' => 'Haklarınız dahil veri koruma bilgilendirmesinin tamamı (erişim, silme, itiraz, şikâyet vb.)',
     'form.remember' => 'Randevumu bu cihazda hatırla (isteğe bağlı)',
-    'form.remember.hint' => 'Yalnızca randevunuzun bağlantısını bu tarayıcının belleğine (localStorage) kaydeder, böylece onu burada tekrar bulabilirsiniz. Sunucuya hiçbir şey gönderilmez. İstediğiniz zaman silebilirsiniz.',
+    'form.remember.hint' => 'Yalnızca randevunuzun bağlantısını bu tarayıcının belleğine kaydeder, böylece onu burada tekrar bulabilirsiniz. Sunucuya hiçbir şey gönderilmez. İstediğiniz zaman silebilirsiniz.',
     'form.submit' => 'Randevu al',
 
     'pin.title' => 'Kod gerekli',

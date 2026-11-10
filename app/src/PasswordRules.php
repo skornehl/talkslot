@@ -9,7 +9,8 @@ namespace App;
  *   listed word with digits or symbols before or after it ("Sommer2024!!!!", "P@ssw0rd-2024");
  * - repetitions and runs ("aaaa…", "passwortpasswort", "123456789012", "qwertzuiop12", "1q2w3e4r5t6z");
  * - personal values: username, e-mail address (and the words of its local part) and the app name.
- * All comparisons ignore case.
+ * All comparisons ignore case; those with the list and the personal values treat "ß" as "ss" ("Paßwort" is
+ * "passwort", "Straße…" contains "strasse").
  */
 final class PasswordRules
 {
@@ -37,7 +38,7 @@ final class PasswordRules
     /** On the list of common passwords, or a listed word with only digits/symbols around it? */
     public static function isCommon(#[\SensitiveParameter] string $password): bool
     {
-        $lower = mb_strtolower($password);
+        $lower = self::fold($password);
         $list = self::commonList();
         if (isset($list[$lower])) {
             return true;
@@ -68,10 +69,10 @@ final class PasswordRules
      */
     public static function containsPersonal(#[\SensitiveParameter] string $password, array $values): bool
     {
-        $lower = mb_strtolower($password);
+        $lower = self::fold($password);
         $words = preg_split('/[^\p{L}]+/u', $lower, -1, PREG_SPLIT_NO_EMPTY) ?: [];
         foreach ($values as $value) {
-            $value = mb_strtolower(trim($value));
+            $value = self::fold(trim($value));
             $at = strrpos($value, '@');
             $parts = preg_split('/[^\p{L}\p{N}]+/u', $at === false ? $value : substr($value, 0, $at), -1, PREG_SPLIT_NO_EMPTY) ?: [];
             foreach (array_merge([$value], $parts) as $part) {
@@ -82,6 +83,12 @@ final class PasswordRules
             }
         }
         return false;
+    }
+
+    /** For comparing: lower case, "ß" (also the capital "ẞ") as "ss". */
+    private static function fold(#[\SensitiveParameter] string $text): string
+    {
+        return str_replace('ß', 'ss', mb_strtolower($text));
     }
 
     /** Can the text be split into pieces of at least 3 characters that each occur in a sequence? */

@@ -133,10 +133,14 @@ final class BookingService
         // Parents may get the reminder if the round said so when they booked (the form tells them); entries
         // by the teacher only once the parents got a confirmation or change notice (see mailResult())
         $remindOk = $source === 'parent' && !empty($round['remind_parents']) ? 1 : 0;
+        $dayId = self::dayOfSlot($slotId);
         try {
-            $id = self::retryOnDeadlock(static fn (): int => Db::transaction(static function () use ($round, $slotId, $name, $email, $interpreterLang, $lang, $source, $hash, $remindOk): int {
-                $limited = $source !== 'admin' && self::lockForLimit($round);
-                $slot = self::lockSlot($slotId, (int) $round['id']);
+            $id = self::retryOnDeadlock(static fn (): int => Db::transaction(static function () use ($round, $slotId, $dayId, $name, $email, $interpreterLang, $lang, $source, $hash, $remindOk): int {
+                $limited = false;
+                if ($source !== 'admin' && ($fresh = self::lockForLimit($round)) !== null) {
+                    [$round, $limited] = [$fresh, true];
+                }
+                $slot = self::lockSlot($slotId, $dayId, (int) $round['id']);
                 self::assertFree($slot, $round, $source === 'admin');
                 if ($limited) {
                     self::assertWithinLimit($round, (string) $slot['day_date'], $name, $email);
@@ -169,11 +173,15 @@ final class BookingService
         if (!$round || (!$byAdmin && (!Db::value('SELECT is_active FROM users WHERE id = ?', [$round['user_id']]) || !Operator::ready()))) {
             throw new BookingException(self::UNAVAILABLE);
         }
+        $dayId = self::dayOfSlot($newSlotId);
         try {
-            self::retryOnDeadlock(static fn () => Db::transaction(static function () use ($booking, $newSlotId, $byAdmin, $round): void {
+            self::retryOnDeadlock(static fn () => Db::transaction(static function () use ($booking, $newSlotId, $dayId, $byAdmin, $round): void {
                 // Rebooking does not change the number of appointments; only with "per day" does another day count
-                $limited = !$byAdmin && ($round['booking_limit'] ?? 'none') === 'day' && self::lockForLimit($round);
-                $slot = self::lockSlot($newSlotId, (int) $round['id']);
+                $limited = false;
+                if (!$byAdmin && ($round['booking_limit'] ?? 'none') === 'day' && ($fresh = self::lockForLimit($round)) !== null) {
+                    [$round, $limited] = [$fresh, true];
+                }
+                $slot = self::lockSlot($newSlotId, $dayId, (int) $round['id']);
                 self::assertFree($slot, $round, $byAdmin);
                 if ($limited && (string) $slot['day_date'] !== (string) $booking['day_date']) {
                     self::assertWithinLimit($round, (string) $slot['day_date'], (string) $booking['name'], $booking['email'], (int) $booking['id']);
@@ -337,40 +345,42 @@ final class BookingService
 
     /**
      * The teacher edits a day at the same time (slots are recalculated): InnoDB may then
-     * abort one of the transactions as a deadlock or after a lock wait. Retry once, then
-     * treat it like "just taken" instead of a server error.
+     * abort one of the transactions as a deadlock or after a lock wait. Retried once (Db::retrying()), then
+     * treated like "just taken" instead of a server error.
      * @template T
      * @param callable(): T $fn
      * @return T
      */
     private static function retryOnDeadlock(callable $fn): mixed
     {
-        for ($attempt = 1; ; $attempt++) {
-            try {
-                return $fn();
-            } catch (\PDOException $e) {
-                if (!in_array((int) ($e->errorInfo[1] ?? 0), [1205, 1213], true)) {
-                    throw $e;
-                }
-                if ($attempt >= 2) {
-                    throw new BookingException(self::TAKEN);
-                }
-                usleep(50000);
-            }
+        try {
+            return Db::retrying($fn);
+        } catch (\PDOException $e) {
+            throw Db::isRetryable($e) ? new BookingException(self::TAKEN) : $e;
         }
     }
 
-    /** Locks the round for the check if it limits multiple bookings. true = limited. */
-    private static function lockForLimit(array $round): bool
+    /**
+     * Locks the round if it limits multiple bookings and reads it anew, as it may have changed since the request
+     * began (deactivated, another deadline). The round under the lock, or null if there is no limit (any more).
+     */
+    private static function lockForLimit(array $round): ?array
     {
         if (!in_array($round['booking_limit'] ?? 'none', ['round', 'day'], true)) {
-            return false;
+            return null;
         }
-        Db::one('SELECT id FROM rounds WHERE id = ? FOR UPDATE', [$round['id']]);
-        return true;
+        $fresh = Db::one('SELECT * FROM rounds WHERE id = ? FOR UPDATE', [$round['id']]);
+        if ($fresh === null) {
+            throw new BookingException(self::UNAVAILABLE);
+        }
+        return in_array($fresh['booking_limit'], ['round', 'day'], true) ? $fresh : null;
     }
 
-    /** @throws BookingException if the same person already has an appointment in the round or on that day */
+    /**
+     * Runs under the lock of the round, with only locking reads before it in the transaction: this plain read starts
+     * the snapshot and so sees the latest bookings. Share locks here would take the bookings before later days.
+     * @throws BookingException if the same person already has an appointment in the round or on that day
+     */
     private static function assertWithinLimit(array $round, string $dayDate, string $name, ?string $email, int $exceptId = 0): void
     {
         $perDay = ($round['booking_limit'] ?? 'none') === 'day';
@@ -386,23 +396,25 @@ final class BookingService
         }
     }
 
-    /**
-     * Locks the slot and, through the join, its day row. SlotGenerator::sync holds that day row while it
-     * rebuilds the slots of the day, so a booking and a sync of the same day do not interleave (where
-     * they lock in opposite order, InnoDB ends one as a deadlock; bookings retry, see retryOnDeadlock).
-     * Keep the join when changing this; sync's DELETE also checks for a booking itself.
-     */
-    private static function lockSlot(int $slotId, int $roundId): array
+    /** The day of a slot, read before the transaction: a plain read inside it would start its snapshot before the locks. */
+    private static function dayOfSlot(int $slotId): int
     {
-        $slot = Db::one(
-            'SELECT s.*, d.day_date FROM slots s JOIN round_days d ON d.id = s.day_id
-              WHERE s.id = ? AND d.round_id = ? FOR UPDATE',
-            [$slotId, $roundId]
-        );
-        if (!$slot) {
+        return (int) Db::value('SELECT day_id FROM slots WHERE id = ?', [$slotId]);
+    }
+
+    /**
+     * Locks the day row first, then the slot: everywhere the order is day, then slots (SlotGenerator::sync holds the
+     * day row while it rebuilds the slots of the day), so a booking and a sync of the same day wait for each other
+     * instead of ending in a deadlock. Keep the order when changing this; sync's DELETE also checks for a booking itself.
+     */
+    private static function lockSlot(int $slotId, int $dayId, int $roundId): array
+    {
+        $day = Db::one('SELECT day_date FROM round_days WHERE id = ? AND round_id = ? FOR UPDATE', [$dayId, $roundId]);
+        $slot = $day !== null ? Db::one('SELECT * FROM slots WHERE id = ? AND day_id = ? FOR UPDATE', [$slotId, $dayId]) : null;
+        if ($slot === null) {
             throw new BookingException(self::UNAVAILABLE);
         }
-        return $slot;
+        return $slot + $day;
     }
 
     private static function assertFree(array $slot, array $round, bool $byAdmin): void

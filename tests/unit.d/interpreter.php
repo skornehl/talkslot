@@ -6,9 +6,9 @@ check('the language is optional: nothing entered, or a language of up to 60 char
     $inValid([]) === [] && $inValid(['interpreter_lang' => '']) === [] && $inValid(['interpreter_lang' => 'Arabisch']) === []
     && $inValid(['interpreter_lang' => str_repeat('ü', 60)]) === []);
 check('longer than 60 characters, or a link: refused (a language, not a place for messages)',
-    $inValid(['interpreter_lang' => str_repeat('x', 61)]) === [t('err.interpreter')]
-    && $inValid(['interpreter_lang' => 'https://example.org']) === [t('err.interpreter')]
-    && $inValid(['interpreter_lang' => 'www.example.org']) === [t('err.interpreter')]);
+    $inValid(['interpreter_lang' => str_repeat('x', 61)]) === ['interpreter_lang' => t('err.interpreter')]
+    && $inValid(['interpreter_lang' => 'https://example.org']) === ['interpreter_lang' => t('err.interpreter')]
+    && $inValid(['interpreter_lang' => 'www.example.org']) === ['interpreter_lang' => t('err.interpreter')]);
 check('stored without control characters and surplus spaces; blank = no interpreter requested',
     App\Controller\PublicController::cleanLanguage("  Dari \t (Afghanistan)\n") === 'Dari (Afghanistan)'
     && App\Controller\PublicController::cleanLanguage('') === null && App\Controller\PublicController::cleanLanguage(" \t\n") === null

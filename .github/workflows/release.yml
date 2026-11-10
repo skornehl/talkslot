@@ -1,5 +1,7 @@
 # Manual release: Actions → Release → Run workflow (on main). The version number is derived from the
 # Conventional Commits since the last tag (bin/next-version.php: feat → minor, ! → major, otherwise patch).
+# Only for a commit on which the workflow "Tests" has passed (expert review P1-6): installations that deploy a
+# release from their own repository (deploy.yml as a reusable workflow) get tested code only.
 name: Release
 
 on:
@@ -7,6 +9,7 @@ on:
 
 permissions:
   contents: write
+  actions: read # the runs of "Tests" for this commit
 
 jobs:
   release:
@@ -27,6 +30,18 @@ jobs:
           git -c http.extraheader="$AUTH" fetch -q origin "$REF" # commit, tag or branch
           git checkout -q --detach "FETCH_HEAD^{commit}"
           git log -1 --format='Checked out: %h %s'
+
+      - name: Tests passed on this commit?
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          RUNS="$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/tests.yml/runs?head_sha=$GITHUB_SHA&event=push&per_page=100" \
+            -q '[.workflow_runs[] | .conclusion // .status] | join(" ")')"
+          echo "Runs of \"Tests\" for ${GITHUB_SHA:0:7}: ${RUNS:-none}"
+          case " $RUNS " in
+            *" success "*) ;;
+            *) echo "::error::\"Tests\" has not passed on ${GITHUB_SHA:0:7} (yet): no release. Wait for the run or fix main."; exit 1 ;;
+          esac
 
       - name: Create release
         env:

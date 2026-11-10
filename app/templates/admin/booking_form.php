@@ -13,17 +13,20 @@ $action = $booking ? url('/admin/booking/' . (int) $booking['id'] . '/edit') : u
   <?= Csrf::adminField() ?>
   <div class="field">
     <label for="name"><?= e(__('Name(n)')) ?></label>
-    <input type="text" id="name" name="name" required maxlength="200" value="<?= e($old['name']) ?>" aria-describedby="name-hint">
+    <input type="text" id="name" name="name" required maxlength="200" value="<?= e($old['name']) ?>"<?= field_attrs($errors, 'name', 'name-hint') ?>>
+    <?= field_error($errors, 'name') ?>
     <p class="hint" id="name-hint"><?= e(__('Name des Kindes wie bei der Online-Buchung, bei Bedarf mit Klasse.')) ?></p>
   </div>
   <div class="field">
     <label for="email"><?= e(__('E-Mail (optional)')) ?></label>
-    <input type="email" id="email" name="email" maxlength="254" value="<?= e($old['email']) ?>">
+    <input type="email" id="email" name="email" maxlength="254"<?= field_attrs($errors, 'email') ?> value="<?= e($old['email']) ?>">
+    <?= field_error($errors, 'email') ?>
   </div>
   <?php if (!empty($round['ask_interpreter']) || $old['interpreter_lang'] !== ''): ?>
   <div class="field">
     <label for="interpreter_lang"><?= e(__('Gespräch mit Dolmetschung gewünscht: Sprache (optional)')) ?></label>
-    <input type="text" id="interpreter_lang" name="interpreter_lang" maxlength="60" value="<?= e($old['interpreter_lang']) ?>">
+    <input type="text" id="interpreter_lang" name="interpreter_lang" maxlength="60"<?= field_attrs($errors, 'interpreter_lang') ?> value="<?= e($old['interpreter_lang']) ?>">
+    <?= field_error($errors, 'interpreter_lang') ?>
   </div>
   <?php endif; ?>
   <div class="field">

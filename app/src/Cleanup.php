@@ -40,6 +40,7 @@ final class Cleanup
     /** @return array<string,int> number of deleted/changed records per step */
     public static function run(): array
     {
+        Migrations::retryInvariants();
         $today = Time::today();
         $now = Time::nowSql();
         $stats = [];
@@ -104,6 +105,9 @@ final class Cleanup
             'UPDATE audit_log SET message = REGEXP_REPLACE(message, ?, ?) WHERE message REGEXP ?',
             ['([0-9]{2}\.[0-9]{2}\.[0-9]{4}) [0-9]{2}:[0-9]{2}', '\1', '(Buchung|booking) [0-9]{2}\.[0-9]{2}\.[0-9]{4} [0-9]{2}:[0-9]{2}']
         );
+
+        // 8b. Delete security events of the accounts after security_events_days (default 30)
+        $stats['security_events_deleted'] = SecurityEvents::expire();
 
         // 9. Give up mails in the outbox that could not be sent within 48 hours
         $stats['mails_expired'] = Outbox::expire();

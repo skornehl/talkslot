@@ -29,7 +29,7 @@ $deadlines = array_filter([
 
   <?php /* data-keep-open: the form was sent (error, language switch) – it stays visible next to remembered appointments */ ?>
   <div id="booking-area"<?= $old ? ' data-keep-open' : '' ?>>
-    <?php require __DIR__ . '/_errors.php'; ?>
+    <?php if (!$days) { $errors = array_values($errors); /* no form below to link to */ } require __DIR__ . '/_errors.php'; ?>
 
     <?php if (!$days): ?>
       <?php /* Why: all booked, the booking deadline has passed, or nothing planned (BookingService::unavailableReason()) */ ?>
@@ -43,25 +43,32 @@ $deadlines = array_filter([
       <input type="hidden" name="lang" value="<?= e(App\I18n::lang()) ?>">
       <?php if ($access !== ''): ?><input type="hidden" name="access" value="<?= e($access) ?>"><?php endif; ?>
 
-      <h2><?= e(t('round.choose')) ?></h2>
+      <h2 id="slots-title"><?= e(t('round.choose')) ?></h2>
+      <?= field_error($errors, 'slot_id') ?>
+      <?php /* The target of the link in the error list; a group of radio buttons with one message */ ?>
+      <div id="slot_id" tabindex="-1"<?= isset($errors['slot_id']) ? ' role="radiogroup" aria-labelledby="slots-title" aria-invalid="true" aria-describedby="slot_id-error"' : '' ?>>
       <?php $selected = (string) ($old['slot_id'] ?? ''); require __DIR__ . '/_slots.php'; ?>
+      </div>
 
       <h2><?= e(t('round.your_details')) ?></h2>
       <div class="field">
         <label for="name"><?= e(t('form.name')) ?> <span class="req" aria-hidden="true">*</span><span class="visually-hidden">(<?= e(t('form.required')) ?>)</span></label>
-        <input type="text" id="name" name="name" required maxlength="200" autocomplete="off" aria-describedby="name-hint" value="<?= e($old['name'] ?? '') ?>">
+        <input type="text" id="name" name="name" required maxlength="200" autocomplete="off"<?= field_attrs($errors, 'name', 'name-hint') ?> value="<?= e($old['name'] ?? '') ?>">
+        <?= field_error($errors, 'name') ?>
         <?php /* The child's name, nothing more (expert review P2-4); the sibling rule is in the info box above */ ?>
         <p class="hint" id="name-hint"><?= e(t('form.name.hint')) ?></p>
       </div>
       <div class="field">
         <label for="email"><?= e(t('form.email')) ?></label>
-        <input type="email" id="email" name="email" maxlength="254" autocomplete="email" inputmode="email" aria-describedby="email-hint" value="<?= e($old['email'] ?? '') ?>">
+        <input type="email" id="email" name="email" maxlength="254" autocomplete="email" inputmode="email"<?= field_attrs($errors, 'email', 'email-hint') ?> value="<?= e($old['email'] ?? '') ?>">
+        <?= field_error($errors, 'email') ?>
         <p class="hint" id="email-hint"><?= e(t(!empty($round['remind_parents']) ? 'form.email.hint_reminder' : 'form.email.hint')) ?></p>
       </div>
       <?php if (!empty($round['ask_interpreter'])): ?>
       <div class="field">
         <label for="interpreter_lang"><?= e(t('form.interpreter')) ?></label>
-        <input type="text" id="interpreter_lang" name="interpreter_lang" maxlength="60" autocomplete="off" aria-describedby="interpreter-hint" value="<?= e($old['interpreter_lang'] ?? '') ?>">
+        <input type="text" id="interpreter_lang" name="interpreter_lang" maxlength="60" autocomplete="off"<?= field_attrs($errors, 'interpreter_lang', 'interpreter-hint') ?> value="<?= e($old['interpreter_lang'] ?? '') ?>">
+        <?= field_error($errors, 'interpreter_lang') ?>
         <p class="hint" id="interpreter-hint"><?= e(t('form.interpreter.hint')) ?></p>
       </div>
       <?php endif; ?>

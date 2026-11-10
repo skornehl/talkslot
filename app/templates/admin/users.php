@@ -22,7 +22,7 @@
         <?php elseif ($u['must_change_password']): ?><span class="status status-off"><?= e(__('Passwortwechsel offen')) ?></span>
         <?php else: ?><span class="status status-on"><?= e(__('aktiv')) ?></span><?php endif; ?>
       </td>
-      <td class="row-actions"><a class="button button-small" href="<?= e(url('/admin/users/' . (int) $u['id'] . '/edit')) ?>"><?= e(__('Bearbeiten')) ?></a></td>
+      <td class="row-actions"><a class="button button-small" href="<?= e(url('/admin/users/' . (int) $u['id'] . '/edit')) ?>" aria-label="<?= e(__('Bearbeiten') . ': ' . ($u['display_name'] !== '' ? $u['display_name'] : $u['username'])) ?>"><?= e(__('Bearbeiten')) ?></a></td>
     </tr>
   <?php endforeach; ?>
   </tbody>

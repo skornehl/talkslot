@@ -4,7 +4,7 @@
 #   dev/phpstan.sh --generate-baseline   write the current errors to the baseline (e.g. after fixing some of them)
 # PHPStan is a development tool, never part of the app or of a build: the pinned PHAR is downloaded from the
 # PHPStan releases on GitHub into dev/data/ (not in Git) and its checksum checked on every run. It runs with the
-# local php, or in Docker (php:8.3-cli) if there is none or PHPSTAN_DOCKER=1 is set.
+# local php, or in Docker (PHP 8.3, dev/php.sh) if there is none or PHPSTAN_DOCKER=1 is set.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 VERSION=2.3.1
@@ -33,5 +33,5 @@ fi
 if [ -z "${PHPSTAN_DOCKER:-}" ] && command -v php > /dev/null; then
   php "$PHAR" "${ARGS[@]}"
 else
-  docker run --rm -v "$PWD:/app" -w /app php:8.3-cli php "$PHAR" "${ARGS[@]}"
+  dev/php.sh 8.3 php "$PHAR" "${ARGS[@]}"
 fi

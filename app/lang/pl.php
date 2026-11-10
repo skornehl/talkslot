@@ -83,7 +83,7 @@ return [
     'privacy.summary.rights' => 'Przysługuje Państwu m.in. prawo dostępu do danych, ich sprostowania i usunięcia, prawo sprzeciwu oraz prawo wniesienia skargi do organu nadzorczego ds. ochrony danych.',
     'privacy.summary.link' => 'Pełna informacja o ochronie danych, także o Państwa prawach (m.in. dostęp, usunięcie, sprzeciw, skarga)',
     'form.remember' => 'Zapamiętaj mój termin na tym urządzeniu (opcjonalnie)',
-    'form.remember.hint' => 'Zapisuje tylko link do Państwa terminu w pamięci tej przeglądarki (localStorage), aby można go było tu ponownie znaleźć. Nic nie jest przesyłane na serwer. Wpis można w każdej chwili usunąć.',
+    'form.remember.hint' => 'Zapisuje tylko link do Państwa terminu w pamięci tej przeglądarki, aby można go było tu ponownie znaleźć. Nic nie jest przesyłane na serwer. Wpis można w każdej chwili usunąć.',
     'form.submit' => 'Zarezerwuj termin',
 
     'pin.title' => 'Wymagany kod',

@@ -30,7 +30,7 @@ check "the round asks: optional field with a hint, the short privacy information
 check "round page and form say that it is on" 'curl -s -b "$J" "$B/admin/round/$IN_R" | has "Fragt nach Dolmetschung" && curl -s -b "$J" "$B/admin/round/$IN_R/edit" | grep -q "id=\"ask_interpreter\" name=\"ask_interpreter\" value=\"1\" checked"'
 IN_LONG=$(printf 'x%.0s' $(seq 61))
 IN_X=$(in_book "$IN_S" "Familie Zulang $IN_N" "" "$IN_LONG")
-check "too long: message, nothing booked, the input stays" 'echo "$IN_X" | has "höchstens 60 Zeichen" && echo "$IN_X" | has "value=\"$IN_LONG\"" && [ "$(in_rows "Familie Zulang $IN_N")" = 0 ]'
+check "too long: message, nothing booked, the input stays" 'echo "$IN_X" | has "höchstens 60 Zeichen" && echo "$IN_X" | has "href=\"#interpreter_lang\"" && echo "$IN_X" | has "id=\"interpreter_lang-error\"" && echo "$IN_X" | grep -qE "id=\"interpreter_lang\"[^>]*aria-invalid=\"true\"" && echo "$IN_X" | has "value=\"$IN_LONG\"" && [ "$(in_rows "Familie Zulang $IN_N")" = 0 ]'
 IN_X=$(in_book "$IN_S" "Familie Link $IN_N" "" "https://example.org/x")
 check "a link: message, nothing booked" 'echo "$IN_X" | has "keine Links" && [ "$(in_rows "Familie Link $IN_N")" = 0 ]'
 IN_X=$(in_book "$IN_S" "Familie Sprachwechsel $IN_N" "" "Arabisch" 1 "switch_lang=en")
@@ -60,7 +60,8 @@ check "editing the entry: the field has the value" 'curl -s -b "$J" "$B/admin/bo
 in_change() { curl -s -b "$J" --data-urlencode "csrf=$T" --data-urlencode "name=Familie Eintrag $IN_N" --data-urlencode "interpreter_lang=$1" -d "lang=de" "$B/admin/booking/$IN_B/edit"; }
 in_change "Dari" >/dev/null
 check "editing the entry: changed" '[ "$(in_lang "Familie Eintrag $IN_N")" = Dari ]'
-check "editing the entry: too long → message, unchanged" 'in_change "$IN_LONG" | has "höchstens 60 Zeichen" && [ "$(in_lang "Familie Eintrag $IN_N")" = Dari ]'
+IN_X=$(in_change "$IN_LONG")
+check "editing the entry: too long → message at the field, unchanged" 'echo "$IN_X" | has "höchstens 60 Zeichen" && echo "$IN_X" | has "href=\"#interpreter_lang\"" && echo "$IN_X" | grep -qE "id=\"interpreter_lang\"[^>]*aria-invalid=\"true\"" && [ "$(in_lang "Familie Eintrag $IN_N")" = Dari ]'
 
 # What is copied with the round
 IN_D=$(curl -s -o /dev/null -w '%{redirect_url}' -b "$J" -d "csrf=$T" "$B/admin/round/$IN_R/duplicate" | grep -o '[0-9]*$')

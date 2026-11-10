@@ -16,10 +16,11 @@ This page explains the design decisions; it is not legal advice.
 | Mail queue entry: which mail is due for which booking or account (no address, text or link) | database | once sent, after 48 hours at the latest, with the booking |
 | Cancellation by the teacher in the mail queue: address, language, name, appointment and teacher (name and address for replies; no address once the account is deleted) of the deleted booking (no link) | database | once sent, after 48 hours at the latest |
 | Shortened, HMAC-hashed IP addresses; HMAC hashes of account IDs and known-device cookies with failed logins; HMAC hashes of e-mail addresses with the number of mails parents triggered to them | database (rate limiting) | after 24 hours at the latest |
-| Known-device cookie of an admin or teacher account (random number, time, signature) | that person's browser | after 365 days, renewed at every sign-in |
+| Known-device cookie of an admin or teacher account (random number, time, signature) | that person's browser | after 365 days, renewed at every sign-in; invalid after a new password or when all sessions are ended; at most 20 per browser |
 | Teacher accounts | database | by an admin; inactive accounts without rounds in use 15 months after the last login, together with their drafts |
 | Summary mails to teachers (by default the number of appointments and the link, no names; time and name only where the school allows them; never e-mail addresses) | teacher's mailbox | with names: by the end of the school year at the latest (privacy template; operated privately the template recommends it, the school's rules apply) |
 | Log of admin changes (who, when, what; no names or e-mail addresses of parents, bookings with their date only) | database | after 90 days (`audit_log_days`) |
+| Security events of an account (password, e-mail address, admin rights, requested reset links, sign-in limit; time, whether an admin made the change; no IP address or device), visible only to the account holder | database | after 30 days (`security_events_days`), and with the account |
 
 TalkSlot keeps **no** access logs of its own. The web server's logs are the web host's responsibility;
 ask how long they are kept and state it in the privacy policy.
@@ -90,6 +91,13 @@ ask how long they are kept and state it in the privacy policy.
   not end up in private mailboxes through the browser's mail program. Whoever gets no mail is named once
   in the message afterwards, with the appointment and the address if there is one (the round page showed
   both before), so that the teacher can tell them in person, ideally from the school's mail account.
+- **Admins and the parents' data:** an admin sees how another teacher's round is booked, but names and e-mail
+  addresses only after choosing *Vertretung übernehmen* (take over as substitute) for it, with the password. That lasts
+  for the sign-in, the teacher gets an e-mail (if the account has an address; otherwise the admin is told) and the log records it. This is the technical measure against unnecessary disclosure
+  (Art. 5(1)(c), (f), Art. 25 GDPR), for example where a parent is the volunteer admin; it does not replace
+  instructing admins and committing them to confidentiality.
+  The one exception is the search for an access request (*Auskunft zu einer E-Mail-Adresse*): it shows the bookings of
+  one given address across all rounds, only with the box that it answers such a request, and it is logged.
 - **Admin log without monitoring teachers:** only changes made by admin accounts are logged, so it shows
   who among several admins did what. What teachers do in their own rounds is not recorded, and bookings
   appear with their date only: with the time, an entry together with a summary mail or a printed list would
@@ -97,6 +105,11 @@ ask how long they are kept and state it in the privacy policy.
   point to a family (one booking on a day), so the entries remain pseudonymous data, visible to admins only.
   Entries from before this change lose their time on the next clean-up run. Depending on your state, a log of staff actions may still be a matter for
   the staff council (*Personalrat*); you can shorten the retention with `audit_log_days`.
+- **Security events only for the account holder:** after an incident a teacher can see what happened to the
+  account (*Mein Profil → Sicherheit*), without a means to monitor the staff: no sign-ins, no IP address, nothing
+  visible to admins in the application (only whoever can read the database or its backups), failed sign-ins only
+  as a number. Involve the staff council before introducing it and agree on the retention (30 days by default,
+  `security_events_days`, 90 at most).
 - **Sign-in times only in coarse steps:** the time of the last sign-in is stored (to tidy up unused
   accounts), but the users list only shows *never*, *within the last 12 months* or *more than 12 months
   ago*, so admins do not see when colleagues work. Security mails about account changes name the account

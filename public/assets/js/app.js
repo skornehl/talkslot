@@ -206,6 +206,23 @@ var L = (function () {
     }
   }
 
+  // A link or redirect to a folded section (#translations, a day): open it and show the messages there, as the
+  // ones at the top of the page are out of sight then
+  var jumpedTo = window.location.hash.length > 1 ? document.getElementById(window.location.hash.slice(1)) : null;
+  if (jumpedTo && document.body.classList.contains('admin')) {
+    if (jumpedTo.tagName === 'DETAILS') { jumpedTo.open = true; }
+    var flashes = document.querySelectorAll('[data-flash]');
+    Array.prototype.forEach.call(flashes, function (flash) { jumpedTo.parentNode.insertBefore(flash, jumpedTo); });
+    var breakForm = jumpedTo.querySelector('.add-break');
+    if (breakForm && document.querySelector('[data-flash="error"]')) { breakForm.open = true; }
+  }
+
+  // A field the browser refuses inside a folded section: open it, or the message cannot be shown
+  document.addEventListener('invalid', function (ev) {
+    var folded = ev.target.closest ? ev.target.closest('details') : null;
+    if (folded) { folded.open = true; }
+  }, true);
+
   // Focus the error box after submitting (screen readers)
   var errors = document.getElementById('form-errors');
   if (errors) {
@@ -214,16 +231,33 @@ var L = (function () {
 
   // Copy link (admin, and the parents' appointment page with texts in the page language; there the
   // button is hidden until JavaScript runs)
+  // "Kopiert" only changes the text of the button: screen readers hear it from a status region
+  var copyStatus = null;
+  var copyClear = null;
+  if (document.querySelector('[data-copy]')) {
+    copyStatus = document.createElement('div');
+    copyStatus.setAttribute('role', 'status');
+    copyStatus.className = 'visually-hidden';
+    copyStatus.setAttribute('data-copy-status', '');
+    document.body.appendChild(copyStatus);
+  }
   Array.prototype.forEach.call(document.querySelectorAll('[data-copy]'), function (btn) {
     var original = btn.textContent;
     var copied = btn.getAttribute('data-copy-done') || L('Kopiert ✓');
     var ask = btn.getAttribute('data-copy-prompt') || L('Link kopieren:');
+    var restore = null;
     btn.hidden = false;
     btn.addEventListener('click', function () {
       var text = btn.getAttribute('data-copy');
       var done = function () {
         btn.textContent = copied;
-        setTimeout(function () { btn.textContent = original; }, 2000);
+        // Emptied first, so that a second copy within the two seconds is announced as well
+        copyStatus.textContent = '';
+        window.setTimeout(function () { copyStatus.textContent = copied.replace(/\s*✓$/, ''); }, 50);
+        window.clearTimeout(copyClear);
+        copyClear = window.setTimeout(function () { copyStatus.textContent = ''; }, 2000);
+        window.clearTimeout(restore);
+        restore = window.setTimeout(function () { btn.textContent = original; }, 2000);
       };
       if (navigator.clipboard && window.isSecureContext) {
         navigator.clipboard.writeText(text).then(done, function () { window.prompt(ask, text); });
@@ -417,6 +451,13 @@ var L = (function () {
       var ok = document.querySelectorAll('fieldset[lang] legend .status.status-on');
       var counter = document.querySelector('[data-bt-counter]');
       if (counter) { counter.textContent = L('({ok} von {all} aktuell)', { ok: ok.length, all: all.length }); }
+      var behind = document.querySelector('[data-bt-behind]');
+      if (behind) {
+        var names = Array.prototype.map.call(document.querySelectorAll('fieldset[lang]'), function (f) {
+          return f.querySelector('legend .status.status-on') ? '' : f.getAttribute('data-lang-name');
+        }).filter(Boolean);
+        behind.textContent = names.length ? L('– fehlt oder veraltet: {languages}', { languages: names.join(', ') }) : '';
+      }
     }
 
     function saveOne(r, force) {
@@ -567,11 +608,14 @@ var L = (function () {
   }
   Array.prototype.forEach.call(document.querySelectorAll('[data-day-fields]'), function (box) {
     var preview = box.querySelector('[data-slot-preview]');
+    var conflicts = box.querySelector('[data-slot-conflicts]');
+    var status = box.querySelector('[data-slot-status]');
+    var announce = null;
     function update() {
       var from = minutes(box.querySelector('[name="start_time"]').value);
       var to = minutes(box.querySelector('[name="end_time"]').value);
       var len = parseInt(box.querySelector('[name="slot_minutes"]').value, 10);
-      if (from === null || to === null || !(len >= 5) || from >= to) { preview.hidden = true; return; }
+      if (from === null || to === null || !(len >= 5) || from >= to) { preview.hidden = true; if (conflicts) { conflicts.hidden = true; } return; }
       var starts = box.querySelectorAll('[name="break_start[]"]');
       var ends = box.querySelectorAll('[name="break_end[]"]');
       var breaks = [];
@@ -596,6 +640,21 @@ var L = (function () {
           : L('Vorschau: {count} Termine pro Tag: {slots}', { count: slots.length, slots: slots.join(', ') }))
         : L('Mit diesen Zeiten entsteht kein Termin.');
       preview.hidden = false;
+      // "Tag bearbeiten": a booking keeps its slot if its start time is still in the schedule (SlotGenerator::sync),
+      // otherwise it becomes a conflict
+      var lost = (box.getAttribute('data-booked') || '').split(',').filter(function (start) {
+        return start && !slots.some(function (slot) { return slot.slice(0, 5) === start; });
+      }).length;
+      var lostText = lost ? L('{count} gebuchte(r) Termin(e) passen nicht mehr in diesen Zeitplan und würden als Konflikt markiert.', { count: lost }) : '';
+      if (conflicts) {
+        conflicts.textContent = lostText;
+        conflicts.hidden = !lost;
+      }
+      // Announced once typing has paused, without reading the whole list on every key
+      window.clearTimeout(announce);
+      announce = window.setTimeout(function () {
+        status.textContent = (slots.length ? L('{count} Termine pro Tag', { count: slots.length }) : L('Mit diesen Zeiten entsteht kein Termin.')) + (lost ? ' ' + lostText : '');
+      }, 500);
     }
     box.addEventListener('input', update);
     box.addEventListener('change', update);
@@ -605,6 +664,7 @@ var L = (function () {
       addDate.addEventListener('click', function () {
         var inputs = box.querySelectorAll('[name="day_dates[]"]');
         var n = inputs[inputs.length - 1].cloneNode();
+        ['id', 'aria-invalid', 'aria-describedby'].forEach(function (a) { n.removeAttribute(a); }); // those of the first date
         n.value = ''; n.required = false; n.setAttribute('aria-label', L('Datum {n}', { n: inputs.length + 1 }));
         addDate.parentNode.insertBefore(n, addDate);
         n.focus();

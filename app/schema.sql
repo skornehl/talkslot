@@ -76,6 +76,8 @@ CREATE TABLE IF NOT EXISTS rounds (
   UNIQUE KEY uq_rounds_slug (slug),
   UNIQUE KEY uq_rounds_code (code),
   KEY idx_rounds_user (user_id),
+  KEY idx_rounds_expired (expired_at),
+  CONSTRAINT ck_rounds_limit CHECK (booking_limit IN ('none', 'round', 'day')),
   CONSTRAINT fk_rounds_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -88,6 +90,9 @@ CREATE TABLE IF NOT EXISTS round_days (
   slot_minutes SMALLINT UNSIGNED NOT NULL,
   location VARCHAR(200) NULL,
   KEY idx_days_round (round_id, day_date),
+  KEY idx_days_date (day_date),
+  UNIQUE KEY uq_days_round_date (round_id, day_date),
+  CONSTRAINT ck_days_times CHECK (start_time < end_time AND slot_minutes > 0),
   CONSTRAINT fk_days_round FOREIGN KEY (round_id) REFERENCES rounds (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -182,14 +187,33 @@ CREATE TABLE IF NOT EXISTS round_templates (
 
 -- Log of the changes made by admins (who, when, what), without data of parents.
 -- Deleted after audit_log_days (default 90). actor: name at the time of the change.
+-- action, round_id, params: what the entry is about, structured (App\Audit::PARAM_KEYS, no data of parents).
 CREATE TABLE IF NOT EXISTS audit_log (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   created_at DATETIME NOT NULL,
   user_id INT UNSIGNED NULL,
   actor VARCHAR(254) NOT NULL,
   message VARCHAR(1000) NOT NULL,
+  action VARCHAR(40) NULL,
+  round_id INT UNSIGNED NULL,
+  params VARCHAR(500) NULL,
   KEY idx_audit_created (created_at),
+  KEY idx_audit_round (round_id),
   CONSTRAINT fk_audit_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Security events of an account, shown only to the account holder (App\SecurityEvents): password, e-mail address,
+-- admin rights, sign-in limit reached. No IP, no device; by_admin: an admin made the change (not who).
+-- Deleted after security_events_days (default 30) and with the account.
+CREATE TABLE IF NOT EXISTS security_events (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  user_id INT UNSIGNED NOT NULL,
+  event VARCHAR(30) NOT NULL,
+  by_admin TINYINT(1) NOT NULL DEFAULT 0,
+  created_at DATETIME NOT NULL,
+  KEY idx_security_events_user (user_id, created_at),
+  KEY idx_security_events_created (created_at),
+  CONSTRAINT fk_security_events_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Delivery log of the summary emails (prevents duplicate sends), without content
@@ -199,6 +223,7 @@ CREATE TABLE IF NOT EXISTS sent_summaries (
   ref VARCHAR(40) NOT NULL,
   sent_at DATETIME NOT NULL,
   PRIMARY KEY (user_id, kind, ref),
+  KEY idx_summaries_sent (sent_at),
   CONSTRAINT fk_summaries_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

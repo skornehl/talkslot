@@ -33,7 +33,7 @@ check "CLI installer after installation: abort" 'dcx exec -T app php /srv/app/bi
 # Reinstall, this time via the web installer (same credentials as dev/reset.sh). It deletes
 # itself after success; the file is restored afterwards.
 INSTALL_BAK=$(mktemp); cp "$ROOT/public/install.php" "$INSTALL_BAK"
-dcx exec -T db mariadb -uapp -papp-dev-only talkslot -e "SET FOREIGN_KEY_CHECKS=0; DROP TABLE IF EXISTS tp_round_trash, tp_mail_outbox, tp_round_templates, tp_audit_log, tp_round_translations, tp_sent_summaries, tp_bookings, tp_slots, tp_day_breaks, tp_round_days, tp_rounds, tp_pages, tp_rate_limits, tp_settings, tp_users, tp_admin_users; CREATE TABLE tp_users (id INT)"
+dcx exec -T db mariadb -uapp -papp-dev-only talkslot -e "SET FOREIGN_KEY_CHECKS=0; DROP TABLE IF EXISTS tp_security_events, tp_round_trash, tp_mail_outbox, tp_round_templates, tp_audit_log, tp_round_translations, tp_sent_summaries, tp_bookings, tp_slots, tp_day_breaks, tp_round_days, tp_rounds, tp_pages, tp_rate_limits, tp_settings, tp_users, tp_admin_users; CREATE TABLE tp_users (id INT)"
 dcx exec -T app php -r '@unlink("/srv/app/app/var/installed.lock");'
 check "installer reachable while not installed" 'curl -s "$B/install.php" | grep -q "name=\"install_key\""'
 check "CLI installer: different passwords, no operator type → abort, the usage names the three input lines" 'O=$(printf "Sehr-Sicheres-Pw-1\nanderes-Passwort-2\n" | dcx exec -T app php /srv/app/bin/install.php sabrina 2>&1); echo "$O" | grep -q "Passwörter stimmen nicht überein" && echo "$O" | grep -q "Bitte wählen Sie die Betriebsart" && echo "$O" | grep -qF "Input: password, password again, operator type (school or private), one per line"'
@@ -64,7 +64,7 @@ check "POST without CSRF is rejected" '[ "$code" = 303 ] && ! curl -s -b "$J" "$
 NF=$(curl -s -b "$J" "$B/admin/round/new")
 check "new round: no empty break rows, only the template for '+ add break'" '[ "$(echo "$NF" | grep -c "name=\"break_start\[\]\"")" = 1 ] && echo "$NF" | grep -q "<template data-break-template>"'
 EB=$(curl -s -b "$J" --data-urlencode "csrf=$T" -d "title=Pausenfehler&booking_deadline_hours=0&cancel_deadline_hours=0&day_dates%5B%5D=$(date -d '+3 day' +%F)&start_time=14:00&end_time=16:00&slot_minutes=15&break_start%5B%5D=15:00&break_end%5B%5D=&break_label%5B%5D=" "$B/admin/round/new")
-check "invalid break: message, no additional empty row" 'echo "$EB" | grep -q "Pause 1: Bitte Start- und Endzeit" && [ "$(echo "$EB" | grep -c "name=\"break_start\[\]\"")" = 1 ]'
+check "invalid break: message, the row stays as entered, no additional empty one" 'echo "$EB" | grep -q "Pause 1: Bitte Start- und Endzeit" && [ "$(echo "$EB" | grep -c "name=\"break_start\[\]\"")" = 2 ] && echo "$EB" | grep -q "name=\"break_start\[\]\" value=\"15:00\""'
 EB=$(curl -s -b "$J" --data-urlencode "csrf=$T" -d "title=Pausenfehler&booking_deadline_hours=0&cancel_deadline_hours=0&day_dates%5B%5D=&start_time=14:00&end_time=16:00&slot_minutes=15&break_start%5B%5D=15:00&break_end%5B%5D=15:30&break_label%5B%5D=Kaffee" "$B/admin/round/new")
 check "entered break is kept after an error" 'echo "$EB" | grep -q "value=\"Kaffee\"" && [ "$(echo "$EB" | grep -c "name=\"break_start\[\]\"")" = 2 ]'
 
@@ -507,7 +507,9 @@ check "admin's edit form preselects the round's teacher" 'curl -s -b "$J" "$B/ad
 curl -s -o /dev/null -b "$J" --data-urlencode "csrf=$TA" -d "title=Vom+Admin+bearbeitet&is_active=1&booking_deadline_hours=0&cancel_deadline_hours=0" "$B/admin/round/$R4/edit"
 check "saving without teacher field keeps the round with the teacher" '[ "$($DC exec -T db mariadb -uapp -papp-dev-only talkslot -Ne "SELECT user_id FROM tp_rounds WHERE id=$R4")" = "$U2" ]'
 check "navigation: admin 'Alle Runden', teacher 'Meine Runden'" 'curl -s -b "$J" "$B/admin" | grep -q ">Alle Runden<" && curl -s -c "$J2" -b "$J2" "$B/admin" | grep -q ">Meine Runden<"'
-# Admin works in the teacher's round: day, print view, create booking (mail with the teacher's Reply-To) and delete it
+# Admin works in the teacher's round after taking it over (tests/smoke.d/substitution.sh): day, print view, create
+# booking (mail with the teacher's Reply-To) and delete it
+curl -s -o /dev/null -b "$J" --data-urlencode "csrf=$TA" --data-urlencode "current_password=$PASS" "$B/admin/round/$R4/substitute"
 D4=$(curl -s -b "$J" "$B/admin/round/$R4" | grep -o '/admin/day/[0-9]*/edit' | head -1)
 check "admin: day and print view of a teacher's round" '[ -n "$D4" ] && [ "$(curl -s -o /dev/null -w "%{http_code}" -b "$J" "$B$D4")" = 200 ] && [ "$(curl -s -o /dev/null -w "%{http_code}" -b "$J" "$B/admin/round/$R4/print")" = 200 ]'
 SL4=$(curl -s -b "$J" "$B/admin/round/$R4" | grep -o '/admin/slot/[0-9]*/book' | head -1)
@@ -702,7 +704,7 @@ check "form 'create entry'" 'curl -s -b "$J" "$B/admin/slot/${SLOTS[0]}/book" | 
 check "entry without name rejected" 'curl -s -b "$J" -d "csrf=$T&name=&lang=de" "$B/admin/slot/${SLOTS[0]}/book" | has "Bitte geben Sie einen Namen an"'
 curl -s -o /dev/null -b "$J" -d "csrf=$T&name=Hand+Eins&email=hand@example.org&lang=de" "$B/admin/slot/${SLOTS[0]}/book"
 curl -s -o /dev/null -b "$J" -d "csrf=$T&name=Hand+Zwei&lang=de" "$B/admin/slot/${SLOTS[1]}/book"
-check "taken slot: second entry rejected" 'curl -s -L -b "$J" -d "csrf=$T&name=Doppelt&lang=de" "$B/admin/slot/${SLOTS[0]}/book" | has "Dieser Slot ist bereits belegt" && ! curl -s -b "$J" "$B/admin/round/$RA" | has "Doppelt"'
+check "taken slot: second entry rejected" 'curl -s -L -b "$J" -d "csrf=$T&name=Doppelt&lang=de" "$B/admin/slot/${SLOTS[0]}/book" | has "Dieser Termin ist bereits gebucht" && ! curl -s -b "$J" "$B/admin/round/$RA" | has "Doppelt"'
 BK1=$(DBQ "SELECT id FROM tp_bookings WHERE name='Hand Eins'")
 check "form 'edit entry' with move target" 'curl -s -b "$J" "$B/admin/booking/$BK1/edit" | has "Eintrag bearbeiten"'
 check "editing without name rejected" 'curl -s -b "$J" -d "csrf=$T&name=&lang=de" "$B/admin/booking/$BK1/edit" | has "Bitte geben Sie einen Namen an"'
@@ -859,7 +861,7 @@ OUT=$($DC exec -T app php /srv/app/bin/cron.php -v)
 FM=$($DC exec -T app php -r '$r=json_decode(file_get_contents("http://mail:8025/api/v1/search?query=subject:%22Buchungsschluss:%20Fristtest%22"),true); echo json_decode(file_get_contents("http://mail:8025/api/v1/message/".($r["messages"][0]["ID"] ?? "x")),true)["Text"] ?? "";')
 check "summary at the booking deadline: the number of appointments and the free slots, no name" 'echo "$OUT" | grep -qE "summaries_deadline +[1-9]" && echo "$FM" | has "  1 Termin um 10:00" && ! echo "$FM" | has "Frist Kind" && echo "$FM" | has "(1 Termin blieb frei)"'
 check "summary at the booking deadline only once" '$DC exec -T app php /srv/app/bin/cron.php -v | grep -qE "summaries_deadline +0"'
-check "delete account with all rounds" 'curl -s -L -b "$J" -d "csrf=$T&confirm=1" "$B/admin/users/$U3/delete" | has "mit allen Runden und Buchungen gelöscht" && [ -z "$(DBQ "SELECT id FROM tp_rounds WHERE id=$RA")" ]'
+check "delete account with all rounds" 'curl -s -L -b "$J" -d "csrf=$T&confirm=1" --data-urlencode "current_password=$PASS" "$B/admin/users/$U3/delete" | has "mit allen Runden und Buchungen gelöscht" && [ -z "$(DBQ "SELECT id FROM tp_rounds WHERE id=$RA")" ]'
 
 echo "Security (audit)"
 T=$(curl -s -b "$J" "$B/admin" | csrf)
