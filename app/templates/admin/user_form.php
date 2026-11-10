@@ -87,7 +87,7 @@
     <?php if ($parents['mailable'] > 0): ?>
     <label class="small"><input type="checkbox" name="notify" value="1" checked> <?= e(__('Eltern per E-Mail informieren')) ?></label>
     <?php endif; ?>
-    <?php if ($user['role'] === 'admin'): ?>
+    <?php if ($user['role'] === 'admin' || $parents['upcoming'] > 0): ?>
     <label class="small" for="delete_password"><?= e(__('Ihr Passwort (zur Bestätigung)')) ?></label>
     <input type="password" id="delete_password" name="current_password" required autocomplete="current-password">
     <?php endif; ?>

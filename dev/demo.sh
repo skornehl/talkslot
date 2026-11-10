@@ -24,6 +24,9 @@ curl -s -o /dev/null -b "$J" --data-urlencode "csrf=$T" \
   --data-urlencode $'controller_contact=Gesamtschule am See\nVertreten durch die Schulleitung\nSeeweg 12\n12345 Seestadt\nE-Mail: sekretariat@example.org' \
   "$B/admin/texts/operator"
 
+# Who parents can ask when they are stuck
+curl -s -o /dev/null -b "$J" --data-urlencode "csrf=$T" --data-urlencode "parent_contact=Sekretariat, Telefon 01234 5678, montags bis freitags 8 bis 12 Uhr" "$B/admin/texts/contact"
+
 # Privacy policy: the details in [SQUARE BRACKETS] that only the school can provide, and the web host (not
 # configured locally). Rounds can only be activated once no placeholder is left.
 legal() { # legal <lang>: the template with example details

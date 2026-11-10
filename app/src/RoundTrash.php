@@ -87,7 +87,13 @@ final class RoundTrash
                 'INSERT INTO rounds (' . implode(', ', $columns) . ') VALUES (' . implode(', ', array_fill(0, count($columns), '?')) . ')',
                 array_map(static fn (string $column): mixed => $round[$column], $columns)
             );
+            $dates = [];
             foreach ($data['days'] as $day) {
+                // From before the rules of step 26: a date entered twice (double click) comes back once, an impossible day not at all
+                if (isset($dates[$day['day_date']]) || $day['start_time'] >= $day['end_time'] || (int) $day['slot_minutes'] <= 0) {
+                    continue;
+                }
+                $dates[$day['day_date']] = true;
                 $dayId = Db::insert(
                     'INSERT INTO round_days (round_id, day_date, start_time, end_time, slot_minutes, location) VALUES (?, ?, ?, ?, ?, ?)',
                     [$newId, $day['day_date'], $day['start_time'], $day['end_time'], $day['slot_minutes'], $day['location']]

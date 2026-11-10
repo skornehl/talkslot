@@ -10,7 +10,7 @@ namespace App;
  */
 final class Migrations
 {
-    public const LATEST = 24;
+    public const LATEST = 27;
 
     /** Version => SQL statements */
     private const STEPS = [
@@ -193,6 +193,27 @@ final class Migrations
                 KEY idx_trash_user (user_id), KEY idx_trash_deleted (deleted_at),
                 CONSTRAINT fk_trash_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
              ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        ],
+        // 25: security events of an account, for the account holder only (expert review P2-9): password,
+        //     address, admin rights, sign-in limit; no IP.
+        25 => [
+            "CREATE TABLE IF NOT EXISTS security_events (
+                id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY, user_id INT UNSIGNED NOT NULL, event VARCHAR(30) NOT NULL,
+                by_admin TINYINT(1) NOT NULL DEFAULT 0, created_at DATETIME NOT NULL,
+                KEY idx_security_events_user (user_id, created_at), KEY idx_security_events_created (created_at),
+                CONSTRAINT fk_security_events_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+        ],
+        // 26: PHP step only (addInvariants): indexes for the date filters, rules of days and rounds in the database
+        26 => [],
+        // 27: the log says in a structured form what an entry is about (expert review P2-10): kind of change, round
+        //     (no foreign key: the entry outlives the round), a few values without data of parents. Entries from
+        //     before keep their text. 25 belongs to another change.
+        27 => [
+            'ALTER TABLE audit_log ADD COLUMN IF NOT EXISTS action VARCHAR(40) NULL AFTER message,
+                ADD COLUMN IF NOT EXISTS round_id INT UNSIGNED NULL AFTER action,
+                ADD COLUMN IF NOT EXISTS params VARCHAR(500) NULL AFTER round_id,
+                ADD KEY IF NOT EXISTS idx_audit_round (round_id)',
         ],
     ];
 
@@ -393,8 +414,86 @@ final class Migrations
                 if ($version === 10) {
                     self::pinToCode();
                 }
+                if ($version === 26) {
+                    self::reportSkipped(self::addInvariants());
+                }
                 Settings::set('schema_version', (string) $version);
             }
+        }
+    }
+
+    /**
+     * Indexes for the date filters of the clean-up, reminders and summaries, and the rules of days and rounds as
+     * constraints of the database (expert review P2-6), one ALTER per table. Existing rows can break a rule (two
+     * entries for one date from a double click): that constraint is then left out, as a failing step would block
+     * every later one, and retryInvariants() adds it once the rows allow it. The checks of the forms stay.
+     * Repeatable: IF NOT EXISTS.
+     * @return list<string> the rules left out, with the rounds concerned
+     */
+    private static function addInvariants(): array
+    {
+        $skipped = [];
+        $days = ['ADD KEY IF NOT EXISTS idx_days_date (day_date)'];
+        $ids = self::roundsIn('SELECT round_id AS id FROM round_days GROUP BY round_id, day_date HAVING COUNT(*) > 1');
+        if ($ids === '') {
+            $days[] = 'ADD UNIQUE KEY IF NOT EXISTS uq_days_round_date (round_id, day_date)';
+        } else {
+            $skipped[] = "Ein Tag darf je Runde nur einmal vorkommen (mehrere Einträge für dasselbe Datum). Runden: $ids";
+        }
+        $ids = self::roundsIn('SELECT round_id AS id FROM round_days WHERE NOT (start_time < end_time AND slot_minutes > 0)');
+        if ($ids === '') {
+            $days[] = 'ADD CONSTRAINT IF NOT EXISTS ck_days_times CHECK (start_time < end_time AND slot_minutes > 0)';
+        } else {
+            $skipped[] = "Beginn vor Ende und Termindauer über 0 bei den Tagen. Runden: $ids";
+        }
+        Db::execRaw('ALTER TABLE round_days ' . implode(', ', $days));
+        $rounds = ['ADD KEY IF NOT EXISTS idx_rounds_expired (expired_at)'];
+        $ids = self::roundsIn("SELECT id FROM rounds WHERE booking_limit NOT IN ('none', 'round', 'day')");
+        if ($ids === '') {
+            $rounds[] = "ADD CONSTRAINT IF NOT EXISTS ck_rounds_limit CHECK (booking_limit IN ('none', 'round', 'day'))";
+        } else {
+            $skipped[] = "Gültige Werte für die Begrenzung der Buchungen je Runde. Runden: $ids";
+        }
+        Db::execRaw('ALTER TABLE rounds ' . implode(', ', $rounds));
+        Db::execRaw('ALTER TABLE sent_summaries ADD KEY IF NOT EXISTS idx_summaries_sent (sent_at)');
+        return $skipped;
+    }
+
+    /** The ids (at most 20, for the report) that $sql, a SELECT of a column "id", returns. */
+    private static function roundsIn(string $sql): string
+    {
+        return implode(', ', array_unique(array_map('strval', array_column(Db::all($sql . ' LIMIT 20'), 'id'))));
+    }
+
+    /** @param list<string> $skipped */
+    private static function reportSkipped(array $skipped): void
+    {
+        if ($skipped === []) {
+            return;
+        }
+        Settings::set('schema_rules_skipped', '1');
+        ErrorPage::writeLog('Migration 26: rules not set, the rows break them: ' . implode(' ', $skipped));
+        Alert::notify('schema-rules', 'Datenbank: Regel nicht gesetzt', array_merge(
+            ['Vorhandene Daten verletzen diese Regeln, sie wurden deshalb nicht in der Datenbank gesetzt (die Formulare prüfen sie weiterhin).',
+             'Sie werden beim nächsten Cronjob gesetzt, sobald die Daten in Ordnung sind.'],
+            $skipped
+        ));
+    }
+
+    /** Each clean-up run: adds the rules step 26 had to leave out once the rows allow it. No further mail. */
+    public static function retryInvariants(): void
+    {
+        if (Settings::get('schema_rules_skipped') !== '1' || !Db::lock('migrate', 0)) {
+            return;
+        }
+        try {
+            if (self::addInvariants() === []) {
+                Settings::set('schema_rules_skipped', '0');
+            }
+        } catch (\Throwable $e) {
+            ErrorPage::log($e); // the clean-up goes on; the next run tries again
+        } finally {
+            Db::unlock('migrate');
         }
     }
 

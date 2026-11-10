@@ -64,14 +64,14 @@ final class AccountSecurity
      */
     public static function keepingAnAdmin(int $userId, bool $remainsAdmin, \Closure $change): bool
     {
-        return (bool) Db::transaction(static function () use ($userId, $remainsAdmin, $change): bool {
+        return (bool) Db::retrying(static fn (): bool => Db::transaction(static function () use ($userId, $remainsAdmin, $change): bool {
             $admins = array_map('intval', array_column(Db::all("SELECT id FROM users WHERE role = 'admin' AND is_active = 1 FOR UPDATE"), 'id'));
             if (!$remainsAdmin && array_diff($admins, [$userId]) === []) {
                 return false;
             }
             $change();
             return true;
-        });
+        }));
     }
 
     /** Password changed (profile) or set (invitation/password link): to the account holder. */
@@ -86,7 +86,12 @@ final class AccountSecurity
      */
     public static function contactChanged(array $before, array $after, array $actor): void
     {
-        if (mb_strtolower((string) $after['email']) !== mb_strtolower((string) $before['email']) || $after['username'] !== $before['username']) {
+        $emailChanged = mb_strtolower((string) $after['email']) !== mb_strtolower((string) $before['email']);
+        if ($emailChanged || $after['username'] !== $before['username']) {
+            $byAdmin = (int) $actor['id'] !== (int) $before['id'];
+            if ($emailChanged) {
+                SecurityEvents::record((int) $before['id'], SecurityEvents::EMAIL_CHANGED, $byAdmin);
+            }
             self::send($before, static fn (): array => self::contactChangedText($before, $after, $actor));
         }
     }
@@ -98,6 +103,9 @@ final class AccountSecurity
      */
     public static function adminChange(string $event, ?array $account, array $actor): void
     {
+        if ($account !== null && in_array($event, [self::GRANTED, self::REVOKED], true)) {
+            SecurityEvents::record((int) $account['id'], $event === self::GRANTED ? SecurityEvents::ADMIN_GRANTED : SecurityEvents::ADMIN_REVOKED, true);
+        }
         $recipients = Db::all("SELECT * FROM users WHERE role = 'admin' AND is_active = 1 ORDER BY id");
         if ($event === self::INVITED) {
             $recipients = array_filter($recipients, static fn (array $r): bool => (int) $r['id'] !== (int) $account['id']);
@@ -111,6 +119,19 @@ final class AccountSecurity
         foreach ($byAddress as $recipient) {
             self::send($recipient, static fn (): array => self::adminChangeText($event, $account, $actor));
         }
+    }
+
+    /** An admin took over a round to see the parents' data (Substitution): to the teacher of the round. false: not sent. */
+    public static function substitution(array $round, array $owner, array $actor): bool
+    {
+        return self::send($owner, static function () use ($round, $actor): array {
+            $vars = self::vars(['title' => (string) $round['title'], 'actor' => self::name($actor)]);
+            return [__('Vertretung für Ihre Runde „{title}“', $vars), [
+                __('{actor} (Admin) hat bei {app} ({url}) die Vertretung für Ihre Runde „{title}“ übernommen und kann die Namen und E-Mail-Adressen der Eltern sehen und Buchungen bearbeiten, bis diese Anmeldung endet. Der Vorgang wird protokolliert.', $vars),
+                '',
+                __('Haben Sie das nicht erwartet, sprechen Sie bitte {actor} an oder wenden Sie sich an die Schulleitung.', $vars),
+            ]];
+        });
     }
 
     /** @return array{0:string,1:list<string>} [subject, lines] */
@@ -185,17 +206,17 @@ final class AccountSecurity
     }
 
     /** Sends to $user (if it has a valid address) in its language; $content returns [subject, lines]. */
-    private static function send(array $user, \Closure $content): void
+    private static function send(array $user, \Closure $content): bool
     {
         $to = (string) ($user['email'] ?? '');
         if (!is_valid_email($to)) {
-            return;
+            return false;
         }
         [$subject, $body] = AdminI18n::with(AdminI18n::of($user), static function () use ($user, $content): array {
             [$subject, $lines] = $content();
             return [$subject, implode("\n", [__('Hallo {name},', ['name' => self::name($user)]), '', ...$lines])];
         });
-        Mailer::send($to, $subject, $body);
+        return Mailer::send($to, $subject, $body);
     }
 
     private static function vars(array $vars): array

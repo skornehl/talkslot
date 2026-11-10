@@ -38,7 +38,7 @@ $action = $row ? url('/admin/templates/' . (int) $row['id'] . '/edit') : url('/a
     <input type="text" id="location" name="location" maxlength="200" value="<?= e($data['location']) ?>" placeholder="<?= e(__('z. B. Hauptgebäude')) ?>">
   </div>
   <div class="field">
-    <label for="description"><?= e(__('Beschreibungstext (optional)')) ?></label>
+    <label for="description"><?= e(__('Beschreibung (optional)')) ?></label>
     <textarea id="description" name="description" rows="4" maxlength="5000"><?= e($data['description']) ?></textarea>
   </div>
 
@@ -52,8 +52,9 @@ $action = $row ? url('/admin/templates/' . (int) $row['id'] . '/edit') : url('/a
       <input type="number" id="cancel_deadline_hours" name="cancel_deadline_hours" min="0" max="720" required value="<?= e($data['cancel_deadline_hours']) ?>">
     </div>
     <div class="field">
-      <label for="delete_after_hours"><?= e(__('Runde löschen nach Ablauf (Stunden)')) ?></label>
-      <input type="number" id="delete_after_hours" name="delete_after_hours" min="0" max="8760" value="<?= e($data['delete_after_hours'] ?? '') ?>">
+      <label for="delete_after_days"><?= e(__('Runde löschen nach Ablauf (Tage)')) ?></label>
+      <input type="number" id="delete_after_days" name="delete_after_days" min="0" max="365" step="any" value="<?= e($data['delete_after_days'] ?? days_from_hours($data['delete_after_hours'] ?? null)) ?>" aria-describedby="tdel-hint">
+      <p class="hint" id="tdel-hint"><?= e(__('Leer = Runde nie automatisch löschen.')) ?></p>
     </div>
   </div>
 
