@@ -307,7 +307,7 @@ $DC exec -T app php /srv/app/bin/cron.php >/dev/null
 check "round handed to another teacher with the box: the parents get the change notice with her name" 'echo "$R" | has "Die Runde gehört jetzt Frau Aenderung." && echo "$R" | has "Die Eltern von 1 Buchung(en) erhalten die neuen Termindaten" && [ "$(n_mails "$(c_addr 5)" ge%C3%A4ndert)" = 2 ] && n_text "$(c_addr 5)" ge%C3%A4ndert | has "Gespräch mit: Frau Aenderung"'
 UF=$(curl -s -b "$J" "$B/admin/users/$CU/edit" | tr '\n' '~')
 check "account with a booking: the delete dialog names the cancellation, the box is ticked" 'echo "$UF" | has "mit allen Runden und Buchungen endgültig löschen?~~Die Eltern von 1 Buchung(en) erhalten eine Absage per E-Mail.\" data-confirm-off=\"" && echo "$UF" | has "<input type=\"checkbox\" name=\"notify\" value=\"1\" checked> Eltern per E-Mail informieren"'
-R=$(curl -s -L -b "$J" -d "csrf=$NT&confirm=1&notify=1" "$B/admin/users/$CU/delete")
+R=$(curl -s -L -b "$J" -d "csrf=$NT&confirm=1&notify=1" --data-urlencode "current_password=$PASS" "$B/admin/users/$CU/delete")
 $DC exec -T app php /srv/app/bin/cron.php >/dev/null
 check "account deleted with the box: the parents get the cancellation, without a page to book again (the round is gone)" 'echo "$R" | has "Die Eltern von 1 Buchung(en) erhalten eine Absage per E-Mail in ihrer Sprache." && n_text "$(c_addr 5)" abgesagt | has "Gespräch mit: Frau Aenderung" && ! n_text "$(c_addr 5)" abgesagt | has "/$CRS" && [ -z "$(DBQ "SELECT id FROM tp_rounds WHERE id = $CR")" ]'
 # Replies to the newest mail to $1 (subject word $2) go to: JSON list of addresses, null if none

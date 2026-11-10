@@ -3,28 +3,32 @@ title: Deployment with GitHub Actions
 description: Zero-downtime deployments to shared hosting via FTPS, with automatic checks and one-click rollback.
 ---
 
-TalkSlot ships with workflows that test, build and upload it via FTPS on every push to `main`. They are
-made for shared hosting where you only have FTP access. Everything is optional: without the variable
-`FTP_HOST` the deploy, cron and rollback workflows do nothing.
+TalkSlot ships with workflows that test, build and upload it via FTPS for every commit on `main`, once all
+of its tests have passed. They are made for shared hosting where you only have FTP access. Everything is
+optional: without the variable `FTP_HOST` the deploy, cron and rollback workflows do nothing.
 
 ## How a deployment works
 
-1. **Test and build.** Lint and unit tests run, then `bin/build.sh` creates the package and
+1. **Only tested code.** A push to `main` first runs the workflow *Tests* (unit, smoke, browser and
+   deployment tests, on the current and on the minimum platform). *Deploy* starts when that run is finished,
+   and only if it passed on exactly this commit; otherwise nothing goes live. See [Deploy gate](#deploy-gate).
+2. **Test and build.** Lint (on PHP 8.3, the minimum, and 8.5) and the unit tests run once more in a job
+   without secrets. Only then, and only on `main`, `bin/build.sh` creates the package and
    `bin/build-config.php` generates `config.php` from your variables and secrets. Missing or invalid
    values stop the run before anything is uploaded.
-2. **Upload next to the running version.** The new version goes into its own directory
+3. **Upload next to the running version.** The new version goes into its own directory
    (`<APP_DIR>/releases/<name>/`, assets into `<WEB_DIR>/v/<name>/`). The live site is untouched.
    Right after the code, its `config.php` is made readable for its owner only
    ([permissions](#permissions-of-configphp)). Afterwards every file is checked on the server.
-3. **Switch in one step.** The pointer file `<APP_DIR>/current` is replaced (uploaded as `current.new`,
+4. **Switch in one step.** The pointer file `<APP_DIR>/current` is replaced (uploaded as `current.new`,
    then renamed). From that moment every request is served by the new version. Old and new code never
    run side by side, so they cannot write inconsistent data.
-4. **Check.** The login page, start page and the new version's CSS are fetched, and the new version's
+5. **Check.** The login page, start page and the new version's CSS are fetched, and the new version's
    [health check](#health-check) has to confirm that it works with the database: reachable, MariaDB 10.6
    or newer, every migration applied. The pages alone work without the database, so only the health check
    catches a wrong database password or a failed migration. If anything fails, the workflow switches
    back to the previous version at once, deletes the broken one and fails.
-5. **Clean up.** The five newest versions stay on the server for rollbacks; their `config.php` gets the
+6. **Clean up.** The five newest versions stay on the server for rollbacks; their `config.php` gets the
    same permissions as the new one.
 
 ```
@@ -48,8 +52,27 @@ Sessions live in the shared `app/var/`, so nobody is logged out by a deployment.
    generates `APP_SECRET` and `INSTALL_KEY`.
 3. Recommended: create an environment `production` (*Settings → Environments*), allow only the `main`
    branch and store the secrets there.
-4. Push to `main` or start *Actions → Deploy → Run workflow*. Then open `/install.php`, create the admin
-   account and run `gh variable delete ALLOW_INSTALL` so the installer is no longer shipped.
+4. Push to `main` (deploys once the tests have passed) or start *Actions → Deploy → Run workflow*. Then open
+   `/install.php`, create the admin account and run `gh variable delete ALLOW_INSTALL` so the installer is no
+   longer shipped.
+
+### Deploy gate
+
+- **A push to `main`** deploys only after the workflow *Tests* has passed on that commit (`deploy.yml` starts
+  on `workflow_run`). If `main` has moved on in the meantime, the newer commit deploys once its own tests have
+  passed; if they fail, the site stays on the version that is live.
+- **Run workflow** (*Actions → Deploy*) deploys the current `main` at once, even if its tests failed, for
+  example after changing a secret. Lint and unit tests still run first.
+- **Releases** (*Actions → Release*) are only created for a commit on which *Tests* has passed, so a
+  [configuration-only repository](#deploying-from-your-own-repository) that deploys a release gets tested
+  code only.
+- **Branch protection** is set in the repository (*Settings → Branches*: require a pull request and the
+  status checks of *Tests* for `main`). It decides whether an untested change can reach `main` at all; the gate
+  above decides whether it goes live.
+- **Pinned tools.** The workflows use no third-party actions (the code is fetched with `git`). The Docker
+  images of the tests and of the deploy check are pinned by digest in `dev/Dockerfile` and
+  `dev/php-cli.Dockerfile`, the bundled PHPMailer files by their SHA-256 checksums
+  (`app/vendor/phpmailer/SHA256SUMS`); Dependabot proposes updates for both.
 
 ### Variables and secrets
 
@@ -164,8 +187,8 @@ gh workflow run "Switch version" -f target=prune      # keep only the active ver
 ```
 
 The site is checked after switching as well, including the [health check](#health-check) of the
-target version (versions from before it: pages only). The next push to `main` deploys the newest code
-again.
+target version (versions from before it: pages only). The next commit on `main` whose tests pass deploys
+the newest code again.
 
 The database is **not** rolled back. That is why migrations only ever add columns (with defaults) and
 tables: an older version keeps working with a newer schema. While the database is newer than the code, admins
@@ -174,8 +197,17 @@ get one e-mail and a hint on the dashboard (from this version on). CI tests this
 ## Deploying from your own repository
 
 You do not need a fork. A small private repository with nothing but configuration can call the
-reusable workflows with a pinned TalkSlot version. Updating means changing the version number.
+reusable workflows with a pinned TalkSlot version. Updating means changing the version.
 
+Pin the version by the **commit SHA of the release**, with the version as a comment: a tag can be moved, a
+commit cannot. Look it up with `git ls-remote https://github.com/skornehl/talkslot refs/tags/v1.9.0`.
+Pass the secrets the workflow needs **one by one** instead of `secrets: inherit`, so it gets no others.
+Secrets in the environment `production` have to be listed here as well. This works with versions whose
+`deploy.yml` lists `secrets:` under `workflow_call`; with an older version keep `secrets: inherit`. If the
+TalkSlot repository is private, add `TALKSLOT_TOKEN` as a repository secret (not in the environment: the job that
+checks the code has none) and pass it too.
+
+{% raw %}
 ```yaml
 # .github/workflows/deploy.yml in your repository
 name: Deploy
@@ -187,9 +219,19 @@ permissions:
   contents: read
 jobs:
   deploy:
-    uses: skornehl/talkslot/.github/workflows/deploy.yml@v1.2.0
-    secrets: inherit
+    uses: skornehl/talkslot/.github/workflows/deploy.yml@<commit SHA of the release> # v1.9.0
+    secrets:
+      APP_SECRET: ${{ secrets.APP_SECRET }}
+      INSTALL_KEY: ${{ secrets.INSTALL_KEY }}
+      DB_NAME: ${{ secrets.DB_NAME }}
+      DB_USER: ${{ secrets.DB_USER }}
+      DB_PASS: ${{ secrets.DB_PASS }}
+      SMTP_USER: ${{ secrets.SMTP_USER }}
+      SMTP_PASS: ${{ secrets.SMTP_PASS }}
+      FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+      FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
 ```
+{% endraw %}
 
 {% raw %}
 ```yaml
@@ -206,16 +248,20 @@ permissions:
   contents: read
 jobs:
   switch:
-    uses: skornehl/talkslot/.github/workflows/switch.yml@v1.2.0
+    uses: skornehl/talkslot/.github/workflows/switch.yml@<commit SHA of the release> # v1.9.0
     with:
       target: ${{ inputs.target }}
-    secrets: inherit
+    secrets:
+      APP_SECRET: ${{ secrets.APP_SECRET }}
+      FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+      FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
 ```
 {% endraw %}
 
 
 The workflows fetch the TalkSlot code of exactly the version in the `uses:` line. To update, change that
-version in both files. Dependabot can open these pull requests for you with `.github/dependabot.yml`:
+commit and its comment in both files. Releases exist only for commits whose tests have passed. Dependabot can
+open these pull requests for you (it updates the commit and the version comment) with `.github/dependabot.yml`:
 
 ```yaml
 version: 2

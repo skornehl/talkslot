@@ -185,14 +185,33 @@ CREATE TABLE IF NOT EXISTS round_templates (
 
 -- Log of the changes made by admins (who, when, what), without data of parents.
 -- Deleted after audit_log_days (default 90). actor: name at the time of the change.
+-- action, round_id, params: what the entry is about, structured (App\Audit::PARAM_KEYS, no data of parents).
 CREATE TABLE IF NOT EXISTS audit_log (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   created_at DATETIME NOT NULL,
   user_id INT UNSIGNED NULL,
   actor VARCHAR(254) NOT NULL,
   message VARCHAR(1000) NOT NULL,
+  action VARCHAR(40) NULL,
+  round_id INT UNSIGNED NULL,
+  params VARCHAR(500) NULL,
   KEY idx_audit_created (created_at),
+  KEY idx_audit_round (round_id),
   CONSTRAINT fk_audit_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Security events of an account, shown only to the account holder (App\SecurityEvents): password, e-mail address,
+-- admin rights, sign-in limit reached. No IP, no device; by_admin: an admin made the change (not who).
+-- Deleted after security_events_days (default 30) and with the account.
+CREATE TABLE IF NOT EXISTS security_events (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  user_id INT UNSIGNED NOT NULL,
+  event VARCHAR(30) NOT NULL,
+  by_admin TINYINT(1) NOT NULL DEFAULT 0,
+  created_at DATETIME NOT NULL,
+  KEY idx_security_events_user (user_id, created_at),
+  KEY idx_security_events_created (created_at),
+  CONSTRAINT fk_security_events_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Delivery log of the summary emails (prevents duplicate sends), without content

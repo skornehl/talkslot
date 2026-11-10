@@ -58,10 +58,19 @@ Die Sicherheitsinvarianten (Rollen in der Routentabelle, keine Datenänderung du
 Buchungsweg, Sicherheits-Header auf Fehlerseiten, abgelehnte seitenübergreifende Formulare) stehen in
 `tests/unit.d/security.php` und `tests/smoke.d/security.sh`; siehe [Sicherheit]({{ '/de/guide/security/' | relative_url }}).
 
-Die CI führt bei jedem Push die Unit-Tests aus sowie Smoke-, Browser- und Deploy-Tests gegen die Docker-Umgebung.
-Außerdem laufen die Smoke-Tests gegen MariaDB 10.6, die Mindestversion (`MARIADB_VERSION=10.6` für
-`dev/compose.yml`), und sie prüft, dass PHP 7.4 und 8.2 die Meldung von `App\Platform` erhalten statt eines
-Syntaxfehlers.
+Die CI führt bei jedem Push die Unit-Tests aus sowie Smoke-, Browser- und Deploy-Tests gegen die Docker-Umgebung
+(PHP 8.5, MariaDB 11.8, SMTP). Der Job *Minimum platform* wiederholt die Smoke- und Deploy-Tests auf PHP 8.3 und
+MariaDB 10.6, der Mindestplattform, und verschickt die Mails per `mail()` wie bei vielen Webhostern
+(`PHP_VERSION=8.3 MARIADB_VERSION=10.6` für `dev/compose.yml`; der Sendmail-Modus von Mailpit nimmt sie an).
+Außerdem prüft sie, dass PHP 7.4 und 8.2 die Meldung von `App\Platform` erhalten statt eines Syntaxfehlers. Ein
+Push auf `main` wird erst ausgespielt, wenn all das bestanden ist
+([Deploy-Gate]({{ '/de/guide/deployment/' | relative_url }}#deploy-gate)).
+
+Die Images sind per Digest festgelegt: die Testumgebung in `dev/Dockerfile`, die PHP-Kommandozeile der CI in
+`dev/php-cli.Dockerfile` (`dev/php.sh 8.3 php tests/unit.php` führt die Unit-Tests ohne lokales PHP auf PHP 8.3
+aus). Neue Digests schlägt Dependabot vor; welche Versionen getestet werden, ändern Sie von Hand in diesen
+Dateien. Um lokal die Versionen zu wechseln, legen Sie die Datenbank neu an:
+`docker compose -f dev/compose.yml down -v`, dann `up -d --build`.
 
 ### Messen statt schätzen
 
