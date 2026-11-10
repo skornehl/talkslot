@@ -457,7 +457,8 @@ curl -s -o /dev/null "$B/"
 OP_V=$(OP_SETTING schema_version); OP_H1=$(OP_HAS); OP_C1=$(OP_CK)
 OP_RULES='$q = urlencode("to:betrieb@example.org subject:\"Datenbank: Regel nicht gesetzt\""); $u = "http://mail:8025/api/v1/search?query=$q";'
 OP_AL=$(ALERTS "$OP_RULES"' echo json_decode(file_get_contents($u), true)["messages_count"] ?? "?";')
-OP_ALB=$(ALERTS "$OP_RULES"' $m = json_decode(file_get_contents($u), true)["messages"][0]["ID"] ?? ""; echo json_decode(file_get_contents("http://mail:8025/api/v1/message/$m"), true)["Text"] ?? "";')
+# The body has CRLF line ends with the transport mail() (job "Minimum platform"), LF with SMTP
+OP_ALB=$(ALERTS "$OP_RULES"' $m = json_decode(file_get_contents($u), true)["messages"][0]["ID"] ?? ""; echo json_decode(file_get_contents("http://mail:8025/api/v1/message/$m"), true)["Text"] ?? "";' | tr -d '\r')
 check "migration 26 on rows that break all three rules: the indexes set, no rule, one report naming the round ($OP_H1 indexes, $OP_AL)" '[ "$OP_V" = "$OP_LATEST" ] && [ "$OP_H1" = 3 ] && [ "$OP_C1" = 0 ] && [ "$OP_AL" = 1 ] && [ "$(echo "$OP_ALB" | grep -c "Runden: $OPR$")" = 3 ]'
 $DC exec -T app php /srv/app/bin/cron.php > /dev/null
 OP_H2=$(OP_HAS); OP_AL2=$(ALERTS "$OP_RULES"' echo json_decode(file_get_contents($u), true)["messages_count"] ?? "?";')
