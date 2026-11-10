@@ -51,8 +51,8 @@ gelegentlich.
 | Zwecke | Buchen, Ändern und Absagen von Terminen; Bestätigungen, Erinnerungen und Änderungen per E-Mail; Zusammenfassungen an die Lehrkraft; Schutz vor Missbrauch; Konten und Verwaltung für Lehrkräfte und Admins; Rechenschaft (Protokoll) |
 | Rechtsgrundlage | Schule: Art. 6 Abs. 1 lit. e, Abs. 3 DSGVO i. V. m. `[VORSCHRIFT IM SCHULGESETZ DES LANDES]` und `[VORSCHRIFT IM DATENSCHUTZGESETZ DES LANDES]`; Beschäftigtendaten `[LANDESRECHTLICHE VORSCHRIFT ZU BESCHÄFTIGTENDATEN]`. Privat: Art. 6 Abs. 1 lit. b DSGVO (Terminvereinbarung), lit. b und f (Zusammenfassungen), lit. f (Missbrauchsschutz); Konten lit. b. Beide: „Termin merken“ im Browser nur mit Einwilligung (§ 25 Abs. 1 TDDDG, Art. 6 Abs. 1 lit. a) |
 | Betroffene | Eltern und Erziehungsberechtigte; die in einer Buchung genannten Kinder; Lehrkräfte und Admins |
-| Datenkategorien | Eltern: eingegebener Name (meist Name und Klasse des Kindes), optionale E-Mail-Adresse, Termin, Sprache der Buchung, Hash des persönlichen Änderungslinks, gekürzte und gehashte IP-Adresse (Missbrauchsschutz). Lehrkräfte und Admins: Benutzername, Anzeigename, E-Mail- und Antwortadresse, optionaler Kontakt für Eltern, Sprache, Passwort-Hash, Anmeldezeit, Einstellungen, Geräte-Cookie im Browser, Einträge im Protokoll |
-| Besondere Kategorien (Art. 9) | Nicht vorgesehen. Titel und Beschreibungen von Runden bleiben neutral: `[WIE LEHRKRÄFTE DARAUF HINGEWIESEN WERDEN]` |
+| Datenkategorien | Eltern: eingegebener Name (meist Name und Klasse des Kindes), optionale E-Mail-Adresse, in Runden, die danach fragen, freiwillig die Sprache eines Wunsches nach Dolmetschung, Termin, Sprache der Buchung, Hash des persönlichen Änderungslinks, gekürzte und gehashte IP-Adresse (Missbrauchsschutz). Lehrkräfte und Admins: Benutzername, Anzeigename, E-Mail- und Antwortadresse, optionaler Kontakt für Eltern, Sprache, Passwort-Hash, Anmeldezeit, Einstellungen, Geräte-Cookie im Browser, Einträge im Protokoll |
+| Besondere Kategorien (Art. 9) | Nicht vorgesehen. Titel und Beschreibungen von Runden bleiben neutral: `[WIE LEHRKRÄFTE DARAUF HINGEWIESEN WERDEN]`. Ein Wunsch nach Dolmetschung nennt nur eine Sprache, kann aber auf die Herkunft oder, bei Gebärdensprache, auf eine Behinderung schließen lassen: Er ist freiwillig, dient nur der Vorbereitung des Gesprächs und wird mit der Buchung gelöscht |
 | Empfänger | Die Lehrkraft der Runde; die Admins; Hoster und Mailanbieter als Auftragsverarbeiter; wer den Server für die Schule betreibt, als Auftragsverarbeiter. Privat: Die Lehrkraft handelt für die Schule, eine eigene Verantwortliche |
 | Drittländer | Keine, außer `[MAILANBIETER AUSSERHALB VON EU/EWR UND GARANTIE]` |
 | Löschfristen | Buchungen ab 0:00 am Tag nach dem Termin, bei Absage sofort; Mail-Warteschlange nach dem Versand, höchstens 48 Stunden; Daten zum Missbrauchsschutz 24 Stunden; Protokoll 90 Tage; Vermerk versendeter Zusammenfassungen (ohne Namen) 60 Tage; Runden nach ihrem letzten Tag (`[LÖSCHFRIST JE RUNDE, STANDARD 24 STUNDEN]`); Konten von Lehrkräften während der Nutzung, deaktivierte ohne genutzte Runden 15 Monate nach der letzten Anmeldung; Zusammenfassungen mit Namen im Postfach bis spätestens Ende des Schuljahres (privat betrieben: Empfehlung, es gelten die Regeln der Schule); Fehler-Log rotiert bei 5 MB; Konfigurations-Backup `[Z. B. 12 MONATE]`, Voll-Backup `[HÖCHSTENS 14 TAGE]`; Logs des Webservers `[FRIST BEIM HOSTER]` (Details: [Datenschutz und Recht]({{ '/de/guide/privacy/' | relative_url }}#was-gespeichert-wird)) |
@@ -77,7 +77,7 @@ TOM bei.
   gefunden“); nur Admins sehen alle Runden, Konten, Rechtstexte und das Protokoll.
 - Eltern brauchen kein Konto. Ihr persönlicher Änderungslink wird nur als Hash gespeichert; wo eine Runde ihn
   verlangt (*Nur mit Rundencode*), hält der Rundencode Fremde von der Terminliste fern.
-- Datensparsamkeit: ein Name (der des Kindes), wahlweise eine E-Mail-Adresse, sonst nichts; kein Tracking, keine
+- Datensparsamkeit: ein Name (der des Kindes), wahlweise eine E-Mail-Adresse und, in Runden, die danach fragen, die Sprache eines Wunsches nach Dolmetschung, sonst nichts; kein Tracking, keine
   Cookies auf öffentlichen Seiten, nichts von Dritten nachgeladen.
 - Transportverschlüsselung: HTTPS für die Seite (`force_https`); zum Mailserver `[TLS BEI MAIL.TRANSPORT SMTP UND MAIL.SMTP.ENCRYPTION / MAILSERVER DES HOSTERS BEI PHP MAIL()]`.
 - Zusammenfassungen an Lehrkräfte enthalten keine Namen, außer die Schule erlaubt sie, und nie E-Mail-Adressen.
@@ -209,7 +209,7 @@ Anfragen betreffen also Daten, die schon gelöscht sind, oder eine noch anstehen
 
 - **Identität:** Der persönliche Änderungslink ist der Schlüssel zu einer Buchung. Geben Sie Buchungsdaten nicht an
   jemanden heraus, der nur den Namen eines Kindes nennt; bitten Sie um den Link oder antworten Sie persönlich.
-- **Auskunft (Art. 15):** Die Lehrkraft oder ein Admin sieht die Buchung in der Runde (Name, E-Mail-Adresse, Termin,
+- **Auskunft (Art. 15):** Die Lehrkraft oder ein Admin sieht die Buchung in der Runde (Name, E-Mail-Adresse, Wunsch nach Dolmetschung, Termin,
   Sprache). Prüfen Sie auch Ihre Backups (`[BACKUP-FRIST]`). Zusammenfassungen im Postfach der Lehrkraft: von der Schule
   betrieben ebenfalls prüfen; privat betrieben verweisen Sie an die Lehrkraft oder die Schule.
 - **Berichtigung (Art. 16):** Die Lehrkraft bearbeitet den Eintrag; Eltern können bis zur Änderungsfrist selbst
@@ -218,7 +218,7 @@ Anfragen betreffen also Daten, die schon gelöscht sind, oder eine noch anstehen
   sofort weg, Backups folgen mit ihrer Frist. Zusammenfassungen löscht die Lehrkraft (privat betrieben: an die Lehrkraft
   oder die Schule verweisen).
 - **Einschränkung (Art. 18):** erledigt sich meist durch die kurze Frist; sonst beim Eintrag vermerken und nicht nutzen.
-- **Datenübertragbarkeit (Art. 20):** nur privat betrieben (Grundlage Art. 6 Abs. 1 lit. b): Name, E-Mail-Adresse und Termin in einem gängigen Format.
+- **Datenübertragbarkeit (Art. 20):** nur privat betrieben (Grundlage Art. 6 Abs. 1 lit. b): Name, E-Mail-Adresse, Wunsch nach Dolmetschung und Termin in einem gängigen Format.
 - **Widerspruch (Art. 21, bei Art. 6 Abs. 1 lit. e oder f) und keine Erinnerungen gewünscht:** Praktisch entfernt die
   Lehrkraft die E-Mail-Adresse aus dem Eintrag oder löscht ihn.
 - **Anfragen von Lehrkräften:** Die Admins sehen das Konto unter *Benutzer*; das Protokoll nennt Änderungen daran.

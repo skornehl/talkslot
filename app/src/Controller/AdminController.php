@@ -357,7 +357,7 @@ final class AdminController
                     'source_lang' => I18n::defaultLanguage(), 'is_active' => 1,
                     'booking_deadline_hours' => $s['booking_deadline_hours'], 'cancel_deadline_hours' => $s['cancel_deadline_hours'],
                     'delete_after_hours' => $s['delete_after_hours'], 'random_suffix' => 1, 'code_required' => $s['code_required'],
-                    'booking_limit' => $s['booking_limit'], 'remind_parents' => $s['remind_parents'], 'user_id' => Auth::id(),
+                    'booking_limit' => $s['booking_limit'], 'remind_parents' => $s['remind_parents'], 'ask_interpreter' => $s['ask_interpreter'], 'user_id' => Auth::id(),
                 ];
                 $dayData = ['dates' => [''], 'start' => $s['start'], 'end' => $s['end'], 'minutes' => $s['minutes'], 'breaks' => $s['breaks']];
             }
@@ -367,7 +367,7 @@ final class AdminController
             'title' => '', 'slug' => '', 'description' => '', 'location' => '', 'source_lang' => I18n::defaultLanguage(), 'is_active' => 1,
             'booking_deadline_hours' => 24, 'cancel_deadline_hours' => 12,
             'delete_after_hours' => 24, 'random_suffix' => 1,
-            'code_required' => 0, 'booking_limit' => 'round', 'remind_parents' => 1, 'user_id' => Auth::id(),
+            'code_required' => 0, 'booking_limit' => 'round', 'remind_parents' => 1, 'ask_interpreter' => 0, 'user_id' => Auth::id(),
         ];
         // Rounds cannot go public yet (e.g. open placeholders in the legal texts): say so at the checkbox, and the round
         // starts unticked – a new one, and one whose activation was just refused – so that it can be saved and prepared
@@ -424,6 +424,10 @@ final class AdminController
             'remind_parents' => !$round || Http::post('remind_parents_field') === '1'
                 ? (Http::post('remind_parents') === '1' ? 1 : 0)
                 : (int) $round['remind_parents'],
+            // Request for an interpreter; likewise
+            'ask_interpreter' => !$round || Http::post('ask_interpreter_field') === '1'
+                ? (Http::post('ask_interpreter') === '1' ? 1 : 0)
+                : (int) $round['ask_interpreter'],
             // Teacher of the round: only the admin chooses; otherwise whoever creates it or the previous teacher
             'user_id' => Auth::isAdmin() && ctype_digit(Http::post('user_id')) ? (int) Http::post('user_id') : (int) ($round['user_id'] ?? Auth::id()),
             // Tell booked parents about a new location or teacher (the box is ticked in the form)
@@ -498,7 +502,7 @@ final class AdminController
         $values = [
             $data['title'], $slug, $data['description'] !== '' ? $data['description'] : null,
             $data['location'] !== '' ? $data['location'] : null, $data['source_lang'],
-            $data['code_required'], $data['booking_limit'], $data['remind_parents'], $data['is_active'],
+            $data['code_required'], $data['booking_limit'], $data['remind_parents'], $data['ask_interpreter'], $data['is_active'],
             (int) $data['booking_deadline_hours'], (int) $data['cancel_deadline_hours'],
             $deleteAfter === '' ? null : (int) $deleteAfter, $now,
         ];
@@ -506,7 +510,7 @@ final class AdminController
             // Parents whose appointment gets a new location or teacher are told (ScheduleService)
             try {
                 $parents = ScheduleService::changeRound($id, $data['notify'], static fn () => Db::run(
-                    'UPDATE rounds SET title = ?, slug = ?, description = ?, location = ?, source_lang = ?, code_required = ?, booking_limit = ?, remind_parents = ?, is_active = ?, booking_deadline_hours = ?,
+                    'UPDATE rounds SET title = ?, slug = ?, description = ?, location = ?, source_lang = ?, code_required = ?, booking_limit = ?, remind_parents = ?, ask_interpreter = ?, is_active = ?, booking_deadline_hours = ?,
                         cancel_deadline_hours = ?, delete_after_hours = ?, updated_at = ?,
                         expired_at = IF(? = 1, NULL, expired_at), was_used = GREATEST(was_used, ?), user_id = ?
                   WHERE id = ? AND user_id = ?',
@@ -548,9 +552,9 @@ final class AdminController
             try {
                 [$id, $count] = Db::transaction(function () use ($values, $now, $dayData, $ownerId, $used): array {
                     $id = Db::insert(
-                        'INSERT INTO rounds (title, slug, description, location, source_lang, code_required, booking_limit, remind_parents, is_active,
+                        'INSERT INTO rounds (title, slug, description, location, source_lang, code_required, booking_limit, remind_parents, ask_interpreter, is_active,
                                              booking_deadline_hours, cancel_deadline_hours, delete_after_hours, updated_at, created_at, user_id, code, was_used)
-                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                         [...$values, $now, $ownerId, RoundCode::unique(), $used]
                     );
                     return [$id, $this->createDays($id, $dayData)];
@@ -582,7 +586,7 @@ final class AdminController
             $day['breaks'] = Db::all('SELECT * FROM day_breaks WHERE day_id = ? ORDER BY start_time', [$day['id']]);
             // mail_waiting: a mail that failed and is retried (not one queued since, e.g. the reminder)
             $day['slots'] = Db::all(
-                'SELECT s.*, b.id AS booking_id, b.name, b.email, b.source, b.notified_at, b.created_at AS booked_at, b.updated_at AS booking_updated,
+                'SELECT s.*, b.id AS booking_id, b.name, b.email, b.interpreter_lang, b.source, b.notified_at, b.created_at AS booked_at, b.updated_at AS booking_updated,
                         b.mail_failed_at, (SELECT COUNT(*) FROM mail_outbox o WHERE o.booking_id = b.id AND o.attempts > 0) AS mail_waiting
                    FROM slots s LEFT JOIN bookings b ON b.slot_id = s.id
                   WHERE s.day_id = ? ORDER BY s.start_time',
@@ -608,6 +612,7 @@ final class AdminController
             foreach ($day['slots'] as &$s) {
                 if (!$seesParents && $s['booking_id'] !== null) {
                     $s['name'] = $s['email'] = '';
+                    $s['interpreter_lang'] = null;
                 }
             }
             unset($s);
@@ -806,11 +811,11 @@ final class AdminController
             $now = Time::nowSql();
             $title = rtrim(mb_substr(__('{title} (Kopie)', ['title' => $round['title']]), 0, 200));
             $newId = Db::insert(
-                'INSERT INTO rounds (title, slug, description, location, source_lang, code_required, booking_limit, remind_parents, is_active,
+                'INSERT INTO rounds (title, slug, description, location, source_lang, code_required, booking_limit, remind_parents, ask_interpreter, is_active,
                                      booking_deadline_hours, cancel_deadline_hours, delete_after_hours, created_at, updated_at, user_id, code)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?)',
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?)',
                 [$title, Slug::unique(Slug::withSuffix(Slug::fromText($title))), $round['description'], $round['location'], $round['source_lang'],
-                 (int) $round['code_required'], (string) $round['booking_limit'], (int) $round['remind_parents'],
+                 (int) $round['code_required'], (string) $round['booking_limit'], (int) $round['remind_parents'], (int) $round['ask_interpreter'],
                  $round['booking_deadline_hours'], $round['cancel_deadline_hours'],
                  $round['delete_after_hours'], $now, $now, (int) $round['user_id'], RoundCode::unique()]
             );
@@ -1442,7 +1447,7 @@ final class AdminController
             'booking' => null,
             'moveOptions' => [],
             // Mail on by default: it is the only way the parents learn about an entry (and its privacy notice)
-            'old' => $old + ['name' => '', 'email' => '', 'lang' => I18n::defaultLanguage(), 'send_mail' => true],
+            'old' => $old + ['name' => '', 'email' => '', 'interpreter_lang' => '', 'lang' => I18n::defaultLanguage(), 'send_mail' => true],
             'errors' => $errors,
         ]);
     }
@@ -1459,7 +1464,7 @@ final class AdminController
             return;
         }
         try {
-            [$id, $token] = BookingService::adminBook($round, $slotId, PublicController::cleanName($old['name']), $old['email'] ?: null, $old['lang']);
+            [$id, $token] = BookingService::adminBook($round, $slotId, PublicController::cleanName($old['name']), $old['email'] ?: null, $old['lang'], interpreterLang: PublicController::cleanLanguage($old['interpreter_lang']));
         } catch (BookingException) {
             $this->flash('error', __('Dieser Termin ist bereits gebucht.'));
             Http::redirect('/admin/round/' . $round['id'], [], 'slot-' . $slotId);
@@ -1498,7 +1503,7 @@ final class AdminController
             'round' => $round,
             'booking' => $booking,
             'moveOptions' => $moveOptions,
-            'old' => $old + ['name' => $booking['name'], 'email' => (string) $booking['email'], 'lang' => $booking['lang'], 'send_mail' => true, 'move_to' => ''],
+            'old' => $old + ['name' => $booking['name'], 'email' => (string) $booking['email'], 'interpreter_lang' => (string) $booking['interpreter_lang'], 'lang' => $booking['lang'], 'send_mail' => true, 'move_to' => ''],
             'errors' => $errors,
         ]);
     }
@@ -1524,7 +1529,7 @@ final class AdminController
                 return;
             }
         }
-        $newAddress = BookingService::update($id, PublicController::cleanName($old['name']), $old['email'] ?: null, $old['lang']);
+        $newAddress = BookingService::update($id, PublicController::cleanName($old['name']), $old['email'] ?: null, $old['lang'], interpreterLang: PublicController::cleanLanguage($old['interpreter_lang']));
         $target = $moved ? BookingService::findById($id) : null;
         $this->audit(fn () => match (true) {
             $target === null => __('Buchung am {date} geändert', ['date' => self::when($booking['day_date'])]),
@@ -1596,13 +1601,14 @@ final class AdminController
         }
     }
 
-    /** @return array{name:string,email:string,lang:string,send_mail:bool} */
+    /** @return array{name:string,email:string,interpreter_lang:string,lang:string,send_mail:bool} */
     private function bookingInput(): array
     {
         $lang = Http::post('lang');
         return [
             'name' => Http::post('name'),
             'email' => Email::input(Http::post('email')),
+            'interpreter_lang' => Http::post('interpreter_lang'),
             'lang' => in_array($lang, I18n::languages(), true) ? $lang : I18n::defaultLanguage(),
             'send_mail' => Http::post('send_mail') === '1',
         ];
@@ -1621,7 +1627,7 @@ final class AdminController
         );
         foreach ($days as &$day) {
             $rows = Db::all(
-                'SELECT s.start_time, s.end_time, s.is_blocked, s.is_conflict, b.name, b.email
+                'SELECT s.start_time, s.end_time, s.is_blocked, s.is_conflict, b.name, b.email, b.interpreter_lang
                    FROM slots s LEFT JOIN bookings b ON b.slot_id = s.id
                   WHERE s.day_id = ?',
                 [$day['id']]
@@ -2608,7 +2614,7 @@ final class AdminController
     private const TEMPLATE_DEFAULTS = [
         'start' => '14:00', 'end' => '18:00', 'minutes' => 15, 'breaks' => [],
         'booking_deadline_hours' => 24, 'cancel_deadline_hours' => 12, 'delete_after_hours' => 24,
-        'booking_limit' => 'round', 'code_required' => 0, 'remind_parents' => 1, 'location' => '', 'description' => '',
+        'booking_limit' => 'round', 'code_required' => 0, 'remind_parents' => 1, 'ask_interpreter' => 0, 'location' => '', 'description' => '',
     ];
 
     /** Settings of a template, completed with the defaults (breaks as [start, end, label] in HH:MM). */
@@ -2684,6 +2690,7 @@ final class AdminController
             'booking_limit' => in_array(Http::post('booking_limit'), BookingService::LIMITS, true) ? Http::post('booking_limit') : 'round',
             'code_required' => Http::post('code_required') === '1' ? 1 : 0,
             'remind_parents' => Http::post('remind_parents') === '1' ? 1 : 0,
+            'ask_interpreter' => Http::post('ask_interpreter') === '1' ? 1 : 0,
             'location' => trim(Http::post('location')),
             'description' => trim(str_replace("\r\n", "\n", Http::post('description'))),
         ];
@@ -2763,7 +2770,7 @@ final class AdminController
             'booking_deadline_hours' => (int) $round['booking_deadline_hours'], 'cancel_deadline_hours' => (int) $round['cancel_deadline_hours'],
             'delete_after_hours' => $round['delete_after_hours'] === null ? null : (int) $round['delete_after_hours'],
             'booking_limit' => (string) $round['booking_limit'], 'code_required' => (int) $round['code_required'],
-            'remind_parents' => (int) $round['remind_parents'], 'location' => (string) ($round['location'] ?? ''),
+            'remind_parents' => (int) $round['remind_parents'], 'ask_interpreter' => (int) $round['ask_interpreter'], 'location' => (string) ($round['location'] ?? ''),
             'description' => (string) ($round['description'] ?? ''),
         ];
         if ($day) {

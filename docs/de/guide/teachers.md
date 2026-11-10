@@ -45,6 +45,13 @@ sind unter *Erweitert* eingeklappt:
   Bestätigung oder Änderungsmitteilung bekommen hat, bekommt keine (eine Namenskorrektur ohne E-Mail zählt
   nicht). Sie gilt für Buchungen, die gemacht wurden, während sie eingeschaltet war; Ihre eigenen Einträge
   bekommen sie erst, wenn die Eltern eine Bestätigung oder Änderungsmitteilung per E-Mail erhalten haben.
+- **Dolmetschung** (*Eltern fragen, ob sie eine Dolmetschung wünschen*, standardmäßig aus): Das Buchungsformular
+  bekommt ein freiwilliges Feld, in das Eltern die Sprache eintragen, wenn sie für das Gespräch eine Dolmetschung
+  wünschen. Sie sehen die Angabe bei der Buchung in der Liste und im Ausdruck (*Dolmetschung gewünscht: …*); sie
+  steht in keiner E-Mail und keiner Zusammenfassung und wird mit der Buchung gelöscht. Es ist ein Wunsch: Die
+  Dolmetschung organisieren Sie selbst, oder Sie sagen den Eltern, wenn das nicht möglich ist. Prüfen Sie die Liste rechtzeitig, eine Benachrichtigung gibt es nicht. In der Buchung können
+  Sie die Angabe eintragen oder ändern, und sie bleibt sichtbar, wenn Sie die Frage später ausschalten. Kopie der
+  Runde, Vorlage und Papierkorb behalten die Einstellung.
 - **Zufallsanteil in der Adresse** (empfohlen, unter *Erweitert*), damit die Runde nicht durch Ausprobieren
   gefunden wird, und optional *Nur mit Rundencode*. Beim Bearbeiten steht dort auch die *Webadresse* selbst.
 - ***Runde löschen nach Ablauf*** (unter *Erweitert*): Tage nach dem letzten Tag, standardmäßig 1, leer = nie. Buchungen werden in jedem Fall am Tag nach dem Termin gelöscht.

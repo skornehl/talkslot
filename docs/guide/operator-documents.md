@@ -49,8 +49,8 @@ The exception for small organisations (Art. 30(5)) does not apply: the processin
 | Purposes | Booking, changing and cancelling appointments; confirmations, reminders and changes by e-mail; summaries to the teacher; protection against abuse; accounts and administration for teachers and admins; accountability (admin log) |
 | Legal basis | School: Art. 6(1)(e), (3) GDPR with `[PROVISION OF THE STATE SCHOOL ACT]` and `[PROVISION OF THE STATE DATA PROTECTION ACT]`; staff data `[STATE PROVISION ON STAFF DATA]`. Privately: Art. 6(1)(b) GDPR (arranging the appointment), (b) and (f) (summaries), (f) (abuse protection); accounts Art. 6(1)(b). Both: "Remember my appointment" in the browser only with consent (section 25(1) TDDDG, Art. 6(1)(a)) |
 | Data subjects | Parents and guardians; the children named in a booking; teachers and admins |
-| Categories of data | Parents: the name entered (usually the child's name and class), optional e-mail address, appointment, booking language, hash of the personal change link, shortened and hashed IP address (abuse protection). Teachers and admins: user name, display name, e-mail and reply address, optional contact for parents, language, password hash, sign-in time, settings, known-device cookie in their browser, entries in the admin log |
-| Special categories (Art. 9) | Not intended. Round titles and descriptions are kept neutral: `[HOW TEACHERS ARE INSTRUCTED]` |
+| Categories of data | Parents: the name entered (usually the child's name and class), optional e-mail address, in rounds that ask for it optionally the language of a request for an interpreter, appointment, booking language, hash of the personal change link, shortened and hashed IP address (abuse protection). Teachers and admins: user name, display name, e-mail and reply address, optional contact for parents, language, password hash, sign-in time, settings, known-device cookie in their browser, entries in the admin log |
+| Special categories (Art. 9) | Not intended. Round titles and descriptions are kept neutral: `[HOW TEACHERS ARE INSTRUCTED]`. A request for an interpreter names only a language, but can hint at origin or, for sign language, at a disability: it is optional, serves only to prepare the meeting and is deleted with the booking |
 | Recipients | The teacher of the round; the admins; the web host and the mail provider as processors; whoever runs the server for the school, as a processor. Privately: the teacher acts for the school, a controller of its own |
 | Third countries | None, unless `[MAIL PROVIDER OUTSIDE THE EU/EEA AND ITS SAFEGUARD]` |
 | Retention | Bookings from 0:00 the day after the appointment, at cancellation immediately; queued mails after sending, at most 48 hours; abuse protection data 24 hours; admin log 90 days; record of sent summaries (no names) 60 days; rounds after their last day (`[DELETION PERIOD PER ROUND, DEFAULT 24 HOURS]`); teacher accounts while in use, deactivated ones without rounds in use 15 months after the last sign-in; summary mails with names in the mailbox by the end of the school year (operated privately: recommended, the school's rules apply); error log rotated at 5 MB; configuration backup `[E.G. 12 MONTHS]`, full backup `[AT MOST 14 DAYS]`; web server logs `[RETENTION AT THE HOST]` (details: [Privacy and legal]({{ '/guide/privacy/' | relative_url }}#what-is-stored)) |
@@ -74,7 +74,7 @@ physical access, its own backups) is in its processing agreement; attach its TOM
   admins see all rounds, accounts, legal texts and the log.
 - Parents need no account. Their personal change link is stored only as a hash; where a round requires
   it (*Nur mit Rundencode*, *Round code required*), the round code keeps strangers away from the list of slots.
-- Data minimisation: a name (the child's), optionally an e-mail address, nothing else; no tracking, no
+- Data minimisation: a name (the child's), optionally an e-mail address and, in rounds that ask for it, the language of a request for an interpreter, nothing else; no tracking, no
   cookies on public pages, nothing loaded from third parties.
 - Transport encryption: HTTPS for the site (`force_https`); to the mail server `[TLS WITH MAIL.TRANSPORT SMTP AND MAIL.SMTP.ENCRYPTION / THE HOST'S MAIL SERVER WITH PHP MAIL()]`.
 - Summary mails to teachers contain no names unless the school allows them, never e-mail addresses.
@@ -201,7 +201,7 @@ requests concern data that is already gone or a booking still ahead.
 
 - **Identity:** the personal change link is the key to a booking. Do not hand out booking data to somebody who
   only names a child; ask for the link, or answer in person.
-- **Access (Art. 15):** the teacher or an admin looks up the booking in the round (name, e-mail address,
+- **Access (Art. 15):** the teacher or an admin looks up the booking in the round (name, e-mail address, request for an interpreter,
   appointment, language). Also check your backups (`[BACKUP RETENTION]`). Summary mails in the teacher's mailbox:
   operated by the school, check them too; operated privately, refer the person to the teacher or the school.
 - **Rectification (Art. 16):** the teacher edits the entry; parents can move or cancel themselves until the
@@ -210,7 +210,7 @@ requests concern data that is already gone or a booking still ahead.
   gone immediately, backups follow with their retention. Summary mails: the teacher deletes them (operated privately:
   ask the teacher or the school).
 - **Restriction (Art. 18):** usually settled by the short retention; otherwise note it with the entry and do not use it.
-- **Portability (Art. 20):** operated privately only (the basis is Art. 6(1)(b)): name, e-mail address and appointment in a common format.
+- **Portability (Art. 20):** operated privately only (the basis is Art. 6(1)(b)): name, e-mail address, request for an interpreter and appointment in a common format.
 - **Objection (Art. 21, where the basis is Art. 6(1)(e) or (f)) and not wanting reminders:** in practice the teacher
   removes the e-mail address from the entry or deletes it.
 - **Teachers' requests:** the admins see the account under *Benutzer*; the admin log lists changes to it.

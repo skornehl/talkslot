@@ -27,6 +27,9 @@ use App\View;
 /** Public pages for parents – no login, no cookies. */
 final class PublicController
 {
+    /** A link in a name or language: names appear in e-mails (phishing via the school's sender address). */
+    private const LINK_PATTERN = '~(://|www\.|https?:)~i';
+
     public function dispatch(string $path, string $method): void
     {
         $post = $method === 'POST';
@@ -251,6 +254,8 @@ final class PublicController
             'slot_id' => Http::post('slot_id'),
             'name' => Http::post('name'),
             'email' => Http::post('email'),
+            // Only where the round asks for it: what the form did not offer is not stored
+            'interpreter_lang' => !empty($round['ask_interpreter']) ? Http::post('interpreter_lang') : '',
             'remember' => Http::post('remember') === '1',
         ];
 
@@ -305,7 +310,7 @@ final class PublicController
             return;
         }
         try {
-            [$id, $token] = BookingService::book($round, (int) $old['slot_id'], self::cleanName($old['name']), Email::normalize($old['email']), I18n::lang());
+            [$id, $token] = BookingService::book($round, (int) $old['slot_id'], self::cleanName($old['name']), Email::normalize($old['email']), I18n::lang(), interpreterLang: self::cleanLanguage($old['interpreter_lang']));
         } catch (BookingException $e) {
             // Hits of the multiple-booking limit count like bookings: slows down probing
             // whether a name already has an appointment
@@ -521,7 +526,7 @@ final class PublicController
         };
     }
 
-    /** Shared validation for name/email/slot (also used by the admin); the keys are the ids of the fields. */
+    /** Shared validation for name/email/language/slot (also used by the admin); the keys are the ids of the fields. */
     public static function validate(array $in, bool $requireSlot): array
     {
         $errors = [];
@@ -531,7 +536,7 @@ final class PublicController
         $name = self::cleanName((string) ($in['name'] ?? ''));
         if (mb_strlen($name) < 2 || mb_strlen($name) > 200) {
             $errors['name'] = t('err.name');
-        } elseif (preg_match('~(://|www\.|https?:)~i', $name)) {
+        } elseif (preg_match(self::LINK_PATTERN, $name)) {
             // The name appears in emails: no links (otherwise phishing via the school's sender address)
             $errors['name'] = t('err.name_link');
         }
@@ -539,6 +544,11 @@ final class PublicController
         $email = trim((string) ($in['email'] ?? ''));
         if ($email !== '' && Email::normalize($email) === null) {
             $errors['email'] = t('err.email');
+        }
+        // A language, not a place for messages: the field is short and takes no links, like the name
+        $language = self::cleanName((string) ($in['interpreter_lang'] ?? ''));
+        if (mb_strlen($language) > 60 || preg_match(self::LINK_PATTERN, $language)) {
+            $errors['interpreter_lang'] = t('err.interpreter');
         }
         return $errors;
     }
@@ -559,6 +569,13 @@ final class PublicController
             return false;
         }
         return hash_equals(substr(hash_hmac('sha256', 'remember|' . $token . '|' . $m[1], (string) Config::get('secret', '')), 0, 32), $m[2]);
+    }
+
+    /** The language of a request for an interpreter as it is stored; null = no interpreter requested. */
+    public static function cleanLanguage(string $language): ?string
+    {
+        $language = self::cleanName($language);
+        return $language === '' ? null : $language;
     }
 
     /** Remove control characters, collapse whitespace. */

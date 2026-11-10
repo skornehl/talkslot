@@ -33,7 +33,7 @@
       <?php else: ?>
         <tr<?= $r['name'] ? '' : ' class="row-free"' ?>>
           <td><?= e(fmt_range($r['start_time'], $r['end_time'])) ?></td>
-          <td><?= $r['name'] ? e($r['name']) : ($r['is_blocked'] ? e(__('gesperrt')) : '–') ?><?= $r['is_conflict'] ? ' ⚠' : '' ?></td>
+          <td><?= $r['name'] ? e($r['name']) : ($r['is_blocked'] ? e(__('gesperrt')) : '–') ?><?= $r['is_conflict'] ? ' ⚠' : '' ?><?php if ($r['interpreter_lang'] !== null): ?><br><?= e(__('Dolmetschung gewünscht: {language}', ['language' => $r['interpreter_lang']])) ?><?php endif; ?></td>
           <?php if ($showEmail): ?><td><?= e($r['email'] ?? '') ?></td><?php endif; ?>
           <td></td>
         </tr>

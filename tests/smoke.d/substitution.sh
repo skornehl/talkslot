@@ -14,9 +14,11 @@ SUB=$(DBQ "SELECT id FROM tp_bookings WHERE name = 'Eltern Geheim'")
 SUSL=$(DBQ "SELECT slot_id FROM tp_bookings WHERE id = $SUB")
 SUD=$(DBQ "SELECT id FROM tp_round_days WHERE round_id = $SUR")
 SUF=$(DBQ "SELECT s.id FROM tp_slots s LEFT JOIN tp_bookings b ON b.slot_id = s.id WHERE s.day_id = $SUD AND b.id IS NULL LIMIT 1")
+DBQ "UPDATE tp_bookings SET interpreter_lang = 'Sprache Geheim' WHERE id = $SUB"
 SP_=$(curl -s -b "$J" "$B/admin/round/$SUR")
 SUM="csrf=$SUT&booking_limit=none&is_active=1&booking_deadline_hours=0&cancel_deadline_hours=0"
 check "admin in another teacher's round: how it is booked, no names or addresses, no booking actions, the offer to take over" 'echo "$SP_" | grep -q "action=\"/admin/round/$SUR/substitute\"" && [ "$(echo "$SP_" | grep -c ">gebucht<")" = 2 ] && ! echo "$SP_" | grep -q "Eltern Geheim" && ! echo "$SP_" | grep -q "geheim-$SU" && ! echo "$SP_" | grep -q "/admin/booking/$SUB/" && ! echo "$SP_" | grep -q "/admin/slot/$SUF/book" && ! echo "$SP_" | grep -q "/admin/round/$SUR/print"'
+check "… nor a request for an interpreter" '! echo "$SP_" | grep -q "Sprache Geheim" && ! echo "$SP_" | marker interpreter'
 SU_CODE() { curl -s -o /dev/null -w '%{http_code} %{redirect_url}' -b "$J" "$@"; }
 for u in "/admin/round/$SUR/print" "/admin/booking/$SUB/edit" "/admin/slot/$SUF/book" "/admin/day/$SUD/bookings"; do
   X=$(SU_CODE "$B$u"); [[ "$X" == "303 "*"/admin/round/$SUR" ]] || SU_BAD="${SU_BAD:-} $u:$X"
@@ -35,6 +37,7 @@ check "taking over: refused without the right password, nothing logged, no mail"
 DBQ "DELETE FROM tp_rate_limits WHERE bucket = 'reauth'"
 X=$(curl -s -L -b "$J" --data-urlencode "csrf=$SUT" --data-urlencode "current_password=$PASS" "$B/admin/round/$SUR/substitute")
 check "taken over: names and addresses visible, booking actions back, print view open, the message says the teacher was told" 'echo "$X" | grep -q "Vertretung übernommen: Sie sehen" && echo "$X" | grep -q "Die Lehrkraft wurde per E-Mail informiert." && echo "$X" | grep -q "Eltern Geheim" && echo "$X" | grep -q "geheim-$SU@example.org" && echo "$X" | grep -q "/admin/booking/$SUB/edit" && ! echo "$X" | grep -q "action=\"/admin/round/$SUR/substitute\"" && curl -s -b "$J" "$B/admin/round/$SUR/print" | grep -q "Eltern Geheim" && [ "$(curl -s -o /dev/null -w "%{http_code}" -b "$J" "$B/admin/booking/$SUB/edit")" = 200 ]'
+check "… and the request for an interpreter too" 'echo "$X" | grep -q "Dolmetschung gewünscht: Sprache Geheim"'
 SU_TEXT=$($DC exec -T app php -r '$r = json_decode(file_get_contents("http://mail:8025/api/v1/search?query=" . rawurlencode($argv[1])), true); echo json_decode(file_get_contents("http://mail:8025/api/v1/message/" . $r["messages"][0]["ID"]), true)["Text"];' "to:vertretung-$SU@example.org subject:Vertretung")
 check "… the teacher is told by e-mail, without data of parents" '[ "$(SU_MAILS "to:vertretung-$SU@example.org subject:Vertretung")" = 1 ] && echo "$SU_TEXT" | grep -qF "Hallo Frau Vertretung," && echo "$SU_TEXT" | grep -qF "die Vertretung für Ihre Runde „Vertretung Runde“ übernommen" && ! echo "$SU_TEXT" | grep -q "Eltern Geheim"'
 check "… logged, structured: kind of change and round, no data of parents" '[ "$(DBQ "SELECT CONCAT(action, \":\", round_id, \":\", COALESCE(params, \"none\")) FROM tp_audit_log WHERE round_id = $SUR AND action = \"substitution\"")" = "substitution:$SUR:{\"reached\":1}" ] && [ "$(DBQ "SELECT COUNT(*) FROM tp_audit_log WHERE round_id = $SUR AND (message LIKE \"%Eltern Geheim%\" OR message LIKE \"%geheim-$SU%\" OR params LIKE \"%geheim%\")")" = 0 ] && curl -s -b "$J" "$B/admin/log" | grep -q "Vertretung übernommen, Namen und E-Mail-Adressen der Eltern sichtbar"'

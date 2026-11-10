@@ -3,7 +3,7 @@
  * Overview of a round: days, breaks, slots, bookings. @var array $round @var array $days @var int $conflicts @var string $publicUrl
  * @var ?DateTimeImmutable $deletion when the clean-up deletes the round (null = not automatically)
  * @var array $parents upcoming bookings of the round and how many of their parents can be mailed (also per day: $day['parents'])
- * @var bool $seesParents false for an admin who has not taken over another teacher's round (Substitution): names and addresses are empty
+ * @var bool $seesParents false for an admin who has not taken over another teacher's round (Substitution): names, addresses and requests for an interpreter are empty
  */
 use App\Csrf;
 $rid = (int) $round['id'];
@@ -74,7 +74,7 @@ $deleteDays = App\AdminI18n::lang() === 'de' ? str_replace('.', ',', days_from_h
     <pre class="invitation"><?= e($invitation) ?></pre>
   </details>
   <?php if (trim((string) ($round['location'] ?? '')) !== ''): ?><p><?= __h('Ort: {location}', ['location' => '<strong>' . e(trim((string) $round['location'])) . '</strong>']) ?></p><?php endif; ?>
-  <p class="small muted"><?= e(['round' => __('Ein Termin pro Person'), 'day' => __('Ein Termin pro Person und Tag')][$round['booking_limit'] ?? 'none'] ?? __('Mehrfachbuchungen erlaubt')) ?><?= !empty($round['remind_parents']) ? ' · ' . e(__('Erinnerung am Vorabend')) : '' ?> · <?= e(__('Buchungsschluss {hours} h vorher', ['hours' => (int) $round['booking_deadline_hours']])) ?> · <?= e(__('Ändern/Absagen bis {hours} h vorher', ['hours' => (int) $round['cancel_deadline_hours']])) ?> ·
+  <p class="small muted"><?= e(['round' => __('Ein Termin pro Person'), 'day' => __('Ein Termin pro Person und Tag')][$round['booking_limit'] ?? 'none'] ?? __('Mehrfachbuchungen erlaubt')) ?><?= !empty($round['remind_parents']) ? ' · ' . e(__('Erinnerung am Vorabend')) : '' ?><?= !empty($round['ask_interpreter']) ? ' · ' . e(__('Fragt nach Dolmetschung')) : '' ?> · <?= e(__('Buchungsschluss {hours} h vorher', ['hours' => (int) $round['booking_deadline_hours']])) ?> · <?= e(__('Ändern/Absagen bis {hours} h vorher', ['hours' => (int) $round['cancel_deadline_hours']])) ?> ·
     <?= e(match (true) {
         $round['delete_after_hours'] === null => __('Runde wird nicht automatisch gelöscht'),
         $deletion !== null => __('Runde wird am {date} gelöscht ({days} Tag(e) nach Ablauf)', ['date' => $deletionText, 'days' => $deleteDays]),
@@ -170,7 +170,7 @@ $deleteDays = App\AdminI18n::lang() === 'de' ? str_replace('.', ',', days_from_h
         <td><span class="nowrap"><?= e(fmt_range($s['start_time'], $s['end_time'])) ?></span><?= $s['is_conflict'] ? ' <span class="badge badge-warning" data-conflict><span aria-hidden="true">⚠ </span>' . e(__('Konflikt')) . '</span>' : '' ?></td>
         <td>
           <?php if ($s['booking_id']): ?>
-            <?php if ($seesParents): ?><strong><?= e($s['name']) ?></strong><?php if ($s['email']): ?><br><span class="small"><?= e($s['email']) ?></span><?php endif; ?><?php else: ?><span class="muted"><?= e(__('gebucht')) ?></span><?php endif; ?>
+            <?php if ($seesParents): ?><strong><?= e($s['name']) ?></strong><?php if ($s['email']): ?><br><span class="small"><?= e($s['email']) ?></span><?php endif; ?><?php if ($s['interpreter_lang'] !== null): ?><br><span class="small" data-interpreter><?= e(__('Dolmetschung gewünscht: {language}', ['language' => $s['interpreter_lang']])) ?></span><?php endif; ?><?php else: ?><span class="muted"><?= e(__('gebucht')) ?></span><?php endif; ?>
             <?php if ($s['source'] === 'admin'): ?> <span class="badge"><?= e(__('selbst eingetragen')) ?></span><?php endif; ?>
             <?php if ($s['mail_failed_at'] !== null): ?> <span class="badge badge-warning" data-mail-failed title="<?= e($s['mail_waiting'] ? __('Neuer Versuch folgt automatisch. Erhalten die Eltern sie nicht, informieren Sie sie bitte persönlich oder prüfen Sie die Adresse.') : __('Es folgt kein weiterer Versuch. Bitte informieren Sie die Eltern persönlich oder prüfen Sie die Adresse.')) ?>"><?= e($s['mail_waiting'] ? __('E-Mail nicht zugestellt – neuer Versuch folgt') : __('E-Mail nicht zugestellt')) ?></span><?php endif; ?>
           <?php elseif ($s['is_blocked']): ?><span class="muted"><?= e(__('gesperrt')) ?></span>

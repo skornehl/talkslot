@@ -19,7 +19,10 @@ You received a link or a **round code** from your child's teacher. You do not ne
 4. **Enter your child's name**, first and last name, with the class if needed; no other details are needed. An **e-mail address is optional**: with it,
    you get a confirmation with your personal link and a calendar file, and usually a reminder the
    evening before. If the confirmation cannot be sent at that moment, the page says so and it follows
-   automatically (with a personal link of its own; the one on the page stays valid).
+   automatically (with a personal link of its own; the one on the page stays valid). If the teacher asks
+   about it for this round, you can also enter the **language for an interpreter**. Leave the field empty if
+   you do not need one. It is a request to the teacher, not yet a promise. To change or withdraw it, ask the
+   teacher, or cancel and book again.
 5. **Check and book.** Right above the button you see the appointment you chose, with date, time and
    location, and the most important privacy information: who is responsible, what your details are used for
    and when they are deleted. *More about privacy* shows the rest, and a link opens the full privacy notice in

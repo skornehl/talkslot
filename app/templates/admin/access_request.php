@@ -34,7 +34,7 @@
       <tr data-access-booking>
         <td><span class="nowrap"><?= e(fmt_date((string) $b['day_date'])) ?></span><br><span class="nowrap"><?= e(__('{time} Uhr', ['time' => fmt_range((string) $b['start_time'], (string) $b['end_time'])])) ?></span><?php if ((string) $b['location'] !== ''): ?><br><span class="small"><?= e((string) $b['location']) ?></span><?php endif; ?></td>
         <td><?= e((string) $b['title']) ?><br><span class="small"><?= e((string) $b['teacher_name']) ?></span></td>
-        <td><?= e((string) $b['name']) ?></td>
+        <td><?= e((string) $b['name']) ?><?php if ($b['interpreter_lang'] !== null): ?><br><span class="small" data-interpreter><?= e(__('Dolmetschung gewünscht: {language}', ['language' => $b['interpreter_lang']])) ?></span><?php endif; ?></td>
         <td><?= e(App\I18n::name((string) $b['lang'])) ?></td>
         <td class="small"><?= e($when((string) $b['created_at'])) ?><br><?= e($b['source'] === 'admin' ? __('Adresse von der Schule') : __('Adresse von den Eltern')) ?></td>
         <td class="small">

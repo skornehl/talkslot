@@ -68,6 +68,13 @@ $action = $round ? url('/admin/round/' . (int) $round['id'] . '/edit') : url('/a
     <?php endif; ?>
   </fieldset>
 
+  <input type="hidden" name="ask_interpreter_field" value="1">
+  <div class="check">
+    <input type="checkbox" id="ask_interpreter" name="ask_interpreter" value="1"<?= !empty($data['ask_interpreter']) ? ' checked' : '' ?> aria-describedby="ai-hint">
+    <label for="ask_interpreter"><?= e(__('Eltern fragen, ob sie eine Dolmetschung wünschen')) ?></label>
+  </div>
+  <p class="hint" id="ai-hint"><?= e(__('Das Buchungsformular bekommt dann ein freiwilliges Feld für die Sprache. Die Angabe steht in der Terminliste und im Ausdruck, in keiner E-Mail, und wird mit der Buchung gelöscht. Die Dolmetschung organisieren Sie selbst; prüfen Sie die Liste rechtzeitig, eine Benachrichtigung gibt es nicht.')) ?></p>
+
   <?php if (!$round): ?>
     <?php require __DIR__ . '/_day_fields.php'; ?>
   <?php else: ?>

@@ -22,6 +22,7 @@ Na tej stronie rodzice i opiekunowie prawni mogą umawiać, zmieniać i odwoływ
 
 - **imię i nazwisko (lub kilka)** wpisane w pole tekstowe (dane obowiązkowe). Prosimy podać tylko to, co jest potrzebne do przyporządkowania rozmowy (np. imię i nazwisko dziecka), i żadnych innych informacji.
 - **adres e-mail** – tylko jeśli podadzą go Państwo dobrowolnie. Służy wyłącznie do potwierdzenia rezerwacji i powiadomień o Państwa terminie (zmiana, odwołanie, przypomnienie wieczorem w dniu poprzedzającym, jeśli nauczyciel je przewidział dla danego harmonogramu terminów), a nie do reklamy ani newslettera.
+- **prośba o tłumacza (język)** – tylko jeśli nauczyciel przewidział to dla danego harmonogramu terminów i podadzą ją Państwo dobrowolnie. Służy wyłącznie przygotowaniu rozmowy. W systemie rezerwacji widzą ją tylko nauczyciel i administratorzy i tam jest usuwana wraz z rezerwacją. System nie podaje jej w żadnej wiadomości e-mail. Jeśli nauczyciel organizuje tłumacza, osoby za to odpowiedzialne poznają język i termin.
 - wybrany **termin**, czas dokonania rezerwacji i wybrany język.
 
 Jeśli podadzą Państwo adres e-mail, otrzymają Państwo potwierdzenia z terminem w postaci pliku kalendarza (.ics). Na stronie swojego terminu mogą Państwo również pobrać plik kalendarza i zlecić późniejsze wysłanie potwierdzenia na wybrany adres e-mail (najwyżej dwa razy w ciągu 24 godzin). Ten adres jest używany wyłącznie do wysłania tej wiadomości i nie jest zapisywany w systemie rezerwacji. Za to, co zapiszą Państwo we własnym kalendarzu, odpowiadają Państwo sami.
