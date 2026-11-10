@@ -38,7 +38,7 @@ WCAG 2.1, Stufe AA, vereinbar.
 
 Nicht barrierefreie Inhalte
 
-- Fehlermeldungen in Formularen stehen gesammelt über dem Formular und noch nicht beim jeweiligen Feld.
+- In den übrigen Formularen des Verwaltungsbereichs (Konten, Vorlagen außer den Pausen, Profil, Texte) stehen Fehlermeldungen gesammelt über dem Formular und noch nicht beim jeweiligen Feld.
   Grund: Die Software unterstützt das noch nicht. Alternative: Die Meldungen nennen das betroffene Feld.
 - Die Terminliste einer Runde im Verwaltungsbereich scrollt auf kleinen Bildschirmen seitlich.
   Grund: Die Tabelle ist breit. Alternative: Die Druckansicht.
@@ -74,6 +74,6 @@ Stand der Software:
 
 Bekannte Einschränkungen:
 
-- Fehler in Formularen stehen gesammelt über dem Formular und noch nicht beim jeweiligen Feld;
+- das Buchungsformular und die Formulare für Runden, Tage und Buchungen zeigen Fehler beim jeweiligen Feld; die übrigen Formulare des Verwaltungsbereichs (Konten, Vorlagen außer den Pausen, Profil, Texte) führen sie gesammelt über dem Formular auf und noch nicht beim Feld;
 - die Terminliste einer Runde ist eine breite Tabelle, die auf kleinen Bildschirmen seitlich scrollt (Verwaltungsbereich);
 - der Verwaltungsbereich ist nur auf Deutsch und Englisch verfügbar.

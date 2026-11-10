@@ -37,6 +37,6 @@ Current state of the software:
 
 Known limitations:
 
-- errors in forms are listed at the top of the form and are not yet shown at each field;
+- the booking form and the forms for rounds, days and bookings show errors at the field; the other forms of the admin area (accounts, templates apart from their breaks, profile, texts) list them at the top of the form and not yet at each field;
 - the list of appointments of a round is a wide table that scrolls sideways on small screens (admin area);
 - the admin area is available in German and English only.
