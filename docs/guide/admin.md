@@ -282,6 +282,9 @@ tell you when a text is missing a placeholder, is outdated (e.g. still mentions 
 booking form no longer has) or does not fit the operator type (e.g. the legal bases of the school template
 when TalkSlot is operated privately).
 
+Schools run as public bodies may also have to publish an **accessibility statement**, depending on the state: see the
+[template]({{ '/guide/accessibility-statement/' | relative_url }}).
+
 ## Notifications
 
 Under *Mein Profil* every account chooses its **summary mails** (*Zusammenfassungen per E-Mail*): an

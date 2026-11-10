@@ -15,12 +15,12 @@
   --warning-soft: #fff4dc;
   --danger: #a4262c;
   --danger-soft: #fdecec;
-  --focus: #f0a500;
+  --focus: #b45309; /* at least 3:1 against page and card, WCAG 1.4.11 (tests/unit.d/ux-a11y.php) */
   --on-primary: #ffffff;       /* text on --primary (button, selected slot) */
   --header-bg: var(--primary);
   --neutral-soft: #eef0f3;     /* code, neutral notes, prefix */
   --input-bg: #ffffff;
-  --input-border: #8b949e;
+  --input-border: #848d97;
   --field-soft: #f9fafb;       /* link field, invitation text */
   --row-muted: #f4f5f7;        /* blocked slots */
   --status-off: #eceef1;
@@ -42,6 +42,7 @@
     --text: #e6e9ed;
     --muted: #a3adb8;
     --border: #343b45;
+    --focus: #f0a500;
     --primary: #7cbcea;
     --primary-hover: #a3d1f2;
     --primary-soft: #16314a;
@@ -71,6 +72,7 @@
     --text: #e6e9ed;
     --muted: #a3adb8;
     --border: #343b45;
+    --focus: #f0a500;
     --primary: #7cbcea;
     --primary-hover: #a3d1f2;
     --primary-soft: #16314a;
@@ -117,6 +119,10 @@ a:hover { color: var(--primary-hover); }
 code { font-family: var(--mono); font-size: .9em; background: var(--neutral-soft); padding: .05em .3em; border-radius: 4px; }
 
 :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+/* The header is dark in both themes */
+.site-header :focus-visible { outline-color: #f0a500; }
+/* The skip link lies over the dark header: the ring on its own light surface */
+.skip-link:focus-visible { outline-offset: -3px; }
 
 .wrap { width: 100%; max-width: 46rem; margin: 0 auto; padding-inline: 1rem; }
 .wrap-wide { max-width: 72rem; }
@@ -192,8 +198,8 @@ code { font-family: var(--mono); font-size: .9em; background: var(--neutral-soft
 .hint-indent { margin: -.35rem 0 1rem 2.1rem; }
 .nowrap { white-space: nowrap; }
 .badge { display: inline-block; font-size: .75rem; font-weight: 600; padding: .1rem .45rem; border-radius: 99px; background: var(--primary-soft); color: var(--primary); vertical-align: middle; }
-.badge-warning { background: var(--warning-soft); color: var(--warning); }
-.site-header .badge { background: rgba(255,255,255,.2); color: #fff; }
+.badge-warning { background: var(--warning-soft); color: var(--warning); border: 1px solid var(--warning-border); }
+.site-header .badge { background: rgba(255,255,255,.15); color: #fff; }
 .status { display: inline-block; font-size: .85rem; font-weight: 600; padding: .15rem .6rem; border-radius: 99px; }
 .status-on { background: var(--success-soft); color: var(--success); }
 .status-off { background: var(--status-off); color: var(--muted); }
@@ -303,7 +309,7 @@ details summary { cursor: pointer; color: var(--primary); margin: .5rem 0; }
   display: flex; align-items: center; justify-content: center;
   min-height: 3rem; padding: .5rem; text-align: center;
   font-weight: 600; font-variant-numeric: tabular-nums;
-  background: var(--surface); border: 2px solid var(--border); border-radius: 8px; cursor: pointer;
+  background: var(--surface); border: 2px solid var(--input-border); border-radius: 8px; cursor: pointer;
 }
 .slot label:hover { border-color: var(--primary); }
 .slot input:focus-visible + label { outline: 3px solid var(--focus); outline-offset: 2px; }

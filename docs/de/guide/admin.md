@@ -306,6 +306,9 @@ und zeigen an, wenn einem Text ein Platzhalter fehlt, er veraltet ist (z. B. noc
 erwähnt, das das Buchungsformular nicht mehr hat) oder nicht zur Betriebsart passt (z. B. die
 Rechtsgrundlagen der Vorlage für Schulen bei privatem Betrieb).
 
+Öffentliche Schulen müssen je nach Bundesland auch eine **Erklärung zur Barrierefreiheit** veröffentlichen: siehe die
+[Vorlage]({{ '/de/guide/accessibility-statement/' | relative_url }}).
+
 ## Benachrichtigungen
 
 Unter *Mein Profil* legt jedes Konto fest, welche ***Zusammenfassungen per E-Mail***

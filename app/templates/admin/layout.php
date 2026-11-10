@@ -35,14 +35,18 @@ $legalQuery = ['lang' => App\AdminI18n::lang() !== 'de' && App\I18n::lang() === 
   <div class="wrap wrap-wide header-inner">
     <a class="brand" href="<?= e(url('/admin')) ?>"><?= e(app_name()) ?> <span class="badge"><?= Auth::check() && Auth::isAdmin() ? 'Admin' : e(__('Verwaltung')) ?></span></a>
     <?php if (Auth::check()): ?>
+    <?php /* Where you are in the menu: "page" on the page itself, "true" on a page within that section */
+    $here = App\Http::path();
+    $current = static fn (string $path, array $sections = []): string => $here === $path ? ' aria-current="page"'
+        : (array_filter($sections, static fn (string $section): bool => str_starts_with($here, $section)) ? ' aria-current="true"' : ''); ?>
     <nav class="admin-nav" aria-label="<?= e(__('Hauptmenü')) ?>">
-      <a href="<?= e(url('/admin')) ?>"><?= App\Auth::isAdmin() ? e(__('Alle Runden')) : e(__('Meine Runden')) ?></a>
-      <a href="<?= e(url('/admin/profile')) ?>"><?= e(__('Mein Profil')) ?></a>
+      <a href="<?= e(url('/admin')) ?>"<?= $current('/admin', ['/admin/round/', '/admin/day/', '/admin/slot/', '/admin/booking/']) ?>><?= App\Auth::isAdmin() ? e(__('Alle Runden')) : e(__('Meine Runden')) ?></a>
+      <a href="<?= e(url('/admin/profile')) ?>"<?= $current('/admin/profile') ?>><?= e(__('Mein Profil')) ?></a>
       <?php if (Auth::isAdmin()): ?>
-        <a href="<?= e(url('/admin/users')) ?>"><?= e(__('Benutzer')) ?></a>
-        <a href="<?= e(url('/admin/texts')) ?>"><?= e(__('Texte')) ?></a>
-        <a href="<?= e(url('/admin/templates')) ?>"><?= e(__('Vorlagen')) ?></a>
-        <a href="<?= e(url('/admin/log')) ?>"><?= e(__('Protokoll')) ?></a>
+        <a href="<?= e(url('/admin/users')) ?>"<?= $current('/admin/users', ['/admin/users/']) ?>><?= e(__('Benutzer')) ?></a>
+        <a href="<?= e(url('/admin/texts')) ?>"<?= $current('/admin/texts', ['/admin/texts/', '/admin/page/']) ?>><?= e(__('Texte')) ?></a>
+        <a href="<?= e(url('/admin/templates')) ?>"<?= $current('/admin/templates', ['/admin/templates/']) ?>><?= e(__('Vorlagen')) ?></a>
+        <a href="<?= e(url('/admin/log')) ?>"<?= $current('/admin/log') ?>><?= e(__('Protokoll')) ?></a>
       <?php endif; ?>
       <span class="nav-user" title="<?= e(__('Angemeldet als')) ?>"><?= e(Auth::user()['username']) ?></span>
       <form method="post" action="<?= e(url('/admin/logout')) ?>" class="inline">
