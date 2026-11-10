@@ -10,13 +10,32 @@ namespace App;
  */
 final class Migrations
 {
-    public const LATEST = 28;
+    public const LATEST = 29;
 
     /** Seconds a step waits for a metadata lock (e.g. an open transaction in phpMyAdmin) before it gives up */
     private const LOCK_WAIT_SECONDS = 10;
 
     /** Pause after a step gave up on a metadata lock */
     private const RETRY_AFTER_SECONDS = 60;
+
+    /**
+     * What step 29 changes, table => column => [type and nullability as before, collation]: columns that only ever
+     * hold ASCII. A hash is compared exactly (ascii_bin); a username, as before, without regard to case
+     * (ascii_general_ci), but no longer with accents or invisible characters ignored (expert review P3-8).
+     */
+    private const ASCII_COLUMNS = [
+        'users' => [
+            'username' => ['VARCHAR(254) NOT NULL', 'ascii_general_ci'],
+            'access_token_hash' => ['CHAR(64) NULL', 'ascii_bin'],
+        ],
+        'bookings' => [
+            'token_hash' => ['CHAR(64) NOT NULL', 'ascii_bin'],
+            'reminder_token_hash' => ['CHAR(64) NULL', 'ascii_bin'],
+            'mail_token_hash' => ['CHAR(64) NULL', 'ascii_bin'],
+        ],
+        'rate_limits' => ['key_hash' => ['CHAR(64) NOT NULL', 'ascii_bin']],
+        'round_translations' => ['source_hash' => ['CHAR(64) NOT NULL', 'ascii_bin']],
+    ];
 
     /** Version => SQL statements */
     private const STEPS = [
@@ -227,6 +246,9 @@ final class Migrations
             'ALTER TABLE rounds ADD COLUMN IF NOT EXISTS ask_interpreter TINYINT(1) NOT NULL DEFAULT 0 AFTER remind_parents',
             'ALTER TABLE bookings ADD COLUMN IF NOT EXISTS interpreter_lang VARCHAR(60) NULL AFTER email',
         ],
+        // 29 (2.0): PHP step only (asciiColumns): username and hash columns in ASCII, the one change in place that is
+        // not additive besides step 26 (docs/guide/development.md#migrations)
+        29 => [],
     ];
 
     /**
@@ -484,7 +506,10 @@ final class Migrations
                     self::pinToCode();
                 }
                 if ($version === 26) {
-                    self::reportSkipped(self::addInvariants());
+                    self::reportSkipped(26, self::addInvariants());
+                }
+                if ($version === 29) {
+                    self::reportSkipped(29, self::asciiColumns());
                 }
                 Settings::set('schema_version', (string) $version);
             }
@@ -534,34 +559,76 @@ final class Migrations
         return implode(', ', array_unique(array_map('strval', array_column(Db::all($sql . ' LIMIT 20'), 'id'))));
     }
 
+    /**
+     * Step 29: the columns of ASCII_COLUMNS in ASCII, one ALTER per table. The values stay the same text and the
+     * type stays, so there is no second column to fill and a UNIQUE key cannot fail (ASCII collations only tell
+     * apart what utf8mb4_unicode_ci told apart or more). The previous release runs on it, with one known fault
+     * in its forgot-password form (docs/guide/operations.md#upgrading-to-2-0).
+     * A column with a value outside ASCII is left out, as MODIFY would fail on it and block every later step;
+     * retryInvariants() converts it once the rows allow it. Repeatable: a column already converted is skipped.
+     * @return list<string> the columns left out, with the accounts concerned
+     */
+    private static function asciiColumns(): array
+    {
+        $skipped = [];
+        foreach (self::ASCII_COLUMNS as $table => $columns) {
+            $modify = [];
+            foreach ($columns as $column => [$definition, $collation]) {
+                $current = Db::value(
+                    'SELECT COLLATION_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?',
+                    [Db::table($table), $column]
+                );
+                if ($current === $collation) {
+                    continue;
+                }
+                // Several bytes for one character: utf8mb4 stores everything outside ASCII that way
+                $outside = "SELECT %s FROM $table WHERE LENGTH($column) <> CHAR_LENGTH($column)";
+                $count = (int) Db::value(sprintf($outside, 'COUNT(*)'));
+                if ($count > 0) {
+                    $which = $table === 'users' ? 'Konten: ' . self::roundsIn(sprintf($outside, 'id')) : "$count Zeilen";
+                    $skipped[] = "Nur ASCII in $table.$column, die Spalte bleibt wie sie ist. $which";
+                    continue;
+                }
+                [$type, $null] = explode(' ', $definition, 2);
+                $modify[] = "MODIFY $column $type CHARACTER SET ascii COLLATE $collation $null";
+            }
+            if ($modify !== []) {
+                Db::execRaw("ALTER TABLE $table " . implode(', ', $modify));
+            }
+        }
+        return $skipped;
+    }
+
     /** @param list<string> $skipped */
-    private static function reportSkipped(array $skipped): void
+    private static function reportSkipped(int $step, array $skipped): void
     {
         if ($skipped === []) {
             return;
         }
         Settings::set('schema_rules_skipped', '1');
-        ErrorPage::writeLog('Migration 26: rules not set, the rows break them: ' . implode(' ', $skipped));
-        Alert::notify('schema-rules', 'Datenbank: Regel nicht gesetzt', array_merge(
+        ErrorPage::writeLog("Migration $step: rules not set, the rows break them: " . implode(' ', $skipped));
+        Alert::notify('schema-rules-' . $step, 'Datenbank: Regel nicht gesetzt', array_merge(
             ['Vorhandene Daten verletzen diese Regeln, sie wurden deshalb nicht in der Datenbank gesetzt (die Formulare prüfen sie weiterhin).',
              'Sie werden beim nächsten Cronjob gesetzt, sobald die Daten in Ordnung sind.'],
             $skipped
         ));
     }
 
-    /** Each clean-up run: adds the rules step 26 had to leave out once the rows allow it. No further mail. */
+    /** Each clean-up run: finishes what steps 26 and 29 had to leave out once the rows allow it. No further mail. */
     public static function retryInvariants(): void
     {
         if (Settings::get('schema_rules_skipped') !== '1' || !Db::lock('migrate', 0)) {
             return;
         }
         try {
-            if (self::addInvariants() === []) {
+            Db::execRaw('SET SESSION lock_wait_timeout = ' . self::LOCK_WAIT_SECONDS);
+            if (array_merge(self::addInvariants(), self::asciiColumns()) === []) {
                 Settings::set('schema_rules_skipped', '0');
             }
         } catch (\Throwable $e) {
             ErrorPage::log($e); // the clean-up goes on; the next run tries again
         } finally {
+            Db::execRaw('SET SESSION lock_wait_timeout = DEFAULT');
             Db::unlock('migrate');
         }
     }

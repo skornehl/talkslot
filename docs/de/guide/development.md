@@ -306,13 +306,20 @@ direkt. Eine bestehende führt beim nächsten Aufruf die fehlenden Schritte aus 
   und nutzen, die alte erst in einer späteren Major-Version entfernen. Schritt 3 (Umbenennen von
   `admin_users`, Löschen von Spalten) stammt aus der Zeit vor dieser Regel. Schritt 26 setzt `UNIQUE` und `CHECK` auf bestehenden
   Spalten als bewusste Ausnahme: nur wo die Zeilen es zulassen (sonst nennt er dem Betreiber die Runden, und ein späterer Cron-Lauf setzt die Regel, sobald sie in Ordnung sind), und die Vorversion lehnt solche
-  Zeilen in ihren Formularen ohnehin ab.
+  Zeilen in ihren Formularen ohnehin ab. Schritt 29 (2.0) ändert den Zeichensatz von `users.username` und den
+  Hash-Spalten direkt, als zweite Ausnahme und nur in einer Major-Version: Der Typ bleibt und die Werte bleiben derselbe
+  Text (Hex-Hashes, ASCII-Benutzernamen), es gibt also keine zweite Spalte zu befüllen. Die Vorversion läuft darauf, bis auf
+  ihr Formular „Passwort vergessen“ mit einer Adresse außerhalb von ASCII. `Migrations::ASCII_COLUMNS` nennt genau diese Spalten, eine Spalte mit einem Wert außerhalb von
+  ASCII bleibt wie sie ist und wird gemeldet wie die Zeilen von Schritt 26, und ein Unit-Test lehnt jedes andere
+  `DROP`, `RENAME`, `MODIFY`, `CHANGE`, `TRUNCATE` oder `CONVERT TO` in den PHP-Schritten ab. Text, der außerhalb von ASCII liegen kann, darf nie mit einer solchen
+  Spalte verglichen werden: MariaDB antwortet dann mit Fehler 1267 statt „kein Treffer“.
 - Während die Dateien eines Updates hochgeladen werden, kann neuer Code kurz auf das alte Schema treffen. Wo das
   zählt (eine Seite, die nicht scheitern darf), sollte der Code auf das alte Verhalten zurückfallen, bis der
   Schritt gelaufen ist, wie `RoundAccess::required()`. Ein solcher Rückfall nennt die Migration, die er
   überbrückt, und kann mit der nächsten Major-Version nur entfallen, wenn der
-  [Upgrade-Pfad]({{ '/de/guide/operations/' | relative_url }}#updates) nicht mehr unterhalb dieser Migration beginnt: 2.0
-  soll v1.3.0 voraussetzen (Migration 13).
+  [Upgrade-Pfad]({{ '/de/guide/operations/' | relative_url }}#updates) nicht mehr unterhalb dieser Migration beginnt.
+  2.0 entfernt keinen solchen Rückfall und aktualisiert weiterhin jede 1.x; eine spätere Major-Version, die das tut,
+  kann v1.3.0 (Migration 13) voraussetzen.
 - Die Schritte nutzen MariaDB-Syntax (10.6 oder neuer); MySQL wird nicht unterstützt.
 - Parallele Branches: Zwei Branches, die einen Schritt unter derselben Nummer hinzufügen, geraten in Git in
   Konflikt, und wer beim Auflösen beide Blöcke behält, verliert einen davon unbemerkt (PHP behält von zwei

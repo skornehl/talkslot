@@ -5,6 +5,7 @@
 -- Accounts: role admin = may manage accounts, every person manages only their own rounds.
 -- controller_contact: admin only – details for legal notice and privacy policy (placeholder [[VERANTWORTLICHE]]).
 -- access_token_hash: SHA-256 of an invitation or password link (single use, with expiry).
+-- username and all hash columns hold ASCII only (Migrations::ASCII_COLUMNS): a hash is compared exactly, a username without regard to case.
 -- lang: language of the admin area and of mails to the account (de, en; NULL = admin_language).
 -- reply_to: where the replies of parents go (Reply-To of their mails); NULL = email.
 -- parent_contact: how parents can reach the account with questions, shown on their pages (ParentContact);
@@ -13,7 +14,7 @@
 -- before that setting, which keeps them where allowed until it confirms the notice on the dashboard (Summaries).
 CREATE TABLE IF NOT EXISTS users (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-  username VARCHAR(254) NOT NULL,
+  username VARCHAR(254) CHARACTER SET ascii COLLATE ascii_general_ci NOT NULL,
   password_hash VARCHAR(255) NOT NULL,
   role ENUM('admin','teacher') NOT NULL DEFAULT 'teacher',
   display_name VARCHAR(200) NOT NULL DEFAULT '',
@@ -24,7 +25,7 @@ CREATE TABLE IF NOT EXISTS users (
   controller_contact TEXT NULL,
   is_active TINYINT(1) NOT NULL DEFAULT 1,
   must_change_password TINYINT(1) NOT NULL DEFAULT 0,
-  access_token_hash CHAR(64) NULL,
+  access_token_hash CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NULL,
   access_token_expires_at DATETIME NULL,
   summary_evening TINYINT(1) NOT NULL DEFAULT 1,
   summary_deadline TINYINT(1) NOT NULL DEFAULT 1,
@@ -134,15 +135,15 @@ CREATE TABLE IF NOT EXISTS bookings (
   name VARCHAR(200) NOT NULL,
   email VARCHAR(254) NULL,
   interpreter_lang VARCHAR(60) NULL,
-  token_hash CHAR(64) NOT NULL,
+  token_hash CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
   lang VARCHAR(5) NOT NULL DEFAULT 'de',
   source ENUM('parent','admin') NOT NULL DEFAULT 'parent',
   remind_ok TINYINT(1) NOT NULL DEFAULT 0,
   notified_at DATETIME NULL,
   mail_failed_at DATETIME NULL,
   reminded_at DATETIME NULL,
-  reminder_token_hash CHAR(64) NULL,
-  mail_token_hash CHAR(64) NULL,
+  reminder_token_hash CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NULL,
+  mail_token_hash CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NULL,
   created_at DATETIME NOT NULL,
   updated_at DATETIME NOT NULL,
   UNIQUE KEY uq_bookings_slot (slot_id),
@@ -163,7 +164,7 @@ CREATE TABLE IF NOT EXISTS pages (
 -- key_hash: HMAC of the truncated IP address, entries kept for at most 24 h
 CREATE TABLE IF NOT EXISTS rate_limits (
   bucket VARCHAR(20) NOT NULL,
-  key_hash CHAR(64) NOT NULL,
+  key_hash CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
   window_start INT UNSIGNED NOT NULL,
   hits INT UNSIGNED NOT NULL DEFAULT 0,
   PRIMARY KEY (bucket, key_hash),
@@ -234,7 +235,7 @@ CREATE TABLE IF NOT EXISTS round_translations (
   lang VARCHAR(5) NOT NULL,
   title VARCHAR(200) NOT NULL,
   description TEXT NULL,
-  source_hash CHAR(64) NOT NULL,
+  source_hash CHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
   is_manual TINYINT(1) NOT NULL DEFAULT 0,
   updated_at DATETIME NOT NULL,
   PRIMARY KEY (round_id, lang),

@@ -103,7 +103,7 @@ $old = $run . 'a_';
 $as($old);
 $load(__DIR__ . '/fixtures/schema-v1.0.0.sql');
 $now = '2026-11-01 10:00:00';
-$userId = Db::insert("INSERT INTO users (username, password_hash, role, display_name, email, created_at) VALUES ('sabrina', 'x', 'admin', 'Frau Test', 'lehrer@example.org', ?)", [$now]);
+$userId = Db::insert("INSERT INTO users (username, password_hash, role, display_name, email, created_at) VALUES ('Sabrina.Test', 'x', 'admin', 'Frau Test', 'lehrer@example.org', ?)", [$now]);
 $roundId = Db::insert("INSERT INTO rounds (user_id, title, slug, created_at, updated_at) VALUES (?, 'Elternsprechtag', 'elternsprechtag', ?, ?)", [$userId, $now, $now]);
 $dayId = Db::insert("INSERT INTO round_days (round_id, day_date, start_time, end_time, slot_minutes) VALUES (?, '2026-12-01', '14:00:00', '15:00:00', 30)", [$roundId]);
 $slotId = Db::insert("INSERT INTO slots (day_id, start_time, end_time) VALUES (?, '14:00:00', '14:30:00')", [$dayId]);
@@ -116,6 +116,10 @@ check('the data of the first release is still there, and the steps filled in the
     Db::value('SELECT name FROM bookings WHERE slot_id = ?', [$slotId]) === 'Anna Muster'
     && Db::value('SELECT COUNT(*) FROM rounds WHERE id = ? AND user_id = ?', [$roundId, $userId]) === 1
     && (int) Db::value('SELECT was_used FROM rounds WHERE id = ?', [$roundId]) === 1 && (int) Db::value('SELECT remind_ok FROM bookings WHERE slot_id = ?', [$slotId]) === 1);
+$hash = str_repeat('a', 64);
+check('step 29: the username keeps its spelling and still matches without regard to case; a hash matches exactly',
+    Db::value('SELECT username FROM users WHERE id = ?', [$userId]) === 'Sabrina.Test' && (int) Db::value('SELECT id FROM users WHERE username = ?', ['SABRINA.test']) === $userId
+    && Db::value('SELECT token_hash FROM bookings WHERE slot_id = ?', [$slotId]) === $hash && Db::value('SELECT COUNT(*) FROM bookings WHERE token_hash = ?', [strtoupper($hash)]) === 0);
 $migrated = $snapshot($old);
 $rows = static fn (): string => (string) json_encode([Db::all('SELECT * FROM users'), Db::all('SELECT * FROM rounds'), Db::all('SELECT * FROM round_days'), Db::all('SELECT * FROM slots'), Db::all('SELECT * FROM bookings')]);
 $before = $rows();

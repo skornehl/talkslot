@@ -15,9 +15,28 @@ atomare Deployment um.
 
 Lesen Sie vor dem Update die [Release Notes](https://github.com/skornehl/talkslot/releases).
 
-**Upgrade-Pfad:** Jede 1.x-Version lässt sich direkt auf die neueste 1.x aktualisieren. Eine künftige Version 2.0
-wird nur Installationen ab v1.3.0 aktualisieren; bringen Sie eine ältere Installation daher zuerst auf die neueste
-1.x. Ihre Version steht unten auf jeder Seite (*Powered by TalkSlot v…*).
+**Upgrade-Pfad:** Jede 1.x-Version lässt sich direkt auf die neueste Version aktualisieren, auch auf 2.0. Ihre
+Version steht unten auf jeder Seite (*Powered by TalkSlot v…*).
+
+### Update auf 2.0 {#update-auf-2-0}
+
+Version 2.0 bringt eine Schemaänderung, die nicht nur hinzufügt: Migration 29 speichert die Spalten, die nur ASCII
+enthalten, auch als ASCII. `users.username` wird zu `ascii_general_ci` (die Anmeldung unterscheidet weiterhin nicht
+nach Groß- und Kleinschreibung), die Hash-Spalten (`users.access_token_hash`, `bookings.token_hash`,
+`bookings.reminder_token_hash`, `bookings.mail_token_hash`, `rate_limits.key_hash`, `round_translations.source_hash`)
+werden zu `ascii_bin`. Die Werte bleiben, wie sie sind, Buchungslinks, Einladungslinks und Sitzungen gelten also weiter.
+
+- **Vor dem Update:** Legen Sie ein [Datenbank-Backup](#backups) an. Der Schritt schreibt `users`, `bookings`,
+  `rate_limits` und `round_translations` neu, Schreibzugriffe auf diese Tabellen warten so lange (bei den Daten einer
+  Schule einen Moment).
+- **Benutzernamen außerhalb von ASCII:** Solche Namen werden seit Langem nicht mehr angenommen und können sich nicht
+  anmelden. Hat ein altes Konto noch einen, behält die Spalte ihren alten Zeichensatz, und die Alert-Mail nennt die ID des
+  Kontos. Geben Sie dem Konto unter *Benutzer* einen gültigen Benutzernamen; der nächste Cronjob schließt den Schritt ab.
+- **Zurück:** Ein Rollback auf 1.x wird nicht mehr zugesichert, anders als ein Rollback innerhalb einer Major-Version.
+  1.x läuft auf dem neuen Schema mit einem bekannten Fehler: Das Formular „Passwort vergessen“ antwortet bei einer Adresse
+  außerhalb von ASCII, etwa mit Umlaut in der Domain, mit einer Fehlerseite. Nur das Einspielen des Backups stellt das alte Schema wieder her.
+- **Mindestversion:** keine über 1.x hinaus. Die frühere Planung, v1.3.0 vorauszusetzen, gilt für 2.0 nicht, da 2.0
+  keinen Rückfall für ältere Schemata entfernt.
 
 ## Datenbank-Migrationen
 
@@ -35,7 +54,7 @@ MariaDB-Syntax würde mittendrin scheitern): Die Fehler-E-Mail und die Übersich
 Datenbankserver. Auch der Cronjob meldet ihn: `db_server` ist `ok` oder `unsupported` in der Ausgabe von
 `php bin/cron.php -v` und des Web-Crons.
 
-Migrationen fügen nur Spalten, Tabellen und Indizes hinzu, sodass ein Rollback auf die vorige Version derselben
+2.0 ist die Ausnahme davon, siehe [Update auf 2.0](#update-auf-2-0). Sonst gilt: Migrationen fügen nur Spalten, Tabellen und Indizes hinzu, sodass ein Rollback auf die vorige Version derselben
 Major-Version weiter funktioniert ([Regeln für Migrationen]({{ '/de/guide/development/' | relative_url }}#migrationen)).
  Texte für Impressum und Datenschutzerklärung, die nie bearbeitet wurden, werden
 automatisch durch neuere Vorlagen der Betriebsart (von der Schule oder privat betrieben) ersetzt; bearbeitete

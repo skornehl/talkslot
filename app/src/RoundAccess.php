@@ -19,8 +19,8 @@ final class RoundAccess
         if (array_key_exists('code_required', $round)) {
             return !empty($round['code_required']);
         }
-        // Transition during upload: new code, migration 10 not yet run → old PIN column. Goes with 2.0, which
-        // requires v1.3.0 or newer (upgrade path, docs/guide/operations.md)
+        // Transition during upload: new code, migration 10 not yet run → old PIN column. Can go with a major version
+        // that requires v1.3.0 or newer (upgrade path, docs/guide/development.md)
         return (string) ($round['access_pin'] ?? '') !== '';
     }
 

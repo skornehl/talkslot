@@ -530,6 +530,30 @@ ALERTS "$OP_RULES"' file_get_contents($u, false, stream_context_create(["http" =
   $f = "/srv/app/app/var/alerts.json"; $s = json_decode((string) @file_get_contents($f), true);
   if (is_array($s)) { $n = count($s["keys"] ?? []); $s["keys"] = array_filter($s["keys"] ?? [], fn ($e) => $e["last"] < '"$OP_T1"');
     $s["_count"] = max(0, ($s["_count"] ?? 0) - $n + count($s["keys"])); file_put_contents($f, json_encode($s)); }'
+# Migration 29: an existing row outside ASCII keeps its column as it is and is reported; the rest is converted.
+# From schema version 25 with a row that also breaks a rule of step 26, as an update from a release runs both steps at once
+OP_COLL() { DBQ "SELECT COLLATION_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'tp_$1' AND COLUMN_NAME = '$2'"; }
+OP_T2=$(date +%s)
+OP_NAME="CONCAT('betrieb-umla', CHAR(0xC3A4 USING utf8mb4), 'ut')"
+DBQ "ALTER TABLE tp_users MODIFY username VARCHAR(254) COLLATE utf8mb4_unicode_ci NOT NULL, MODIFY access_token_hash CHAR(64) COLLATE utf8mb4_unicode_ci NULL; ALTER TABLE tp_rate_limits MODIFY key_hash CHAR(64) COLLATE utf8mb4_unicode_ci NOT NULL; INSERT INTO tp_users (username, password_hash, role, display_name, is_active, created_at) VALUES ($OP_NAME, 'x', 'teacher', 'Herr Umlaut', 0, NOW()); ALTER TABLE tp_rounds DROP CONSTRAINT ck_rounds_limit; UPDATE tp_rounds SET booking_limit = 'alle' WHERE id = $OPR; UPDATE tp_settings SET value = '25' WHERE name = 'schema_version'"
+OP_UML=$(DBQ "SELECT id FROM tp_users WHERE username = $OP_NAME")
+curl -s -o /dev/null "$B/"
+OP_29V=$(OP_SETTING schema_version); OP_29U=$(OP_COLL users username); OP_29H=$(OP_COLL users access_token_hash); OP_29K=$(OP_COLL rate_limits key_hash)
+OP_AL29=$(ALERTS "$OP_RULES"' echo json_decode(file_get_contents($u), true)["messages_count"] ?? "?";')
+OP_RULES29='$q = urlencode("to:betrieb@example.org subject:\"Datenbank: Regel nicht gesetzt\" Konten"); $u = "http://mail:8025/api/v1/search?query=$q";'
+OP_B29=$(ALERTS "$OP_RULES29"' $m = json_decode(file_get_contents($u), true)["messages"][0]["ID"] ?? ""; echo json_decode(file_get_contents("http://mail:8025/api/v1/message/$m"), true)["Text"] ?? "";' | tr -d '\r')
+check "migration 29 on a username outside ASCII: that column stays, the others are converted, a report of its own naming the account besides the one of step 26 ($OP_29U $OP_29H $OP_29K $OP_AL29)" '[ "$OP_29V" = "$OP_LATEST" ] && [ "$OP_29U" = utf8mb4_unicode_ci ] && [ "$OP_29H" = ascii_bin ] && [ "$OP_29K" = ascii_bin ] && [ "$OP_AL29" = 2 ] && [ "$(echo "$OP_B29" | grep -c "users.username.*Konten: $OP_UML$")" = 1 ]'
+check "… and the row is untouched" '[ "$(DBQ "SELECT HEX(username) FROM tp_users WHERE id = $OP_UML")" = 626574726965622D756D6C61C3A47574 ]'
+$DC exec -T app php /srv/app/bin/cron.php > /dev/null
+check "the row still outside ASCII: the cron job leaves the column, without another report" '[ "$(OP_COLL users username)" = utf8mb4_unicode_ci ] && [ "$(OP_SETTING schema_rules_skipped)" = 1 ] && [ "$(ALERTS "$OP_RULES"'"'"' echo json_decode(file_get_contents($u), true)["messages_count"] ?? "?";'"'"')" = 2 ]'
+DBQ "UPDATE tp_users SET username = 'betrieb-umlaut' WHERE id = $OP_UML; UPDATE tp_rounds SET booking_limit = '$OP_LIMIT' WHERE id = $OPR"
+$DC exec -T app php /srv/app/bin/cron.php > /dev/null
+check "the rows in order: the next cron job converts the column, sets the rule and stops asking" '[ "$(OP_COLL users username)" = ascii_general_ci ] && [ "$(OP_CK)" = 2 ] && [ "$(OP_SETTING schema_rules_skipped)" = 0 ] && [ "$(OP_SETTING schema_version)" = "$OP_LATEST" ]'
+DBQ "DELETE FROM tp_users WHERE id = $OP_UML"
+ALERTS "$OP_RULES"' file_get_contents($u, false, stream_context_create(["http" => ["method" => "DELETE"]]));
+  $f = "/srv/app/app/var/alerts.json"; $s = json_decode((string) @file_get_contents($f), true);
+  if (is_array($s)) { $n = count($s["keys"] ?? []); $s["keys"] = array_filter($s["keys"] ?? [], fn ($e) => $e["last"] < '"$OP_T2"');
+    $s["_count"] = max(0, ($s["_count"] ?? 0) - $n + count($s["keys"])); file_put_contents($f, json_encode($s)); }'
 # The settings of the round are those under the lock, not those from the start of the request
 OP_SCRIPT="$ROOT/tests/.op-inv.php"
 cat > "$OP_SCRIPT" <<'PHP'

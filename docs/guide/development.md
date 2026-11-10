@@ -283,12 +283,19 @@ directly. An existing one runs the missing steps of `Migrations::STEPS` on the n
   (expand, then contract): add the new column and use it, drop the old one only in a later major version.
   Step 3 (renaming `admin_users`, dropping columns) dates from before this rule. Step 26 sets `UNIQUE` and `CHECK` on
   existing columns as a deliberate exception: only where the rows allow it (otherwise it names the rounds to the operator, and a later cron run adds the rule once they are in order), and the
-  previous version already refuses such rows in its forms.
+  previous version already refuses such rows in its forms. Step 29 (2.0) changes the character set of `users.username`
+  and the hash columns in place, as the other exception and only in a major version: the type stays and the values
+  stay the same text (hex hashes, ASCII usernames), so there is no second column to fill. The previous release runs on it, apart from
+  its forgot-password form with an address outside ASCII. `Migrations::ASCII_COLUMNS` lists exactly these columns, a column
+  with a value outside ASCII is left out and reported like the rows of step 26, and a unit test rejects any other
+  `DROP`, `RENAME`, `MODIFY`, `CHANGE`, `TRUNCATE` or `CONVERT TO` in the PHP steps. Text that may be outside ASCII must never be compared with such
+  a column: MariaDB answers with error 1267 instead of "no match".
 - While the files of an update are uploaded, new code may meet the old schema for a moment. Where that
   matters (a page that must not fail), let the code fall back to the old behaviour until the step has run,
   as `RoundAccess::required()` does. Such a fallback names the migration it bridges and can go with the next
   major version only if the [upgrade path]({{ '/guide/operations/' | relative_url }}#updates) no longer starts
-  below that migration: 2.0 is planned to require v1.3.0 (migration 13).
+  below that migration. 2.0 removes no such fallback and still updates every 1.x; a later major version that does
+  can require v1.3.0 (migration 13).
 - The steps use MariaDB syntax (10.6 or newer); MySQL is not supported.
 - Parallel branches: two branches that add a step under the same number conflict in Git, and keeping both
   blocks when resolving it loses one of them silently (PHP keeps only the last of two equal array keys).
