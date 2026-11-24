@@ -6,12 +6,12 @@
 ARG PHP_VERSION=8.5
 ARG MARIADB_VERSION=11.8
 
-FROM mariadb:11.8@sha256:d36f18d65a0459510b8b0f643b226a6d299e3206486e2b64ff20754a6d291707 AS mariadb-11.8
-FROM mariadb:10.6@sha256:c7d726a1c0d29e486a1ab4ef0c76c75431a11428e76c50e99ba32106cea04114 AS mariadb-10.6
+FROM mariadb:11.8@sha256:e1d5495f445654134f226f55a41ce0da227116f6f27f283101f405c794d841fc AS mariadb-11.8
+FROM mariadb:10.6@sha256:75079c0fb96894284d00d035bc4bef94234814f6f6c28b79877bc69d3285d760 AS mariadb-10.6
 FROM mariadb-${MARIADB_VERSION} AS db
 
 # Web interface showing all mails sent by the app; its sendmail mode is the mail() transport of the app container
-FROM axllent/mailpit:v1.33@sha256:aef2aacc11f075ec0fb6874275ee4a421e688e11a96ebb296134d1735c7761ce AS mail
+FROM axllent/mailpit:v1.34@sha256:23a2ef85bc50853ab3093645d1d64679afd8887e89da5e48a88940c172591a4e AS mail
 
 FROM php:8.5-apache@sha256:08af36df144462d84c7f16190557eec06cb9f656882685610b712a15eec54d46 AS php-8.5
 FROM php:8.3-apache@sha256:a800bbd2c0aa322702259ed475556b2cbc311076a8d3c4bba9bfe96838745472 AS php-8.3
