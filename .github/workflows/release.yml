@@ -15,6 +15,8 @@ jobs:
   release:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.create.outputs.version }}
     steps:
       # Code via git instead of actions/checkout: no third-party actions needed. The token is only in
       # the header of these commands, not in .git/config.
@@ -44,9 +46,19 @@ jobs:
           esac
 
       - name: Create release
+        id: create
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           V="$(php bin/next-version.php)"
+          echo "version=$V" >> "$GITHUB_OUTPUT"
           if git rev-parse -q --verify "refs/tags/$V" > /dev/null; then echo "::notice::$V already exists"; exit 0; fi
           gh release create "$V" --target "$GITHUB_SHA" --title "$V" --generate-notes
+
+  # Installation package as a release asset (release-zip.yml)
+  zip:
+    needs: release
+    if: needs.release.outputs.version != ''
+    uses: ./.github/workflows/release-zip.yml
+    with:
+      tag: ${{ needs.release.outputs.version }}
