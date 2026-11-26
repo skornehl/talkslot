@@ -15,8 +15,6 @@ jobs:
   release:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    outputs:
-      version: ${{ steps.create.outputs.version }}
     steps:
       # Code via git instead of actions/checkout: no third-party actions needed. The token is only in
       # the header of these commands, not in .git/config.
@@ -45,20 +43,22 @@ jobs:
             *) echo "::error::\"Tests\" has not passed on ${GITHUB_SHA:0:7} (yet): no release. Wait for the run or fix main."; exit 1 ;;
           esac
 
+      # Releases are immutable: assets can only be added while the release is a draft. So create a draft,
+      # attach the installation package talkslot-<version>.zip (the files of README "Installation on a web
+      # server": app/, bin/, config/ without config.php, public/, LICENSE, README, SECURITY, app/version.php)
+      # and publish only then.
       - name: Create release
-        id: create
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           V="$(php bin/next-version.php)"
-          echo "version=$V" >> "$GITHUB_OUTPUT"
           if git rev-parse -q --verify "refs/tags/$V" > /dev/null; then echo "::notice::$V already exists"; exit 0; fi
-          gh release create "$V" --target "$GITHUB_SHA" --title "$V" --generate-notes
-
-  # Installation package as a release asset (release-zip.yml)
-  zip:
-    needs: release
-    if: needs.release.outputs.version != ''
-    uses: ./.github/workflows/release-zip.yml
-    with:
-      tag: ${{ needs.release.outputs.version }}
+          S="stage/talkslot-$V"
+          mkdir -p "$S"
+          cp -r app bin config public LICENSE README.md SECURITY.md "$S/"
+          rm -f "$S/config/config.php"
+          VERSION="$V" COMMIT="$GITHUB_SHA" php bin/build-version.php "$S/app/version.php"
+          (cd stage && zip -qr "../talkslot-$V.zip" "talkslot-$V")
+          unzip -l "talkslot-$V.zip" | tail -1
+          gh release create "$V" "talkslot-$V.zip" --draft --target "$GITHUB_SHA" --title "$V" --generate-notes
+          gh release edit "$V" --draft=false
