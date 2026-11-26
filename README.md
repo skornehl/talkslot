@@ -163,7 +163,7 @@ App: <http://localhost:8080>, admin: <http://localhost:8080/admin>. Mails end up
 
 ## Installation on a web server
 
-1. **Upload** the project. Only `public/` may be reachable from the web; `app/`, `bin/` and `config/`
+1. **Upload** the project (or the package `talkslot-<version>.zip` attached to each [release](https://github.com/skornehl/talkslot/releases), which contains only these files). Only `public/` may be reachable from the web; `app/`, `bin/` and `config/`
    belong outside the document root.
    - If you can choose the document root: upload everything and point it to `public/`.
    - If not: upload the *contents* of `public/` into the document root and everything else into a

@@ -1,0 +1,56 @@
+# Attaches the installation package talkslot-<version>.zip to a release: app/, bin/, config/ (sample only),
+# public/, LICENSE, README.md, SECURITY.md and app/version.php for that version – the files of README
+# "Installation on a web server", without dev/, docs/, tests/ and .github/. Called by release.yml after
+# every new release; "Run workflow" with a tag (re)builds the package of an existing release.
+name: Release ZIP
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag, e.g. v2.0.2
+        required: true
+        type: string
+  workflow_call:
+    inputs:
+      tag:
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  zip:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch code of the tag
+        env:
+          REPO: ${{ github.repository }}
+          TAG: ${{ inputs.tag }}
+          TOKEN: ${{ github.token }}
+        run: |
+          [[ $TAG =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::Invalid tag: $TAG"; exit 1; }
+          git init -q . && git remote add origin "https://github.com/$REPO.git"
+          AUTH="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$TOKEN" | base64 -w0)"
+          git -c http.extraheader="$AUTH" fetch -q origin "refs/tags/$TAG:refs/tags/$TAG"
+          git checkout -q --detach "refs/tags/$TAG^{commit}"
+          git log -1 --format='Checked out: %h %s'
+
+      - name: Build the package
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          S="stage/talkslot-$TAG"
+          mkdir -p "$S"
+          cp -r app bin config public LICENSE README.md SECURITY.md "$S/"
+          rm -f "$S/config/config.php"
+          VERSION="$TAG" COMMIT="$(git rev-parse HEAD)" php bin/build-version.php "$S/app/version.php"
+          (cd stage && zip -qr "../talkslot-$TAG.zip" "talkslot-$TAG")
+          unzip -l "talkslot-$TAG.zip" | tail -1
+
+      - name: Attach to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+        run: gh release upload "$TAG" "talkslot-$TAG.zip" --clobber -R "$GITHUB_REPOSITORY"
